@@ -135,7 +135,7 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel" 
       type: formData.type,
       items,
       commentaires: formData.commentaires,
-      dateLivraisonSouhaitee: formData.dateLivraisonSouhaitee,
+      dateLivraisonSouhaitee: new Date(formData.dateLivraisonSouhaitee),
     })
 
     if (success) {
