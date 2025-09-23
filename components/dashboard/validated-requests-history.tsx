@@ -202,7 +202,7 @@ export default function ValidatedRequestsHistory({ isOpen, onClose }: ValidatedR
                         <div className="flex items-center gap-2">
                           <User className="h-4 w-4 text-gray-500" />
                           <span className="text-sm">
-                            <strong>Demandeur:</strong> {request.dem?.nom} {request.demandeur?.prenom}
+                            <strong>Demandeur:</strong> {request.technicien?.nom} {request.technicien?.prenom}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -231,7 +231,7 @@ export default function ValidatedRequestsHistory({ isOpen, onClose }: ValidatedR
                             <div key={index} className="flex justify-between items-center bg-gray-50 p-2 rounded text-sm">
                               <span>{item.article?.nom || 'Article inconnu'}</span>
                               <Badge variant="secondary">
-                                Qté: {item.quantite}
+                                Qté: {item.quantiteValidee}
                               </Badge>
                             </div>
                           ))}
