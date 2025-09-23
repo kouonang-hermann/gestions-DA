@@ -1,30 +1,47 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getCurrentUser } from "@/lib/auth"
-
-// Import de la base de données simulée
-const PROJETS_DB: any[] = []
+import { prisma } from "@/lib/prisma"
 
 /**
  * GET /api/projets/[id] - Récupère un projet spécifique
  */
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const currentUser = getCurrentUser(request)
+    const params = await context.params
+    const currentUser = await getCurrentUser(request)
 
     if (!currentUser) {
       return NextResponse.json({ success: false, error: "Non authentifié" }, { status: 401 })
     }
 
-    const projet = PROJETS_DB.find((p) => p.id === params.id)
+    const projet = await prisma.projet.findUnique({
+      where: { id: params.id },
+      include: {
+        createur: {
+          select: { id: true, nom: true, prenom: true, email: true }
+        },
+        utilisateurs: {
+          include: {
+            user: {
+              select: { id: true, nom: true, prenom: true, email: true, role: true }
+            }
+          }
+        },
+        demandes: {
+          select: { id: true, numero: true, type: true, status: true }
+        }
+      }
+    })
 
     if (!projet) {
       return NextResponse.json({ success: false, error: "Projet non trouvé" }, { status: 404 })
     }
 
     // Vérifier les permissions
+    const isAssigned = projet.utilisateurs.some(up => up.userId === currentUser.id)
     if (
       currentUser.role !== "superadmin" &&
-      !projet.utilisateurs.includes(currentUser.id) &&
+      !isAssigned &&
       projet.createdBy !== currentUser.id
     ) {
       return NextResponse.json({ success: false, error: "Accès non autorisé" }, { status: 403 })
@@ -43,28 +60,46 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 /**
  * PUT /api/projets/[id] - Met à jour un projet
  */
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const currentUser = getCurrentUser(request)
+    const params = await context.params
+    const currentUser = await getCurrentUser(request)
 
     if (!currentUser || currentUser.role !== "superadmin") {
       return NextResponse.json({ success: false, error: "Accès non autorisé" }, { status: 403 })
     }
 
-    const projetIndex = PROJETS_DB.findIndex((p) => p.id === params.id)
+    const projet = await prisma.projet.findUnique({
+      where: { id: params.id }
+    })
 
-    if (projetIndex === -1) {
+    if (!projet) {
       return NextResponse.json({ success: false, error: "Projet non trouvé" }, { status: 404 })
     }
 
     const updates = await request.json()
-    const updatedProjet = {
-      ...PROJETS_DB[projetIndex],
-      ...updates,
-      dateModification: new Date(),
-    }
-
-    PROJETS_DB[projetIndex] = updatedProjet
+    const updatedProjet = await prisma.projet.update({
+      where: { id: params.id },
+      data: {
+        nom: updates.nom,
+        description: updates.description,
+        dateDebut: updates.dateDebut ? new Date(updates.dateDebut) : undefined,
+        dateFin: updates.dateFin ? new Date(updates.dateFin) : undefined,
+        actif: updates.actif,
+      },
+      include: {
+        createur: {
+          select: { id: true, nom: true, prenom: true, email: true }
+        },
+        utilisateurs: {
+          include: {
+            user: {
+              select: { id: true, nom: true, prenom: true, email: true, role: true }
+            }
+          }
+        }
+      }
+    })
 
     return NextResponse.json({
       success: true,

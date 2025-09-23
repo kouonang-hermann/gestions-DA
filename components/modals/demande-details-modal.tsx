@@ -5,17 +5,22 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckCircle, XCircle, Calendar, User, Building, Package } from "lucide-react"
+import { CheckCircle, XCircle, Calendar, User, Building, Package, AlertCircle, Trash2 } from "lucide-react"
 import type { Demande } from "@/types"
+import PurchaseRequestCard from "@/components/demandes/purchase-request-card"
+import RemoveItemConfirmationModal from "@/components/modals/remove-item-confirmation-modal"
 
 interface DemandeDetailsModalProps {
   isOpen: boolean
   onClose: () => void
   demande: Demande | null
-  onValidate?: (action: "valider" | "rejeter", quantites?: { [itemId: string]: number }) => void
+  onValidate?: (action: "valider" | "rejeter", quantites?: { [itemId: string]: number }, commentaire?: string) => void
   canValidate?: boolean
+  onItemRemoved?: () => void
+  canRemoveItems?: boolean
 }
 
 export default function DemandeDetailsModal({ 
@@ -23,19 +28,33 @@ export default function DemandeDetailsModal({
   onClose, 
   demande, 
   onValidate,
-  canValidate = false 
+  canValidate = false,
+  onItemRemoved,
+  canRemoveItems = false
 }: DemandeDetailsModalProps) {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [quantitesValidees, setQuantitesValidees] = useState<{ [itemId: string]: number }>({})
+  const [quantitesOriginales, setQuantitesOriginales] = useState<{ [itemId: string]: number }>({})
+  const [commentaire, setCommentaire] = useState("")
+  const [showCommentaireError, setShowCommentaireError] = useState(false)
+  const [removeItemModalOpen, setRemoveItemModalOpen] = useState(false)
+  const [itemToRemove, setItemToRemove] = useState<any>(null)
+  const [removeItemLoading, setRemoveItemLoading] = useState(false)
 
   // Initialiser les quantités validées avec les quantités demandées
   useEffect(() => {
     if (demande) {
       const initialQuantites: { [itemId: string]: number } = {}
+      const originalesQuantites: { [itemId: string]: number } = {}
       demande.items.forEach(item => {
-        initialQuantites[item.id] = item.quantiteValidee || item.quantiteDemandee
+        const quantite = item.quantiteValidee || item.quantiteDemandee
+        initialQuantites[item.id] = quantite
+        originalesQuantites[item.id] = quantite
       })
       setQuantitesValidees(initialQuantites)
+      setQuantitesOriginales(originalesQuantites)
+      setCommentaire("")
+      setShowCommentaireError(false)
     }
   }, [demande])
 
@@ -47,14 +66,33 @@ export default function DemandeDetailsModal({
       ...prev,
       [itemId]: numValue
     }))
+    // Réinitialiser l'erreur de commentaire quand l'utilisateur modifie
+    setShowCommentaireError(false)
+  }
+
+  // Vérifier si des modifications ont été apportées
+  const hasModifications = () => {
+    return Object.keys(quantitesValidees).some(itemId => 
+      quantitesValidees[itemId] !== quantitesOriginales[itemId]
+    )
   }
 
   const handleAction = async (action: "valider" | "rejeter") => {
     if (!onValidate) return
     
+    // Si validation avec modifications, commentaire obligatoire
+    if (action === "valider" && hasModifications() && !commentaire.trim()) {
+      setShowCommentaireError(true)
+      return
+    }
+    
     setActionLoading(action)
     try {
-      await onValidate(action, action === "valider" ? quantitesValidees : undefined)
+      await onValidate(
+        action, 
+        action === "valider" ? quantitesValidees : undefined,
+        commentaire.trim() || undefined
+      )
     } finally {
       setActionLoading(null)
     }
@@ -90,6 +128,65 @@ export default function DemandeDetailsModal({
       "rejetee": "Rejetée"
     }
     return statusMap[status] || status
+  }
+
+  // Fonction pour ouvrir le modal de suppression d'article
+  const handleRemoveItem = (item: any) => {
+    setItemToRemove(item)
+    setRemoveItemModalOpen(true)
+  }
+
+  // Fonction pour confirmer la suppression d'article
+  const handleConfirmRemoveItem = async (justification: string) => {
+    if (!itemToRemove || !demande) return
+
+    setRemoveItemLoading(true)
+    try {
+      const response = await fetch(`/api/demandes/${demande.id}/remove-item`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          itemId: itemToRemove.id,
+          justification
+        }),
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        alert(result.message)
+        onItemRemoved?.()
+        setRemoveItemModalOpen(false)
+        setItemToRemove(null)
+      } else {
+        alert(`Erreur: ${result.error}`)
+      }
+    } catch (error) {
+      console.error("Erreur lors de la suppression de l'article:", error)
+      alert("Erreur lors de la suppression de l'article")
+    } finally {
+      setRemoveItemLoading(false)
+    }
+  }
+
+  // Vérifier si un article peut être supprimé
+  const canRemoveItem = (item: any) => {
+    if (!canRemoveItems || !demande) return false
+    
+    // Vérifier qu'il reste plus d'un article
+    if (demande.items.length <= 1) return false
+    
+    // Vérifier le statut de la demande
+    const allowedStatuses = [
+      "en_attente_validation_conducteur",
+      "en_attente_validation_responsable_travaux", 
+      "en_attente_validation_charge_affaire"
+    ]
+    
+    return allowedStatuses.includes(demande.status)
   }
 
   return (
@@ -141,6 +238,9 @@ export default function DemandeDetailsModal({
                   <TableHead className="font-bold text-center border-r">Qté validée</TableHead>
                   <TableHead className="font-bold text-center border-r">Date 1</TableHead>
                   <TableHead className="font-bold text-center">Date 2</TableHead>
+                  {canRemoveItems && (
+                    <TableHead className="font-bold text-center">Supprimer</TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -178,41 +278,82 @@ export default function DemandeDetailsModal({
                     <TableCell className="text-center p-2">
                       {demande.dateLivraisonSouhaitee ? new Date(demande.dateLivraisonSouhaitee).toLocaleDateString('fr-FR') : '-'}
                     </TableCell>
+                    {canRemoveItems && (
+                      <TableCell className="text-center p-2">
+                        {canRemoveItem(item) ? (
+                          <Button
+                            onClick={() => handleRemoveItem(item)}
+                            variant="destructive"
+                            className="px-4"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Supprimer
+                          </Button>
+                        ) : (
+                          <span className="text-gray-500">Non autorisé</span>
+                        )}
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </div>
 
-          {/* Actions de validation */}
+          {/* Champ commentaire - Affiché si modifications ou si peut valider */}
           {canValidate && (
-            <div className="flex justify-center gap-4 pt-4 border-t">
-              <Button
-                onClick={() => handleAction("valider")}
-                disabled={actionLoading !== null}
-                className="bg-green-600 hover:bg-green-700 text-white px-6"
-              >
-                {actionLoading === "valider" ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                ) : (
-                  <CheckCircle className="h-4 w-4 mr-2" />
+            <div className="space-y-4 pt-4 border-t">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Commentaire {hasModifications() && <span className="text-red-500">*</span>}
+                  {hasModifications() && <span className="text-xs text-red-500 ml-1">(obligatoire car modifications apportées)</span>}
+                </label>
+                <Textarea
+                  value={commentaire}
+                  onChange={(e) => {
+                    setCommentaire(e.target.value)
+                    setShowCommentaireError(false)
+                  }}
+                  placeholder={hasModifications() ? "Veuillez expliquer les modifications apportées..." : "Commentaire optionnel..."}
+                  className={`min-h-[80px] ${showCommentaireError ? 'border-red-500' : ''}`}
+                />
+                {showCommentaireError && (
+                  <div className="flex items-center mt-2 text-red-600 text-sm">
+                    <AlertCircle className="h-4 w-4 mr-1" />
+                    Un commentaire est obligatoire lorsque vous modifiez les quantités
+                  </div>
                 )}
-                Valider
-              </Button>
-              
-              <Button
-                onClick={() => handleAction("rejeter")}
-                disabled={actionLoading !== null}
-                variant="destructive"
-                className="px-6"
-              >
-                {actionLoading === "rejeter" ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                ) : (
-                  <XCircle className="h-4 w-4 mr-2" />
-                )}
-                Rejeter
-              </Button>
+              </div>
+
+              {/* Actions de validation */}
+              <div className="flex justify-center gap-4">
+                <Button
+                  onClick={() => handleAction("valider")}
+                  disabled={actionLoading !== null}
+                  className="bg-green-600 hover:bg-green-700 text-white px-6"
+                >
+                  {actionLoading === "valider" ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  ) : (
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                  )}
+                  Valider
+                </Button>
+                
+                <Button
+                  onClick={() => handleAction("rejeter")}
+                  disabled={actionLoading !== null}
+                  variant="destructive"
+                  className="px-6"
+                >
+                  {actionLoading === "rejeter" ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  ) : (
+                    <XCircle className="h-4 w-4 mr-2" />
+                  )}
+                  Rejeter
+                </Button>
+              </div>
             </div>
           )}
 
@@ -224,6 +365,16 @@ export default function DemandeDetailsModal({
           </div>
         </div>
       </DialogContent>
+      {removeItemModalOpen && (
+        <RemoveItemConfirmationModal
+          isOpen={removeItemModalOpen}
+          onClose={() => setRemoveItemModalOpen(false)}
+          item={itemToRemove}
+          demandeNumero={demande?.numero || ""}
+          onConfirm={handleConfirmRemoveItem}
+          isLoading={removeItemLoading}
+        />
+      )}
     </Dialog>
   )
 }

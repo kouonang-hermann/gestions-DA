@@ -66,7 +66,16 @@ export default function CreateProjectModal({ isOpen, onClose }: CreateProjectMod
       return
     }
 
-    const success = await createProjet(formData)
+    // Convertir les données pour correspondre au type Projet
+    const projetData = {
+      nom: formData.nom,
+      description: formData.description,
+      dateDebut: new Date(formData.dateDebut),
+      dateFin: formData.dateFin ? new Date(formData.dateFin) : undefined,
+      utilisateurs: formData.utilisateurs,
+    }
+
+    const success = await createProjet(projetData)
     if (success) {
       onClose()
       setFormData({

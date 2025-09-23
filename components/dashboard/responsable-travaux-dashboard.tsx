@@ -5,10 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useStore } from "@/stores/useStore"
-import { Package, Clock, CheckCircle, XCircle, FileText, Eye } from 'lucide-react'
-import InstrumElecLogo from "@/components/ui/instrumelec-logo"
+import { Package, Clock, CheckCircle, XCircle, FileText, Eye, Plus } from 'lucide-react'
 import ValidationDemandesList from "@/components/validation/validation-demandes-list"
 import DemandeDetailsModal from "@/components/modals/demande-details-modal"
+import RequestsFlowChart from "@/components/charts/requests-flow-chart"
 import type { Demande } from "@/types"
 
 export default function ResponsableTravauxDashboard() {
@@ -24,6 +24,7 @@ export default function ResponsableTravauxDashboard() {
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
   const [selectedDemande, setSelectedDemande] = useState<Demande | null>(null)
   const [dataLoaded, setDataLoaded] = useState(false)
+  const [showCreateDemandeModal, setShowCreateDemandeModal] = useState(false)
 
   // Chargement initial des données
   useEffect(() => {
@@ -55,7 +56,13 @@ export default function ResponsableTravauxDashboard() {
         total: demandesMaterielles.length,
         enAttente: demandesMaterielles.filter((d) => d.status === "en_attente_validation_responsable_travaux").length,
         validees: demandesMaterielles.filter((d) => 
-          ["en_attente_validation_appro", "en_attente_validation_charge_affaire", "en_attente_validation_logistique", "en_attente_confirmation_demandeur", "confirmee_demandeur"].includes(d.status)
+          [
+            "en_attente_validation_charge_affaire", 
+            "en_attente_preparation_appro",
+            "en_attente_validation_logistique",
+            "en_attente_validation_finale_demandeur",
+            "cloturee"
+          ].includes(d.status)
         ).length,
         rejetees: demandesMaterielles.filter((d) => d.status === "rejetee").length,
       })
@@ -84,21 +91,16 @@ export default function ResponsableTravauxDashboard() {
     )
   }
 
-  const mesProjetIds = currentUser.projets || []
   const demandesEnAttente = demandes.filter((d) => 
     d.status === "en_attente_validation_responsable_travaux" && 
-    d.type === "materiel" &&
-    mesProjetIds.includes(d.projetId)
+    d.type === "materiel"
   )
 
   return (
     <div className="space-y-6">
-      {/* En-tête avec logo InstrumElec */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <InstrumElecLogo size="sm" />
-          <h1 className="text-3xl font-bold text-gray-900">Tableau de bord - Responsable des Travaux</h1>
-        </div>
+      {/* En-tête */}
+      <div className="flex items-center space-x-4">
+        <h1 className="text-3xl font-bold text-gray-900">Tableau de bord</h1>
       </div>
 
       {/* Statistiques */}
@@ -152,6 +154,31 @@ export default function ResponsableTravauxDashboard() {
         </Card>
       </div>
 
+      {/* Actions rapides */}
+      <Card className="bg-gray-50 border-gray-200">
+        <CardHeader>
+          <CardTitle className="text-gray-800">Actions rapides</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-3">
+            <Button
+              onClick={() => setShowCreateDemandeModal(true)}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Nouvelle demande de matériel
+            </Button>
+            <Button
+              onClick={() => setShowCreateDemandeModal(true)}
+              className="bg-teal-600 hover:bg-teal-700 text-white"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Nouvelle demande d'outillage
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Liste des demandes en attente de validation */}
       {demandesEnAttente.length > 0 && (
         <Card className="bg-orange-50 border-orange-200">
@@ -183,6 +210,20 @@ export default function ResponsableTravauxDashboard() {
           </CardContent>
         </Card>
       )}
+
+      {/* Graphiques des demandes mensuelles et annuelles */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <RequestsFlowChart
+          demandes={demandes}
+          type="materiel"
+          title="Demandes de matériel - Évolution mensuelle"
+        />
+        <RequestsFlowChart
+          demandes={demandes}
+          type="outillage"
+          title="Demandes d'outillage - Évolution mensuelle"
+        />
+      </div>
 
       {/* Modal des détails */}
       <DemandeDetailsModal

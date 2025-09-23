@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useStore } from "@/stores/useStore"
-import { Package, Clock, CheckCircle, XCircle, Plus, FileText } from 'lucide-react'
+import { Package, Clock, CheckCircle, XCircle, Plus, FileText, ChevronDown, ChevronRight } from 'lucide-react'
 import InstrumElecLogo from "@/components/ui/instrumelec-logo"
 import CreateDemandeModal from "@/components/demandes/create-demande-modal"
 import { UserRequestsChart } from "@/components/charts/user-requests-chart"
@@ -29,6 +29,7 @@ export default function EmployeDashboard() {
   const [detailsModalTitle, setDetailsModalTitle] = useState("")
   const [validatedHistoryModalOpen, setValidatedHistoryModalOpen] = useState(false)
   const [dataLoaded, setDataLoaded] = useState(false)
+  const [projetsExpanded, setProjetsExpanded] = useState(false)
 
   // Chargement initial des données
   useEffect(() => {
@@ -57,9 +58,13 @@ export default function EmployeDashboard() {
 
       setStats({
         total: mesDemandes.length,
-        enCours: mesDemandes.filter((d) => !["brouillon", "validee_finale", "archivee", "rejetee"].includes(d.status))
-          .length,
-        validees: mesDemandes.filter((d) => ["validee_finale", "archivee"].includes(d.status)).length,
+        enCours: mesDemandes.filter((d) => ![
+          "brouillon", 
+          "cloturee", 
+          "rejetee", 
+          "archivee"
+        ].includes(d.status)).length,
+        validees: mesDemandes.filter((d) => ["cloturee", "archivee"].includes(d.status)).length,
         brouillons: mesDemandes.filter((d) => d.status === "brouillon").length,
       })
     }
@@ -69,12 +74,16 @@ export default function EmployeDashboard() {
     const colors = {
       brouillon: "bg-gray-500",
       soumise: "bg-blue-500",
-      validee_conducteur: "bg-green-500",
-      validee_qhse: "bg-green-500",
+      en_attente_validation_conducteur: "bg-orange-500",
+      en_attente_validation_qhse: "bg-orange-500", 
+      en_attente_validation_responsable_travaux: "bg-orange-500",
+      en_attente_validation_charge_affaire: "bg-orange-500",
+      en_attente_preparation_appro: "bg-purple-500",
+      en_attente_validation_logistique: "bg-purple-500",
+      en_attente_validation_finale_demandeur: "bg-emerald-500", // Prêt à clôturer
+      confirmee_demandeur: "bg-green-500",
+      cloturee: "bg-green-600",
       rejetee: "bg-red-500",
-      sortie_preparee: "bg-purple-500",
-      validee_charge_affaire: "bg-emerald-500",
-      validee_finale: "bg-green-600",
       archivee: "bg-gray-600",
     }
     return colors[status as keyof typeof colors] || "bg-gray-500"
@@ -84,12 +93,16 @@ export default function EmployeDashboard() {
     const labels = {
       brouillon: "Brouillon",
       soumise: "Soumise",
-      validee_conducteur: "Validée conducteur",
-      validee_qhse: "Validée QHSE",
+      en_attente_validation_conducteur: "En attente validation conducteur",
+      en_attente_validation_qhse: "En attente validation QHSE",
+      en_attente_validation_responsable_travaux: "En attente validation responsable travaux",
+      en_attente_validation_charge_affaire: "En attente validation chargé d'affaire",
+      en_attente_preparation_appro: "En attente préparation appro",
+      en_attente_validation_logistique: "En attente validation logistique",
+      en_attente_validation_finale_demandeur: "Prêt à clôturer", // Le demandeur peut clôturer
+      confirmee_demandeur: "Confirmée",
+      cloturee: "Clôturée",
       rejetee: "Rejetée",
-      sortie_preparee: "Sortie préparée",
-      validee_charge_affaire: "Validée chargé affaire",
-      validee_finale: "Validée finale",
       archivee: "Archivée",
     }
     return labels[status as keyof typeof labels] || status
@@ -115,7 +128,7 @@ export default function EmployeDashboard() {
   const mesProjetIds = currentUser.projets || []
   const mesProjets = projets.filter((p) => mesProjetIds.includes(p.id)) || []
   const mesDemandes = demandes.filter((d) => d.technicienId === currentUser.id) || []
-  const demandesValidationFinale = mesDemandes.filter(d => d.status === "validee_charge_affaire")
+  const demandesValidationFinale = mesDemandes.filter(d => d.status === "en_attente_validation_finale_demandeur")
 
   const handleCardClick = (type: "total" | "enCours" | "validees" | "brouillons", title: string) => {
     if (type === "total") {
@@ -129,35 +142,11 @@ export default function EmployeDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* En-tête avec logo InstrumElec */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <InstrumElecLogo size="sm" />
-          <h1 className="text-3xl font-bold text-gray-900">Tableau de bord</h1>
-        </div>
-        <div className="flex space-x-2">
-          <Button
-            onClick={() => {
-              setDemandeType("materiel")
-              setCreateDemandeModalOpen(true)
-            }}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Nouvelle demande matériel
-          </Button>
-          <Button
-            onClick={() => {
-              setDemandeType("outillage")
-              setCreateDemandeModalOpen(true)
-            }}
-            className="bg-green-600 hover:bg-green-700 text-white"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Nouvelle demande outillage
-          </Button>
-        </div>
+      {/* En-tête */}
+      <div className="flex items-center space-x-4">
+        <h1 className="text-3xl font-bold text-gray-900">Tableau de bord</h1>
       </div>
+
       {/* Statistiques */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card 
@@ -221,30 +210,73 @@ export default function EmployeDashboard() {
         </Card>
       </div>
 
+      {/* Actions rapides */}
+      <Card className="bg-gray-50 border-gray-200">
+        <CardHeader>
+          <CardTitle className="text-gray-800">Actions rapides</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-3">
+            <Button
+              onClick={() => {
+                setDemandeType("materiel")
+                setCreateDemandeModalOpen(true)
+              }}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Nouvelle demande de matériel
+            </Button>
+            <Button
+              onClick={() => {
+                setDemandeType("outillage")
+                setCreateDemandeModalOpen(true)
+              }}
+              className="bg-teal-600 hover:bg-teal-700 text-white"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Nouvelle demande d'outillage
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Mes projets */}
       {mesProjets.length > 0 && (
         <Card className="bg-gray-50 border-gray-200">
-          <CardHeader>
-            <CardTitle className="text-gray-800">Mes projets ({mesProjets.length})</CardTitle>
+          <CardHeader 
+            className="cursor-pointer hover:bg-gray-100 transition-colors"
+            onClick={() => setProjetsExpanded(!projetsExpanded)}
+          >
+            <CardTitle className="flex items-center justify-between text-gray-800">
+              <span>Mes projets ({mesProjets.length})</span>
+              {projetsExpanded ? (
+                <ChevronDown className="h-5 w-5 text-gray-500" />
+              ) : (
+                <ChevronRight className="h-5 w-5 text-gray-500" />
+              )}
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {mesProjets.map((projet) => (
-                <div key={projet.id} className="bg-white p-4 rounded-lg border border-gray-200">
-                  <h3 className="font-medium text-gray-800">{projet.nom}</h3>
-                  <p className="text-sm text-gray-600 mt-1">{projet.description}</p>
-                  <div className="flex items-center justify-between mt-3">
-                    <span className="text-xs text-gray-500">
-                      Début: {new Date(projet.dateDebut).toLocaleDateString()}
-                    </span>
-                    <Badge className={projet.actif ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
-                      {projet.actif ? "Actif" : "Inactif"}
-                    </Badge>
+          {projetsExpanded && (
+            <CardContent className="animate-in slide-in-from-top-2 duration-200">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {mesProjets.map((projet) => (
+                  <div key={projet.id} className="bg-white p-4 rounded-lg border border-gray-200">
+                    <h3 className="font-medium text-gray-800">{projet.nom}</h3>
+                    <p className="text-sm text-gray-600 mt-1">{projet.description}</p>
+                    <div className="flex items-center justify-between mt-3">
+                      <span className="text-xs text-gray-500">
+                        Début: {new Date(projet.dateDebut).toLocaleDateString()}
+                      </span>
+                      <Badge className={projet.actif ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
+                        {projet.actif ? "Actif" : "Inactif"}
+                      </Badge>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
+                ))}
+              </div>
+            </CardContent>
+          )}
         </Card>
       )}
 

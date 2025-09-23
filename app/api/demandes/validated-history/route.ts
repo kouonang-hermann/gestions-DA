@@ -1,18 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 import { withAuth } from '@/lib/middleware'
 
-const prisma = new PrismaClient()
-
-async function GET(request: NextRequest, { user }: { user: any }) {
+export const GET = withAuth(async (request: NextRequest, currentUser: any) => {
   try {
-    // Récupérer toutes les demandes avec le statut "confirmee_demandeur" (flow complet)
-    const validatedRequests = await (prisma.demande.findMany as any)({
-      where: {
-        status: 'confirmee_demandeur'
-      },
+    console.log('=== DEBUG: Fetching validated history ===')
+    console.log('Current user:', currentUser ? { id: currentUser.id, role: currentUser.role } : 'null')
+    
+    console.log('Starting database query...')
+    
+    // Construire le filtre selon le rôle de l'utilisateur
+    let whereClause: any = {
+      status: {
+        in: ['cloturee']  // Commençons par seulement ce statut qui existe sûrement
+      }
+    }
+
+    // Si ce n'est pas un superadmin ou admin, filtrer par technicienId
+    if (currentUser.role !== 'superadmin' && !currentUser.isAdmin) {
+      whereClause.technicienId = currentUser.id
+      console.log('Filtering by technicienId:', currentUser.id)
+    } else {
+      console.log('Admin/SuperAdmin access - showing all validated requests')
+    }
+    
+    // Récupérer toutes les demandes qui ont suivi le flow complet de validation
+    const validatedRequests = await prisma.demande.findMany({
+      where: whereClause,
       include: {
-        user: {
+        technicien: {
           select: {
             id: true,
             nom: true,
@@ -40,7 +56,7 @@ async function GET(request: NextRequest, { user }: { user: any }) {
             }
           }
         },
-        signatures: {
+        validationSignatures: {
           include: {
             user: {
               select: {
@@ -52,10 +68,10 @@ async function GET(request: NextRequest, { user }: { user: any }) {
             }
           },
           orderBy: {
-            createdAt: 'asc'
+            date: 'asc'
           }
         },
-        history: {
+        historyEntries: {
           include: {
             user: {
               select: {
@@ -67,68 +83,80 @@ async function GET(request: NextRequest, { user }: { user: any }) {
             }
           },
           orderBy: {
-            createdAt: 'asc'
+            timestamp: 'asc'
           }
         }
       },
       orderBy: {
-        createdAt: 'desc'
+        dateCreation: 'desc'
       }
     })
 
-    // Transformer les données pour inclure les étapes de validation avec quantités
+    console.log('Database query completed successfully')
+    console.log('Found validated requests:', validatedRequests.length)
+    console.log('Request statuses:', validatedRequests.map(r => ({ id: r.id, status: r.status, numero: r.numero })))
+
+    // Transformer les données pour inclure les étapes de validation
     const requestsWithValidationSteps = validatedRequests.map((request: any) => {
-      const validationSteps = request.signatures.map((signature: any) => {
-        // Récupérer les quantités validées depuis les données de signature
-        let quantities: { [key: string]: number } = {}
-        
-        // Si les quantités sont stockées dans les données de signature
-        if (signature.data && typeof signature.data === 'object') {
-          const signatureData = signature.data as any
-          if (signatureData.quantities) {
-            quantities = signatureData.quantities
+      try {
+        const validationSteps = request.validationSignatures.map((signature: any) => {
+          return {
+            role: signature.type,
+            validator: `${signature.user.nom} ${signature.user.prenom}`,
+            date: signature.date.toISOString(),
+            status: 'validee'
           }
-        }
-        
-        // Sinon, utiliser les quantités actuelles des items
-        if (Object.keys(quantities).length === 0) {
-          request.items.forEach((item: any) => {
-            quantities[item.id] = item.quantite
-          })
-        }
+        })
 
         return {
-          role: signature.user.role,
-          validator: `${signature.user.nom} ${signature.user.prenom}`,
-          date: signature.createdAt.toISOString(),
-          quantities,
-          status: 'validee'
+          ...request,
+          demandeur: request.technicien, // Corriger la relation
+          validationSteps,
+          statut: request.status // Mapper status vers statut pour compatibilité
         }
-      })
-
-      return {
-        ...request,
-        demandeur: request.user, // Renommer user en demandeur pour la compatibilité
-        validationSteps
+      } catch (mappingError) {
+        console.error('Error mapping request:', request.id, mappingError)
+        return {
+          ...request,
+          demandeur: request.technicien,
+          validationSteps: [],
+          statut: request.status
+        }
       }
     })
+
+    console.log('Data transformation completed')
+    console.log('Returning requests with validation steps:', requestsWithValidationSteps.length)
 
     return NextResponse.json({
       success: true,
       data: requestsWithValidationSteps
     })
 
-  } catch (error) {
-    console.error('Erreur lors de la récupération de l\'historique des demandes validées:', error)
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Erreur lors de la récupération de l\'historique des demandes validées' 
-      },
-      { status: 500 }
-    )
+  } catch (error: any) {
+    console.error('=== DETAILED ERROR LOG ===')
+    console.error('Error name:', error.name)
+    console.error('Error message:', error.message)
+    console.error('Error stack:', error.stack)
+    
+    if (error.name === 'JsonWebTokenError') {
+      console.error('JWT malformed error:', error)
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Erreur de token JWT' 
+        },
+        { status: 401 }
+      )
+    } else {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Erreur lors de la récupération de l\'historique des demandes validées',
+          details: error.message
+        },
+        { status: 500 }
+      )
+    }
   }
-}
-
-const AuthenticatedGET = withAuth(GET)
-export { AuthenticatedGET as GET }
+})

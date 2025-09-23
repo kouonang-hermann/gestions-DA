@@ -9,6 +9,8 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { CheckCircle, Clock, User, Package, Calendar, FileText, Eye } from "lucide-react"
 import type { Demande, HistoryEntry } from "@/types"
+import PurchaseRequestDetailsModal from "@/components/modals/purchase-request-details-modal"
+import { useStore } from "@/stores/useStore"
 
 interface ValidatedRequestsHistoryProps {
   isOpen: boolean
@@ -24,7 +26,6 @@ interface ValidationStep {
   role: string
   validator: string
   date: string
-  quantities: { [key: string]: number }
   status: string
 }
 
@@ -43,16 +44,46 @@ export default function ValidatedRequestsHistory({ isOpen, onClose }: ValidatedR
   const fetchValidatedRequests = async () => {
     setIsLoading(true)
     try {
-      const token = localStorage.getItem('token')
+      const token = useStore.getState().token
+      console.log('=== DEBUG: Frontend token check ===')
+      console.log('Token exists:', !!token)
+      console.log('Token length:', token ? token.length : 0)
+      console.log('Token first 20 chars:', token ? token.substring(0, 20) : 'null')
+      console.log('Token format check:', token && token.split('.').length === 3 ? 'Valid JWT format' : 'Invalid JWT format')
+      
+      // Debug store state
+      const { currentUser, isAuthenticated } = useStore.getState()
+      console.log('Store state - currentUser:', currentUser ? { id: currentUser.id, role: currentUser.role } : 'null')
+      console.log('Store state - isAuthenticated:', isAuthenticated)
+      console.log('Store state - token from getState:', useStore.getState().token ? 'exists' : 'null')
+      
+      // Check localStorage as fallback
+      const localToken = localStorage.getItem('token')
+      console.log('LocalStorage token:', localToken ? 'exists' : 'null')
+      
+      const finalToken = token || localToken
+      
+      if (!finalToken) {
+        console.error('No token found in store or localStorage')
+        setIsLoading(false)
+        return
+      }
+      
       const response = await fetch('/api/demandes/validated-history', {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${finalToken}`,
+          'Content-Type': 'application/json'
         },
       })
+      
+      console.log('Response status:', response.status)
+      console.log('Response ok:', response.ok)
       
       if (response.ok) {
         const data = await response.json()
         setValidatedRequests(data.data || [])
+      } else {
+        console.error('Erreur lors du chargement de l\'historique:', response.statusText)
       }
     } catch (error) {
       console.error('Erreur lors du chargement de l\'historique:', error)
@@ -63,8 +94,12 @@ export default function ValidatedRequestsHistory({ isOpen, onClose }: ValidatedR
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'confirmee_demandeur':
+      case 'cloturee':
         return 'bg-green-100 text-green-800 border-green-200'
+      case 'confirmee_demandeur':
+        return 'bg-blue-100 text-blue-800 border-blue-200'
+      case 'en_attente_validation_finale_demandeur':
+        return 'bg-emerald-100 text-emerald-800 border-emerald-200'
       case 'rejetee':
         return 'bg-red-100 text-red-800 border-red-200'
       default:
@@ -74,8 +109,12 @@ export default function ValidatedRequestsHistory({ isOpen, onClose }: ValidatedR
 
   const getStatusLabel = (status: string) => {
     switch (status) {
+      case 'cloturee':
+        return 'Clôturée'
       case 'confirmee_demandeur':
-        return 'Validée Complètement'
+        return 'Confirmée'
+      case 'en_attente_validation_finale_demandeur':
+        return 'Livrée - En attente de clôture'
       case 'rejetee':
         return 'Rejetée'
       default:
@@ -85,12 +124,12 @@ export default function ValidatedRequestsHistory({ isOpen, onClose }: ValidatedR
 
   const getRoleLabel = (role: string) => {
     const roleLabels: { [key: string]: string } = {
-      conducteur_travaux: 'Conducteur de Travaux',
+      conducteur: 'Conducteur de Travaux',
       responsable_travaux: 'Responsable des Travaux',
-      responsable_qhse: 'Responsable QHSE',
-      responsable_appro: 'Responsable Approvisionnements',
+      qhse: 'Responsable QHSE',
+      appro: 'Responsable Approvisionnements',
       charge_affaire: 'Chargé d\'Affaire',
-      responsable_logistique: 'Responsable Logistique',
+      logistique: 'Responsable Logistique',
       employe: 'Demandeur'
     }
     return roleLabels[role] || role
@@ -108,10 +147,10 @@ export default function ValidatedRequestsHistory({ isOpen, onClose }: ValidatedR
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CheckCircle className="h-5 w-5 text-green-600" />
-              Historique des Demandes Validées
+              Toutes mes demandes
             </DialogTitle>
             <DialogDescription>
-              Toutes les demandes ayant suivi le flow complet de validation
+              Toutes les demandes ayant suivi le processus de validation complet
             </DialogDescription>
           </DialogHeader>
 
@@ -123,28 +162,28 @@ export default function ValidatedRequestsHistory({ isOpen, onClose }: ValidatedR
             ) : validatedRequests.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <p>Aucune demande validée trouvée</p>
+                <p>Aucune demande trouvée</p>
               </div>
             ) : (
               <div className="space-y-4">
                 {validatedRequests.map((request) => (
-                  <Card key={request.id} className="border-l-4 border-l-green-500">
+                  <Card key={request.id} className="border-l-4 border-l-blue-500">
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <Package className="h-5 w-5 text-blue-600" />
                           <div>
                             <CardTitle className="text-lg">
-                              Demande #{request.id.slice(-8)}
+                              {request.numero}
                             </CardTitle>
                             <p className="text-sm text-gray-600">
-                              {request.projet?.nom} • {request.type}
+                              {request.projet?.nom} • {request.type === 'materiel' ? 'Matériel' : 'Outillage'}
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge className={getStatusColor(request.statut)}>
-                            {getStatusLabel(request.statut)}
+                          <Badge className={getStatusColor(request.status || request.status)}>
+                            {getStatusLabel(request.status || request.status)}
                           </Badge>
                           <Button
                             variant="outline"
@@ -163,21 +202,21 @@ export default function ValidatedRequestsHistory({ isOpen, onClose }: ValidatedR
                         <div className="flex items-center gap-2">
                           <User className="h-4 w-4 text-gray-500" />
                           <span className="text-sm">
-                            <strong>Demandeur:</strong> {request.demandeur?.nom} {request.demandeur?.prenom}
+                            <strong>Demandeur:</strong> {request.dem?.nom} {request.demandeur?.prenom}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-gray-500" />
                           <span className="text-sm">
-                            <strong>Créée le:</strong> {new Date(request.createdAt).toLocaleDateString('fr-FR')}
+                            <strong>Créée le:</strong> {new Date(request.dateCreation).toLocaleDateString('fr-FR')}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
                           <CheckCircle className="h-4 w-4 text-green-500" />
                           <span className="text-sm">
-                            <strong>Validée le:</strong> {request.validationSteps?.length > 0 
+                            <strong>Dernière action:</strong> {request.validationSteps?.length > 0 
                               ? new Date(request.validationSteps[request.validationSteps.length - 1].date).toLocaleDateString('fr-FR')
-                              : 'N/A'
+                              : new Date(request.dateCreation).toLocaleDateString('fr-FR')
                             }
                           </span>
                         </div>
@@ -214,6 +253,18 @@ export default function ValidatedRequestsHistory({ isOpen, onClose }: ValidatedR
                           </div>
                         </>
                       )}
+
+                      {request.commentaires && (
+                        <>
+                          <Separator className="my-3" />
+                          <div>
+                            <h4 className="font-medium mb-2 text-sm">Commentaires:</h4>
+                            <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
+                              {request.commentaires}
+                            </p>
+                          </div>
+                        </>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
@@ -223,129 +274,12 @@ export default function ValidatedRequestsHistory({ isOpen, onClose }: ValidatedR
         </DialogContent>
       </Dialog>
 
-      {/* Modal des détails de la demande */}
-      {selectedRequest && (
-        <Dialog open={detailsModalOpen} onOpenChange={setDetailsModalOpen}>
-          <DialogContent className="max-w-4xl max-h-[90vh]">
-            <DialogHeader>
-              <DialogTitle>
-                Détails de la Demande #{selectedRequest.id.slice(-8)}
-              </DialogTitle>
-            </DialogHeader>
-            
-            <ScrollArea className="h-[70vh]">
-              <div className="space-y-6">
-                {/* Informations générales */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Informations Générales</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p><strong>Projet:</strong> {selectedRequest.projet?.nom}</p>
-                        <p><strong>Type:</strong> {selectedRequest.type}</p>
-                        <p><strong>Statut:</strong> 
-                          <Badge className={`ml-2 ${getStatusColor(selectedRequest.statut)}`}>
-                            {getStatusLabel(selectedRequest.statut)}
-                          </Badge>
-                        </p>
-                      </div>
-                      <div>
-                        <p><strong>Demandeur:</strong> {selectedRequest.demandeur?.nom} {selectedRequest.demandeur?.prenom}</p>
-                        <p><strong>Date de création:</strong> {new Date(selectedRequest.createdAt).toLocaleDateString('fr-FR')}</p>
-                        <p><strong>Urgence:</strong> {selectedRequest.urgence ? 'Oui' : 'Non'}</p>
-                      </div>
-                    </div>
-                    {selectedRequest.justification && (
-                      <div className="mt-4">
-                        <p><strong>Justification:</strong></p>
-                        <p className="text-gray-700 bg-gray-50 p-3 rounded mt-1">{selectedRequest.justification}</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Articles avec quantités validées */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Articles et Quantités Validées</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {selectedRequest.items?.map((item, index) => (
-                        <div key={index} className="border rounded-lg p-4">
-                          <div className="flex justify-between items-start mb-3">
-                            <div>
-                              <h4 className="font-medium">{item.article?.nom || 'Article inconnu'}</h4>
-                              <p className="text-sm text-gray-600">{item.article?.description}</p>
-                            </div>
-                            <Badge variant="secondary">
-                              Quantité finale: {item.quantite}
-                            </Badge>
-                          </div>
-                          
-                          {/* Historique des quantités par valideur */}
-                          {selectedRequest.validationSteps && (
-                            <div className="mt-3">
-                              <h5 className="text-sm font-medium mb-2">Historique des validations:</h5>
-                              <div className="space-y-1">
-                                {selectedRequest.validationSteps.map((step, stepIndex) => (
-                                  <div key={stepIndex} className="flex justify-between items-center text-sm bg-gray-50 p-2 rounded">
-                                    <span>{getRoleLabel(step.role)} ({step.validator})</span>
-                                    <div className="flex items-center gap-2">
-                                      <span>Qté validée: {step.quantities[item.id] || item.quantite}</span>
-                                      <span className="text-gray-500">{new Date(step.date).toLocaleDateString('fr-FR')}</span>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Historique complet */}
-                {selectedRequest.history && selectedRequest.history.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Historique Complet</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        {selectedRequest.history.map((entry, index) => (
-                          <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded">
-                            <Clock className="h-4 w-4 text-gray-500 mt-1" />
-                            <div className="flex-1">
-                              <div className="flex justify-between items-start">
-                                <div>
-                                  <p className="font-medium text-sm">{entry.action}</p>
-                                  <p className="text-sm text-gray-600">
-                                    {entry.user?.nom} {entry.user?.prenom} ({getRoleLabel(entry.user?.role || '')})
-                                  </p>
-                                </div>
-                                <span className="text-xs text-gray-500">
-                                  {new Date(entry.createdAt).toLocaleString('fr-FR')}
-                                </span>
-                              </div>
-                              {entry.commentaire && (
-                                <p className="text-sm text-gray-700 mt-1 italic">"{entry.commentaire}"</p>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-            </ScrollArea>
-          </DialogContent>
-        </Dialog>
-      )}
+      {/* Modal des détails de la demande avec format professionnel */}
+      <PurchaseRequestDetailsModal
+        isOpen={detailsModalOpen}
+        onClose={() => setDetailsModalOpen(false)}
+        demande={selectedRequest}
+      />
     </>
   )
 }

@@ -375,22 +375,22 @@ export const useStore = create<AppState>()(
       },
 
       executeAction: async (demandeId: string, action: string, data = {}) => {
-        const { currentUser } = get()
-        if (!currentUser) return false
+        const { currentUser, token } = get()
+        if (!currentUser || !token) return false
 
         try {
           const response = await fetch(`/api/demandes/${demandeId}/actions`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "x-user-id": currentUser.id,
+              "Authorization": `Bearer ${token}`,
             },
             body: JSON.stringify({ action, ...data }),
           })
 
           const result = await response.json()
           if (result.success) {
-            // Mettre à jour la demande dans le store
+            // Mettre à jour la demande dans le store ET recharger toutes les demandes
             set((state) => ({
               demandes: state.demandes.map((d) => (d.id === demandeId ? result.data.demande : d)),
               notifications: result.data.notification
@@ -400,6 +400,10 @@ export const useStore = create<AppState>()(
                 ? [result.data.historyEntry, ...state.history]
                 : state.history,
             }))
+            
+            // Recharger automatiquement toutes les demandes pour s'assurer de la cohérence
+            await get().loadDemandes()
+            
             return true
           } else {
             set({ error: result.error })

@@ -31,8 +31,8 @@ export default function RequestsFlowChart({ demandes, type, title }: RequestsFlo
       months.push({
         month: monthName,
         requests: monthRequests.length,
-        completed: monthRequests.filter(d => d.status === "confirmee_demandeur").length,
-        pending: monthRequests.filter(d => ["en_attente_validation_conducteur", "en_attente_validation_responsable_travaux", "en_attente_validation_qhse", "en_attente_validation_appro", "en_attente_validation_charge_affaire", "en_attente_validation_logistique", "en_attente_confirmation_demandeur"].includes(d.status)).length,
+        completed: monthRequests.filter(d => d.status === "cloturee").length,
+        pending: monthRequests.filter(d => ["en_attente_validation_conducteur", "en_attente_validation_responsable_travaux", "en_attente_validation_qhse", "en_attente_validation_charge_affaire", "en_attente_preparation_appro", "en_attente_validation_logistique", "en_attente_validation_finale_demandeur", "confirmee_demandeur"].includes(d.status)).length,
         rejected: monthRequests.filter(d => d.status === "rejetee").length
       })
     }
@@ -65,19 +65,24 @@ export default function RequestsFlowChart({ demandes, type, title }: RequestsFlo
         <p className="text-sm text-gray-600">Évolution sur les 12 derniers mois</p>
       </CardHeader>
       <CardContent>
-        <div className="h-80">
+        <div className="h-64 sm:h-80">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+            <BarChart data={data} margin={{ top: 20, right: 10, left: 10, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis 
                 dataKey="month" 
                 stroke="#6b7280"
-                fontSize={12}
+                fontSize={10}
+                interval={0}
+                angle={-45}
+                textAnchor="end"
+                height={60}
               />
               <YAxis 
                 stroke="#6b7280"
-                fontSize={12}
+                fontSize={10}
                 domain={[0, maxValue + 2]}
+                width={40}
               />
               <Tooltip content={<CustomTooltip />} />
               <Bar 
@@ -109,7 +114,7 @@ export default function RequestsFlowChart({ demandes, type, title }: RequestsFlo
         </div>
         
         {/* Legend */}
-        <div className="flex justify-center gap-6 mt-4 text-sm">
+        <div className="flex flex-wrap justify-center gap-3 sm:gap-6 mt-4 text-xs sm:text-sm">
           <div className="flex items-center gap-2">
             <div className={`w-3 h-3 rounded ${type === "materiel" ? "bg-emerald-600" : "bg-blue-500"}`}></div>
             <span className="text-gray-600">Total</span>

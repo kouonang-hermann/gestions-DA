@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useStore } from "@/stores/useStore"
-import { Users, FolderOpen, FileText, Settings, Plus, Eye, Edit, Trash2, Activity } from "lucide-react"
+import { Users, FileText, Settings, Plus, Eye, Edit, Trash2, Activity } from "lucide-react"
+import InstrumElecLogo from "@/components/ui/instrumelec-logo"
 import CreateUserModal from "@/components/admin/create-user-modal"
 import CreateProjectModal from "@/components/admin/create-project-modal"
 import CreateDemandeModal from "@/components/demandes/create-demande-modal"
@@ -13,12 +14,13 @@ import RequestsFlowChart from "@/components/charts/requests-flow-chart"
 import DetailsModal from "@/components/modals/details-modal"
 import ManageAdminRoles from "@/components/admin/manage-admin-roles"
 import ValidatedRequestsHistory from "@/components/dashboard/validated-requests-history"
+import ChangeUserRoleModal from "@/components/admin/change-user-role-modal"
 
 export default function SuperAdminDashboard() {
   const { currentUser, users, projets, demandes, loadUsers, loadProjets, loadDemandes, isLoading } = useStore()
 
   const [stats, setStats] = useState({
-    totalUsers: 0,
+    totalUtilisateurs: 0,
     totalProjets: 0,
     totalDemandes: 0,
     demandesEnCours: 0,
@@ -46,11 +48,12 @@ export default function SuperAdminDashboard() {
 
   useEffect(() => {
     setStats({
-      totalUsers: users.length,
+      totalUtilisateurs: users.length,
       totalProjets: projets.length,
       totalDemandes: demandes.length,
+      // CORRECTION: Utiliser les vrais statuts du schéma Prisma
       demandesEnCours: demandes.filter(
-        (d) => !["brouillon", "validee_finale", "archivee", "rejetee"].includes(d.status),
+        (d) => !["brouillon", "cloturee", "archivee", "rejetee"].includes(d.status),
       ).length,
     })
   }, [users, projets, demandes])
@@ -72,12 +75,16 @@ export default function SuperAdminDashboard() {
     const colors = {
       brouillon: "bg-gray-500",
       soumise: "bg-blue-500",
-      validee_conducteur: "bg-green-500",
-      validee_qhse: "bg-green-500",
+      en_attente_validation_conducteur: "bg-orange-500",
+      en_attente_validation_qhse: "bg-orange-500",
+      en_attente_validation_responsable_travaux: "bg-orange-500",
+      en_attente_validation_charge_affaire: "bg-orange-500",
+      en_attente_preparation_appro: "bg-purple-500",
+      en_attente_validation_logistique: "bg-purple-500",
+      en_attente_validation_finale_demandeur: "bg-emerald-500",
+      confirmee_demandeur: "bg-green-500",
+      cloturee: "bg-green-600",
       rejetee: "bg-red-500",
-      sortie_preparee: "bg-purple-500",
-      validee_charge_affaire: "bg-emerald-500",
-      validee_finale: "bg-green-600",
       archivee: "bg-gray-600",
     }
     return colors[status as keyof typeof colors] || "bg-gray-500"
@@ -103,13 +110,18 @@ export default function SuperAdminDashboard() {
   }
 
   const handleActiveRequestsClick = () => {
+    // CORRECTION: Utiliser les vrais statuts
     const activeRequests = demandes.filter(
-      (d) => !["brouillon", "validee_finale", "archivee", "rejetee"].includes(d.status)
+      (d) => !["brouillon", "cloturee", "archivee", "rejetee"].includes(d.status)
     )
     setDetailsModalType("activeRequests")
     setDetailsModalTitle("Demandes en cours")
     setDetailsModalData(activeRequests)
     setDetailsModalOpen(true)
+  }
+
+  const handleRemoveUserFromProject = () => {
+    // TO DO: Implementer la logique pour supprimer un utilisateur d'un projet
   }
 
   if (isLoading) {
@@ -123,51 +135,51 @@ export default function SuperAdminDashboard() {
   return (
     <div className="space-y-6">
       {/* Statistiques globales */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-blue-50 border-blue-200 cursor-pointer hover:shadow-md transition-shadow" onClick={handleUsersClick}>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-blue-600">Utilisateurs</p>
-                <p className="text-2xl font-bold text-blue-800">{stats.totalUsers}</p>
+                <p className="text-xl sm:text-2xl font-bold text-blue-800">{stats.totalUtilisateurs}</p>
               </div>
-              <Users className="h-8 w-8 text-blue-600" />
+              <Users className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-green-50 border-green-200 cursor-pointer hover:shadow-md transition-shadow" onClick={handleProjectsClick}>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-green-600">Projets</p>
-                <p className="text-2xl font-bold text-green-800">{stats.totalProjets}</p>
+                <p className="text-xl sm:text-2xl font-bold text-green-800">{stats.totalProjets}</p>
               </div>
-              <FolderOpen className="h-8 w-8 text-green-600" />
+              <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-purple-50 border-purple-200 cursor-pointer hover:shadow-md transition-shadow" onClick={handleTotalRequestsClick}>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-purple-600">Total demandes</p>
-                <p className="text-2xl font-bold text-purple-800">{stats.totalDemandes}</p>
+                <p className="text-xl sm:text-2xl font-bold text-purple-800">{stats.totalDemandes}</p>
               </div>
-              <FileText className="h-8 w-8 text-purple-600" />
+              <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600" />
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-orange-50 border-orange-200 cursor-pointer hover:shadow-md transition-shadow" onClick={handleActiveRequestsClick}>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-orange-600">En cours</p>
-                <p className="text-2xl font-bold text-orange-800">{stats.demandesEnCours}</p>
+                <p className="text-xl sm:text-2xl font-bold text-orange-800">{stats.demandesEnCours}</p>
               </div>
-              <Activity className="h-8 w-8 text-orange-600" />
+              <Activity className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
             </div>
           </CardContent>
         </Card>
@@ -253,6 +265,7 @@ export default function SuperAdminDashboard() {
         type={detailsModalType}
         title={detailsModalTitle}
         data={detailsModalData}
+        onRemoveUserFromProject={handleRemoveUserFromProject}
       />
       <ValidatedRequestsHistory
         isOpen={validatedHistoryModalOpen}

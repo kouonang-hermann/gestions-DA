@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useStore } from "@/stores/useStore"
 import { Package, Clock, CheckCircle, Truck, Plus } from 'lucide-react'
-import InstrumElecLogo from "@/components/ui/instrumelec-logo"
 import SortiePreparationList from "@/components/appro/sortie-preparation-list"
 import CreateDemandeModal from "@/components/demandes/create-demande-modal"
 import { UserRequestsChart } from "@/components/charts/user-requests-chart"
@@ -40,10 +39,14 @@ export default function ApproDashboard() {
       setStats({
         total: mesDemandesAppro.length,
         aPreparer: mesDemandesAppro.filter((d) =>
-          ["validee_conducteur", "validee_qhse"].includes(d.status)
+          d.status === "en_attente_preparation_appro"
         ).length,
-        preparees: mesDemandesAppro.filter((d) => d.status === "sortie_preparee").length,
-        livrees: mesDemandesAppro.filter((d) => ["validee_finale", "archivee"].includes(d.status)).length,
+        preparees: mesDemandesAppro.filter((d) => 
+          d.status === "en_attente_validation_logistique"
+        ).length,
+        livrees: mesDemandesAppro.filter((d) => 
+          ["en_attente_validation_finale_demandeur", "cloturee", "archivee"].includes(d.status)
+        ).length,
       })
     }
   }, [currentUser, demandes])
@@ -66,34 +69,9 @@ export default function ApproDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* En-tête avec logo InstrumElec */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <InstrumElecLogo size="sm" />
-          <h1 className="text-3xl font-bold text-gray-900">Tableau de bord</h1>
-        </div>
-        <div className="flex space-x-2">
-          <Button
-            onClick={() => {
-              setDemandeType("materiel")
-              setCreateDemandeModalOpen(true)
-            }}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Nouvelle demande matériel
-          </Button>
-          <Button
-            onClick={() => {
-              setDemandeType("outillage")
-              setCreateDemandeModalOpen(true)
-            }}
-            className="bg-green-600 hover:bg-green-700 text-white"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Nouvelle demande outillage
-          </Button>
-        </div>
+      {/* En-tête */}
+      <div className="flex items-center space-x-4">
+        <h1 className="text-3xl font-bold text-gray-900">Tableau de bord</h1>
       </div>
 
       {/* Statistiques */}

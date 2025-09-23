@@ -4,13 +4,13 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useStore } from "@/stores/useStore"
-import CreateDemandeModal from "@/components/demandes/create-demande-modal"
-import { UserRequestsChart } from "@/components/charts/user-requests-chart"
-import ValidationDemandesList from "@/components/validation/validation-demandes-list"
-import UserDetailsModal from "@/components/modals/user-details-modal"
 import { Package, Clock, CheckCircle, XCircle, Plus } from 'lucide-react'
-import InstrumElecLogo from "@/components/ui/instrumelec-logo"
+import CreateDemandeModal from "@/components/demandes/create-demande-modal"
+import ValidationDemandesList from "@/components/validation/validation-demandes-list"
+import { UserRequestsChart } from "@/components/charts/user-requests-chart"
+import UserDetailsModal from "@/components/modals/user-details-modal"
 import ValidatedRequestsHistory from "@/components/dashboard/validated-requests-history"
+import DemandeClotureCard from "@/components/demandes/demande-cloture-card"
 
 export default function ConducteurDashboard() {
   const { currentUser, demandes, loadDemandes, isLoading } = useStore()
@@ -31,7 +31,7 @@ export default function ConducteurDashboard() {
 
   useEffect(() => {
     if (currentUser) {
-      loadDemandes({ type: "materiel" })
+      loadDemandes()
     }
   }, [currentUser, loadDemandes])
 
@@ -44,13 +44,23 @@ export default function ConducteurDashboard() {
       setStats({
         total: demandesMateriels.length,
         enAttente: demandesMateriels.filter((d) => d.status === "en_attente_validation_conducteur").length,
-        validees: demandesMateriels.filter((d) => d.status === "en_attente_validation_appro" || d.status === "en_attente_validation_charge_affaire" || d.status === "en_attente_validation_logistique" || d.status === "en_attente_confirmation_demandeur" || d.status === "confirmee_demandeur").length,
+        // CORRECTION: Utiliser les vrais statuts après validation conducteur
+        validees: demandesMateriels.filter((d) => [
+          "en_attente_validation_responsable_travaux",
+          "en_attente_validation_charge_affaire", 
+          "en_attente_preparation_appro",
+          "en_attente_validation_logistique",
+          "en_attente_validation_finale_demandeur",
+          "cloturee"
+        ].includes(d.status)).length,
         rejetees: demandesMateriels.filter((d) => d.status === "rejetee").length,
       })
     }
   }, [currentUser, demandes])
 
   const mesDemandes = currentUser ? demandes.filter((d) => d.technicienId === currentUser.id) : []
+  // NOUVEAU: Demandes personnelles prêtes à clôturer
+  const demandesValidationFinale = mesDemandes.filter(d => d.status === "en_attente_validation_finale_demandeur")
 
   const handleCardClick = (type: "total" | "enAttente" | "validees" | "rejetees", title: string) => {
     if (type === "total") {
@@ -72,34 +82,9 @@ export default function ConducteurDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* En-tête avec logo InstrumElec */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <InstrumElecLogo size="sm" />
-          <h1 className="text-3xl font-bold text-gray-900">Tableau de bord</h1>
-        </div>
-        <div className="flex space-x-2">
-          <Button
-            onClick={() => {
-              setDemandeType("materiel")
-              setCreateDemandeModalOpen(true)
-            }}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Nouvelle demande matériel
-          </Button>
-          <Button
-            onClick={() => {
-              setDemandeType("outillage")
-              setCreateDemandeModalOpen(true)
-            }}
-            className="bg-green-600 hover:bg-green-700 text-white"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Nouvelle demande outillage
-          </Button>
-        </div>
+      {/* En-tête */}
+      <div className="flex items-center space-x-4">
+        <h1 className="text-3xl font-bold text-gray-900">Tableau de bord</h1>
       </div>
 
       {/* Statistiques */}
@@ -214,6 +199,29 @@ export default function ConducteurDashboard() {
           className="bg-blue-50 border-blue-200"
         />
       </div>
+
+      {/* Demandes personnelles prêtes à clôturer */}
+      {demandesValidationFinale.length > 0 && (
+        <Card className="bg-emerald-50 border-emerald-200">
+          <CardHeader>
+            <CardTitle className="text-emerald-800 flex items-center gap-2">
+              <CheckCircle className="h-5 w-5" />
+              Mes demandes prêtes à clôturer ({demandesValidationFinale.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {demandesValidationFinale.map((demande) => (
+                <DemandeClotureCard 
+                  key={demande.id} 
+                  demande={demande} 
+                  onCloture={() => loadDemandes()} 
+                />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Modal de création de demande */}
       <CreateDemandeModal

@@ -104,6 +104,18 @@ export const GET = withAuth(async (request: NextRequest, currentUser: any) => {
         }
         break
 
+      case "responsable_travaux":
+        // Voit les demandes de matériel des projets où il est assigné
+        const responsableProjets = await prisma.userProjet.findMany({
+          where: { userId: currentUser.id },
+          select: { projetId: true }
+        })
+        whereClause = {
+          type: "materiel",
+          projetId: { in: responsableProjets.map((up: any) => up.projetId) }
+        }
+        break
+
       case "responsable_appro":
       case "charge_affaire":
       case "responsable_logistique":

@@ -7,11 +7,14 @@ import { Badge } from "@/components/ui/badge"
 import { useStore } from "@/stores/useStore"
 import { CheckCircle, Eye, Package } from 'lucide-react'
 import type { Demande } from "@/types"
+import DemandeDetailsModal from "@/components/modals/demande-details-modal"
 
 export default function ValidationFinaleList() {
   const { currentUser, demandes, loadDemandes, executeAction, isLoading, error } = useStore()
   const [demandesAValider, setDemandesAValider] = useState<Demande[]>([])
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false)
+  const [selectedDemande, setSelectedDemande] = useState<Demande | null>(null)
 
   useEffect(() => {
     if (currentUser) {
@@ -22,7 +25,7 @@ export default function ValidationFinaleList() {
   useEffect(() => {
     if (currentUser) {
       const filtered = demandes.filter(
-        (d) => d.status === "validee_charge_affaire" && d.technicienId === currentUser.id
+        (d) => d.status === "en_attente_validation_finale_demandeur" && d.technicienId === currentUser.id
       )
       setDemandesAValider(filtered)
     }
@@ -34,17 +37,47 @@ export default function ValidationFinaleList() {
     try {
       const commentaire = prompt("Commentaire pour la réception (optionnel):")
 
-      const success = await executeAction(demandeId, "validation_finale", { commentaire })
+      const success = await executeAction(demandeId, "cloturer", { commentaire })
       if (success) {
         await loadDemandes()
+        setDetailsModalOpen(false)
+        setSelectedDemande(null)
       } else {
-        alert(error || "Erreur lors de la validation finale")
+        alert(error || "Erreur lors de la clôture")
       }
     } catch (err) {
-      console.error("Erreur lors de la validation finale:", err)
-      alert("Erreur lors de la validation finale")
+      console.error("Erreur lors de la clôture:", err)
+      alert("Erreur lors de la clôture")
     } finally {
       setActionLoading(null)
+    }
+  }
+
+  const handleViewDetails = (demande: Demande) => {
+    setSelectedDemande(demande)
+    setDetailsModalOpen(true)
+  }
+
+  const handleModalClosure = async (action: "cloturer", quantites?: { [itemId: string]: number }, commentaire?: string) => {
+    if (selectedDemande) {
+      setActionLoading(selectedDemande.id)
+
+      try {
+        const success = await executeAction(selectedDemande.id, "cloturer", { commentaire: commentaire || "" })
+        
+        if (success) {
+          await loadDemandes()
+          setDetailsModalOpen(false)
+          setSelectedDemande(null)
+        } else {
+          alert(error || "Erreur lors de la clôture")
+        }
+      } catch (err) {
+        console.error("Erreur lors de la clôture:", err)
+        alert("Erreur lors de la clôture")
+      } finally {
+        setActionLoading(null)
+      }
     }
   }
 
@@ -59,13 +92,13 @@ export default function ValidationFinaleList() {
   return (
     <Card className="bg-gray-50 border-gray-200">
       <CardHeader>
-        <CardTitle className="text-gray-800">Demandes prêtes pour réception</CardTitle>
+        <CardTitle className="text-gray-800">Demandes livrées - À clôturer</CardTitle>
       </CardHeader>
       <CardContent>
         {demandesAValider.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             <Package className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-            <p>Aucune demande prête pour réception</p>
+            <p>Aucune demande livrée en attente de clôture</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -78,21 +111,20 @@ export default function ValidationFinaleList() {
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="font-medium text-gray-800">{demande.numero}</h3>
-                      <Badge className="bg-emerald-500 text-white text-xs">{demande.status}</Badge>
+                      <Badge className="bg-emerald-500 text-white text-xs">Livrée</Badge>
                       <Badge variant="outline" className="text-xs">
                         {demande.type === "materiel" ? "Matériel" : "Outillage"}
                       </Badge>
                     </div>
                     <p className="text-sm text-gray-600 mb-2">
-                      {demande.items.length} article{demande.items.length > 1 ? "s" : ""} • Validée par le chargé
-                      d'affaire le{" "}
-                      {demande.validationChargeAffaire
-                        ? new Date(demande.validationChargeAffaire.date).toLocaleDateString()
-                        : "N/A"}
+                      Projet: {demande.projet?.nom} • {demande.items?.length || 0} article{(demande.items?.length || 0) > 1 ? "s" : ""}
                     </p>
-                    {demande.validationChargeAffaire?.commentaire && (
-                      <p className="text-sm text-emerald-600 bg-emerald-50 p-2 rounded">
-                        <strong>Commentaire chargé d'affaire:</strong> {demande.validationChargeAffaire.commentaire}
+                    <p className="text-xs text-gray-500">
+                      Livrée par la logistique • Prête pour clôture
+                    </p>
+                    {demande.commentaires && (
+                      <p className="text-sm text-emerald-600 bg-emerald-50 p-2 rounded mt-2">
+                        <strong>Commentaire de livraison:</strong> {demande.commentaires}
                       </p>
                     )}
                   </div>
@@ -109,9 +141,13 @@ export default function ValidationFinaleList() {
                       ) : (
                         <CheckCircle className="h-4 w-4 mr-2" />
                       )}
-                      Confirmer réception
+                      Clôturer
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleViewDetails(demande)}
+                    >
                       <Eye className="h-4 w-4" />
                     </Button>
                   </div>
@@ -121,6 +157,20 @@ export default function ValidationFinaleList() {
           </div>
         )}
       </CardContent>
+
+      {/* Modal de détails */}
+      <DemandeDetailsModal
+        isOpen={detailsModalOpen}
+        onClose={() => {
+          setDetailsModalOpen(false)
+          setSelectedDemande(null)
+        }}
+        demande={selectedDemande}
+        onValidate={handleModalClosure}
+        canValidate={true}
+        validationLabel="Clôturer la demande"
+        validationAction="cloturer"
+      />
     </Card>
   )
 }

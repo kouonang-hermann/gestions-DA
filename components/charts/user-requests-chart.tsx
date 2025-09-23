@@ -30,9 +30,9 @@ export function UserRequestsChart({ title, type, userRequests, className }: User
       })
 
       const total = monthRequests.length
-      const completed = monthRequests.filter(r => r.status === 'confirmee_demandeur').length
+      const completed = monthRequests.filter(r => r.status === 'cloturee').length
       const pending = monthRequests.filter(r => 
-        ['en_attente_validation_conducteur', 'en_attente_validation_responsable_travaux', 'en_attente_validation_qhse', 'en_attente_validation_appro', 'en_attente_validation_charge_affaire', 'en_attente_validation_logistique', 'en_attente_confirmation_demandeur'].includes(r.status)
+        ['en_attente_validation_conducteur', 'en_attente_validation_responsable_travaux', 'en_attente_validation_qhse', 'en_attente_validation_charge_affaire', 'en_attente_preparation_appro', 'en_attente_validation_logistique', 'en_attente_validation_finale_demandeur', 'confirmee_demandeur'].includes(r.status)
       ).length
       const rejected = monthRequests.filter(r => r.status === 'rejetee').length
 
@@ -64,24 +64,30 @@ export function UserRequestsChart({ title, type, userRequests, className }: User
         <CardTitle className="text-gray-800">{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+        <ResponsiveContainer width="100%" height={250}>
+          <BarChart data={data} margin={{ top: 20, right: 10, left: 10, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
             <XAxis 
               dataKey="month" 
               stroke="#6b7280"
-              fontSize={12}
+              fontSize={10}
+              interval={0}
+              angle={-45}
+              textAnchor="end"
+              height={60}
             />
             <YAxis 
               stroke="#6b7280"
-              fontSize={12}
+              fontSize={10}
+              width={40}
             />
             <Tooltip 
               contentStyle={{
                 backgroundColor: 'white',
                 border: '1px solid #e5e7eb',
                 borderRadius: '6px',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                fontSize: '12px'
               }}
               formatter={(value: number, name: string) => {
                 const labels: Record<string, string> = {
@@ -94,6 +100,7 @@ export function UserRequestsChart({ title, type, userRequests, className }: User
               }}
             />
             <Legend 
+              wrapperStyle={{ fontSize: '12px' }}
               formatter={(value: string) => {
                 const labels: Record<string, string> = {
                   total: 'Total',

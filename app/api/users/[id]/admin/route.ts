@@ -6,8 +6,9 @@ import { hasPermission } from "@/lib/auth"
 /**
  * PATCH /api/users/[id]/admin - Met à jour le statut admin d'un utilisateur
  */
-export const PATCH = withAuth(async (request: NextRequest, currentUser: any, { params }: { params: { id: string } }) => {
+export const PATCH = withAuth(async (request: NextRequest, currentUser: any, context: { params: Promise<{ id: string }> }) => {
   try {
+    const params = await context.params
     // Vérifier les permissions - seul le superadmin peut attribuer des privilèges admin
     if (!hasPermission(currentUser, "assign_admin")) {
       return NextResponse.json(
@@ -17,10 +18,11 @@ export const PATCH = withAuth(async (request: NextRequest, currentUser: any, { p
     }
 
     const { isAdmin } = await request.json()
+    const { id } = params
 
     // Vérifier que l'utilisateur existe
     const user = await prisma.user.findUnique({
-      where: { id: params.id }
+      where: { id }
     })
 
     if (!user) {
@@ -40,7 +42,7 @@ export const PATCH = withAuth(async (request: NextRequest, currentUser: any, { p
 
     // Mettre à jour le statut admin
     const updatedUser = await prisma.user.update({
-      where: { id: params.id },
+      where: { id },
       data: { isAdmin: Boolean(isAdmin) },
       select: {
         id: true,

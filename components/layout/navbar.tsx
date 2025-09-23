@@ -1,8 +1,9 @@
 "use client"
 
-import { Bell, LogOut, Settings, FolderOpen } from "lucide-react"
+import { Bell, LogOut, Settings, Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { useState } from "react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,46 +12,61 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
 import { useStore } from "@/stores/useStore"
+import InstrumElecLogo from "@/components/ui/instrumelec-logo"
 import Link from "next/link"
 
 const roleLabels = {
   superadmin: "Super Administrateur",
+  employe: "Employé",
   technicien: "Technicien",
   conducteur_travaux: "Conducteur de Travaux",
+  responsable_travaux: "Responsable Travaux",
   responsable_qhse: "Responsable QHSE",
   responsable_appro: "Responsable Approvisionnements",
   charge_affaire: "Chargé d'Affaire",
+  responsable_logistique: "Responsable Logistique",
 }
 
 export default function Navbar() {
   const { currentUser, logout, notifications } = useStore()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const unreadCount = notifications.filter((n) => !n.lu).length
 
   return (
-    <nav className="border-b bg-white border-gray-200 shadow-sm">
-      <div className="flex h-16 items-center px-6 justify-between">
-        <div className="flex items-center space-x-6">
+    <nav className="border-b bg-white border-gray-200 shadow-sm sticky top-0 z-40">
+      <div className="flex h-14 sm:h-16 items-center px-4 sm:px-6 justify-between">
+        <div className="flex items-center space-x-3 sm:space-x-6">
           <Link href="/" className="flex items-center space-x-2">
-            <FolderOpen className="h-6 w-6 text-blue-600" />
-            <span className="text-xl font-bold text-gray-800">Gestion Demandes</span>
+            <InstrumElecLogo size="sm" showText={false} />
+            <span className="text-lg sm:text-xl font-bold text-gray-800 hidden sm:block">Gestion Demandes</span>
+            <span className="text-sm font-bold text-gray-800 sm:hidden">GDM</span>
           </Link>
 
           {currentUser && (
-            <div className="hidden md:flex items-center space-x-1 text-sm text-gray-600">
+            <div className="hidden lg:flex items-center space-x-1 text-sm text-gray-600">
               <span>Connecté en tant que</span>
               <span className="font-medium text-blue-600">{roleLabels[currentUser.role]}</span>
             </div>
           )}
         </div>
 
-        <div className="flex items-center space-x-4">
+        {/* Desktop Navigation */}
+        <div className="hidden sm:flex items-center space-x-2 sm:space-x-4">
           {currentUser?.role === "superadmin" && (
             <Button asChild variant="outline" size="sm" className="border-gray-300 hover:bg-gray-50 bg-transparent">
               <Link href="/admin">
                 <Settings className="h-4 w-4 mr-2" />
-                Administration
+                <span className="hidden md:inline">Administration</span>
+                <span className="md:hidden">Admin</span>
               </Link>
             </Button>
           )}
@@ -93,7 +109,7 @@ export default function Navbar() {
                       {currentUser?.nom?.[0]}
                     </span>
                   </div>
-                  <span className="hidden md:block text-gray-700">
+                  <span className="hidden lg:block text-gray-700">
                     {currentUser?.prenom} {currentUser?.nom}
                   </span>
                 </div>
@@ -115,6 +131,85 @@ export default function Navbar() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+        </div>
+
+        {/* Mobile Navigation */}
+        <div className="sm:hidden">
+          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="sm" className="hover:bg-gray-100">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-80">
+              <SheetHeader>
+                <SheetTitle className="text-left">Menu</SheetTitle>
+              </SheetHeader>
+              
+              <div className="mt-6 space-y-4">
+                {/* User Info */}
+                <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                    <span className="text-sm font-medium text-blue-600">
+                      {currentUser?.prenom?.[0]}
+                      {currentUser?.nom?.[0]}
+                    </span>
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-800">
+                      {currentUser?.prenom} {currentUser?.nom}
+                    </div>
+                    <div className="text-sm text-gray-600">{currentUser && roleLabels[currentUser.role]}</div>
+                  </div>
+                </div>
+
+                {/* Notifications */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-medium text-gray-800">Notifications</h3>
+                    {unreadCount > 0 && (
+                      <Badge className="bg-red-500 text-white">{unreadCount}</Badge>
+                    )}
+                  </div>
+                  <div className="max-h-40 overflow-y-auto space-y-2">
+                    {notifications.length === 0 ? (
+                      <div className="text-sm text-gray-500 text-center py-4">Aucune notification</div>
+                    ) : (
+                      notifications.slice(0, 3).map((notification) => (
+                        <div key={notification.id} className="p-3 bg-gray-50 rounded-lg">
+                          <div className="font-medium text-sm text-gray-800">{notification.titre}</div>
+                          <div className="text-xs text-gray-600 mt-1">{notification.message}</div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* Admin Link */}
+                {currentUser?.role === "superadmin" && (
+                  <Button asChild variant="outline" className="w-full justify-start" onClick={() => setMobileMenuOpen(false)}>
+                    <Link href="/admin">
+                      <Settings className="h-4 w-4 mr-2" />
+                      Administration
+                    </Link>
+                  </Button>
+                )}
+
+                {/* Logout */}
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start text-red-600 border-red-200 hover:bg-red-50"
+                  onClick={() => {
+                    logout()
+                    setMobileMenuOpen(false)
+                  }}
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Déconnexion
+                </Button>
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
     </nav>

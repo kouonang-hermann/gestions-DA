@@ -31,15 +31,13 @@ export default function ValidationDemandesList({ type, title }: ValidationDemand
     if (currentUser) {
       let statusToFilter = ""
       
-      // Déterminer le statut à filtrer selon le type et le rôle
-      if (type === "materiel" && currentUser.role === "conducteur_travaux") {
+      // Déterminer le statut à filtrer selon le rôle
+      if (currentUser.role === "conducteur_travaux") {
         statusToFilter = "en_attente_validation_conducteur"
-      } else if (type === "materiel" && currentUser.role === "responsable_travaux") {
+      } else if (currentUser.role === "responsable_travaux") {
         statusToFilter = "en_attente_validation_responsable_travaux"
-      } else if (type === "outillage" && currentUser.role === "responsable_qhse") {
+      } else if (currentUser.role === "responsable_qhse") {
         statusToFilter = "en_attente_validation_qhse"
-      } else if (currentUser.role === "responsable_appro") {
-        statusToFilter = "en_attente_validation_appro"
       } else if (currentUser.role === "charge_affaire") {
         statusToFilter = "en_attente_validation_charge_affaire"
       } else if (currentUser.role === "responsable_logistique") {
@@ -91,49 +89,32 @@ export default function ValidationDemandesList({ type, title }: ValidationDemand
     setDetailsModalOpen(true)
   }
 
-  const handleModalValidation = async (action: "valider" | "rejeter", quantites?: { [itemId: string]: number }) => {
-    if (selectedDemande) {
-      await handleValidationWithQuantites(selectedDemande.id, action, quantites)
-    }
-  }
-
-  const handleValidationWithQuantites = async (demandeId: string, action: "valider" | "rejeter", quantites?: { [itemId: string]: number }) => {
-    setActionLoading(demandeId)
-
+  const handleModalValidation = async (action: "valider" | "rejeter", quantites?: { [itemId: string]: number }, commentaire?: string) => {
+    if (!selectedDemande) return
+    
+    setActionLoading(selectedDemande.id)
     try {
-      const commentaire =
-        action === "rejeter" ? prompt("Motif du rejet (obligatoire):") : prompt("Commentaire (optionnel):")
-
-      if (action === "rejeter" && !commentaire) {
-        alert("Le motif du rejet est obligatoire")
-        setActionLoading(null)
-        return
-      }
-
-      const apiAction = action === "valider" ? "valider" : "rejeter"
-      const payload: any = { commentaire }
-      
-      // Ajouter les quantités validées si fournies
-      if (quantites && action === "valider") {
-        payload.quantites = quantites
-      }
-
-      const success = await executeAction(demandeId, apiAction, payload)
-      if (success) {
-        // Recharger les demandes
-        await loadDemandes({ type })
-        // Fermer le modal si ouvert
-        setDetailsModalOpen(false)
-        setSelectedDemande(null)
-      } else {
-        alert(error || "Erreur lors de l'action")
-      }
-    } catch (err) {
-      console.error("Erreur lors de la validation:", err)
-      alert("Erreur lors de l'action")
+      await executeAction(selectedDemande.id, action, { quantites, commentaire })
+      setDetailsModalOpen(false)
+      setSelectedDemande(null)
+    } catch (error) {
+      console.error("Erreur lors de la validation:", error)
     } finally {
       setActionLoading(null)
     }
+  }
+
+  const handleItemRemoved = () => {
+    // Recharger les demandes après suppression d'un article
+    loadDemandes({ type })
+    setDetailsModalOpen(false)
+    setSelectedDemande(null)
+  }
+
+  // Vérifier si l'utilisateur peut supprimer des articles
+  const canRemoveItems = () => {
+    if (!currentUser) return false
+    return ["conducteur_travaux", "responsable_travaux", "charge_affaire"].includes(currentUser.role)
   }
 
   if (isLoading) {
@@ -235,6 +216,8 @@ export default function ValidationDemandesList({ type, title }: ValidationDemand
         demande={selectedDemande}
         onValidate={handleModalValidation}
         canValidate={true}
+        onItemRemoved={handleItemRemoved}
+        canRemoveItems={canRemoveItems()}
       />
     </Card>
   )

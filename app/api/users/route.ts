@@ -20,9 +20,11 @@ export const GET = async (request: NextRequest) => {
         prenom: true,
         email: true,
         role: true,
+        isAdmin: true,
         createdAt: true,
+        updatedAt: true,
         projets: {
-          include: {
+          select: {
             projet: {
               select: {
                 id: true,
@@ -93,7 +95,7 @@ export const POST = async (request: NextRequest) => {
     // Assigner aux projets si spécifiés
     if (validatedData.projets && validatedData.projets.length > 0) {
       await prisma.userProjet.createMany({
-        data: validatedData.projets.map(projetId => ({
+        data: validatedData.projets.map((projetId: string) => ({
           userId: newUser.id,
           projetId,
         })),

@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useStore } from "@/stores/useStore"
 import { Package, Clock, CheckCircle, XCircle, Plus } from 'lucide-react'
-import InstrumElecLogo from "@/components/ui/instrumelec-logo"
 import ValidationDemandesList from "@/components/validation/validation-demandes-list"
 import CreateDemandeModal from "@/components/demandes/create-demande-modal"
 import { UserRequestsChart } from "@/components/charts/user-requests-chart"
@@ -42,7 +41,14 @@ export default function QHSEDashboard() {
       setStats({
         total: demandesOutillage.length,
         enAttente: demandesOutillage.filter((d) => d.status === "en_attente_validation_qhse").length,
-        validees: demandesOutillage.filter((d) => d.status === "en_attente_validation_appro" || d.status === "en_attente_validation_charge_affaire" || d.status === "en_attente_validation_logistique" || d.status === "en_attente_confirmation_demandeur" || d.status === "confirmee_demandeur").length,
+        validees: demandesOutillage.filter((d) => [
+          "en_attente_validation_responsable_travaux",
+          "en_attente_validation_charge_affaire", 
+          "en_attente_preparation_appro",
+          "en_attente_validation_logistique",
+          "en_attente_validation_finale_demandeur",
+          "cloturee"
+        ].includes(d.status)).length,
         rejetees: demandesOutillage.filter((d) => d.status === "rejetee").length,
       })
     }
@@ -66,34 +72,9 @@ export default function QHSEDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* En-tête avec logo InstrumElec */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <InstrumElecLogo size="sm" />
-          <h1 className="text-3xl font-bold text-gray-900">Tableau de bord</h1>
-        </div>
-        <div className="flex space-x-2">
-          <Button
-            onClick={() => {
-              setDemandeType("materiel")
-              setCreateDemandeModalOpen(true)
-            }}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Nouvelle demande matériel
-          </Button>
-          <Button
-            onClick={() => {
-              setDemandeType("outillage")
-              setCreateDemandeModalOpen(true)
-            }}
-            className="bg-green-600 hover:bg-green-700 text-white"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Nouvelle demande outillage
-          </Button>
-        </div>
+      {/* En-tête */}
+      <div className="flex items-center space-x-4">
+        <h1 className="text-3xl font-bold text-gray-900">Tableau de bord</h1>
       </div>
 
       {/* Statistiques */}

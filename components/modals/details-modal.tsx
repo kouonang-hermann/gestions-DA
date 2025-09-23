@@ -1,10 +1,13 @@
 "use client"
 
+import { useState } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { X, User, FolderOpen, FileText, Eye, Edit, Trash2 } from 'lucide-react'
+import { X, User, FileText, Eye, Edit, Trash2, UserCog, UserMinus } from 'lucide-react'
+import InstrumElecLogo from "@/components/ui/instrumelec-logo"
+import ProjectDetailsModal from "@/components/modals/project-details-modal"
 import type { User as UserType, Projet, Demande } from "@/types"
 
 interface DetailsModalProps {
@@ -13,9 +16,21 @@ interface DetailsModalProps {
   type: "users" | "projects" | "totalRequests" | "activeRequests"
   title: string
   data: UserType[] | Projet[] | Demande[]
+  onChangeUserRole?: (user: UserType) => void
+  onRemoveUserFromProject?: (projet: Projet) => void
 }
 
-export default function DetailsModal({ isOpen, onClose, type, title, data }: DetailsModalProps) {
+export default function DetailsModal({ 
+  isOpen, 
+  onClose, 
+  type, 
+  title, 
+  data, 
+  onChangeUserRole, 
+  onRemoveUserFromProject 
+}: DetailsModalProps) {
+  const [projectDetailsModalOpen, setProjectDetailsModalOpen] = useState(false)
+  const [selectedProject, setSelectedProject] = useState<Projet | null>(null)
   const getRoleLabel = (role: string) => {
     const labels = {
       superadmin: "Super Administrateur",
@@ -71,6 +86,11 @@ export default function DetailsModal({ isOpen, onClose, type, title, data }: Det
                 <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
                   <Trash2 className="h-4 w-4" />
                 </Button>
+                {onChangeUserRole && (
+                  <Button variant="outline" size="sm">
+                    <UserCog className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </div>
           </CardContent>
@@ -87,7 +107,7 @@ export default function DetailsModal({ isOpen, onClose, type, title, data }: Det
             <div className="flex items-center justify-between">
               <div className="flex-1">
                 <div className="flex items-center gap-3">
-                  <FolderOpen className="h-5 w-5 text-gray-500" />
+                  <InstrumElecLogo size="sm" showText={false} className="w-5 h-5" />
                   <div>
                     <h3 className="font-medium text-gray-800">{projet.nom}</h3>
                     <p className="text-sm text-gray-600">{projet.description}</p>
@@ -106,12 +126,30 @@ export default function DetailsModal({ isOpen, onClose, type, title, data }: Det
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    setSelectedProject(projet)
+                    setProjectDetailsModalOpen(true)
+                  }}
+                >
                   <Eye className="h-4 w-4" />
                 </Button>
                 <Button variant="outline" size="sm">
                   <Edit className="h-4 w-4" />
                 </Button>
+                {onRemoveUserFromProject && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => onRemoveUserFromProject(projet)}
+                    className="text-red-600 hover:text-red-700 border-red-300 hover:border-red-400"
+                    title="Retirer un utilisateur du projet"
+                  >
+                    <UserMinus className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </div>
           </CardContent>
@@ -203,6 +241,16 @@ export default function DetailsModal({ isOpen, onClose, type, title, data }: Det
             renderContent()
           )}
         </div>
+
+        {/* Project Details Modal */}
+        <ProjectDetailsModal
+          isOpen={projectDetailsModalOpen}
+          onClose={() => {
+            setProjectDetailsModalOpen(false)
+            setSelectedProject(null)
+          }}
+          projet={selectedProject}
+        />
       </DialogContent>
     </Dialog>
   )

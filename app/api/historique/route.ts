@@ -1,16 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getCurrentUser } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
 import type { HistoryEntry } from "@/types"
-
-// Base de données simulée
-const HISTORY_DB: HistoryEntry[] = []
 
 /**
  * GET /api/historique - Récupère l'historique filtrable
  */
 export async function GET(request: NextRequest) {
   try {
-    const currentUser = getCurrentUser(request)
+    const currentUser = await getCurrentUser(request)
 
     if (!currentUser) {
       return NextResponse.json({ success: false, error: "Non authentifié" }, { status: 401 })
@@ -23,49 +21,85 @@ export async function GET(request: NextRequest) {
     const userId = searchParams.get("userId")
     const action = searchParams.get("action")
 
-    let filteredHistory = HISTORY_DB
+    let whereClause: any = {}
 
     // Filtrer selon les projets accessibles à l'utilisateur
     if (currentUser.role !== "superadmin") {
-      // Récupérer les demandes des projets où l'utilisateur est assigné
-      filteredHistory = HISTORY_DB.filter((entry) => {
-        // Ici on devrait vérifier si la demande appartient à un projet accessible
-        // Pour la simulation, on filtre par userId si ce n'est pas un admin
-        return entry.userId === currentUser.id || currentUser.projets.length > 0
+      // Récupérer les projets où l'utilisateur est assigné
+      const userProjets = await prisma.userProjet.findMany({
+        where: { userId: currentUser.id },
+        select: { projetId: true }
       })
+      const projetIds = userProjets.map(up => up.projetId)
+      
+      if (projetIds.length > 0) {
+        whereClause.demande = {
+          projetId: { in: projetIds }
+        }
+      } else {
+        // Si l'utilisateur n'est assigné à aucun projet, ne voir que ses propres actions
+        whereClause.userId = currentUser.id
+      }
     }
 
     // Filtres additionnels
     if (projetId) {
-      // Filtrer par projet (nécessiterait une jointure avec les demandes)
-      // Pour la simulation, on garde tous les résultats
+      whereClause.demande = {
+        ...whereClause.demande,
+        projetId: projetId
+      }
     }
 
     if (dateDebut) {
-      const debut = new Date(dateDebut)
-      filteredHistory = filteredHistory.filter((entry) => new Date(entry.timestamp) >= debut)
+      whereClause.timestamp = {
+        ...whereClause.timestamp,
+        gte: new Date(dateDebut)
+      }
     }
 
     if (dateFin) {
       const fin = new Date(dateFin)
-      fin.setHours(23, 59, 59, 999) // Fin de journée
-      filteredHistory = filteredHistory.filter((entry) => new Date(entry.timestamp) <= fin)
+      fin.setHours(23, 59, 59, 999)
+      whereClause.timestamp = {
+        ...whereClause.timestamp,
+        lte: fin
+      }
     }
 
     if (userId) {
-      filteredHistory = filteredHistory.filter((entry) => entry.userId === userId)
+      whereClause.userId = userId
     }
 
     if (action) {
-      filteredHistory = filteredHistory.filter((entry) => entry.action.toLowerCase().includes(action.toLowerCase()))
+      whereClause.action = {
+        contains: action,
+        mode: 'insensitive'
+      }
     }
 
-    // Trier par date décroissante
-    filteredHistory.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    const historyEntries = await prisma.historyEntry.findMany({
+      where: whereClause,
+      include: {
+        user: {
+          select: { id: true, nom: true, prenom: true, role: true }
+        },
+        demande: {
+          select: { 
+            id: true, 
+            numero: true, 
+            type: true,
+            projet: {
+              select: { id: true, nom: true }
+            }
+          }
+        }
+      },
+      orderBy: { timestamp: 'desc' }
+    })
 
     return NextResponse.json({
       success: true,
-      data: filteredHistory,
+      data: historyEntries,
     })
   } catch (error) {
     console.error("Erreur lors de la récupération de l'historique:", error)
@@ -78,7 +112,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const currentUser = getCurrentUser(request)
+    const currentUser = await getCurrentUser(request)
 
     if (!currentUser) {
       return NextResponse.json({ success: false, error: "Non authentifié" }, { status: 401 })
@@ -90,19 +124,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Données manquantes" }, { status: 400 })
     }
 
-    const historyEntry: HistoryEntry = {
-      id: Date.now().toString(),
-      demandeId,
-      userId: currentUser.id,
-      action,
-      ancienStatus,
-      nouveauStatus,
-      commentaire,
-      timestamp: new Date(),
-      signature: `${currentUser.id}-${Date.now()}-${action}`, // Signature simplifiée
-    }
-
-    HISTORY_DB.push(historyEntry)
+    const historyEntry = await prisma.historyEntry.create({
+      data: {
+        demandeId,
+        userId: currentUser.id,
+        action,
+        ancienStatus: ancienStatus || null,
+        nouveauStatus: nouveauStatus || null,
+        commentaire: commentaire || null,
+        signature: `${currentUser.id}-${Date.now()}-${action}`,
+      },
+      include: {
+        user: {
+          select: { id: true, nom: true, prenom: true, role: true }
+        },
+        demande: {
+          select: { 
+            id: true, 
+            numero: true, 
+            type: true,
+            projet: {
+              select: { id: true, nom: true }
+            }
+          }
+        }
+      }
+    })
 
     return NextResponse.json(
       {

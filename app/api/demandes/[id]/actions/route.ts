@@ -5,28 +5,30 @@ import { withAuth } from "@/lib/middleware"
 /**
  * Détermine le prochain statut selon le statut actuel et le rôle
  */
-function getNextStatus(currentStatus: string, userRole: string): string | null {
+function getNextStatus(currentStatus: string, userRole: string, demandeType: string): string | null {
   const transitions: Record<string, Record<string, string>> = {
+    // Flow Matériel: Conducteur -> Responsable Travaux -> Chargé Affaire -> Appro -> Logistique -> Demandeur
     "en_attente_validation_conducteur": {
       "conducteur_travaux": "en_attente_validation_responsable_travaux"
     },
-    "en_attente_validation_responsable_travaux": {
-      "responsable_travaux": "en_attente_validation_appro"
-    },
+    // Flow Outillage: QHSE -> Responsable Travaux -> Chargé Affaire -> Appro -> Logistique -> Demandeur  
     "en_attente_validation_qhse": {
       "responsable_qhse": "en_attente_validation_responsable_travaux"
     },
-    "en_attente_validation_appro": {
-      "responsable_appro": "en_attente_validation_charge_affaire"
+    "en_attente_validation_responsable_travaux": {
+      "responsable_travaux": "en_attente_validation_charge_affaire"
     },
     "en_attente_validation_charge_affaire": {
-      "charge_affaire": "en_attente_validation_logistique"
+      "charge_affaire": "en_attente_preparation_appro"
+    },
+    "en_attente_preparation_appro": {
+      "responsable_appro": "en_attente_validation_logistique"
     },
     "en_attente_validation_logistique": {
-      "responsable_logistique": "en_attente_confirmation_demandeur"
+      "responsable_logistique": "en_attente_validation_finale_demandeur"
     },
-    "en_attente_confirmation_demandeur": {
-      "employe": "confirmee_demandeur"
+    "en_attente_validation_finale_demandeur": {
+      "employe": "cloturee"
     }
   }
 
@@ -36,8 +38,9 @@ function getNextStatus(currentStatus: string, userRole: string): string | null {
 /**
  * POST /api/demandes/[id]/actions - Exécute une action sur une demande
  */
-export const POST = withAuth(async (request: NextRequest, currentUser: any, { params }: { params: { id: string } }) => {
+export const POST = withAuth(async (request: NextRequest, currentUser: any, context: { params: Promise<{ id: string }> }) => {
   try {
+    const params = await context.params
     const { action, commentaire, quantitesSorties, quantites, itemsModifications } = await request.json()
 
     // Récupérer la demande
@@ -79,7 +82,7 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, { pa
     switch (action) {
       case "valider":
         // Validation générique basée sur le statut et le rôle
-        const nextStatus = getNextStatus(demande.status, currentUser.role)
+        const nextStatus = getNextStatus(demande.status, currentUser.role, demande.type)
         if (!nextStatus) {
           return NextResponse.json({ success: false, error: "Action non autorisée pour ce rôle et statut" }, { status: 403 })
         }
@@ -95,6 +98,22 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, { pa
         
         if (demande.status === "en_attente_validation_qhse" && currentUser.role !== "responsable_qhse") {
           return NextResponse.json({ success: false, error: "Seul le responsable QHSE peut valider les demandes d'outillage" }, { status: 403 })
+        }
+        
+        if (demande.status === "en_attente_validation_charge_affaire" && currentUser.role !== "charge_affaire") {
+          return NextResponse.json({ success: false, error: "Seul le chargé d'affaires peut valider à cette étape" }, { status: 403 })
+        }
+        
+        if (demande.status === "en_attente_preparation_appro" && currentUser.role !== "responsable_appro") {
+          return NextResponse.json({ success: false, error: "Seul le responsable appro peut préparer la sortie" }, { status: 403 })
+        }
+        
+        if (demande.status === "en_attente_validation_logistique" && currentUser.role !== "responsable_logistique") {
+          return NextResponse.json({ success: false, error: "Seul le responsable logistique peut valider à cette étape" }, { status: 403 })
+        }
+        
+        if (demande.status === "en_attente_validation_finale_demandeur" && demande.technicienId !== currentUser.id) {
+          return NextResponse.json({ success: false, error: "Seul le demandeur peut valider finalement sa demande" }, { status: 403 })
         }
         
         newStatus = nextStatus as any
@@ -120,15 +139,33 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, { pa
             const updateData: any = {}
             const modifs = modifications as any
             
-            if (modifs.nom) updateData.nom = modifs.nom
-            if (modifs.reference) updateData.reference = modifs.reference
-            if (modifs.quantite) updateData.quantite = modifs.quantite
-            if (modifs.description) updateData.description = modifs.description
+            // Mise à jour de l'article associé, pas de l'item directement
+            if (modifs.nom || modifs.reference || modifs.description) {
+              const item = await prisma.itemDemande.findUnique({
+                where: { id: itemId },
+                include: { article: true }
+              })
+              
+              if (item?.article) {
+                const articleUpdateData: any = {}
+                if (modifs.nom) articleUpdateData.nom = modifs.nom
+                if (modifs.reference) articleUpdateData.reference = modifs.reference
+                if (modifs.description) articleUpdateData.description = modifs.description
+                
+                if (Object.keys(articleUpdateData).length > 0) {
+                  await prisma.article.update({
+                    where: { id: item.article.id },
+                    data: articleUpdateData
+                  })
+                }
+              }
+            }
             
-            if (Object.keys(updateData).length > 0) {
+            // Mise à jour de la quantité demandée sur l'item
+            if (modifs.quantite) {
               await prisma.itemDemande.update({
                 where: { id: itemId },
-                data: updateData
+                data: { quantiteDemandee: modifs.quantite }
               })
             }
           }
@@ -145,15 +182,27 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, { pa
             if (modifs.quantite) {
               await prisma.itemDemande.update({
                 where: { id: itemId },
-                data: { quantite: modifs.quantite } as any
+                data: { quantiteDemandee: modifs.quantite }
               })
             }
           }
         }
         
-        // Créer la signature de validation
-        await prisma.validationSignature.create({
-          data: {
+        // Créer/mettre à jour la signature de validation (éviter les doublons)
+        await prisma.validationSignature.upsert({
+          where: {
+            demandeId_type: {
+              demandeId: demande.id,
+              type: getValidationType(demande.status, currentUser.role)
+            }
+          },
+          update: {
+            userId: currentUser.id,
+            commentaire: commentaire || null,
+            signature: `${currentUser.id}-${action}-${Date.now()}`,
+            date: new Date()
+          },
+          create: {
             userId: currentUser.id,
             demandeId: demande.id,
             commentaire: commentaire || null,
@@ -163,10 +212,29 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, { pa
         })
         break
 
+      case "valider_sortie":
+        // Action spécifique pour la logistique - marquer comme livré
+        if (demande.status === "en_attente_validation_logistique") {
+          newStatus = "en_attente_validation_finale_demandeur"
+        } else {
+          return NextResponse.json({ success: false, error: "Action non autorisée pour ce statut" }, { status: 403 })
+        }
+        break
+
+      case "cloturer":
+        // Action spécifique pour le demandeur - clôturer la demande après livraison
+        if (demande.status === "en_attente_validation_finale_demandeur") {
+          newStatus = "cloturee"
+        } else {
+          return NextResponse.json({ success: false, error: "Action non autorisée pour ce statut" }, { status: 403 })
+        }
+        break
+
       case "rejeter":
         if (demande.status === "en_attente_validation_conducteur" || 
             demande.status === ("en_attente_validation_responsable_travaux" as any) || 
-            demande.status === "en_attente_validation_qhse") {
+            demande.status === "en_attente_validation_qhse" ||
+            demande.status === "en_attente_validation_charge_affaire") {
           newStatus = "rejetee"
           updates.rejetMotif = commentaire
         } else {
@@ -175,8 +243,13 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, { pa
         break
 
       case "preparer_sortie":
-        if (demande.status === "en_attente_validation_appro" && currentUser.role === "responsable_appro") {
-          newStatus = "en_attente_validation_charge_affaire"
+        if (demande.status === ("en_attente_preparation_appro" as any) && currentUser.role === "responsable_appro") {
+          const nextStatus = getNextStatus(demande.status, currentUser.role, demande.type)
+          if (!nextStatus) {
+            return NextResponse.json({ success: false, error: "Action non autorisée pour ce rôle et statut" }, { status: 403 })
+          }
+          
+          newStatus = nextStatus as any
           
           // Créer la sortie appro
           await prisma.sortieSignature.create({
@@ -194,9 +267,14 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, { pa
         }
         break
 
-      case "confirmer":
-        if (demande.status === "en_attente_confirmation_demandeur" && demande.technicienId === currentUser.id) {
-          newStatus = "confirmee_demandeur"
+      case "validation_finale_demandeur":
+        if ((demande.status as string) === "en_attente_validation_finale_demandeur" && demande.technicienId === currentUser.id) {
+          const nextStatus = getNextStatus(demande.status, currentUser.role, demande.type)
+          if (!nextStatus) {
+            return NextResponse.json({ success: false, error: "Action non autorisée pour ce rôle et statut" }, { status: 403 })
+          }
+          
+          newStatus = nextStatus as any
           updates.dateValidationFinale = new Date()
         } else {
           return NextResponse.json({ success: false, error: "Action non autorisée" }, { status: 403 })
@@ -268,8 +346,8 @@ function getValidationType(status: string, role: string): string {
   if (status === "en_attente_validation_conducteur") return "conducteur"
   if (status === "en_attente_validation_responsable_travaux") return "responsable_travaux"
   if (status === "en_attente_validation_qhse") return "qhse"
-  if (status === "en_attente_validation_appro") return "appro"
   if (status === "en_attente_validation_charge_affaire") return "charge_affaire"
+  if (status === "en_attente_preparation_appro") return "appro"
   if (status === "en_attente_validation_logistique") return "logistique"
   return "finale"
 }
@@ -280,6 +358,8 @@ function getActionLabel(action: string): string {
     rejeter: "rejetée",
     preparer_sortie: "préparée pour sortie",
     confirmer: "confirmée",
+    valider_sortie: "livrée",
+    cloturer: "clôturée"
   }
   return labels[action] || "mise à jour"
 }

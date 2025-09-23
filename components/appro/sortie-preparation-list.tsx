@@ -7,11 +7,14 @@ import { Badge } from "@/components/ui/badge"
 import { useStore } from "@/stores/useStore"
 import { Package, CheckCircle, Eye } from 'lucide-react'
 import type { Demande } from "@/types"
+import DemandeDetailsModal from "@/components/modals/demande-details-modal"
 
 export default function SortiePreparationList() {
   const { currentUser, demandes, loadDemandes, executeAction, isLoading, error } = useStore()
   const [demandesAPreparer, setDemandesAPreparer] = useState<Demande[]>([])
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false)
+  const [selectedDemande, setSelectedDemande] = useState<Demande | null>(null)
 
   useEffect(() => {
     if (currentUser) {
@@ -22,9 +25,7 @@ export default function SortiePreparationList() {
   useEffect(() => {
     if (currentUser) {
       const filtered = demandes.filter(
-        (d) =>
-          (d.status === "validee_conducteur" || d.status === "validee_qhse") &&
-          currentUser.projets.includes(d.projetId)
+        (d) => d.status === "en_attente_preparation_appro"
       )
       setDemandesAPreparer(filtered)
     }
@@ -48,6 +49,11 @@ export default function SortiePreparationList() {
     } finally {
       setActionLoading(null)
     }
+  }
+
+  const handleViewDetails = (demande: Demande) => {
+    setSelectedDemande(demande)
+    setDetailsModalOpen(true)
   }
 
   if (isLoading) {
@@ -114,7 +120,11 @@ export default function SortiePreparationList() {
                       )}
                       Préparer sortie
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleViewDetails(demande)}
+                    >
                       <Eye className="h-4 w-4" />
                     </Button>
                   </div>
@@ -124,6 +134,18 @@ export default function SortiePreparationList() {
           </div>
         )}
       </CardContent>
+
+      {/* Modal de détails */}
+      <DemandeDetailsModal
+        isOpen={detailsModalOpen}
+        onClose={() => {
+          setDetailsModalOpen(false)
+          setSelectedDemande(null)
+        }}
+        demande={selectedDemande}
+        onValidate={undefined}
+        canValidate={false}
+      />
     </Card>
   )
 }

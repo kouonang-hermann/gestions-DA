@@ -1,16 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getCurrentUser } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
 import type { Notification } from "@/types"
-
-// Base de données simulée
-const NOTIFICATIONS_DB: Notification[] = []
 
 /**
  * GET /api/notifications - Récupère les notifications de l'utilisateur
  */
 export async function GET(request: NextRequest) {
   try {
-    const currentUser = getCurrentUser(request)
+    const currentUser = await getCurrentUser(request)
 
     if (!currentUser) {
       return NextResponse.json({ success: false, error: "Non authentifié" }, { status: 401 })
@@ -19,14 +17,23 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const nonLues = searchParams.get("nonLues") === "true"
 
-    let userNotifications = NOTIFICATIONS_DB.filter((n) => n.userId === currentUser.id)
-
+    const whereClause: any = { userId: currentUser.id }
     if (nonLues) {
-      userNotifications = userNotifications.filter((n) => !n.lu)
+      whereClause.lu = false
     }
 
-    // Trier par date décroissante
-    userNotifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    const userNotifications = await prisma.notification.findMany({
+      where: whereClause,
+      include: {
+        demande: {
+          select: { id: true, numero: true, type: true }
+        },
+        projet: {
+          select: { id: true, nom: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    })
 
     return NextResponse.json({
       success: true,
@@ -43,7 +50,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const currentUser = getCurrentUser(request)
+    const currentUser = await getCurrentUser(request)
 
     if (!currentUser) {
       return NextResponse.json({ success: false, error: "Non authentifié" }, { status: 401 })
@@ -55,18 +62,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Données manquantes" }, { status: 400 })
     }
 
-    const notification: Notification = {
-      id: Date.now().toString(),
-      userId,
-      titre,
-      message,
-      lu: false,
-      createdAt: new Date(),
-      demandeId,
-      projetId,
-    }
-
-    NOTIFICATIONS_DB.push(notification)
+    const notification = await prisma.notification.create({
+      data: {
+        userId,
+        titre,
+        message,
+        lu: false,
+        demandeId: demandeId || null,
+        projetId: projetId || null,
+      },
+      include: {
+        demande: {
+          select: { id: true, numero: true, type: true }
+        },
+        projet: {
+          select: { id: true, nom: true }
+        }
+      }
+    })
 
     return NextResponse.json(
       {

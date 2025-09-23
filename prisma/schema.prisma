@@ -6,8 +6,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum UserRole {
@@ -30,19 +31,14 @@ enum DemandeStatus {
   brouillon
   soumise
   en_attente_validation_conducteur
-  en_attente_validation_responsable_travaux
   en_attente_validation_qhse
-  validee_conducteur
-  validee_responsable_travaux
-  validee_qhse
-  en_attente_validation_appro
-  validee_appro
+  en_attente_validation_responsable_travaux
   en_attente_validation_charge_affaire
-  validee_charge_affaire
+  en_attente_preparation_appro
   en_attente_validation_logistique
-  validee_logistique
-  en_attente_confirmation_demandeur
+  en_attente_validation_finale_demandeur
   confirmee_demandeur
+  cloturee
   rejetee
   archivee
 }

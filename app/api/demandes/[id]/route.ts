@@ -8,23 +8,28 @@ import { updateDemandeStatusSchema } from "@/lib/validations"
  */
 function getNextStatus(currentStatus: string, userRole: string): string | null {
   const transitions: Record<string, Record<string, string>> = {
+    // Flow Matériel: Conducteur -> Responsable Travaux -> Chargé Affaire -> Appro -> Logistique -> Demandeur
     "en_attente_validation_conducteur": {
-      "conducteur_travaux": "en_attente_validation_appro"
+      "conducteur_travaux": "en_attente_validation_responsable_travaux"
     },
+    // Flow Outillage: QHSE -> Responsable Travaux -> Chargé Affaire -> Appro -> Logistique -> Demandeur  
     "en_attente_validation_qhse": {
-      "responsable_qhse": "en_attente_validation_appro"
+      "responsable_qhse": "en_attente_validation_responsable_travaux"
     },
-    "en_attente_validation_appro": {
-      "responsable_appro": "en_attente_validation_charge_affaire"
+    "en_attente_validation_responsable_travaux": {
+      "responsable_travaux": "en_attente_validation_charge_affaire"
     },
     "en_attente_validation_charge_affaire": {
-      "charge_affaire": "en_attente_validation_logistique"
+      "charge_affaire": "en_attente_preparation_appro"
+    },
+    "en_attente_preparation_appro": {
+      "responsable_appro": "en_attente_validation_logistique"
     },
     "en_attente_validation_logistique": {
-      "responsable_logistique": "en_attente_confirmation_demandeur"
+      "responsable_logistique": "en_attente_validation_finale_demandeur"
     },
-    "en_attente_confirmation_demandeur": {
-      "technicien": "confirmee_demandeur"
+    "en_attente_validation_finale_demandeur": {
+      "employe": "cloturee"
     }
   }
 
@@ -34,8 +39,9 @@ function getNextStatus(currentStatus: string, userRole: string): string | null {
 /**
  * GET /api/demandes/[id] - Récupère une demande spécifique
  */
-export const GET = withAuth(async (request: NextRequest, currentUser: any, { params }: { params: { id: string } }) => {
+export const GET = withAuth(async (request: NextRequest, currentUser: any, context: { params: Promise<{ id: string }> }) => {
   try {
+    const params = await context.params
     const demande = await prisma.demande.findUnique({
       where: { id: params.id },
       include: {
@@ -56,7 +62,7 @@ export const GET = withAuth(async (request: NextRequest, currentUser: any, { par
               select: { id: true, nom: true, prenom: true, role: true }
             }
           },
-          orderBy: { dateSignature: 'asc' }
+          orderBy: { date: 'asc' }
         },
         historyEntries: {
           include: {
@@ -64,7 +70,7 @@ export const GET = withAuth(async (request: NextRequest, currentUser: any, { par
               select: { id: true, nom: true, prenom: true }
             }
           },
-          orderBy: { dateAction: 'desc' }
+          orderBy: { timestamp: 'desc' }
         }
       }
     })
@@ -100,8 +106,9 @@ export const GET = withAuth(async (request: NextRequest, currentUser: any, { par
 /**
  * PUT /api/demandes/[id] - Met à jour le statut d'une demande (validation/rejet)
  */
-export const PUT = withAuth(async (request: NextRequest, currentUser: any, { params }: { params: { id: string } }) => {
+export const PUT = withAuth(async (request: NextRequest, currentUser: any, context: { params: Promise<{ id: string }> }) => {
   try {
+    const params = await context.params
     const body = await request.json()
     const validatedData = updateDemandeStatusSchema.parse(body)
 
@@ -130,7 +137,7 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, { par
     if (validatedData.status !== "rejetee") {
       const nextStatus = getNextStatus(demande.status, currentUser.role)
       if (nextStatus) {
-        newStatus = nextStatus
+        newStatus = nextStatus as any
       }
     }
 
@@ -138,7 +145,7 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, { par
     const updatedDemande = await prisma.demande.update({
       where: { id: params.id },
       data: {
-        status: newStatus,
+        status: newStatus as any,
         dateModification: new Date(),
       },
       include: {
@@ -161,8 +168,7 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, { par
       data: {
         demandeId: params.id,
         userId: currentUser.id,
-        role: currentUser.role,
-        action: validatedData.status === "rejetee" ? "Rejet" : "Validation",
+        type: getValidationType(demande.status, currentUser.role),
         commentaire: validatedData.commentaire,
         signature: `${currentUser.role}-${Date.now()}`,
       }
@@ -217,10 +223,11 @@ async function canUserValidateStatus(status: string, user: any, projetId: string
   const permissions: Record<string, string[]> = {
     "en_attente_validation_conducteur": ["conducteur_travaux"],
     "en_attente_validation_qhse": ["responsable_qhse"],
-    "en_attente_validation_appro": ["responsable_appro"],
+    "en_attente_validation_responsable_travaux": ["responsable_travaux"],
     "en_attente_validation_charge_affaire": ["charge_affaire"],
+    "en_attente_preparation_appro": ["responsable_appro"],
     "en_attente_validation_logistique": ["responsable_logistique"],
-    "en_attente_confirmation_demandeur": ["technicien"]
+    "en_attente_validation_finale_demandeur": ["employe"]
   }
 
   return permissions[status]?.includes(user.role) || false
@@ -229,8 +236,9 @@ async function canUserValidateStatus(status: string, user: any, projetId: string
 /**
  * DELETE /api/demandes/[id] - Supprime une demande (seulement si brouillon)
  */
-export const DELETE = withAuth(async (request: NextRequest, currentUser: any, { params }: { params: { id: string } }) => {
+export const DELETE = withAuth(async (request: NextRequest, currentUser: any, context: { params: Promise<{ id: string }> }) => {
   try {
+    const params = await context.params
     const demande = await prisma.demande.findUnique({
       where: { id: params.id }
     })
@@ -258,3 +266,9 @@ export const DELETE = withAuth(async (request: NextRequest, currentUser: any, { 
     return NextResponse.json({ success: false, error: "Erreur serveur" }, { status: 500 })
   }
 })
+
+function getValidationType(status: string, role: string): string {
+  // Définir le type de validation en fonction du statut et du rôle
+  // Cette fonction peut être personnalisée pour répondre aux besoins spécifiques de votre application
+  return "validation"
+}

@@ -1,31 +1,48 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getCurrentUser } from "@/lib/auth"
-
-// Import de la base de données simulée
-const NOTIFICATIONS_DB: any[] = []
+import { prisma } from "@/lib/prisma"
 
 /**
  * PUT /api/notifications/[id]/read - Marque une notification comme lue
  */
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const currentUser = getCurrentUser(request)
+    const params = await context.params
+    const currentUser = await getCurrentUser(request)
 
     if (!currentUser) {
       return NextResponse.json({ success: false, error: "Non authentifié" }, { status: 401 })
     }
 
-    const notificationIndex = NOTIFICATIONS_DB.findIndex((n) => n.id === params.id && n.userId === currentUser.id)
+    // Vérifier que la notification existe et appartient à l'utilisateur
+    const notification = await prisma.notification.findFirst({
+      where: {
+        id: params.id,
+        userId: currentUser.id
+      }
+    })
 
-    if (notificationIndex === -1) {
+    if (!notification) {
       return NextResponse.json({ success: false, error: "Notification non trouvée" }, { status: 404 })
     }
 
-    NOTIFICATIONS_DB[notificationIndex].lu = true
+    // Marquer comme lue
+    const updatedNotification = await prisma.notification.update({
+      where: { id: params.id },
+      data: { lu: true },
+      include: {
+        demande: {
+          select: { id: true, numero: true, type: true }
+        },
+        projet: {
+          select: { id: true, nom: true }
+        }
+      }
+    })
 
     return NextResponse.json({
       success: true,
-      data: NOTIFICATIONS_DB[notificationIndex],
+      data: updatedNotification,
     })
   } catch (error) {
     console.error("Erreur lors de la mise à jour de la notification:", error)

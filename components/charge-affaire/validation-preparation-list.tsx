@@ -7,11 +7,14 @@ import { Badge } from "@/components/ui/badge"
 import { useStore } from "@/stores/useStore"
 import { CheckCircle, XCircle, Eye, Package } from 'lucide-react'
 import type { Demande } from "@/types"
+import DemandeDetailsModal from "@/components/modals/demande-details-modal"
 
 export default function ValidationPreparationList() {
   const { currentUser, demandes, loadDemandes, executeAction, isLoading, error } = useStore()
   const [demandesAValider, setDemandesAValider] = useState<Demande[]>([])
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false)
+  const [selectedDemande, setSelectedDemande] = useState<Demande | null>(null)
 
   useEffect(() => {
     if (currentUser) {
@@ -22,18 +25,20 @@ export default function ValidationPreparationList() {
   useEffect(() => {
     if (currentUser) {
       const filtered = demandes.filter(
-        (d) => d.status === "sortie_preparee" && currentUser.projets.includes(d.projetId)
+        (d) => d.status === "en_attente_validation_charge_affaire"
       )
       setDemandesAValider(filtered)
     }
   }, [currentUser, demandes])
 
-  const handleValidation = async (demandeId: string, action: "valider" | "rejeter") => {
+  const handleValidation = async (demandeId: string, action: "valider" | "rejeter", commentaireFromModal?: string) => {
     setActionLoading(demandeId)
 
     try {
-      const commentaire =
-        action === "rejeter" ? prompt("Motif du rejet (obligatoire):") : prompt("Commentaire (optionnel):")
+      let commentaire = commentaireFromModal
+      if (!commentaire) {
+        commentaire = action === "rejeter" ? prompt("Motif du rejet (obligatoire):") || "" : prompt("Commentaire (optionnel):") || ""
+      }
 
       if (action === "rejeter" && !commentaire) {
         alert("Le motif du rejet est obligatoire")
@@ -41,11 +46,19 @@ export default function ValidationPreparationList() {
         return
       }
 
-      const apiAction = action === "valider" ? "valider_preparation" : "rejeter"
-
-      const success = await executeAction(demandeId, apiAction, { commentaire })
+      const success = await executeAction(demandeId, action, { commentaire: commentaire || "" })
       if (success) {
+        // CORRECTION: Recharger les demandes pour mettre à jour le dashboard
         await loadDemandes()
+        
+        // CORRECTION: Fermer le modal automatiquement après validation réussie
+        if (detailsModalOpen && selectedDemande?.id === demandeId) {
+          setDetailsModalOpen(false)
+          setSelectedDemande(null)
+        }
+        
+        // Afficher un message de succès
+        alert(`Demande ${action === "valider" ? "validée" : "rejetée"} avec succès !`)
       } else {
         alert(error || "Erreur lors de l'action")
       }
@@ -54,6 +67,17 @@ export default function ValidationPreparationList() {
       alert("Erreur lors de l'action")
     } finally {
       setActionLoading(null)
+    }
+  }
+
+  const handleViewDetails = (demande: Demande) => {
+    setSelectedDemande(demande)
+    setDetailsModalOpen(true)
+  }
+
+  const handleModalValidation = async (action: "valider" | "rejeter", quantites?: { [itemId: string]: number }, commentaire?: string) => {
+    if (selectedDemande) {
+      await handleValidation(selectedDemande.id, action, commentaire)
     }
   }
 
@@ -131,7 +155,11 @@ export default function ValidationPreparationList() {
                       )}
                       Rejeter
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleViewDetails(demande)}
+                    >
                       <Eye className="h-4 w-4" />
                     </Button>
                   </div>
@@ -141,6 +169,18 @@ export default function ValidationPreparationList() {
           </div>
         )}
       </CardContent>
+
+      {/* Modal de détails */}
+      <DemandeDetailsModal
+        isOpen={detailsModalOpen}
+        onClose={() => {
+          setDetailsModalOpen(false)
+          setSelectedDemande(null)
+        }}
+        demande={selectedDemande}
+        onValidate={handleModalValidation}
+        canValidate={true}
+      />
     </Card>
   )
 }
