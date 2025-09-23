@@ -20,22 +20,15 @@ const statusColors: Record<DemandeStatus, string> = {
   brouillon: "bg-gray-500",
   soumise: "bg-blue-500",
   en_attente_validation_conducteur: "bg-yellow-500",
-  en_attente_validation_responsable_travaux: "bg-yellow-400",
   en_attente_validation_qhse: "bg-yellow-600",
-  validee_conducteur: "bg-green-500",
-  validee_responsable_travaux: "bg-green-400",
-  validee_qhse: "bg-green-600",
-  rejetee: "bg-red-500",
-  en_attente_validation_appro: "bg-orange-400",
-  en_attente_sortie: "bg-orange-500",
-  sortie_preparee: "bg-purple-500",
+  en_attente_validation_responsable_travaux: "bg-yellow-400",
   en_attente_validation_charge_affaire: "bg-blue-600",
-  validee_charge_affaire: "bg-emerald-500",
+  en_attente_preparation_appro: "bg-orange-400",
   en_attente_validation_logistique: "bg-indigo-400",
-  en_attente_confirmation_demandeur: "bg-indigo-500",
+  en_attente_validation_finale_demandeur: "bg-indigo-500",
   confirmee_demandeur: "bg-green-700",
-  en_attente_validation_finale: "bg-indigo-500",
-  validee_finale: "bg-green-600",
+  cloturee: "bg-green-800",
+  rejetee: "bg-red-500",
   archivee: "bg-gray-600",
 }
 
@@ -43,22 +36,15 @@ const statusLabels: Record<DemandeStatus, string> = {
   brouillon: "Brouillon",
   soumise: "Soumise",
   en_attente_validation_conducteur: "En attente conducteur",
-  en_attente_validation_responsable_travaux: "En attente responsable travaux",
   en_attente_validation_qhse: "En attente QHSE",
-  validee_conducteur: "Validée conducteur",
-  validee_responsable_travaux: "Validée responsable travaux",
-  validee_qhse: "Validée QHSE",
-  rejetee: "Rejetée",
-  en_attente_validation_appro: "En attente appro",
-  en_attente_sortie: "En attente sortie",
-  sortie_preparee: "Sortie préparée",
+  en_attente_validation_responsable_travaux: "En attente responsable travaux",
   en_attente_validation_charge_affaire: "En attente chargé affaire",
-  validee_charge_affaire: "Validée chargé affaire",
+  en_attente_preparation_appro: "En attente préparation appro",
   en_attente_validation_logistique: "En attente logistique",
-  en_attente_confirmation_demandeur: "En attente confirmation demandeur",
+  en_attente_validation_finale_demandeur: "En attente validation finale demandeur",
   confirmee_demandeur: "Confirmée demandeur",
-  en_attente_validation_finale: "En attente validation finale",
-  validee_finale: "Validée finale",
+  cloturee: "Clôturée",
+  rejetee: "Rejetée",
   archivee: "Archivée",
 }
 
@@ -172,26 +158,26 @@ export default function DemandeDetailModal({ isOpen, onClose, demandeId, mode }:
       case "preparer_sortie":
         return (
           role === "responsable_appro" &&
-          (status === "validee_conducteur" || status === "validee_qhse") &&
+          (status === "en_attente_preparation_appro") &&
           currentUser.projets.includes(demande.projetId)
         )
 
       case "valider_preparation":
         return (
           role === "charge_affaire" &&
-          status === "sortie_preparee" &&
+          status === "en_attente_validation_logistique" &&
           currentUser.projets.includes(demande.projetId)
         )
 
       case "validation_finale":
         return (
           role === "employe" &&
-          status === "validee_charge_affaire" &&
+          status === "en_attente_validation_finale_demandeur" &&
           demande.technicienId === currentUser.id
         )
 
       case "archiver":
-        return (role as string) === "superadmin" && status === "validee_finale"
+        return (role as string) === "superadmin" && status === "cloturee"
 
       default:
         return false
