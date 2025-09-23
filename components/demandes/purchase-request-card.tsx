@@ -1,8 +1,9 @@
 "use client"
 
-import React from 'react'
+import React, { useState } from 'react'
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Download, Loader2 } from "lucide-react"
 import type { Demande } from "@/types"
 
 interface PurchaseRequestCardProps {
@@ -10,7 +11,8 @@ interface PurchaseRequestCardProps {
   demande: Demande | null
   onValidate?: (action: "valider" | "rejeter") => void
   canValidate?: boolean
-  onDownloadPDF?: () => void
+  onDownloadPDF?: () => void | Promise<void>
+  isGeneratingPDF?: boolean
 }
 
 export default function PurchaseRequestCard({
@@ -18,7 +20,8 @@ export default function PurchaseRequestCard({
   demande,
   onValidate,
   canValidate = false,
-  onDownloadPDF
+  onDownloadPDF,
+  isGeneratingPDF = false
 }: PurchaseRequestCardProps) {
   if (!demande) return null
 
@@ -101,7 +104,7 @@ export default function PurchaseRequestCard({
   }
 
   return (
-    <div className="max-w-4xl mx-auto bg-white shadow-lg rounded-2xl p-6">
+    <div id="purchase-request-card" className="max-w-4xl mx-auto bg-white shadow-lg rounded-2xl p-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <img src={logoUrl} alt="Logo" className="w-20 h-20 object-contain" />
@@ -216,7 +219,17 @@ export default function PurchaseRequestCard({
 
       <div className="mt-6 flex justify-end gap-3">
         {onDownloadPDF && (
-          <Button variant="outline" onClick={onDownloadPDF}>
+          <Button 
+            variant="outline" 
+            onClick={onDownloadPDF} 
+            disabled={isGeneratingPDF}
+            className="flex items-center gap-2"
+          >
+            {isGeneratingPDF ? (
+              <Loader2 className="animate-spin" size={16} />
+            ) : (
+              <Download size={16} />
+            )}
             Télécharger PDF
           </Button>
         )}

@@ -17,6 +17,16 @@ const nextConfig = {
     if (isServer) {
       config.externals.push('@prisma/client')
     }
+    
+    // Configuration pour les bibliothèques PDF côté client uniquement
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        canvas: false,
+        encoding: false,
+      }
+    }
+    
     return config
   },
 }

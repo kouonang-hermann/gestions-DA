@@ -1,10 +1,13 @@
 "use client"
 
+import { useState } from "react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { VisuallyHidden } from "@/components/ui/visually-hidden"
 import { Button } from "@/components/ui/button"
 import type { Demande } from "@/types"
 import PurchaseRequestCard from "@/components/demandes/purchase-request-card"
+import { generatePurchaseRequestPDF } from "@/lib/pdf-generator"
+import { toast } from "sonner"
 
 interface PurchaseRequestDetailsModalProps {
   isOpen: boolean
@@ -17,7 +20,22 @@ export default function PurchaseRequestDetailsModal({
   onClose, 
   demande 
 }: PurchaseRequestDetailsModalProps) {
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
+
   if (!demande) return null
+
+  const handleDownloadPDF = async () => {
+    setIsGeneratingPDF(true)
+    try {
+      await generatePurchaseRequestPDF(demande)
+      toast.success("PDF téléchargé avec succès!")
+    } catch (error) {
+      console.error("Erreur lors de la génération du PDF:", error)
+      toast.error("Erreur lors de la génération du PDF")
+    } finally {
+      setIsGeneratingPDF(false)
+    }
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -32,10 +50,8 @@ export default function PurchaseRequestDetailsModal({
           {/* Composant PurchaseRequestCard pour affichage professionnel */}
           <PurchaseRequestCard
             demande={demande}
-            onDownloadPDF={() => {
-              // TODO: Implémenter la génération PDF
-              console.log("Téléchargement PDF demandé pour demande:", demande.numero)
-            }}
+            onDownloadPDF={handleDownloadPDF}
+            isGeneratingPDF={isGeneratingPDF}
             canValidate={false}
           />
 

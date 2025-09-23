@@ -1,0 +1,25 @@
+const crypto = require('crypto')
+
+console.log('🔐 Génération des secrets pour Vercel...\n')
+
+// Générer JWT Secret (64 caractères)
+const jwtSecret = crypto.randomBytes(64).toString('hex')
+console.log('JWT_SECRET:')
+console.log(jwtSecret)
+console.log('')
+
+// Générer NextAuth Secret (32 caractères)
+const nextAuthSecret = crypto.randomBytes(32).toString('hex')
+console.log('NEXTAUTH_SECRET:')
+console.log(nextAuthSecret)
+console.log('')
+
+console.log('📋 Variables à ajouter sur Vercel:')
+console.log('=====================================')
+console.log(`JWT_SECRET=${jwtSecret}`)
+console.log(`NEXTAUTH_SECRET=${nextAuthSecret}`)
+console.log('DATABASE_URL=postgresql://[VOTRE_URL_SUPABASE]')
+console.log('DIRECT_URL=postgresql://[VOTRE_URL_SUPABASE]')
+console.log('NEXTAUTH_URL=https://[VOTRE-APP-NAME].vercel.app')
+console.log('')
+console.log('✅ Copiez ces valeurs dans votre dashboard Vercel!')
