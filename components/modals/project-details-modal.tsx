@@ -124,8 +124,8 @@ export default function ProjectDetailsModal({ isOpen, onClose, projet }: Project
             <CardContent>
               {projet.utilisateurs && projet.utilisateurs.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {projet.utilisateurs.map((userProjet, index) => (
-                    <Card key={`user-${userProjet.userId}-${index}`} className="bg-gray-50 border border-gray-200">
+                  {projet.utilisateurs.map((userId, index) => (
+                    <Card key={`user-${userId}-${index}`} className="bg-gray-50 border border-gray-200">
                       <CardContent className="p-4">
                         <div className="flex items-center gap-3">
                           <div className="bg-blue-100 rounded-full p-2">
@@ -133,11 +133,11 @@ export default function ProjectDetailsModal({ isOpen, onClose, projet }: Project
                           </div>
                           <div className="flex-1">
                             <h4 className="font-medium text-gray-800">
-                              {userProjet.user.prenom} {userProjet.user.nom}
+                              Utilisateur ID: {userId}
                             </h4>
-                            <p className="text-sm text-gray-600">{userProjet.user.email}</p>
+                            <p className="text-sm text-gray-600">Informations utilisateur non disponibles</p>
                             <Badge variant="outline" className="text-xs mt-1">
-                              {getRoleLabel(userProjet.user.role)}
+                              Utilisateur
                             </Badge>
                           </div>
                         </div>

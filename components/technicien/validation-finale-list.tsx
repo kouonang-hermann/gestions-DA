@@ -58,11 +58,12 @@ export default function ValidationFinaleList() {
     setDetailsModalOpen(true)
   }
 
-  const handleModalClosure = async (action: "cloturer", quantites?: { [itemId: string]: number }, commentaire?: string) => {
+  const handleModalClosure = async (action: "valider" | "rejeter" | "valider_sortie" | "cloturer", quantites?: { [itemId: string]: number }, commentaire?: string) => {
     if (selectedDemande) {
       setActionLoading(selectedDemande.id)
 
       try {
+        // Pour ce composant, toutes les actions sont traitées comme "cloturer"
         const success = await executeAction(selectedDemande.id, "cloturer", { commentaire: commentaire || "" })
         
         if (success) {
