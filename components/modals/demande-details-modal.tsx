@@ -17,11 +17,11 @@ interface DemandeDetailsModalProps {
   isOpen: boolean
   onClose: () => void
   demande: Demande | null
-  onValidate?: (action: "valider" | "rejeter" | "valider_sortie", quantites?: { [itemId: string]: number }, commentaire?: string) => void
+  onValidate?: (action: "valider" | "rejeter" | "valider_sortie" | "cloturer", quantites?: { [itemId: string]: number }, commentaire?: string) => void
   canValidate?: boolean
   onItemRemoved?: () => void
   canRemoveItems?: boolean
-  validationAction?: "valider" | "valider_sortie"
+  validationAction?: "valider" | "valider_sortie" | "cloturer"
   validationLabel?: string
 }
 
@@ -81,7 +81,7 @@ export default function DemandeDetailsModal({
     )
   }
 
-  const handleAction = async (action: "valider" | "rejeter" | "valider_sortie") => {
+  const handleAction = async (action: "valider" | "rejeter" | "valider_sortie" | "cloturer") => {
     if (!onValidate) return
     
     // Si validation avec modifications, commentaire obligatoire

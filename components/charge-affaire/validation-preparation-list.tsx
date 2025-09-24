@@ -75,9 +75,11 @@ export default function ValidationPreparationList() {
     setDetailsModalOpen(true)
   }
 
-  const handleModalValidation = async (action: "valider" | "rejeter", quantites?: { [itemId: string]: number }, commentaire?: string) => {
+  const handleModalValidation = async (action: "valider" | "rejeter" | "valider_sortie" | "cloturer", quantites?: { [itemId: string]: number }, commentaire?: string) => {
     if (selectedDemande) {
-      await handleValidation(selectedDemande.id, action, commentaire)
+      // Pour ce composant, on traite "valider_sortie" et "cloturer" comme "valider"
+      const normalizedAction = (action === "valider_sortie" || action === "cloturer") ? "valider" : action
+      await handleValidation(selectedDemande.id, normalizedAction, commentaire)
     }
   }
 
