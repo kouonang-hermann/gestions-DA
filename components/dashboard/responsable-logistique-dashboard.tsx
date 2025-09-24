@@ -114,20 +114,18 @@ export default function ResponsableLogistiqueDashboard() {
         return <Badge className="bg-yellow-100 text-yellow-800">En attente conducteur</Badge>
       case "en_attente_validation_qhse":
         return <Badge className="bg-yellow-100 text-yellow-800">En attente QHSE</Badge>
-      case "en_attente_validation_appro":
-        return <Badge className="bg-yellow-100 text-yellow-800">En attente appro</Badge>
+      case "en_attente_preparation_appro":
+        return <Badge className="bg-yellow-100 text-yellow-800">En attente préparation appro</Badge>
       case "en_attente_validation_charge_affaire":
         return <Badge className="bg-yellow-100 text-yellow-800">En attente chargé affaire</Badge>
       case "en_attente_validation_logistique":
         return <Badge className="bg-orange-100 text-orange-800">À valider (Logistique)</Badge>
-      case "en_attente_confirmation_demandeur":
-        return <Badge className="bg-purple-100 text-purple-800">En attente confirmation</Badge>
+      case "en_attente_validation_finale_demandeur":
+        return <Badge className="bg-purple-100 text-purple-800">En attente validation finale</Badge>
       case "confirmee_demandeur":
         return <Badge className="bg-green-100 text-green-800">Confirmée</Badge>
       case "rejetee":
         return <Badge variant="destructive">Rejetée</Badge>
-      case "en_attente_validation_finale_demandeur":
-        return <Badge className="bg-blue-100 text-blue-800">En attente validation finale</Badge>
       case "cloturee":
         return <Badge className="bg-green-100 text-green-800">Clôturée</Badge>
       default:

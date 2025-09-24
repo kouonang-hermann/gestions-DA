@@ -24,21 +24,21 @@ function getNextStatus(currentStatus: string, userRole: string): string | null {
       "conducteur_travaux": "en_attente_validation_responsable_travaux"
     },
     "en_attente_validation_responsable_travaux": {
-      "responsable_travaux": "en_attente_validation_appro"
+      "responsable_travaux": "en_attente_preparation_appro"
     },
     "en_attente_validation_qhse": {
       "responsable_qhse": "en_attente_validation_responsable_travaux"
     },
-    "en_attente_validation_appro": {
+    "en_attente_preparation_appro": {
       "responsable_appro": "en_attente_validation_charge_affaire"
     },
     "en_attente_validation_charge_affaire": {
       "charge_affaire": "en_attente_validation_logistique"
     },
     "en_attente_validation_logistique": {
-      "responsable_logistique": "en_attente_confirmation_demandeur"
+      "responsable_logistique": "en_attente_validation_finale_demandeur"
     },
-    "en_attente_confirmation_demandeur": {
+    "en_attente_validation_finale_demandeur": {
       "employe": "confirmee_demandeur"
     }
   }

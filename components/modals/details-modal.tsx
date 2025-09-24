@@ -48,12 +48,16 @@ export default function DetailsModal({
     const colors = {
       brouillon: "bg-gray-500",
       soumise: "bg-blue-500",
-      validee_conducteur: "bg-green-500",
-      validee_qhse: "bg-green-500",
+      en_attente_validation_conducteur: "bg-yellow-500",
+      en_attente_validation_qhse: "bg-yellow-600",
+      en_attente_validation_responsable_travaux: "bg-yellow-400",
+      en_attente_validation_charge_affaire: "bg-blue-600",
+      en_attente_preparation_appro: "bg-orange-400",
+      en_attente_validation_logistique: "bg-indigo-400",
+      en_attente_validation_finale_demandeur: "bg-indigo-500",
+      confirmee_demandeur: "bg-green-700",
+      cloturee: "bg-green-600",
       rejetee: "bg-red-500",
-      sortie_preparee: "bg-purple-500",
-      validee_charge_affaire: "bg-emerald-500",
-      validee_finale: "bg-green-600",
       archivee: "bg-gray-600",
     }
     return colors[status as keyof typeof colors] || "bg-gray-500"

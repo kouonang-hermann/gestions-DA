@@ -102,12 +102,14 @@ export default function DemandeDetailsModal({
     switch (status) {
       case "en_attente_validation_conducteur":
       case "en_attente_validation_qhse":
-      case "en_attente_validation_appro":
+      case "en_attente_validation_responsable_travaux":
+      case "en_attente_preparation_appro":
       case "en_attente_validation_charge_affaire":
       case "en_attente_validation_logistique":
-      case "en_attente_confirmation_demandeur":
+      case "en_attente_validation_finale_demandeur":
         return "bg-orange-100 text-orange-800"
       case "confirmee_demandeur":
+      case "cloturee":
         return "bg-green-100 text-green-800"
       case "rejetee":
         return "bg-red-100 text-red-800"
@@ -118,14 +120,19 @@ export default function DemandeDetailsModal({
 
   const formatStatus = (status: string) => {
     const statusMap: { [key: string]: string } = {
+      "brouillon": "Brouillon",
+      "soumise": "Soumise",
       "en_attente_validation_conducteur": "En attente validation conducteur",
       "en_attente_validation_qhse": "En attente validation QHSE",
-      "en_attente_validation_appro": "En attente validation appro",
+      "en_attente_validation_responsable_travaux": "En attente validation responsable travaux",
       "en_attente_validation_charge_affaire": "En attente validation chargé d'affaire",
+      "en_attente_preparation_appro": "En attente préparation appro",
       "en_attente_validation_logistique": "En attente validation logistique",
-      "en_attente_confirmation_demandeur": "En attente confirmation demandeur",
+      "en_attente_validation_finale_demandeur": "En attente validation finale demandeur",
       "confirmee_demandeur": "Confirmée par le demandeur",
-      "rejetee": "Rejetée"
+      "cloturee": "Clôturée",
+      "rejetee": "Rejetée",
+      "archivee": "Archivée"
     }
     return statusMap[status] || status
   }
