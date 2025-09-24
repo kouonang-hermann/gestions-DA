@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   // Sécurité : seulement en mode développement ou avec un secret
   const secret = req.nextUrl.searchParams.get('secret')
   if (secret !== 'seed-database-2024') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorized', message: 'Secret requis' }, { status: 401 })
   }
 
   try {

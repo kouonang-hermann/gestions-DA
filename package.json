@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "prisma generate && next build",
+    "build": "echo DATABASE_URL=$DATABASE_URL && prisma generate && next build",
     "dev": "next dev",
     "lint": "next lint",
     "start": "next start",
@@ -15,7 +15,9 @@
     "db:studio": "prisma studio",
     "postinstall": "prisma generate",
     "vercel-build": "prisma generate && prisma migrate deploy && next build",
-    "seed:production": "node scripts/seed-production.js"
+    "seed:production": "node scripts/seed-production.js",
+    "export:data": "node scripts/export-data.js",
+    "import:data": "node scripts/import-to-supabase.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
