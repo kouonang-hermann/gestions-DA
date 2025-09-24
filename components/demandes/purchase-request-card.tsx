@@ -27,6 +27,10 @@ export default function PurchaseRequestCard({
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case "brouillon":
+        return "bg-gray-100 text-gray-800"
+      case "soumise":
+        return "bg-blue-100 text-blue-800"
       case "en_attente_validation_conducteur":
       case "en_attente_validation_qhse":
       case "en_attente_validation_responsable_travaux":
@@ -35,10 +39,13 @@ export default function PurchaseRequestCard({
       case "en_attente_validation_logistique":
       case "en_attente_validation_finale_demandeur":
         return "bg-orange-100 text-orange-800"
+      case "confirmee_demandeur":
       case "cloturee":
         return "bg-green-100 text-green-800"
       case "rejetee":
         return "bg-red-100 text-red-800"
+      case "archivee":
+        return "bg-gray-100 text-gray-600"
       default:
         return "bg-gray-100 text-gray-600"
     }
@@ -57,7 +64,8 @@ export default function PurchaseRequestCard({
       "en_attente_validation_finale_demandeur": "En attente validation finale demandeur",
       "cloturee": "Clôturée",
       "rejetee": "Rejetée",
-      "archivee": "Archivée"
+      "archivee": "Archivée",
+      "confirmee_demandeur": "Confirmée demandeur"
     }
     return statusMap[status] || status
   }
@@ -65,25 +73,49 @@ export default function PurchaseRequestCard({
   const getValidationSteps = () => {
     const steps = []
     
-    // Ajouter les signatures de validation existantes
-    if (demande.validationSignatures) {
-      demande.validationSignatures.forEach(signature => {
-        steps.push({
-          step: getStepLabel(signature.type),
-          validator: `${signature.user?.prenom || ''} ${signature.user?.nom || ''}`.trim(),
-          date: new Date(signature.date).toLocaleDateString('fr-FR'),
-          status: 'Validé'
-        })
+    // Ajouter les validations existantes selon les vraies propriétés du type Demande
+    if (demande.validationConducteur) {
+      steps.push({
+        step: "Validation Conducteur",
+        validator: `${demande.validationConducteur.user?.prenom || ''} ${demande.validationConducteur.user?.nom || ''}`.trim(),
+        date: new Date(demande.validationConducteur.date).toLocaleDateString('fr-FR'),
+        status: 'Validé'
       })
     }
 
-    // Ajouter la sortie appro si elle existe
+    if (demande.validationQHSE) {
+      steps.push({
+        step: "Validation QHSE",
+        validator: `${demande.validationQHSE.user?.prenom || ''} ${demande.validationQHSE.user?.nom || ''}`.trim(),
+        date: new Date(demande.validationQHSE.date).toLocaleDateString('fr-FR'),
+        status: 'Validé'
+      })
+    }
+
+    if (demande.validationChargeAffaire) {
+      steps.push({
+        step: "Validation Chargé Affaire",
+        validator: `${demande.validationChargeAffaire.user?.prenom || ''} ${demande.validationChargeAffaire.user?.nom || ''}`.trim(),
+        date: new Date(demande.validationChargeAffaire.date).toLocaleDateString('fr-FR'),
+        status: 'Validé'
+      })
+    }
+
     if (demande.sortieAppro) {
       steps.push({
-        step: "Préparation sortie",
+        step: "Préparation Sortie",
         validator: `${demande.sortieAppro.user?.prenom || ''} ${demande.sortieAppro.user?.nom || ''}`.trim(),
         date: new Date(demande.sortieAppro.date).toLocaleDateString('fr-FR'),
         status: 'Préparé'
+      })
+    }
+
+    if (demande.validationFinale) {
+      steps.push({
+        step: "Validation Finale",
+        validator: `${demande.validationFinale.user?.prenom || ''} ${demande.validationFinale.user?.nom || ''}`.trim(),
+        date: new Date(demande.validationFinale.date).toLocaleDateString('fr-FR'),
+        status: 'Validé'
       })
     }
 
