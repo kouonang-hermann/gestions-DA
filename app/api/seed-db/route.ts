@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
-export default async function handler(req: NextRequest) {
+export async function GET(req: NextRequest) {
   // Sécurité : seulement en mode développement ou avec un secret
   const secret = req.nextUrl.searchParams.get('secret')
   if (secret !== 'seed-database-2024') {
@@ -126,7 +126,7 @@ export default async function handler(req: NextRequest) {
     console.error('Erreur lors du seeding:', error)
     return NextResponse.json({ 
       error: 'Erreur lors du seeding', 
-      details: error.message 
+      details: error instanceof Error ? error.message : 'Erreur inconnue'
     }, { status: 500 })
   } finally {
     await prisma.$disconnect()
