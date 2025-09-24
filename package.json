@@ -14,7 +14,8 @@
     "db:reset": "prisma migrate reset --force",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate",
-    "vercel-build": "prisma generate && prisma migrate deploy && next build"
+    "vercel-build": "prisma generate && prisma migrate deploy && next build",
+    "seed:production": "node scripts/seed-production.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
