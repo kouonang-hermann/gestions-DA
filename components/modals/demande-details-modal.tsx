@@ -17,10 +17,12 @@ interface DemandeDetailsModalProps {
   isOpen: boolean
   onClose: () => void
   demande: Demande | null
-  onValidate?: (action: "valider" | "rejeter", quantites?: { [itemId: string]: number }, commentaire?: string) => void
+  onValidate?: (action: "valider" | "rejeter" | "valider_sortie", quantites?: { [itemId: string]: number }, commentaire?: string) => void
   canValidate?: boolean
   onItemRemoved?: () => void
   canRemoveItems?: boolean
+  validationAction?: "valider" | "valider_sortie"
+  validationLabel?: string
 }
 
 export default function DemandeDetailsModal({ 
@@ -30,7 +32,9 @@ export default function DemandeDetailsModal({
   onValidate,
   canValidate = false,
   onItemRemoved,
-  canRemoveItems = false
+  canRemoveItems = false,
+  validationAction = "valider",
+  validationLabel = "Valider"
 }: DemandeDetailsModalProps) {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [quantitesValidees, setQuantitesValidees] = useState<{ [itemId: string]: number }>({})
@@ -77,7 +81,7 @@ export default function DemandeDetailsModal({
     )
   }
 
-  const handleAction = async (action: "valider" | "rejeter") => {
+  const handleAction = async (action: "valider" | "rejeter" | "valider_sortie") => {
     if (!onValidate) return
     
     // Si validation avec modifications, commentaire obligatoire
@@ -335,16 +339,16 @@ export default function DemandeDetailsModal({
               {/* Actions de validation */}
               <div className="flex justify-center gap-4">
                 <Button
-                  onClick={() => handleAction("valider")}
+                  onClick={() => handleAction(validationAction)}
                   disabled={actionLoading !== null}
                   className="bg-green-600 hover:bg-green-700 text-white px-6"
                 >
-                  {actionLoading === "valider" ? (
+                  {actionLoading === validationAction ? (
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                   ) : (
                     <CheckCircle className="h-4 w-4 mr-2" />
                   )}
-                  Valider
+                  {validationLabel}
                 </Button>
                 
                 <Button
