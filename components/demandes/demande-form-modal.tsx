@@ -32,16 +32,37 @@ interface FormData {
   type: DemandeType
   items: ManualItem[]
   commentaires: string
+  dateLivraisonSouhaitee: string
+}
+
+interface CreateDemandeData {
+  projetId: string
+  type: DemandeType
+  items: {
+    articleId: string
+    quantiteDemandee: number
+    commentaire?: string
+    article?: {
+      nom: string
+      description?: string
+      reference: string
+      unite: string
+      type: DemandeType
+    }
+  }[]
+  commentaires?: string
+  dateLivraisonSouhaitee: string
 }
 
 export default function DemandeFormModal({ isOpen, onClose, demande, mode, type = "materiel" }: DemandeFormModalProps) {
-  const { currentUser, projets, loadProjets, createDemande, updateDemande, isLoading } = useStore()
+  const { currentUser, projets, loadProjets, createDemande, updateDemandeContent, isLoading } = useStore()
   
   const [formData, setFormData] = useState<FormData>({
     projetId: "",
     type: type,
     items: [],
     commentaires: "",
+    dateLivraisonSouhaitee: "",
   })
   
   const [saving, setSaving] = useState(false)
@@ -68,6 +89,9 @@ export default function DemandeFormModal({ isOpen, onClose, demande, mode, type 
           type: demande.type,
           items: manualItems,
           commentaires: demande.commentaires || "",
+          dateLivraisonSouhaitee: demande.dateLivraisonSouhaitee 
+            ? new Date(demande.dateLivraisonSouhaitee).toISOString().split('T')[0] 
+            : "",
         })
       } else {
         // Mode création
@@ -76,6 +100,7 @@ export default function DemandeFormModal({ isOpen, onClose, demande, mode, type 
           type: type,
           items: [],
           commentaires: "",
+          dateLivraisonSouhaitee: "",
         })
       }
     }
@@ -122,6 +147,11 @@ export default function DemandeFormModal({ isOpen, onClose, demande, mode, type 
       return false
     }
 
+    if (!formData.dateLivraisonSouhaitee) {
+      setError("Veuillez sélectionner une date de livraison souhaitée")
+      return false
+    }
+
     if (formData.items.length === 0) {
       setError("Veuillez ajouter au moins un article")
       return false
@@ -156,36 +186,35 @@ export default function DemandeFormModal({ isOpen, onClose, demande, mode, type 
 
     setSaving(true)
     try {
-      // Convertir les items manuels en ItemDemande
-      const items: Partial<ItemDemande>[] = formData.items.map(item => ({
-        id: item.id,
+      // Convertir les items manuels selon le schéma createDemandeSchema
+      const items = formData.items.map(item => ({
         articleId: `manual-${item.id}`, // ID temporaire pour les articles manuels
         quantiteDemandee: item.quantiteDemandee,
-        commentaire: item.commentaire,
-        // Créer un article temporaire avec les données saisies
+        commentaire: item.commentaire || undefined,
+        // Article temporaire selon le schéma (sans id ni createdAt)
         article: {
-          id: `manual-${item.id}`,
           nom: item.nom,
-          description: item.description,
+          description: item.description || undefined,
           reference: item.reference,
           unite: item.unite,
           type: formData.type,
-          createdAt: new Date(),
         }
       }))
 
-      const demandeData = {
+      const demandeData: CreateDemandeData = {
         projetId: formData.projetId,
         type: formData.type,
         items,
-        commentaires: formData.commentaires,
+        commentaires: formData.commentaires || undefined,
+        dateLivraisonSouhaitee: formData.dateLivraisonSouhaitee,
       }
 
       let success = false
       if (mode === "create") {
         success = await createDemande(demandeData)
       } else if (mode === "edit" && demande) {
-        success = await updateDemande(demande.id, { ...demande, ...demandeData })
+        // Pour la mise à jour, utiliser seulement les données modifiables
+        success = await updateDemandeContent(demande.id, demandeData)
       }
 
       if (success) {
@@ -196,6 +225,7 @@ export default function DemandeFormModal({ isOpen, onClose, demande, mode, type 
           type: type,
           items: [],
           commentaires: "",
+          dateLivraisonSouhaitee: "",
         })
       }
     } catch (error) {
@@ -276,6 +306,19 @@ export default function DemandeFormModal({ isOpen, onClose, demande, mode, type 
                   onChange={(e) => setFormData(prev => ({ ...prev, commentaires: e.target.value }))}
                   className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   placeholder="Commentaires sur la demande..."
+                />
+              </div>
+
+              <div>
+                <label htmlFor="dateLivraisonSouhaitee" className="block text-sm font-medium mb-2">
+                  Date de livraison souhaitée (optionnel)
+                </label>
+                <input
+                  id="dateLivraisonSouhaitee"
+                  type="date"
+                  value={formData.dateLivraisonSouhaitee}
+                  onChange={(e) => setFormData(prev => ({ ...prev, dateLivraisonSouhaitee: e.target.value }))}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 />
               </div>
             </CardContent>

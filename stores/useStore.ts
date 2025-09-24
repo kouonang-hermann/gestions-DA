@@ -29,9 +29,9 @@ interface AppState {
   loadArticles: (filters?: any) => Promise<void>
   loadNotifications: () => Promise<void>
   loadHistory: (filters?: any) => Promise<void>
-  createUser: (userData: Partial<User>) => Promise<boolean>
-  createProjet: (projetData: Partial<Projet>) => Promise<boolean>
-  createDemande: (demandeData: Partial<Demande>) => Promise<boolean>
+  createUser: (userData: any) => Promise<boolean>
+  createProjet: (projetData: any) => Promise<boolean>
+  createDemande: (demandeData: any) => Promise<boolean>
   executeAction: (demandeId: string, action: string, data?: any) => Promise<boolean>
   markNotificationAsRead: (id: string) => Promise<void>
   setLoading: (loading: boolean) => void
@@ -42,6 +42,7 @@ interface AppState {
   updateDemande: (id: string, demande: Demande) => void
   addNotification: (notification: Notification) => void
   addHistoryEntry: (entry: HistoryEntry) => void
+  updateDemandeContent: (id: string, demandeData: any) => Promise<boolean>
 }
 
 export const useStore = create<AppState>()(
@@ -272,7 +273,7 @@ export const useStore = create<AppState>()(
         }
       },
 
-      createUser: async (userData: Partial<User>) => {
+      createUser: async (userData: any) => {
         const { currentUser, token } = get()
         if (!currentUser || !token) return false
 
@@ -306,7 +307,7 @@ export const useStore = create<AppState>()(
         }
       },
 
-      createProjet: async (projetData: Partial<Projet>) => {
+      createProjet: async (projetData: any) => {
         const { currentUser, token } = get()
         if (!currentUser || !token) return false
 
@@ -340,7 +341,7 @@ export const useStore = create<AppState>()(
         }
       },
 
-      createDemande: async (demandeData: Partial<Demande>) => {
+      createDemande: async (demandeData: any) => {
         const { currentUser, token } = get()
         if (!currentUser || !token) return false
 
@@ -456,6 +457,39 @@ export const useStore = create<AppState>()(
         set((state) => ({
           history: [entry, ...state.history],
         })),
+      updateDemandeContent: async (id: string, demandeData: any) => {
+        const { currentUser, token } = get()
+        if (!currentUser || !token) return false
+
+        set({ isLoading: true, error: null })
+
+        try {
+          const response = await fetch(`/api/demandes/${id}`, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`,
+            },
+            body: JSON.stringify(demandeData),
+          })
+
+          const result = await response.json()
+          if (result.success) {
+            set((state) => ({
+              demandes: state.demandes.map((d) => (d.id === id ? result.data : d)),
+              isLoading: false,
+            }))
+            return true
+          } else {
+            set({ error: result.error, isLoading: false })
+            return false
+          }
+        } catch (error) {
+          console.error("Erreur mise à jour demande:", error)
+          set({ error: "Erreur lors de la mise à jour de la demande", isLoading: false })
+          return false
+        }
+      },
     }),
     {
       name: "gestion-demandes-achat-storage",
