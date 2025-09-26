@@ -209,12 +209,12 @@ export default function LoginForm() {
               }}
               onMouseEnter={(e) => {
                 if (!isLoading) {
-                  e.target.style.backgroundColor = '#e02719';
+                  (e.target as HTMLButtonElement).style.backgroundColor = '#e02719';
                 }
               }}
               onMouseLeave={(e) => {
                 if (!isLoading) {
-                  e.target.style.backgroundColor = '#fc2d1f';
+                  (e.target as HTMLButtonElement).style.backgroundColor = '#fc2d1f';
                 }
               }}
             >
