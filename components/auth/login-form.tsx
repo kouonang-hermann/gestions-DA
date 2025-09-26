@@ -95,7 +95,7 @@ export default function LoginForm() {
               </Button>
             </form>
 
-          {/* Comptes de test */}
+          {/* Comptes de test 
           <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold text-blue-900 text-sm flex items-center">
@@ -141,7 +141,7 @@ export default function LoginForm() {
                 💡 <strong>Astuce:</strong> Cliquez sur un compte pour remplir automatiquement les champs
               </p>
             </div>
-          </div>
+          </div>*/}
         </div>
       </div>
     </div>
