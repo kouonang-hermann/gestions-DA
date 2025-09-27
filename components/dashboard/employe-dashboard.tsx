@@ -4,9 +4,38 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Input } from "@/components/ui/input"
 import { useStore } from "@/stores/useStore"
-import { Package, Clock, CheckCircle, XCircle, Plus, FileText, ChevronDown, ChevronRight } from 'lucide-react'
-import InstrumElecLogo from "@/components/ui/instrumelec-logo"
+import { 
+  Package, 
+  Clock, 
+  CheckCircle, 
+  XCircle, 
+  Plus, 
+  FileText, 
+  Users,
+  FolderOpen,
+  Settings,
+  Search,
+  Wrench,
+  BarChart3,
+  TrendingUp
+} from 'lucide-react'
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  BarChart,
+  Bar,
+} from "recharts"
 import CreateDemandeModal from "@/components/demandes/create-demande-modal"
 import { UserRequestsChart } from "@/components/charts/user-requests-chart"
 import UserDetailsModal from "@/components/modals/user-details-modal"
@@ -29,7 +58,8 @@ export default function EmployeDashboard() {
   const [detailsModalTitle, setDetailsModalTitle] = useState("")
   const [validatedHistoryModalOpen, setValidatedHistoryModalOpen] = useState(false)
   const [dataLoaded, setDataLoaded] = useState(false)
-  const [projetsExpanded, setProjetsExpanded] = useState(false)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [activeChart, setActiveChart] = useState<"material" | "tooling">("material")
 
   // Chargement initial des données
   useEffect(() => {
@@ -140,170 +170,341 @@ export default function EmployeDashboard() {
     }
   }
 
+  // Génération des données de graphique
+  const generateChartData = () => {
+    const materialRequests = mesDemandes.filter(d => d.type === "materiel")
+    const toolingRequests = mesDemandes.filter(d => d.type === "outillage")
+    
+    const materialFlowData = [
+      { name: "Jan", value: Math.round(materialRequests.length * 0.15) },
+      { name: "Fév", value: Math.round(materialRequests.length * 0.18) },
+      { name: "Mar", value: Math.round(materialRequests.length * 0.22) },
+      { name: "Avr", value: Math.round(materialRequests.length * 0.16) },
+      { name: "Mai", value: Math.round(materialRequests.length * 0.20) },
+      { name: "Jun", value: Math.round(materialRequests.length * 0.19) },
+    ]
+
+    const toolingFlowData = [
+      { name: "Jan", value: Math.round(toolingRequests.length * 0.15) },
+      { name: "Fév", value: Math.round(toolingRequests.length * 0.18) },
+      { name: "Mar", value: Math.round(toolingRequests.length * 0.22) },
+      { name: "Avr", value: Math.round(toolingRequests.length * 0.16) },
+      { name: "Mai", value: Math.round(toolingRequests.length * 0.20) },
+      { name: "Jun", value: Math.round(toolingRequests.length * 0.19) },
+    ]
+
+    const pieData = [
+      { 
+        name: "Matériel", 
+        value: materialRequests.length || 60, 
+        color: "#015fc4" 
+      },
+      { 
+        name: "Outillage", 
+        value: toolingRequests.length || 40, 
+        color: "#b8d1df" 
+      },
+    ]
+
+    return { materialFlowData, toolingFlowData, pieData }
+  }
+
+  const { materialFlowData, toolingFlowData, pieData } = generateChartData()
+
+  const handlePieClick = (data: any) => {
+    if (data.name === "Matériel") {
+      setActiveChart("material")
+    } else if (data.name === "Outillage") {
+      setActiveChart("tooling")
+    }
+  }
+
   return (
-    <div className="space-y-6">
-      {/* En-tête */}
-      <div className="flex items-center space-x-4">
-        <h1 className="text-3xl font-bold text-gray-900">Tableau de bord</h1>
-      </div>
+    <div className="min-h-screen bg-gray-50 p-2 sm:p-4 lg:p-6">
+      <div className="max-w-full mx-auto">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">Tableau de Bord Employé</h1>
 
-      {/* Statistiques */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card 
-          className="bg-blue-50 border-blue-200 cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => handleCardClick("total", "Toutes mes demandes")}
-        >
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-blue-600">Total demandes</p>
-                <p className="text-2xl font-bold text-blue-800">{stats.total}</p>
-              </div>
-              <FileText className="h-8 w-8 text-blue-600" />
+        {/* Layout principal : responsive */}
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
+          {/* Colonne de gauche (large) - 3/4 de la largeur */}
+          <div className="xl:col-span-3 space-y-4">
+            {/* Vue d'ensemble - Cards statistiques */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#015fc4' }} onClick={() => handleCardClick("total", "Toutes mes demandes")}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Total demandes</CardTitle>
+                  <FileText className="h-4 w-4" style={{ color: '#015fc4' }} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" style={{ color: '#015fc4' }}>{stats.total}</div>
+                  <p className="text-xs text-muted-foreground">Toutes mes demandes</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#f97316' }} onClick={() => handleCardClick("enCours", "Mes demandes en cours")}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">En cours</CardTitle>
+                  <Clock className="h-4 w-4" style={{ color: '#f97316' }} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" style={{ color: '#f97316' }}>{stats.enCours}</div>
+                  <p className="text-xs text-muted-foreground">En traitement</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#22c55e' }} onClick={() => handleCardClick("validees", "Mes demandes validées")}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Validées</CardTitle>
+                  <CheckCircle className="h-4 w-4" style={{ color: '#22c55e' }} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" style={{ color: '#22c55e' }}>{stats.validees}</div>
+                  <p className="text-xs text-muted-foreground">Demandes validées</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#6b7280' }} onClick={() => handleCardClick("brouillons", "Mes brouillons")}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Brouillons</CardTitle>
+                  <Package className="h-4 w-4" style={{ color: '#6b7280' }} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" style={{ color: '#6b7280' }}>{stats.brouillons}</div>
+                  <p className="text-xs text-muted-foreground">En brouillon</p>
+                </CardContent>
+              </Card>
             </div>
-          </CardContent>
-        </Card>
 
-        <Card 
-          className="bg-orange-50 border-orange-200 cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => handleCardClick("enCours", "Mes demandes en cours")}
-        >
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-orange-600">En cours</p>
-                <p className="text-2xl font-bold text-orange-800">{stats.enCours}</p>
-              </div>
-              <Clock className="h-8 w-8 text-orange-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card 
-          className="bg-green-50 border-green-200 cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => handleCardClick("validees", "Mes demandes validées")}
-        >
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-green-600">Validées</p>
-                <p className="text-2xl font-bold text-green-800">{stats.validees}</p>
-              </div>
-              <CheckCircle className="h-8 w-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card 
-          className="bg-gray-50 border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => handleCardClick("brouillons", "Mes brouillons")}
-        >
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Brouillons</p>
-                <p className="text-2xl font-bold text-gray-600">{stats.brouillons}</p>
-              </div>
-              <Package className="h-8 w-8 text-gray-600" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Actions rapides */}
-      <Card className="bg-gray-50 border-gray-200">
-        <CardHeader>
-          <CardTitle className="text-gray-800">Actions rapides</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-3">
-            <Button
-              onClick={() => {
-                setDemandeType("materiel")
-                setCreateDemandeModalOpen(true)
-              }}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Nouvelle demande de matériel
-            </Button>
-            <Button
-              onClick={() => {
-                setDemandeType("outillage")
-                setCreateDemandeModalOpen(true)
-              }}
-              className="bg-teal-600 hover:bg-teal-700 text-white"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Nouvelle demande d'outillage
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Mes projets */}
-      {mesProjets.length > 0 && (
-        <Card className="bg-gray-50 border-gray-200">
-          <CardHeader 
-            className="cursor-pointer hover:bg-gray-100 transition-colors"
-            onClick={() => setProjetsExpanded(!projetsExpanded)}
-          >
-            <CardTitle className="flex items-center justify-between text-gray-800">
-              <span>Mes projets ({mesProjets.length})</span>
-              {projetsExpanded ? (
-                <ChevronDown className="h-5 w-5 text-gray-500" />
-              ) : (
-                <ChevronRight className="h-5 w-5 text-gray-500" />
-              )}
-            </CardTitle>
-          </CardHeader>
-          {projetsExpanded && (
-            <CardContent className="animate-in slide-in-from-top-2 duration-200">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {mesProjets.map((projet) => (
-                  <div key={projet.id} className="bg-white p-4 rounded-lg border border-gray-200">
-                    <h3 className="font-medium text-gray-800">{projet.nom}</h3>
-                    <p className="text-sm text-gray-600 mt-1">{projet.description}</p>
-                    <div className="flex items-center justify-between mt-3">
-                      <span className="text-xs text-gray-500">
-                        Début: {new Date(projet.dateDebut).toLocaleDateString()}
-                      </span>
-                      <Badge className={projet.actif ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
-                        {projet.actif ? "Actif" : "Inactif"}
-                      </Badge>
+            {/* Mes projets - Tableau fixe scrollable */}
+            {mesProjets.length > 0 && (
+              <Card className="h-fit">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-gray-800">
+                    <FolderOpen className="h-5 w-5" />
+                    Mes projets ({mesProjets.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                    {/* Tableau fixe scrollable - Responsive */}
+                    <div className="overflow-hidden border border-gray-200 rounded-lg">
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-50 sticky top-0 z-10">
+                            <tr>
+                              <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Projet
+                              </th>
+                              <th className="hidden sm:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Description
+                              </th>
+                              <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Date début
+                              </th>
+                              <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Statut
+                              </th>
+                            </tr>
+                          </thead>
+                        </table>
+                      </div>
+                      {/* Corps du tableau avec scroll vertical fixe */}
+                      <div className="overflow-y-auto max-h-[300px] sm:max-h-[400px] lg:max-h-[500px] bg-white">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <tbody className="divide-y divide-gray-200">
+                            {mesProjets.map((projet, index) => (
+                              <tr 
+                                key={projet.id} 
+                                className={`hover:bg-gray-50 transition-colors ${
+                                  index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                                }`}
+                              >
+                                <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                                  <div className="flex items-center">
+                                    <FolderOpen className="h-4 w-4 mr-2" style={{ color: '#015fc4' }} />
+                                    <div>
+                                      <div className="text-sm font-medium text-gray-900">
+                                        {projet.nom}
+                                      </div>
+                                      {/* Description visible sur mobile */}
+                                      <div className="sm:hidden text-xs text-gray-500 mt-1 truncate max-w-[120px]">
+                                        {projet.description}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="hidden sm:table-cell px-3 sm:px-6 py-4">
+                                  <div className="text-sm text-gray-600 max-w-xs truncate" title={projet.description}>
+                                    {projet.description}
+                                  </div>
+                                </td>
+                                <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                                  <div className="text-xs sm:text-sm text-gray-500">
+                                    {new Date(projet.dateDebut).toLocaleDateString('fr-FR')}
+                                  </div>
+                                </td>
+                                <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                                  <Badge 
+                                    className="text-xs font-medium px-2 py-1 rounded-full"
+                                    style={{
+                                      backgroundColor: projet.actif ? "#dcfce7" : "#f3f4f6",
+                                      color: projet.actif ? "#166534" : "#374151",
+                                      border: `1px solid ${projet.actif ? "#166534" : "#374151"}20`
+                                    }}
+                                  >
+                                    {projet.actif ? "Actif" : "Inactif"}
+                                  </Badge>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          )}
-        </Card>
-      )}
+                </CardContent>
+              </Card>
+            )}
+          </div>
 
-      {/* Graphiques des demandes utilisateur */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <UserRequestsChart
-          title="Mes demandes de matériel"
-          type="materiel"
-          userRequests={mesDemandes}
-          className="bg-green-50 border-green-200"
-        />
-        <UserRequestsChart
-          title="Mes demandes d'outillage"
-          type="outillage"
-          userRequests={mesDemandes}
-          className="bg-blue-50 border-blue-200"
-        />
+          {/* Colonne de droite (fine) - 1/4 de la largeur */}
+          <div className="xl:col-span-1 space-y-4">
+            {/* Actions rapides */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Actions Rapides</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 gap-2">
+                  <Button 
+                    className="justify-start text-white" 
+                    style={{ backgroundColor: '#015fc4' }}
+                    size="sm"
+                    onClick={() => {
+                      setDemandeType("materiel")
+                      setCreateDemandeModalOpen(true)
+                    }}
+                  >
+                    <Package className="h-4 w-4 mr-2" />
+                    <span className="text-sm">Nouvelle demande matériel</span>
+                  </Button>
+                  <Button
+                    className="justify-start text-gray-700"
+                    style={{ backgroundColor: '#b8d1df' }}
+                    size="sm"
+                    onClick={() => {
+                      setDemandeType("outillage")
+                      setCreateDemandeModalOpen(true)
+                    }}
+                  >
+                    <Wrench className="h-4 w-4 mr-2" />
+                    <span className="text-sm">Nouvelle demande outillage</span>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Graphique en secteurs */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Répartition</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={120}>
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={30}
+                      outerRadius={50}
+                      dataKey="value"
+                      onClick={handlePieClick}
+                      style={{ cursor: "pointer" }}
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="mt-2 space-y-1">
+                  <div
+                    className={`flex items-center justify-between text-sm cursor-pointer p-1 rounded ${
+                      activeChart === "material" ? "bg-blue-50" : ""
+                    }`}
+                    onClick={() => setActiveChart("material")}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#015fc4' }}></div>
+                      <span>Matériel</span>
+                    </div>
+                    <span className="font-medium">{pieData[0]?.value || 0}</span>
+                  </div>
+                  <div
+                    className={`flex items-center justify-between text-sm cursor-pointer p-1 rounded ${
+                      activeChart === "tooling" ? "bg-blue-50" : ""
+                    }`}
+                    onClick={() => setActiveChart("tooling")}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#b8d1df' }}></div>
+                      <span>Outillage</span>
+                    </div>
+                    <span className="font-medium">{pieData[1]?.value || 0}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Graphiques de flux */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  {activeChart === "material" ? (
+                    <>
+                      <TrendingUp className="h-4 w-4" style={{ color: '#015fc4' }} />
+                      Flux Demandes Matériel
+                    </>
+                  ) : (
+                    <>
+                      <BarChart3 className="h-4 w-4" style={{ color: '#b8d1df' }} />
+                      Flux Demandes Outillage
+                    </>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={150}>
+                  {activeChart === "material" ? (
+                    <LineChart data={materialFlowData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" fontSize={12} />
+                      <YAxis fontSize={12} />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="value" stroke="#015fc4" strokeWidth={2} />
+                    </LineChart>
+                  ) : (
+                    <BarChart data={toolingFlowData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" fontSize={12} />
+                      <YAxis fontSize={12} />
+                      <Tooltip />
+                      <Bar dataKey="value" fill="#b8d1df" />
+                    </BarChart>
+                  )}
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
 
-      {/* Modal de création de demande */}
+      {/* Modals fonctionnels */}
       <CreateDemandeModal
         isOpen={createDemandeModalOpen}
         onClose={() => setCreateDemandeModalOpen(false)}
         type={demandeType}
       />
-
-      {/* Modal des détails */}
       <UserDetailsModal
         isOpen={detailsModalOpen}
         onClose={() => setDetailsModalOpen(false)}
@@ -311,8 +512,6 @@ export default function EmployeDashboard() {
         data={mesDemandes}
         type={detailsModalType}
       />
-      
-      {/* Modal de l'historique des demandes validées */}
       <ValidatedRequestsHistory
         isOpen={validatedHistoryModalOpen}
         onClose={() => setValidatedHistoryModalOpen(false)}
@@ -320,3 +519,4 @@ export default function EmployeDashboard() {
     </div>
   )
 }
+ 

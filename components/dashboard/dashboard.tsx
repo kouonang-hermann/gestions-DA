@@ -63,14 +63,6 @@ export default function Dashboard() {
 
   return (
     <>
-      <div className="bg-gray-50 border-b border-gray-200">
-        <div className="container mx-auto px-6 py-4">
-          <h1 className="text-2xl font-bold text-gray-800">
-            Tableau de bord - {currentUser.prenom} {currentUser.nom}
-          </h1>
-          <p className="text-gray-600 text-sm mt-1">Gérez vos demandes d'achat et suivez leur progression</p>
-        </div>
-      </div>
 
       <div className="container mx-auto px-6 py-6">{renderDashboard()}</div>
     </>

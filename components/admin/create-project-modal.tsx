@@ -28,6 +28,7 @@ export default function CreateProjectModal({ isOpen, onClose }: CreateProjectMod
 
   useEffect(() => {
     if (isOpen) {
+      console.log('🚀 Modal ouvert, chargement des utilisateurs...')
       loadUsers()
       // Réinitialiser le formulaire et pré-sélectionner tous les utilisateurs non-superadmin
       setFormData({
@@ -44,7 +45,9 @@ export default function CreateProjectModal({ isOpen, onClose }: CreateProjectMod
   useEffect(() => {
     // Pré-sélectionner tous les utilisateurs non-superadmin quand ils sont chargés
     if (users.length > 0 && isOpen) {
+      console.log('👥 Utilisateurs chargés:', users.length, 'utilisateurs')
       const nonSuperAdminUsers = users.filter(user => user.role !== "superadmin").map(user => user.id)
+      console.log('🔧 Utilisateurs non-superadmin:', nonSuperAdminUsers)
       setFormData(prev => ({
         ...prev,
         utilisateurs: nonSuperAdminUsers
@@ -89,12 +92,19 @@ export default function CreateProjectModal({ isOpen, onClose }: CreateProjectMod
   }
 
   const toggleUser = (userId: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      utilisateurs: prev.utilisateurs.includes(userId)
+    console.log('🔄 Toggle user:', userId, 'Current selection:', formData.utilisateurs)
+    setFormData((prev) => {
+      const isCurrentlySelected = prev.utilisateurs.includes(userId)
+      const newSelection = isCurrentlySelected
         ? prev.utilisateurs.filter((id) => id !== userId)
-        : [...prev.utilisateurs, userId],
-    }))
+        : [...prev.utilisateurs, userId]
+      
+      console.log('✅ New selection:', newSelection)
+      return {
+        ...prev,
+        utilisateurs: newSelection,
+      }
+    })
   }
 
   const removeUser = (userId: string) => {
@@ -108,13 +118,25 @@ export default function CreateProjectModal({ isOpen, onClose }: CreateProjectMod
     return users.filter((user) => formData.utilisateurs.includes(user.id))
   }
 
-  const getAvailableUsers = () => {
-    return users.filter((user) => !formData.utilisateurs.includes(user.id) && user.role !== "superadmin")
+  const getAllNonSuperAdminUsers = () => {
+    return users.filter((user) => user.role !== "superadmin")
+  }
+
+  const getRoleBadgeColor = (role: string) => {
+    const colors = {
+      'employe': 'bg-blue-100 text-blue-800',
+      'conducteur_travaux': 'bg-green-100 text-green-800', 
+      'responsable_travaux': 'bg-purple-100 text-purple-800',
+      'responsable_qhse': 'bg-red-100 text-red-800',
+      'charge_affaire': 'bg-yellow-100 text-yellow-800',
+      'responsable_logistique': 'bg-indigo-100 text-indigo-800'
+    }
+    return colors[role as keyof typeof colors] || 'bg-gray-100 text-gray-800'
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Créer un nouveau projet</DialogTitle>
           <DialogDescription>Ajoutez un nouveau projet et assignez des utilisateurs</DialogDescription>
@@ -180,50 +202,155 @@ export default function CreateProjectModal({ isOpen, onClose }: CreateProjectMod
                 </div>
               </div>
 
-              {/* Utilisateurs sélectionnés */}
-              {getSelectedUsers().length > 0 && (
-                <div>
-                  <label className="block text-sm font-medium mb-2">Utilisateurs assignés</label>
-                  <div className="flex flex-wrap gap-2">
-                    {getSelectedUsers().map((user) => (
-                      <Badge key={user.id} variant="secondary" className="flex items-center gap-1">
-                        {user.prenom} {user.nom}
-                        <button
-                          type="button"
-                          onClick={() => removeUser(user.id)}
-                          className="ml-1 hover:bg-gray-300 rounded-full p-0.5"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    ))}
+              {/* Tableau de sélection des utilisateurs */}
+              <div>
+                <label className="block text-sm font-medium mb-3" style={{ color: '#015fc4' }}>
+                  Sélection des utilisateurs assignés au projet
+                </label>
+                
+                {/* Compteur d'utilisateurs sélectionnés */}
+                <div className="mb-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-blue-800">
+                      <span className="font-semibold">{formData.utilisateurs.length}</span> utilisateur(s) sélectionné(s) sur {getAllNonSuperAdminUsers().length} disponible(s)
+                    </p>
+                    {/* Debug info - à supprimer en production */}
+                    <div className="text-xs text-blue-600">
+                      {formData.utilisateurs.length > 0 && (
+                        <span>IDs: {formData.utilisateurs.slice(0, 3).join(', ')}{formData.utilisateurs.length > 3 ? '...' : ''}</span>
+                      )}
+                    </div>
+                  </div>
+                  {/* Barre de progression visuelle */}
+                  <div className="mt-2 w-full bg-blue-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      style={{ 
+                        width: `${getAllNonSuperAdminUsers().length > 0 ? (formData.utilisateurs.length / getAllNonSuperAdminUsers().length) * 100 : 0}%` 
+                      }}
+                    ></div>
                   </div>
                 </div>
-              )}
 
-              {/* Utilisateurs disponibles */}
-              <div>
-                <label className="block text-sm font-medium mb-2">Ajouter des utilisateurs</label>
-                <div className="max-h-40 overflow-y-auto border rounded-md p-2 space-y-2">
-                  {getAvailableUsers().length === 0 ? (
-                    <p className="text-sm text-gray-500 text-center py-4">Tous les utilisateurs sont assignés</p>
-                  ) : (
-                    getAvailableUsers().map((user) => (
-                      <div
-                        key={user.id}
-                        className="flex items-center justify-between p-2 hover:bg-gray-50 rounded cursor-pointer"
-                        onClick={() => toggleUser(user.id)}
-                      >
-                        <div>
-                          <p className="font-medium">
-                            {user.prenom} {user.nom}
-                          </p>
-                          <p className="text-sm text-gray-600">{user.email}</p>
-                        </div>
-                        <Badge variant="outline">{user.role}</Badge>
-                      </div>
-                    ))
-                  )}
+                {/* Tableau scrollable avec boutons radio */}
+                <div className="border rounded-lg overflow-hidden" style={{ maxHeight: '350px' }}>
+                  <div className="overflow-y-auto" style={{ maxHeight: '350px' }}>
+                    <table className="w-full">
+                      <thead className="bg-gray-50 sticky top-0 z-10">
+                        <tr>
+                          <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                            Sélection
+                          </th>
+                          <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Utilisateur
+                          </th>
+                          <th className="hidden sm:table-cell px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Email
+                          </th>
+                          <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Rôle
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {getAllNonSuperAdminUsers().length === 0 ? (
+                          <tr>
+                            <td colSpan={4} className="px-2 sm:px-4 py-8 text-center text-gray-500">
+                              Aucun utilisateur disponible
+                            </td>
+                          </tr>
+                        ) : (
+                          getAllNonSuperAdminUsers().map((user, index) => (
+                            <tr 
+                              key={user.id} 
+                              className={`hover:bg-gray-50 cursor-pointer transition-all duration-200 ${
+                                formData.utilisateurs.includes(user.id) 
+                                  ? 'bg-blue-50 border-l-4 border-blue-500' 
+                                  : 'hover:bg-gray-50'
+                              }`}
+                              onClick={(e) => {
+                                // Ne déclencher que si le clic n'est pas sur la checkbox
+                                const target = e.target as HTMLElement
+                                if (target.tagName !== 'INPUT' && target.getAttribute('type') !== 'checkbox') {
+                                  toggleUser(user.id)
+                                }
+                              }}
+                            >
+                              <td className="px-2 sm:px-4 py-3">
+                                <input
+                                  type="checkbox"
+                                  checked={formData.utilisateurs.includes(user.id)}
+                                  onChange={(e) => {
+                                    e.stopPropagation() // Empêcher la propagation vers la ligne
+                                    toggleUser(user.id)
+                                  }}
+                                  onClick={(e) => e.stopPropagation()} // Empêcher le double clic
+                                  className="h-4 w-4 rounded border-gray-300 focus:ring-2 cursor-pointer"
+                                  style={{ 
+                                    accentColor: '#015fc4'
+                                  } as React.CSSProperties}
+                                />
+                              </td>
+                              <td className="px-2 sm:px-4 py-3">
+                                <div className="flex items-center">
+                                  <div className="flex-shrink-0 h-8 w-8">
+                                    <div 
+                                      className="h-8 w-8 rounded-full flex items-center justify-center text-white text-sm font-medium"
+                                      style={{ backgroundColor: '#015fc4' }}
+                                    >
+                                      {user.prenom.charAt(0)}{user.nom.charAt(0)}
+                                    </div>
+                                  </div>
+                                  <div className="ml-2 sm:ml-3">
+                                    <p className="text-sm font-medium text-gray-900">
+                                      {user.prenom} {user.nom}
+                                    </p>
+                                    {/* Email visible sur mobile sous le nom */}
+                                    <p className="text-xs text-gray-500 sm:hidden">{user.email}</p>
+                                  </div>
+                                </div>
+                              </td>
+                              {/* Email caché sur mobile, visible sur desktop */}
+                              <td className="hidden sm:table-cell px-2 sm:px-4 py-3">
+                                <p className="text-sm text-gray-600">{user.email}</p>
+                              </td>
+                              <td className="px-2 sm:px-4 py-3">
+                                <span className={`inline-flex px-1 sm:px-2 py-1 text-xs font-semibold rounded-full ${getRoleBadgeColor(user.role)}`}>
+                                  <span className="hidden sm:inline">{user.role.replace('_', ' ').toUpperCase()}</span>
+                                  <span className="sm:hidden">{user.role.split('_')[0].toUpperCase()}</span>
+                                </span>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                
+                {/* Actions rapides */}
+                <div className="mt-3 flex flex-col sm:flex-row gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const allUserIds = getAllNonSuperAdminUsers().map(user => user.id)
+                      console.log('🔄 Sélectionner tout:', allUserIds)
+                      setFormData(prev => ({ ...prev, utilisateurs: allUserIds }))
+                    }}
+                    className="px-3 py-2 text-xs sm:text-sm bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition-colors flex-1 sm:flex-none"
+                  >
+                    ✓ Sélectionner tout ({getAllNonSuperAdminUsers().length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      console.log('🔄 Désélectionner tout')
+                      setFormData(prev => ({ ...prev, utilisateurs: [] }))
+                    }}
+                    className="px-3 py-2 text-xs sm:text-sm bg-gray-100 text-gray-800 rounded hover:bg-gray-200 transition-colors flex-1 sm:flex-none"
+                  >
+                    ✗ Désélectionner tout
+                  </button>
                 </div>
               </div>
 

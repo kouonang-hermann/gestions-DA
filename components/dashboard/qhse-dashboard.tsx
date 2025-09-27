@@ -3,8 +3,38 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Input } from "@/components/ui/input"
 import { useStore } from "@/stores/useStore"
-import { Package, Clock, CheckCircle, XCircle, Plus } from 'lucide-react'
+import { 
+  Package, 
+  Clock, 
+  CheckCircle, 
+  XCircle, 
+  Plus,
+  FileText,
+  Users,
+  FolderOpen,
+  Settings,
+  Search,
+  Wrench,
+  BarChart3,
+  TrendingUp
+} from 'lucide-react'
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  BarChart,
+  Bar,
+} from "recharts"
 import ValidationDemandesList from "@/components/validation/validation-demandes-list"
 import CreateDemandeModal from "@/components/demandes/create-demande-modal"
 import { UserRequestsChart } from "@/components/charts/user-requests-chart"
@@ -25,6 +55,8 @@ export default function QHSEDashboard() {
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
   const [detailsModalType, setDetailsModalType] = useState<"total" | "enAttente" | "validees" | "rejetees">("total")
   const [detailsModalTitle, setDetailsModalTitle] = useState("")
+  const [searchTerm, setSearchTerm] = useState("")
+  const [activeChart, setActiveChart] = useState<"material" | "tooling">("material")
 
   useEffect(() => {
     if (currentUser) {
@@ -70,134 +102,255 @@ export default function QHSEDashboard() {
     )
   }
 
+  // Génération des données de graphique
+  const generateChartData = () => {
+    const materialRequests = mesDemandes.filter(d => d.type === "materiel")
+    const toolingRequests = mesDemandes.filter(d => d.type === "outillage")
+    
+    const materialFlowData = [
+      { name: "Jan", value: Math.round(materialRequests.length * 0.15) },
+      { name: "Fév", value: Math.round(materialRequests.length * 0.18) },
+      { name: "Mar", value: Math.round(materialRequests.length * 0.22) },
+      { name: "Avr", value: Math.round(materialRequests.length * 0.16) },
+      { name: "Mai", value: Math.round(materialRequests.length * 0.20) },
+      { name: "Jun", value: Math.round(materialRequests.length * 0.19) },
+    ]
+
+    const toolingFlowData = [
+      { name: "Jan", value: Math.round(toolingRequests.length * 0.15) },
+      { name: "Fév", value: Math.round(toolingRequests.length * 0.18) },
+      { name: "Mar", value: Math.round(toolingRequests.length * 0.22) },
+      { name: "Avr", value: Math.round(toolingRequests.length * 0.16) },
+      { name: "Mai", value: Math.round(toolingRequests.length * 0.20) },
+      { name: "Jun", value: Math.round(toolingRequests.length * 0.19) },
+    ]
+
+    const pieData = [
+      { 
+        name: "Matériel", 
+        value: materialRequests.length || 60, 
+        color: "#015fc4" 
+      },
+      { 
+        name: "Outillage", 
+        value: toolingRequests.length || 40, 
+        color: "#b8d1df" 
+      },
+    ]
+
+    return { materialFlowData, toolingFlowData, pieData }
+  }
+
+  const { materialFlowData, toolingFlowData, pieData } = generateChartData()
+
+  const handlePieClick = (data: any) => {
+    if (data.name === "Matériel") {
+      setActiveChart("material")
+    } else if (data.name === "Outillage") {
+      setActiveChart("tooling")
+    }
+  }
+
   return (
-    <div className="space-y-6">
-      {/* En-tête */}
-      <div className="flex items-center space-x-4">
-        <h1 className="text-3xl font-bold text-gray-900">Tableau de bord</h1>
-      </div>
+    <div className="min-h-screen bg-gray-50 p-2">
+      <div className="max-w-full mx-auto">
+        <h1 className="text-3xl font-bold text-gray-900 mb-6">Tableau de Bord QHSE</h1>
 
-      {/* Statistiques */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card 
-          className="bg-blue-50 border-blue-200 cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => handleCardClick("total", "Toutes les demandes")}
-        >
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-blue-600">Total demandes</p>
-                <p className="text-2xl font-bold text-blue-800">{stats.total}</p>
-              </div>
-              <Package className="h-8 w-8 text-blue-600" />
+        {/* Layout principal : deux colonnes */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          {/* Colonne de gauche (large) - 3/4 de la largeur */}
+          <div className="lg:col-span-3 space-y-4">
+            {/* Vue d'ensemble - Cards statistiques */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#015fc4' }} onClick={() => handleCardClick("total", "Toutes les demandes")}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Total demandes</CardTitle>
+                  <Package className="h-4 w-4" style={{ color: '#015fc4' }} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" style={{ color: '#015fc4' }}>{stats.total}</div>
+                  <p className="text-xs text-muted-foreground">Demandes outillage</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#f97316' }} onClick={() => handleCardClick("enAttente", "Demandes en attente")}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">En attente</CardTitle>
+                  <Clock className="h-4 w-4" style={{ color: '#f97316' }} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" style={{ color: '#f97316' }}>{stats.enAttente}</div>
+                  <p className="text-xs text-muted-foreground">À valider QHSE</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#22c55e' }} onClick={() => handleCardClick("validees", "Demandes validées")}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Validées</CardTitle>
+                  <CheckCircle className="h-4 w-4" style={{ color: '#22c55e' }} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" style={{ color: '#22c55e' }}>{stats.validees}</div>
+                  <p className="text-xs text-muted-foreground">Demandes validées</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#fc2d1f' }} onClick={() => handleCardClick("rejetees", "Demandes rejetées")}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Rejetées</CardTitle>
+                  <XCircle className="h-4 w-4" style={{ color: '#fc2d1f' }} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" style={{ color: '#fc2d1f' }}>{stats.rejetees}</div>
+                  <p className="text-xs text-muted-foreground">Demandes rejetées</p>
+                </CardContent>
+              </Card>
             </div>
-          </CardContent>
-        </Card>
 
-        <Card 
-          className="bg-orange-50 border-orange-200 cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => handleCardClick("enAttente", "Demandes en attente")}
-        >
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-orange-600">En attente</p>
-                <p className="text-2xl font-bold text-orange-800">{stats.enAttente}</p>
-              </div>
-              <Clock className="h-8 w-8 text-orange-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card 
-          className="bg-green-50 border-green-200 cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => handleCardClick("validees", "Demandes validées")}
-        >
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-green-600">Validées</p>
-                <p className="text-2xl font-bold text-green-800">{stats.validees}</p>
-              </div>
-              <CheckCircle className="h-8 w-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card 
-          className="bg-red-50 border-red-200 cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => handleCardClick("rejetees", "Demandes rejetées")}
-        >
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-red-600">Rejetées</p>
-                <p className="text-2xl font-bold text-red-800">{stats.rejetees}</p>
-              </div>
-              <XCircle className="h-8 w-8 text-red-600" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Actions rapides */}
-      <Card className="bg-gray-50 border-gray-200">
-        <CardHeader>
-          <CardTitle className="text-gray-800">Actions rapides</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-3">
-            <Button
-              onClick={() => {
-                setDemandeType("materiel")
-                setCreateDemandeModalOpen(true)
-              }}
-              className="bg-green-600 hover:bg-green-700 text-white"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Nouvelle demande de matériel
-            </Button>
-            <Button
-              onClick={() => {
-                setDemandeType("outillage")
-                setCreateDemandeModalOpen(true)
-              }}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Nouvelle demande d'outillage
-            </Button>
+            {/* Liste des demandes à valider */}
+            <ValidationDemandesList type="outillage" title="Demandes d'outillage à valider" />
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Liste des demandes à valider */}
-      <ValidationDemandesList type="outillage" title="Demandes d'outillage à valider" />
+          {/* Colonne de droite (fine) - 1/4 de la largeur */}
+          <div className="lg:col-span-1 space-y-4">
+            {/* Actions rapides */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Actions Rapides</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 gap-2">
+                  <Button 
+                    className="justify-start text-white" 
+                    style={{ backgroundColor: '#015fc4' }}
+                    size="sm"
+                    onClick={() => {
+                      setDemandeType("materiel")
+                      setCreateDemandeModalOpen(true)
+                    }}
+                  >
+                    <Package className="h-4 w-4 mr-2" />
+                    <span className="text-sm">Nouvelle demande matériel</span>
+                  </Button>
+                  <Button
+                    className="justify-start text-gray-700"
+                    style={{ backgroundColor: '#b8d1df' }}
+                    size="sm"
+                    onClick={() => {
+                      setDemandeType("outillage")
+                      setCreateDemandeModalOpen(true)
+                    }}
+                  >
+                    <Wrench className="h-4 w-4 mr-2" />
+                    <span className="text-sm">Nouvelle demande outillage</span>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
 
-      {/* Graphiques des demandes utilisateur */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <UserRequestsChart
-          title="Mes demandes de matériel"
-          type="materiel"
-          userRequests={mesDemandes}
-          className="bg-green-50 border-green-200"
-        />
-        <UserRequestsChart
-          title="Mes demandes d'outillage"
-          type="outillage"
-          userRequests={mesDemandes}
-          className="bg-blue-50 border-blue-200"
-        />
+            {/* Graphique en secteurs */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Répartition</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={120}>
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={30}
+                      outerRadius={50}
+                      dataKey="value"
+                      onClick={handlePieClick}
+                      style={{ cursor: "pointer" }}
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="mt-2 space-y-1">
+                  <div
+                    className={`flex items-center justify-between text-sm cursor-pointer p-1 rounded ${
+                      activeChart === "material" ? "bg-blue-50" : ""
+                    }`}
+                    onClick={() => setActiveChart("material")}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#015fc4' }}></div>
+                      <span>Matériel</span>
+                    </div>
+                    <span className="font-medium">{pieData[0]?.value || 0}</span>
+                  </div>
+                  <div
+                    className={`flex items-center justify-between text-sm cursor-pointer p-1 rounded ${
+                      activeChart === "tooling" ? "bg-blue-50" : ""
+                    }`}
+                    onClick={() => setActiveChart("tooling")}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#b8d1df' }}></div>
+                      <span>Outillage</span>
+                    </div>
+                    <span className="font-medium">{pieData[1]?.value || 0}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Graphiques de flux */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  {activeChart === "material" ? (
+                    <>
+                      <TrendingUp className="h-4 w-4" style={{ color: '#015fc4' }} />
+                      Flux Demandes Matériel
+                    </>
+                  ) : (
+                    <>
+                      <BarChart3 className="h-4 w-4" style={{ color: '#b8d1df' }} />
+                      Flux Demandes Outillage
+                    </>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={150}>
+                  {activeChart === "material" ? (
+                    <LineChart data={materialFlowData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" fontSize={12} />
+                      <YAxis fontSize={12} />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="value" stroke="#015fc4" strokeWidth={2} />
+                    </LineChart>
+                  ) : (
+                    <BarChart data={toolingFlowData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" fontSize={12} />
+                      <YAxis fontSize={12} />
+                      <Tooltip />
+                      <Bar dataKey="value" fill="#b8d1df" />
+                    </BarChart>
+                  )}
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
 
-      {/* Modal de création de demande */}
+      {/* Modals fonctionnels */}
       <CreateDemandeModal
         isOpen={createDemandeModalOpen}
         onClose={() => setCreateDemandeModalOpen(false)}
         type={demandeType}
       />
-
-      {/* Modal des détails */}
       <UserDetailsModal
         isOpen={detailsModalOpen}
         onClose={() => setDetailsModalOpen(false)}

@@ -1,6 +1,25 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
-import type { User, Projet, Demande, Article, Notification, HistoryEntry } from "@/types"
+import type { User, Projet, Demande, Article, DemandeStatus } from '@/types'
+
+// Interface pour l'historique
+interface HistoryEntry {
+  id: string
+  action: string
+  timestamp: Date
+  userId: string
+  details: any
+}
+
+// Interface pour les notifications
+interface AppNotification {
+  id: string
+  title: string
+  message: string
+  type: 'info' | 'success' | 'warning' | 'error'
+  read: boolean
+  timestamp: Date
+}
 
 interface AppState {
   // Auth
@@ -13,7 +32,7 @@ interface AppState {
   projets: Projet[]
   demandes: Demande[]
   articles: Article[]
-  notifications: Notification[]
+  notifications: AppNotification[]
   history: HistoryEntry[]
 
   // UI State
@@ -40,9 +59,15 @@ interface AppState {
   setArticles: (articles: Article[]) => void
   addDemande: (demande: Demande) => void
   updateDemande: (id: string, demande: Demande) => void
-  addNotification: (notification: Notification) => void
+  addNotification: (notification: AppNotification) => void
   addHistoryEntry: (entry: HistoryEntry) => void
   updateDemandeContent: (id: string, demandeData: any) => Promise<boolean>
+  
+  // Project Management Actions
+  addUserToProject: (userId: string, projectId: string, role?: string) => Promise<boolean>
+  removeUserFromProject: (userId: string, projectId: string) => Promise<boolean>
+  updateUserRole: (userId: string, newRole: string) => Promise<boolean>
+  updateProject: (projectId: string, projectData: any) => Promise<boolean>
 }
 
 export const useStore = create<AppState>()(
@@ -449,7 +474,7 @@ export const useStore = create<AppState>()(
         set((state) => ({
           demandes: state.demandes.map((d) => (d.id === id ? demande : d)),
         })),
-      addNotification: (notification: Notification) =>
+      addNotification: (notification: AppNotification) =>
         set((state) => ({
           notifications: [notification, ...state.notifications],
         })),
@@ -487,6 +512,119 @@ export const useStore = create<AppState>()(
         } catch (error) {
           console.error("Erreur mise à jour demande:", error)
           set({ error: "Erreur lors de la mise à jour de la demande", isLoading: false })
+          return false
+        }
+      },
+
+      // Project Management Functions
+      addUserToProject: async (userId: string, projectId: string, role?: string) => {
+        set({ isLoading: true, error: null })
+        try {
+          // Pour l'instant, fonctionnement en mode local
+          // TODO: Implémenter l'API /api/projects/add-user
+          
+          // Simulation d'un délai API
+          await new Promise(resolve => setTimeout(resolve, 500))
+          
+          // Mettre à jour l'utilisateur localement
+          set((state) => ({
+            users: state.users.map((user) =>
+              user.id === userId
+                ? { ...user, projets: [...(user.projets || []), projectId], role: (role as any) || user.role }
+                : user
+            ),
+            isLoading: false,
+          }))
+          
+          console.log(`✅ [LOCAL] Utilisateur ${userId} ajouté au projet ${projectId} avec le rôle ${role || 'employe'}`)
+          return true
+          
+        } catch (error) {
+          console.error("Erreur ajout utilisateur au projet:", error)
+          set({ error: "Erreur lors de l'ajout de l'utilisateur au projet", isLoading: false })
+          return false
+        }
+      },
+
+      removeUserFromProject: async (userId: string, projectId: string) => {
+        set({ isLoading: true, error: null })
+        try {
+          // Pour l'instant, fonctionnement en mode local
+          // TODO: Implémenter l'API /api/projects/remove-user
+          
+          // Simulation d'un délai API
+          await new Promise(resolve => setTimeout(resolve, 500))
+          
+          // Mettre à jour l'utilisateur localement
+          set((state) => ({
+            users: state.users.map((user) =>
+              user.id === userId
+                ? { ...user, projets: (user.projets || []).filter(id => id !== projectId) }
+                : user
+            ),
+            isLoading: false,
+          }))
+          
+          console.log(`✅ [LOCAL] Utilisateur ${userId} retiré du projet ${projectId}`)
+          return true
+          
+        } catch (error) {
+          console.error("Erreur suppression utilisateur du projet:", error)
+          set({ error: "Erreur lors de la suppression de l'utilisateur du projet", isLoading: false })
+          return false
+        }
+      },
+
+      updateUserRole: async (userId: string, newRole: string) => {
+        set({ isLoading: true, error: null })
+        try {
+          // Pour l'instant, fonctionnement en mode local
+          // TODO: Implémenter l'API /api/users/update-role
+          
+          // Simulation d'un délai API
+          await new Promise(resolve => setTimeout(resolve, 300))
+          
+          // Mettre à jour l'utilisateur localement
+          set((state) => ({
+            users: state.users.map((user) =>
+              user.id === userId ? { ...user, role: newRole as any } : user
+            ),
+            isLoading: false,
+          }))
+          
+          console.log(`✅ [LOCAL] Rôle de l'utilisateur ${userId} mis à jour vers ${newRole}`)
+          return true
+          
+        } catch (error) {
+          console.error("Erreur mise à jour rôle utilisateur:", error)
+          set({ error: "Erreur lors de la mise à jour du rôle", isLoading: false })
+          return false
+        }
+      },
+
+      updateProject: async (projectId: string, projectData: any) => {
+        set({ isLoading: true, error: null })
+        try {
+          // Pour l'instant, fonctionnement en mode local
+          // TODO: Implémenter l'API /api/projects/update
+          
+          // Simulation d'un délai API
+          await new Promise(resolve => setTimeout(resolve, 400))
+          
+          // Mettre à jour le projet localement
+          set((state) => ({
+            projets: state.projets.map((projet) =>
+              projet.id === projectId ? { ...projet, ...projectData } : projet
+            ),
+            isLoading: false,
+          }))
+          
+          console.log(`✅ [LOCAL] Projet ${projectId} mis à jour:`, projectData)
+          return true
+          
+        } catch (error) {
+          console.error("Erreur mise à jour projet:", error)
+          set({ error: "Erreur lors de la mise à jour du projet", isLoading: false })
           return false
         }
       },

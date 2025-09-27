@@ -4,8 +4,39 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Input } from "@/components/ui/input"
 import { useStore } from "@/stores/useStore"
-import { Package, Clock, CheckCircle, XCircle, Plus, FileText, Truck } from 'lucide-react'
+import { 
+  Package, 
+  Clock, 
+  CheckCircle, 
+  XCircle, 
+  Plus, 
+  FileText, 
+  Truck,
+  Users,
+  FolderOpen,
+  Settings,
+  Search,
+  Wrench,
+  BarChart3,
+  TrendingUp
+} from 'lucide-react'
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  BarChart,
+  Bar,
+} from "recharts"
 import CreateDemandeModal from "@/components/demandes/create-demande-modal"
 import { UserRequestsChart } from "@/components/charts/user-requests-chart"
 import UserDetailsModal from "@/components/modals/user-details-modal"
@@ -27,6 +58,8 @@ export default function ResponsableLogistiqueDashboard() {
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null)
   const [filterTitle, setFilterTitle] = useState("")
   const [showValidationList, setShowValidationList] = useState(false)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [activeChart, setActiveChart] = useState<"material" | "tooling">("material")
 
   useEffect(() => {
     if (currentUser) {
@@ -145,209 +178,327 @@ export default function ResponsableLogistiqueDashboard() {
     )
   }
 
+  // Génération des données de graphique
+  const generateChartData = () => {
+    const filteredDemandes = getFilteredDemandes()
+    const materialRequests = filteredDemandes.filter(d => d.type === "materiel")
+    const toolingRequests = filteredDemandes.filter(d => d.type === "outillage")
+    
+    const materialFlowData = [
+      { name: "Jan", value: Math.round(materialRequests.length * 0.15) },
+      { name: "Fév", value: Math.round(materialRequests.length * 0.18) },
+      { name: "Mar", value: Math.round(materialRequests.length * 0.22) },
+      { name: "Avr", value: Math.round(materialRequests.length * 0.16) },
+      { name: "Mai", value: Math.round(materialRequests.length * 0.20) },
+      { name: "Jun", value: Math.round(materialRequests.length * 0.19) },
+    ]
+
+    const toolingFlowData = [
+      { name: "Jan", value: Math.round(toolingRequests.length * 0.15) },
+      { name: "Fév", value: Math.round(toolingRequests.length * 0.18) },
+      { name: "Mar", value: Math.round(toolingRequests.length * 0.22) },
+      { name: "Avr", value: Math.round(toolingRequests.length * 0.16) },
+      { name: "Mai", value: Math.round(toolingRequests.length * 0.20) },
+      { name: "Jun", value: Math.round(toolingRequests.length * 0.19) },
+    ]
+
+    const pieData = [
+      { 
+        name: "Matériel", 
+        value: materialRequests.length || 60, 
+        color: "#015fc4" 
+      },
+      { 
+        name: "Outillage", 
+        value: toolingRequests.length || 40, 
+        color: "#b8d1df" 
+      },
+    ]
+
+    return { materialFlowData, toolingFlowData, pieData }
+  }
+
+  const { materialFlowData, toolingFlowData, pieData } = generateChartData()
+
+  const handlePieClick = (data: any) => {
+    if (data.name === "Matériel") {
+      setActiveChart("material")
+    } else if (data.name === "Outillage") {
+      setActiveChart("tooling")
+    }
+  }
+
   return (
-    <div className="space-y-6">
-      {/* En-tête */}
-      <div className="flex items-center space-x-4">
-        <h1 className="text-3xl font-bold text-gray-900">Tableau de bord</h1>
-        {showValidationList && (
-          <Button 
-            variant="outline" 
-            onClick={() => setShowValidationList(false)}
-          >
-            Retour au tableau de bord
-          </Button>
+    <div className="min-h-screen bg-gray-50 p-2">
+      <div className="max-w-full mx-auto">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">Tableau de Bord Responsable Logistique</h1>
+          {showValidationList && (
+            <Button 
+              variant="outline" 
+              onClick={() => setShowValidationList(false)}
+            >
+              Retour au tableau de bord
+            </Button>
+          )}
+        </div>
+
+        {/* Afficher soit le dashboard soit la liste de validation */}
+        {showValidationList ? (
+          <ValidationLogistiqueList />
+        ) : (
+          <>
+            {/* Layout principal : deux colonnes */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+              {/* Colonne de gauche (large) - 3/4 de la largeur */}
+              <div className="lg:col-span-3 space-y-4">
+                {/* Vue d'ensemble - Cards statistiques (5 cartes sur 2 lignes) */}
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                  <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#015fc4' }} onClick={() => handleCardClick("total", "Toutes mes demandes")}>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">Total</CardTitle>
+                      <FileText className="h-4 w-4" style={{ color: '#015fc4' }} />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold" style={{ color: '#015fc4' }}>{stats.total}</div>
+                      <p className="text-xs text-muted-foreground">Demandes</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#f97316' }} onClick={() => handleCardClick("enAttenteValidation", "Demandes à valider")}>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">À valider</CardTitle>
+                      <Clock className="h-4 w-4" style={{ color: '#f97316' }} />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold" style={{ color: '#f97316' }}>{stats.enAttenteValidation}</div>
+                      <p className="text-xs text-muted-foreground">Logistique</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#b8d1df' }} onClick={() => handleCardClick("enCours", "Demandes en cours")}>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">En cours</CardTitle>
+                      <Truck className="h-4 w-4" style={{ color: '#b8d1df' }} />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold" style={{ color: '#b8d1df' }}>{stats.enCours}</div>
+                      <p className="text-xs text-muted-foreground">Transport</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#22c55e' }} onClick={() => handleCardClick("validees", "Demandes validées")}>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">Validées</CardTitle>
+                      <CheckCircle className="h-4 w-4" style={{ color: '#22c55e' }} />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold" style={{ color: '#22c55e' }}>{stats.validees}</div>
+                      <p className="text-xs text-muted-foreground">Terminées</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#fc2d1f' }} onClick={() => handleCardClick("rejetees", "Demandes rejetées")}>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">Rejetées</CardTitle>
+                      <XCircle className="h-4 w-4" style={{ color: '#fc2d1f' }} />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold" style={{ color: '#fc2d1f' }}>{stats.rejetees}</div>
+                      <p className="text-xs text-muted-foreground">Refusées</p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Liste des demandes */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>
+                      {selectedFilter ? filterTitle : "Toutes les demandes"}
+                      {selectedFilter && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => setSelectedFilter(null)}
+                          className="ml-2"
+                        >
+                          Voir tout
+                        </Button>
+                      )}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {getFilteredDemandes().length === 0 ? (
+                        <p className="text-center text-gray-500 py-8">
+                          Aucune demande trouvée
+                        </p>
+                      ) : (
+                        getFilteredDemandes().slice(0, 8).map((demande) => (
+                          <div key={demande.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-3">
+                                <Package className="h-5 w-5 text-gray-400" />
+                                <div>
+                                  <p className="font-medium">{demande.numero}</p>
+                                  <p className="text-sm text-gray-600">
+                                    {demande.projet?.nom} • {demande.items?.length || 0} articles
+                                  </p>
+                                  <p className="text-xs text-gray-500">
+                                    Créée le {new Date(demande.dateCreation).toLocaleDateString()}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-3">
+                              {getStatusBadge(demande.status)}
+                              <Badge variant="outline" className="capitalize">
+                                {demande.type}
+                              </Badge>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Colonne de droite (fine) - 1/4 de la largeur */}
+              <div className="lg:col-span-1 space-y-4">
+                {/* Actions rapides */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Actions Rapides</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 gap-2">
+                      <Button 
+                        className="justify-start text-white" 
+                        style={{ backgroundColor: '#015fc4' }}
+                        size="sm"
+                        onClick={() => setShowCreateModal(true)}
+                      >
+                        <Package className="h-4 w-4 mr-2" />
+                        <span className="text-sm">Nouvelle demande matériel</span>
+                      </Button>
+                      <Button
+                        className="justify-start text-gray-700"
+                        style={{ backgroundColor: '#b8d1df' }}
+                        size="sm"
+                        onClick={() => setShowCreateModal(true)}
+                      >
+                        <Wrench className="h-4 w-4 mr-2" />
+                        <span className="text-sm">Nouvelle demande outillage</span>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Graphique en secteurs */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Répartition</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={120}>
+                      <PieChart>
+                        <Pie
+                          data={pieData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={30}
+                          outerRadius={50}
+                          dataKey="value"
+                          onClick={handlePieClick}
+                          style={{ cursor: "pointer" }}
+                        >
+                          {pieData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="mt-2 space-y-1">
+                      <div
+                        className={`flex items-center justify-between text-sm cursor-pointer p-1 rounded ${
+                          activeChart === "material" ? "bg-blue-50" : ""
+                        }`}
+                        onClick={() => setActiveChart("material")}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#015fc4' }}></div>
+                          <span>Matériel</span>
+                        </div>
+                        <span className="font-medium">{pieData[0]?.value || 0}</span>
+                      </div>
+                      <div
+                        className={`flex items-center justify-between text-sm cursor-pointer p-1 rounded ${
+                          activeChart === "tooling" ? "bg-blue-50" : ""
+                        }`}
+                        onClick={() => setActiveChart("tooling")}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#b8d1df' }}></div>
+                          <span>Outillage</span>
+                        </div>
+                        <span className="font-medium">{pieData[1]?.value || 0}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Graphiques de flux */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      {activeChart === "material" ? (
+                        <>
+                          <TrendingUp className="h-4 w-4" style={{ color: '#015fc4' }} />
+                          Flux Demandes Matériel
+                        </>
+                      ) : (
+                        <>
+                          <BarChart3 className="h-4 w-4" style={{ color: '#b8d1df' }} />
+                          Flux Demandes Outillage
+                        </>
+                      )}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={150}>
+                      {activeChart === "material" ? (
+                        <LineChart data={materialFlowData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" fontSize={12} />
+                          <YAxis fontSize={12} />
+                          <Tooltip />
+                          <Line type="monotone" dataKey="value" stroke="#015fc4" strokeWidth={2} />
+                        </LineChart>
+                      ) : (
+                        <BarChart data={toolingFlowData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" fontSize={12} />
+                          <YAxis fontSize={12} />
+                          <Tooltip />
+                          <Bar dataKey="value" fill="#b8d1df" />
+                        </BarChart>
+                      )}
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </>
         )}
       </div>
 
-      {/* Afficher soit le dashboard soit la liste de validation */}
-      {showValidationList ? (
-        <ValidationLogistiqueList />
-      ) : (
-        <>
-          {/* Statistiques */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card 
-              className="bg-blue-50 border-blue-200 cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => handleCardClick("total", "Toutes mes demandes")}
-            >
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-blue-600">Total demandes</p>
-                    <p className="text-2xl font-bold text-blue-800">{stats.total}</p>
-                  </div>
-                  <FileText className="h-8 w-8 text-blue-600" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card 
-              className="bg-orange-50 border-orange-200 cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => handleCardClick("enAttenteValidation", "Demandes à valider")}
-            >
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-orange-600">À valider</p>
-                    <p className="text-2xl font-bold text-orange-800">{stats.enAttenteValidation}</p>
-                  </div>
-                  <Clock className="h-8 w-8 text-orange-600" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card 
-              className="bg-yellow-50 border-yellow-200 cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => handleCardClick("enCours", "Demandes en cours")}
-            >
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-yellow-600">En cours</p>
-                    <p className="text-2xl font-bold text-yellow-800">{stats.enCours}</p>
-                  </div>
-                  <Truck className="h-8 w-8 text-yellow-600" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card 
-              className="bg-green-50 border-green-200 cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => handleCardClick("validees", "Demandes validées")}
-            >
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-green-600">Validées</p>
-                    <p className="text-2xl font-bold text-green-800">{stats.validees}</p>
-                  </div>
-                  <CheckCircle className="h-8 w-8 text-green-600" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card 
-              className="bg-red-50 border-red-200 cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => handleCardClick("rejetees", "Demandes rejetées")}
-            >
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-red-600">Rejetées</p>
-                    <p className="text-2xl font-bold text-red-800">{stats.rejetees}</p>
-                  </div>
-                  <XCircle className="h-8 w-8 text-red-600" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Actions rapides */}
-          <Card className="bg-gray-50 border-gray-200">
-            <CardHeader>
-              <CardTitle className="text-gray-800">Actions rapides</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-3">
-                <Button
-                  onClick={() => setShowCreateModal(true)}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nouvelle demande de matériel
-                </Button>
-                <Button
-                  onClick={() => setShowCreateModal(true)}
-                  className="bg-teal-600 hover:bg-teal-700 text-white"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nouvelle demande d'outillage
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Graphique et liste des demandes */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-1">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Évolution des demandes</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <UserRequestsChart 
-                    title="Demandes logistique"
-                    type="materiel"
-                    userRequests={demandes}
-                  />
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="lg:col-span-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>
-                    {selectedFilter ? filterTitle : "Toutes les demandes"}
-                    {selectedFilter && (
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => setSelectedFilter(null)}
-                        className="ml-2"
-                      >
-                        Voir tout
-                      </Button>
-                    )}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {getFilteredDemandes().length === 0 ? (
-                      <p className="text-center text-gray-500 py-8">
-                        Aucune demande trouvée
-                      </p>
-                    ) : (
-                      getFilteredDemandes().slice(0, 10).map((demande) => (
-                        <div key={demande.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-3">
-                              <Package className="h-5 w-5 text-gray-400" />
-                              <div>
-                                <p className="font-medium">{demande.numero}</p>
-                                <p className="text-sm text-gray-600">
-                                  {demande.projet?.nom} • {demande.items?.length || 0} articles
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                  Créée le {new Date(demande.dateCreation).toLocaleDateString()}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-3">
-                            {getStatusBadge(demande.status)}
-                            <Badge variant="outline" className="capitalize">
-                              {demande.type}
-                            </Badge>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Modals */}
+      {/* Modals fonctionnels */}
       <CreateDemandeModal 
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
       />
-
       <UserDetailsModal 
         isOpen={showUserModal}
         onClose={() => setShowUserModal(false)}

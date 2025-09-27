@@ -1,0 +1,334 @@
+/* 📱 OPTIMISATIONS RESPONSIVE POUR PAGE LOGIN */
+
+/* Variables CSS pour cohérence */
+:root {
+  --login-primary: #015fc4;
+  --login-secondary: #b8d1df;
+  --login-accent: #fc2d1f;
+  --login-bg-light: #f8fafc;
+  --login-text-gray: #6b7280;
+}
+
+/* 🔧 BREAKPOINTS PERSONNALISÉS POUR MOBILES */
+
+/* iPhone SE, Galaxy S8 (320px - 375px) */
+@media (max-width: 375px) {
+  .login-container {
+    padding: 1rem !important;
+  }
+  
+  .login-form-wrapper {
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+  
+  .login-title {
+    font-size: 1.5rem !important;
+    line-height: 2rem !important;
+  }
+  
+  .login-subtitle {
+    font-size: 0.875rem !important;
+    padding: 0 0.5rem !important;
+  }
+  
+  .login-input {
+    font-size: 16px !important; /* Évite le zoom sur iOS */
+    padding-left: 2.5rem !important;
+    padding-right: 2.5rem !important;
+  }
+  
+  .login-input-icon {
+    left: 0.75rem !important;
+    width: 1rem !important;
+    height: 1rem !important;
+  }
+  
+  .login-password-toggle {
+    right: 0.75rem !important;
+    width: 2rem !important;
+    height: 2rem !important;
+  }
+  
+  .login-button {
+    font-size: 0.875rem !important;
+    padding: 0.875rem 1rem !important;
+    min-height: 44px !important;
+  }
+  
+  .login-logo-mobile {
+    transform: scale(0.4) !important;
+  }
+}
+
+/* iPhone 12/13/14, Galaxy S20 (375px - 414px) */
+@media (min-width: 376px) and (max-width: 414px) {
+  .login-container {
+    padding: 1.25rem !important;
+  }
+  
+  .login-input {
+    font-size: 16px !important; /* Évite le zoom sur iOS */
+  }
+  
+  .login-logo-mobile {
+    transform: scale(0.45) !important;
+  }
+}
+
+/* iPhone 12/13/14 Pro Max, Galaxy Note (414px - 480px) */
+@media (min-width: 415px) and (max-width: 480px) {
+  .login-logo-mobile {
+    transform: scale(0.5) !important;
+  }
+}
+
+/* Tablettes portrait (481px - 768px) */
+@media (min-width: 481px) and (max-width: 768px) {
+  .login-container {
+    padding: 2rem !important;
+  }
+  
+  .login-form-wrapper {
+    max-width: 28rem !important;
+  }
+  
+  .login-title {
+    font-size: 2.25rem !important;
+  }
+  
+  .login-logo-mobile {
+    transform: scale(0.6) !important;
+  }
+}
+
+/* 🎯 OPTIMISATIONS TACTILES */
+.login-touch-target {
+  min-height: 44px !important; /* Recommandation Apple/Google */
+  min-width: 44px !important;
+}
+
+/* Boutons avec zones tactiles étendues */
+.login-button,
+.login-password-toggle,
+.login-link {
+  -webkit-tap-highlight-color: rgba(1, 95, 196, 0.1);
+  tap-highlight-color: rgba(1, 95, 196, 0.1);
+}
+
+/* 📐 HAUTEURS DYNAMIQUES POUR MOBILES */
+@media (max-height: 667px) {
+  /* iPhone 6/7/8, écrans courts */
+  .login-main-container {
+    min-height: 100vh !important;
+    padding-top: 1rem !important;
+    padding-bottom: 1rem !important;
+  }
+  
+  .login-header {
+    margin-bottom: 1rem !important;
+  }
+  
+  .login-form {
+    gap: 1rem !important;
+  }
+  
+  .login-footer {
+    margin-top: 1.5rem !important;
+  }
+}
+
+@media (max-height: 568px) {
+  /* iPhone 5/SE, écrans très courts */
+  .login-main-container {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+  
+  .login-header {
+    margin-bottom: 0.75rem !important;
+  }
+  
+  .login-logo-mobile {
+    transform: scale(0.35) !important;
+  }
+  
+  .login-title {
+    font-size: 1.25rem !important;
+    margin-bottom: 0.25rem !important;
+  }
+  
+  .login-form {
+    gap: 0.75rem !important;
+  }
+}
+
+/* 🌐 ORIENTATION PAYSAGE SUR MOBILE */
+@media (max-height: 480px) and (orientation: landscape) {
+  .login-main-container {
+    flex-direction: row !important;
+    align-items: center !important;
+    padding: 1rem !important;
+  }
+  
+  .login-form-wrapper {
+    max-width: 24rem !important;
+  }
+  
+  .login-header {
+    margin-bottom: 1rem !important;
+  }
+  
+  .login-logo-mobile {
+    transform: scale(0.3) !important;
+  }
+  
+  .login-title {
+    font-size: 1.125rem !important;
+  }
+  
+  .login-form {
+    gap: 0.5rem !important;
+  }
+}
+
+/* 🔍 ZOOM ET ACCESSIBILITÉ */
+@media (prefers-reduced-motion: reduce) {
+  .login-button {
+    transform: none !important;
+    transition: background-color 0.2s ease !important;
+  }
+}
+
+/* Contraste élevé */
+@media (prefers-contrast: high) {
+  .login-input {
+    border-width: 2px !important;
+    border-color: var(--login-primary) !important;
+  }
+  
+  .login-button {
+    border: 2px solid var(--login-accent) !important;
+  }
+}
+
+/* 🎨 DARK MODE SUPPORT */
+@media (prefers-color-scheme: dark) {
+  .login-main-container {
+    background-color: #1f2937 !important;
+    color: #f9fafb !important;
+  }
+  
+  .login-input {
+    background-color: #374151 !important;
+    border-color: #4b5563 !important;
+    color: #f9fafb !important;
+  }
+  
+  .login-input::placeholder {
+    color: #9ca3af !important;
+  }
+}
+
+/* 📱 CLASSES UTILITAIRES RESPONSIVE */
+.mobile-only {
+  display: block;
+}
+
+.desktop-only {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .mobile-only {
+    display: none;
+  }
+  
+  .desktop-only {
+    display: block;
+  }
+}
+
+/* 🔧 FIXES SPÉCIFIQUES PAR NAVIGATEUR */
+
+/* Safari iOS - Éviter le zoom automatique */
+@supports (-webkit-touch-callout: none) {
+  .login-input {
+    font-size: 16px !important;
+  }
+}
+
+/* Chrome Android - Optimisations */
+@media screen and (-webkit-min-device-pixel-ratio: 2) {
+  .login-input {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* 🎯 ÉTATS DE FOCUS AMÉLIORÉS POUR MOBILE */
+.login-input:focus {
+  outline: 2px solid var(--login-primary) !important;
+  outline-offset: 2px !important;
+}
+
+.login-button:focus {
+  outline: 2px solid var(--login-accent) !important;
+  outline-offset: 2px !important;
+}
+
+/* 📐 GRILLE RESPONSIVE POUR TRÈS PETITS ÉCRANS */
+@media (max-width: 320px) {
+  .login-form-wrapper {
+    padding: 0.75rem !important;
+  }
+  
+  .login-input {
+    padding: 0.75rem 2rem !important;
+  }
+  
+  .login-button {
+    padding: 0.75rem 1rem !important;
+    font-size: 0.8125rem !important;
+  }
+}
+
+/* 🌟 ANIMATIONS OPTIMISÉES POUR MOBILE */
+@media (hover: none) and (pointer: coarse) {
+  /* Désactiver les hover effects sur mobile */
+  .login-button:hover {
+    transform: none !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+  }
+  
+  /* Améliorer les animations de tap */
+  .login-button:active {
+    transform: scale(0.98) !important;
+    transition: transform 0.1s ease !important;
+  }
+}
+
+/* 📱 SUPPORT PWA ET FULLSCREEN */
+@media (display-mode: standalone) {
+  .login-main-container {
+    padding-top: env(safe-area-inset-top, 1rem) !important;
+    padding-bottom: env(safe-area-inset-bottom, 1rem) !important;
+  }
+}
+
+/* 🔄 ROTATION D'ÉCRAN */
+@media (orientation: portrait) {
+  .login-main-container {
+    flex-direction: column !important;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .login-header {
+    margin-bottom: 0.5rem !important;
+  }
+  
+  .login-form {
+    gap: 0.5rem !important;
+  }
+}

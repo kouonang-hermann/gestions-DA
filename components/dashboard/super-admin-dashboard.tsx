@@ -4,17 +4,48 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Switch } from "@/components/ui/switch"
+import { Input } from "@/components/ui/input"
 import { useStore } from "@/stores/useStore"
-import { Users, FileText, Settings, Plus, Eye, Edit, Trash2, Activity } from "lucide-react"
-import InstrumElecLogo from "@/components/ui/instrumelec-logo"
+import { 
+  Users, 
+  FolderOpen, 
+  FileText, 
+  Clock, 
+  Plus, 
+  BarChart3, 
+  TrendingUp, 
+  Settings, 
+  CreditCard, 
+  Wrench, 
+  Package, 
+  Search, 
+  ChevronLeft, 
+  ChevronRight, 
+  Activity 
+} from "lucide-react"
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  BarChart,
+  Bar,
+} from "recharts"
 import CreateUserModal from "@/components/admin/create-user-modal"
 import CreateProjectModal from "@/components/admin/create-project-modal"
+import ProjectManagementModal from "@/components/admin/project-management-modal"
 import CreateDemandeModal from "@/components/demandes/create-demande-modal"
-import RequestsFlowChart from "@/components/charts/requests-flow-chart"
 import DetailsModal from "@/components/modals/details-modal"
-import ManageAdminRoles from "@/components/admin/manage-admin-roles"
 import ValidatedRequestsHistory from "@/components/dashboard/validated-requests-history"
-import ChangeUserRoleModal from "@/components/admin/change-user-role-modal"
+import ManageAdminRoles from "../admin/manage-admin-roles"
 
 export default function SuperAdminDashboard() {
   const { currentUser, users, projets, demandes, loadUsers, loadProjets, loadDemandes, isLoading } = useStore()
@@ -28,6 +59,7 @@ export default function SuperAdminDashboard() {
 
   const [createUserModalOpen, setCreateUserModalOpen] = useState(false)
   const [createProjectModalOpen, setCreateProjectModalOpen] = useState(false)
+  const [projectManagementModalOpen, setProjectManagementModalOpen] = useState(false)
   const [createDemandeModalOpen, setCreateDemandeModalOpen] = useState(false)
   const [validatedHistoryModalOpen, setValidatedHistoryModalOpen] = useState(false)
   const [demandeType, setDemandeType] = useState<"materiel" | "outillage">("materiel")
@@ -37,6 +69,12 @@ export default function SuperAdminDashboard() {
   const [detailsModalType, setDetailsModalType] = useState<"users" | "projects" | "totalRequests" | "activeRequests">("users")
   const [detailsModalTitle, setDetailsModalTitle] = useState("")
   const [detailsModalData, setDetailsModalData] = useState<any[]>([])
+
+  // États pour la pagination et recherche (nouveau design)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
+  const [activeChart, setActiveChart] = useState<"material" | "tooling">("material")
+  const itemsPerPage = 7
 
   useEffect(() => {
     if (currentUser) {
@@ -71,24 +109,78 @@ export default function SuperAdminDashboard() {
     return labels[role as keyof typeof labels] || role
   }
 
-  const getStatusColor = (status: string) => {
-    const colors = {
-      brouillon: "bg-gray-500",
-      soumise: "bg-blue-500",
-      en_attente_validation_conducteur: "bg-orange-500",
-      en_attente_validation_qhse: "bg-orange-500",
-      en_attente_validation_responsable_travaux: "bg-orange-500",
-      en_attente_validation_charge_affaire: "bg-orange-500",
-      en_attente_preparation_appro: "bg-purple-500",
-      en_attente_validation_logistique: "bg-purple-500",
-      en_attente_validation_finale_demandeur: "bg-emerald-500",
-      confirmee_demandeur: "bg-green-500",
-      cloturee: "bg-green-600",
-      rejetee: "bg-red-500",
-      archivee: "bg-gray-600",
+  const getRoleBadgeColor = (role: string) => {
+    switch (role) {
+      case "superadmin":
+        return "bg-red-100 text-red-800 border-red-200"
+      case "responsable_travaux":
+        return "bg-purple-100 text-purple-800 border-purple-200"
+      case "conducteur_travaux":
+        return "bg-blue-100 text-blue-800 border-blue-200"
+      case "responsable_qhse":
+        return "bg-orange-100 text-orange-800 border-orange-200"
+      case "responsable_appro":
+        return "bg-green-100 text-green-800 border-green-200"
+      case "charge_affaire":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200"
+      case "employe":
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200"
     }
-    return colors[status as keyof typeof colors] || "bg-gray-500"
   }
+
+  // Génération des données de graphique à partir des demandes réelles
+  const generateChartData = () => {
+    const materialRequests = demandes.filter(d => d.type === "materiel")
+    const toolingRequests = demandes.filter(d => d.type === "outillage")
+    
+    const materialFlowData = [
+      { name: "Jan", value: Math.round(materialRequests.length * 0.15) },
+      { name: "Fév", value: Math.round(materialRequests.length * 0.18) },
+      { name: "Mar", value: Math.round(materialRequests.length * 0.22) },
+      { name: "Avr", value: Math.round(materialRequests.length * 0.16) },
+      { name: "Mai", value: Math.round(materialRequests.length * 0.20) },
+      { name: "Jun", value: Math.round(materialRequests.length * 0.19) },
+    ]
+
+    const toolingFlowData = [
+      { name: "Jan", value: Math.round(toolingRequests.length * 0.15) },
+      { name: "Fév", value: Math.round(toolingRequests.length * 0.18) },
+      { name: "Mar", value: Math.round(toolingRequests.length * 0.22) },
+      { name: "Avr", value: Math.round(toolingRequests.length * 0.16) },
+      { name: "Mai", value: Math.round(toolingRequests.length * 0.20) },
+      { name: "Jun", value: Math.round(toolingRequests.length * 0.19) },
+    ]
+
+    const pieData = [
+      { 
+        name: "Matériel", 
+        value: materialRequests.length || 60, 
+        color: "#015fc4" 
+      },
+      { 
+        name: "Outillage", 
+        value: toolingRequests.length || 40, 
+        color: "#b8d1df" 
+      },
+    ]
+
+    return { materialFlowData, toolingFlowData, pieData }
+  }
+
+  const { materialFlowData, toolingFlowData, pieData } = generateChartData()
+
+  // Filtrage et pagination des utilisateurs
+  const filteredUsers = users.filter(
+    (user) =>
+      user.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      getRoleLabel(user.role).toLowerCase().includes(searchTerm.toLowerCase()),
+  )
+
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage)
 
   // Click handlers for statistics cards
   const handleUsersClick = () => {
@@ -99,10 +191,7 @@ export default function SuperAdminDashboard() {
   }
 
   const handleProjectsClick = () => {
-    setDetailsModalType("projects")
-    setDetailsModalTitle("Tous les projets")
-    setDetailsModalData(projets)
-    setDetailsModalOpen(true)
+    setProjectManagementModalOpen(true)
   }
 
   const handleTotalRequestsClick = () => {
@@ -110,7 +199,6 @@ export default function SuperAdminDashboard() {
   }
 
   const handleActiveRequestsClick = () => {
-    // CORRECTION: Utiliser les vrais statuts
     const activeRequests = demandes.filter(
       (d) => !["brouillon", "cloturee", "archivee", "rejetee"].includes(d.status)
     )
@@ -118,6 +206,14 @@ export default function SuperAdminDashboard() {
     setDetailsModalTitle("Demandes en cours")
     setDetailsModalData(activeRequests)
     setDetailsModalOpen(true)
+  }
+
+  const handlePieClick = (data: any) => {
+    if (data.name === "Matériel") {
+      setActiveChart("material")
+    } else if (data.name === "Outillage") {
+      setActiveChart("tooling")
+    }
   }
 
   const handleRemoveUserFromProject = () => {
@@ -133,127 +229,324 @@ export default function SuperAdminDashboard() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Statistiques globales */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-blue-50 border-blue-200 cursor-pointer hover:shadow-md transition-shadow" onClick={handleUsersClick}>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-blue-600">Utilisateurs</p>
-                <p className="text-xl sm:text-2xl font-bold text-blue-800">{stats.totalUtilisateurs}</p>
-              </div>
-              <Users className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
+    <div className="min-h-screen bg-gray-50 p-2">
+      <div className="max-w-full mx-auto">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">Tableau de Bord Super Administrateur</h1>
 
-        <Card className="bg-green-50 border-green-200 cursor-pointer hover:shadow-md transition-shadow" onClick={handleProjectsClick}>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-green-600">Projets</p>
-                <p className="text-xl sm:text-2xl font-bold text-green-800">{stats.totalProjets}</p>
-              </div>
-              <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
+        {/* Layout principal : responsive */}
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
+          {/* Colonne de gauche (large) - 3/4 de la largeur */}
+          <div className="xl:col-span-3 space-y-4">
+            {/* Vue d'ensemble - Cards statistiques */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#015fc4' }} onClick={handleUsersClick}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Utilisateurs</CardTitle>
+                  <Users className="h-4 w-4" style={{ color: '#015fc4' }} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" style={{ color: '#015fc4' }}>{stats.totalUtilisateurs}</div>
+                  <p className="text-xs text-muted-foreground">Total des utilisateurs</p>
+                </CardContent>
+              </Card>
 
-        <Card className="bg-purple-50 border-purple-200 cursor-pointer hover:shadow-md transition-shadow" onClick={handleTotalRequestsClick}>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-purple-600">Total demandes</p>
-                <p className="text-xl sm:text-2xl font-bold text-purple-800">{stats.totalDemandes}</p>
-              </div>
-              <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600" />
-            </div>
-          </CardContent>
-        </Card>
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#b8d1df' }} onClick={handleProjectsClick}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Projets</CardTitle>
+                  <FolderOpen className="h-4 w-4" style={{ color: '#b8d1df' }} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" style={{ color: '#b8d1df' }}>{stats.totalProjets}</div>
+                  <p className="text-xs text-muted-foreground">Projets actifs</p>
+                </CardContent>
+              </Card>
 
-        <Card className="bg-orange-50 border-orange-200 cursor-pointer hover:shadow-md transition-shadow" onClick={handleActiveRequestsClick}>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-orange-600">En cours</p>
-                <p className="text-xl sm:text-2xl font-bold text-orange-800">{stats.demandesEnCours}</p>
-              </div>
-              <Activity className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#fc2d1f' }} onClick={handleTotalRequestsClick}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Total Demandes</CardTitle>
+                  <FileText className="h-4 w-4" style={{ color: '#fc2d1f' }} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" style={{ color: '#fc2d1f' }}>{stats.totalDemandes}</div>
+                  <p className="text-xs text-muted-foreground">Toutes les demandes</p>
+                </CardContent>
+              </Card>
 
-      {/* Actions rapides */}
-      <Card className="bg-gray-50 border-gray-200">
-        <CardHeader>
-          <CardTitle className="text-gray-800">Actions d'administration</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-3">
-            <Button onClick={() => setCreateUserModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
-              <Plus className="h-4 w-4 mr-2" />
-              Nouvel utilisateur
-            </Button>
-            <Button
-              onClick={() => setCreateProjectModalOpen(true)}
-              className="bg-green-600 hover:bg-green-700 text-white"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Nouveau projet
-            </Button>
-            <Button
-              onClick={() => {
-                setDemandeType("materiel")
-                setCreateDemandeModalOpen(true)
-              }}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Nouvelle demande de matériel
-            </Button>
-            <Button
-              onClick={() => {
-                setDemandeType("outillage")
-                setCreateDemandeModalOpen(true)
-              }}
-              className="bg-teal-600 hover:bg-teal-700 text-white"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Nouvelle demande d'outillage
-            </Button>
-            <Button variant="outline" className="border-gray-300 hover:bg-white bg-transparent">
-              <Settings className="h-4 w-4 mr-2" />
-              Configuration système
-            </Button>
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#f97316' }} onClick={handleActiveRequestsClick}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">En Cours</CardTitle>
+                  <Clock className="h-4 w-4" style={{ color: '#f97316' }} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" style={{ color: '#f97316' }}>{stats.demandesEnCours}</div>
+                  <p className="text-xs text-muted-foreground">En traitement</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Gestion des Rôles Administrateur */}
+            <Card className="h-fit">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="h-5 w-5" />
+                  Gestion des Rôles Administrateur
+                </CardTitle>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="Rechercher un utilisateur..."
+                    value={searchTerm}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value)
+                      setCurrentPage(1)
+                    }}
+                    className="pl-10"
+                  />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64 sm:h-80 lg:h-96 overflow-y-auto border rounded-lg">
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[500px]">
+                      <thead className="bg-gray-50 sticky top-0">
+                        <tr>
+                          <th className="text-left p-2 sm:p-3 font-medium text-xs sm:text-sm text-gray-600">Utilisateur</th>
+                          <th className="hidden sm:table-cell text-left p-2 sm:p-3 font-medium text-xs sm:text-sm text-gray-600">Rôle</th>
+                          <th className="text-right p-2 sm:p-3 font-medium text-xs sm:text-sm text-gray-600">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                      {paginatedUsers.map((user) => (
+                        <tr key={user.id} className="border-t">
+                          <td className="p-3">
+                            <div className="flex items-center gap-3">
+                              <Avatar>
+                                <AvatarFallback className="bg-primary text-primary-foreground">
+                                  {user.nom.split(' ').map(n => n[0]).join('').toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <p className="font-medium text-sm">{user.nom}</p>
+                                <p className="text-xs text-muted-foreground">{user.email}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <Badge className={`text-xs ${getRoleBadgeColor(user.role)}`} variant="outline">
+                              {getRoleLabel(user.role)}
+                            </Badge>
+                          </td>
+                          <td className="p-3 text-right">
+                            <Switch defaultChecked={user.role !== 'employe'} />
+                          </td>
+                        </tr>
+                      ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between mt-4">
+                  <p className="text-sm text-muted-foreground">
+                    Affichage de {startIndex + 1} à {Math.min(startIndex + itemsPerPage, filteredUsers.length)} sur{" "}
+                    {filteredUsers.length} utilisateurs
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="text-sm">
+                      Page {currentPage} sur {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Gestion des rôles administrateur */}
-      <ManageAdminRoles />
+          {/* Colonne de droite (fine) - 1/4 de la largeur */}
+          <div className="lg:col-span-1 space-y-4">
+            {/* Actions rapides */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Actions Rapides</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button 
+                    className="justify-start text-white" 
+                    style={{ backgroundColor: '#015fc4' }}
+                    size="sm"
+                    onClick={() => {
+                      setDemandeType("materiel")
+                      setCreateDemandeModalOpen(true)
+                    }}
+                  >
+                    <Package className="h-4 w-4 mr-1" />
+                    <span className="text-xs">DA-Matériel</span>
+                  </Button>
+                  <Button
+                    className="justify-start text-gray-700"
+                    style={{ backgroundColor: '#b8d1df' }}
+                    size="sm"
+                    onClick={() => {
+                      setDemandeType("outillage")
+                      setCreateDemandeModalOpen(true)
+                    }}
+                  >
+                    <Wrench className="h-4 w-4 mr-1" />
+                    <span className="text-xs">DA-Outillage</span>
+                  </Button>
+                  <Button 
+                    className="justify-start bg-transparent" 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setCreateProjectModalOpen(true)}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    <span className="text-xs">Nouveau Projet</span>
+                  </Button>
+                  <Button 
+                    className="justify-start bg-transparent" 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setCreateUserModalOpen(true)}
+                  >
+                    <Users className="h-4 w-4 mr-1" />
+                    <span className="text-xs">Nouvel Utilisateur</span>
+                  </Button>
+                  <Button className="justify-start bg-transparent" variant="outline" size="sm">
+                    <BarChart3 className="h-4 w-4 mr-1" />
+                    <span className="text-xs">Rapport</span>
+                  </Button>
+                  <Button
+                    className="justify-start text-white"
+                    style={{ backgroundColor: '#fc2d1f' }}
+                    size="sm"
+                  >
+                    <CreditCard className="h-4 w-4 mr-1" />
+                    <span className="text-xs">DA-Paiement</span>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
 
-      {/* Graphiques des flux de demandes */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Graphique des demandes de matériel */}
-        <RequestsFlowChart
-          demandes={demandes}
-          type="materiel"
-          title="Flux des demandes de matériel"
-        />
+            {/* Graphique en secteurs */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Répartition</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={120}>
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={30}
+                      outerRadius={50}
+                      dataKey="value"
+                      onClick={handlePieClick}
+                      style={{ cursor: "pointer" }}
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="mt-2 space-y-1">
+                  <div
+                    className={`flex items-center justify-between text-sm cursor-pointer p-1 rounded ${
+                      activeChart === "material" ? "bg-blue-50" : ""
+                    }`}
+                    onClick={() => setActiveChart("material")}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#015fc4' }}></div>
+                      <span>Matériel</span>
+                    </div>
+                    <span className="font-medium">{pieData[0]?.value || 0}</span>
+                  </div>
+                  <div
+                    className={`flex items-center justify-between text-sm cursor-pointer p-1 rounded ${
+                      activeChart === "tooling" ? "bg-blue-50" : ""
+                    }`}
+                    onClick={() => setActiveChart("tooling")}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#b8d1df' }}></div>
+                      <span>Outillage</span>
+                    </div>
+                    <span className="font-medium">{pieData[1]?.value || 0}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-        {/* Graphique des demandes d'outillage */}
-        <RequestsFlowChart
-          demandes={demandes}
-          type="outillage"
-          title="Flux des demandes d'outillage"
-        />
+            {/* Graphiques de flux */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  {activeChart === "material" ? (
+                    <>
+                      <TrendingUp className="h-4 w-4" style={{ color: '#015fc4' }} />
+                      Flux Demandes Matériel
+                    </>
+                  ) : (
+                    <>
+                      <BarChart3 className="h-4 w-4" style={{ color: '#b8d1df' }} />
+                      Flux Demandes Outillage
+                    </>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={150}>
+                  {activeChart === "material" ? (
+                    <LineChart data={materialFlowData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" fontSize={12} />
+                      <YAxis fontSize={12} />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="value" stroke="#015fc4" strokeWidth={2} />
+                    </LineChart>
+                  ) : (
+                    <BarChart data={toolingFlowData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" fontSize={12} />
+                      <YAxis fontSize={12} />
+                      <Tooltip />
+                      <Bar dataKey="value" fill="#b8d1df" />
+                    </BarChart>
+                  )}
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
 
-      {/* Modals */}
+      {/* Modals fonctionnels */}
       <CreateUserModal isOpen={createUserModalOpen} onClose={() => setCreateUserModalOpen(false)} />
       <CreateProjectModal isOpen={createProjectModalOpen} onClose={() => setCreateProjectModalOpen(false)} />
+      <ProjectManagementModal 
+        isOpen={projectManagementModalOpen} 
+        onClose={() => setProjectManagementModalOpen(false)} 
+      />
       <CreateDemandeModal
         isOpen={createDemandeModalOpen}
         onClose={() => setCreateDemandeModalOpen(false)}

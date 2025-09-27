@@ -1,0 +1,267 @@
+/* Styles responsive globaux pour l'application */
+
+/* Variables CSS pour la cohérence des couleurs */
+:root {
+  --color-primary: #015fc4;
+  --color-secondary: #b8d1df;
+  --color-accent: #fc2d1f;
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-error: #dc2626;
+  --color-info: #0ea5e9;
+  --color-gray: #6b7280;
+}
+
+/* Forcer la cohérence des couleurs sur tous les appareils */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Badges avec couleurs cohérentes */
+.status-badge {
+  font-weight: 500 !important;
+  font-size: 0.75rem !important;
+  padding: 0.25rem 0.5rem !important;
+  border-radius: 9999px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  border-width: 1px !important;
+}
+
+.type-badge {
+  font-weight: 500 !important;
+  font-size: 0.75rem !important;
+  padding: 0.25rem 0.5rem !important;
+  border-radius: 9999px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.25rem !important;
+  border-width: 1px !important;
+}
+
+/* Couleurs spécifiques pour les badges matériel */
+.badge-materiel {
+  background-color: #dbeafe !important;
+  color: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+}
+
+/* Couleurs spécifiques pour les badges outillage */
+.badge-outillage {
+  background-color: #f3e8ff !important;
+  color: #7c3aed !important;
+  border-color: #7c3aed !important;
+}
+
+/* Breakpoints personnalisés */
+@media (max-width: 640px) {
+  /* Mobile */
+  .dashboard-container {
+    padding: 0.5rem !important;
+  }
+  
+  .dashboard-title {
+    font-size: 1.5rem !important;
+    margin-bottom: 1rem !important;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+    gap: 0.75rem !important;
+  }
+  
+  .card-content {
+    padding: 0.75rem !important;
+  }
+  
+  .modal-content {
+    margin: 0.5rem !important;
+    max-height: 95vh !important;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 768px) {
+  /* Tablette */
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  /* Tablette large */
+  .dashboard-layout {
+    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Utilitaires responsive */
+.hide-mobile {
+  display: block;
+}
+
+@media (max-width: 640px) {
+  .hide-mobile {
+    display: none !important;
+  }
+}
+
+.show-mobile {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .show-mobile {
+    display: block !important;
+  }
+}
+
+/* Tableaux responsive */
+.responsive-table {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.responsive-table table {
+  min-width: 500px;
+}
+
+@media (max-width: 640px) {
+  .responsive-table table {
+    min-width: 400px;
+  }
+  
+  .responsive-table th,
+  .responsive-table td {
+    padding: 0.5rem !important;
+    font-size: 0.875rem !important;
+  }
+}
+
+/* Modals responsive */
+.responsive-modal {
+  width: 95vw;
+  max-width: 95vw;
+  margin: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .responsive-modal {
+    width: auto;
+    max-width: 90vw;
+    margin: 1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .responsive-modal {
+    max-width: 80vw;
+  }
+}
+
+/* Grilles responsive */
+.responsive-grid-1-2-4 {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .responsive-grid-1-2-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .responsive-grid-1-2-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Boutons responsive */
+.responsive-button {
+  width: 100%;
+  justify-content: center;
+}
+
+@media (min-width: 640px) {
+  .responsive-button {
+    width: auto;
+    justify-content: flex-start;
+  }
+}
+
+/* Texte responsive */
+.responsive-text-lg {
+  font-size: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .responsive-text-lg {
+    font-size: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .responsive-text-lg {
+    font-size: 1.875rem;
+  }
+}
+
+/* Espacement responsive */
+.responsive-spacing {
+  padding: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .responsive-spacing {
+    padding: 1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .responsive-spacing {
+    padding: 1.5rem;
+  }
+}
+
+/* Hauteurs adaptatives */
+.responsive-height-sm {
+  height: 200px;
+}
+
+@media (min-width: 640px) {
+  .responsive-height-sm {
+    height: 300px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .responsive-height-sm {
+    height: 400px;
+  }
+}
+
+/* Scroll horizontal pour petits écrans */
+.horizontal-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.horizontal-scroll::-webkit-scrollbar {
+  height: 4px;
+}
+
+.horizontal-scroll::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.horizontal-scroll::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 2px;
+}
+
+.horizontal-scroll::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}

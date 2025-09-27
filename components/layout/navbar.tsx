@@ -39,7 +39,7 @@ export default function Navbar() {
   const { currentUser, logout, notifications } = useStore()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
-  const unreadCount = notifications.filter((n) => !n.lu).length
+  const unreadCount = notifications.filter((n) => !n.read).length
 
   return (
     <nav className="border-b bg-white border-gray-200 shadow-sm sticky top-0 z-40">
@@ -90,9 +90,9 @@ export default function Navbar() {
               ) : (
                 notifications.slice(0, 5).map((notification) => (
                   <DropdownMenuItem key={notification.id} className="flex flex-col items-start p-4 hover:bg-gray-50">
-                    <div className="font-medium text-gray-800">{notification.titre}</div>
+                    <div className="font-medium text-gray-800">{notification.title}</div>
                     <div className="text-sm text-gray-600">{notification.message}</div>
-                    <div className="text-xs text-gray-400 mt-1">{notification.createdAt.toLocaleString()}</div>
+                    <div className="text-xs text-gray-400 mt-1">{notification.timestamp.toLocaleString()}</div>
                   </DropdownMenuItem>
                 ))
               )}
@@ -177,7 +177,7 @@ export default function Navbar() {
                     ) : (
                       notifications.slice(0, 3).map((notification) => (
                         <div key={notification.id} className="p-3 bg-gray-50 rounded-lg">
-                          <div className="font-medium text-sm text-gray-800">{notification.titre}</div>
+                          <div className="font-medium text-sm text-gray-800">{notification.title}</div>
                           <div className="text-xs text-gray-600 mt-1">{notification.message}</div>
                         </div>
                       ))
