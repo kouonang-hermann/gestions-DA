@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getCurrentUser } from "@/lib/auth"
+import { requireAuth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { createArticleSchema } from "@/lib/validations"
 
@@ -8,10 +8,12 @@ import { createArticleSchema } from "@/lib/validations"
  */
 export async function GET(request: NextRequest) {
   try {
-    const currentUser = await getCurrentUser(request)
-    if (!currentUser) {
-      return NextResponse.json({ success: false, error: "Non authentifié" }, { status: 401 })
+    const authResult = await requireAuth(request)
+    if (!authResult.success) {
+      return NextResponse.json({ success: false, error: authResult.error }, { status: 401 })
     }
+
+    const currentUser = authResult.user
 
     const { searchParams } = new URL(request.url)
     const type = searchParams.get("type")
@@ -53,8 +55,13 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const currentUser = await getCurrentUser(request)
-    if (!currentUser || currentUser.role !== "superadmin") {
+    const authResult = await requireAuth(request)
+    if (!authResult.success) {
+      return NextResponse.json({ success: false, error: authResult.error }, { status: 401 })
+    }
+
+    const currentUser = authResult.user
+    if (currentUser.role !== "superadmin") {
       return NextResponse.json({ success: false, error: "Accès non autorisé" }, { status: 403 })
     }
 

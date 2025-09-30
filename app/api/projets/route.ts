@@ -1,12 +1,18 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { withAuth, withPermission } from "@/lib/middleware"
+import { requireAuth } from "@/lib/auth"
 import { createProjetSchema } from "@/lib/validations"
 
 /**
  * GET /api/projets - Récupère les projets
  */
-export const GET = withAuth(async (request: NextRequest, currentUser: any) => {
+export const GET = async (request: NextRequest) => {
+  const authResult = await requireAuth(request)
+  if (!authResult.success) {
+    return NextResponse.json({ success: false, error: authResult.error }, { status: 401 })
+  }
+
+  const currentUser = authResult.user
   try {
     let whereClause: any = {}
 
@@ -73,12 +79,23 @@ export const GET = withAuth(async (request: NextRequest, currentUser: any) => {
     console.error("Erreur lors de la récupération des projets:", error)
     return NextResponse.json({ success: false, error: "Erreur serveur" }, { status: 500 })
   }
-})
+}
 
 /**
  * POST /api/projets - Crée un nouveau projet
  */
-export const POST = withPermission(["superadmin"], async (request: NextRequest, currentUser: any) => {
+export const POST = async (request: NextRequest) => {
+  const authResult = await requireAuth(request)
+  if (!authResult.success) {
+    return NextResponse.json({ success: false, error: authResult.error }, { status: 401 })
+  }
+
+  const currentUser = authResult.user
+  
+  // Vérifier les permissions - seuls les superadmin peuvent créer des projets
+  if (currentUser.role !== "superadmin") {
+    return NextResponse.json({ success: false, error: "Accès non autorisé" }, { status: 403 })
+  }
   try {
     const body = await request.json()
     
@@ -203,4 +220,4 @@ export const POST = withPermission(["superadmin"], async (request: NextRequest, 
     console.error("Erreur lors de la création du projet:", error)
     return NextResponse.json({ success: false, error: "Erreur serveur" }, { status: 500 })
   }
-})
+}

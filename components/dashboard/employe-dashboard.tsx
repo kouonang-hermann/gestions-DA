@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import "@/styles/dashboard-layout.css"
+import "@/styles/mobile-dashboard.css"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -20,7 +22,13 @@ import {
   Search,
   Wrench,
   BarChart3,
-  TrendingUp
+  TrendingUp,
+  Bell,
+  Home,
+  User,
+  Archive,
+  CreditCard,
+  Smartphone
 } from 'lucide-react'
 import {
   PieChart,
@@ -40,6 +48,10 @@ import CreateDemandeModal from "@/components/demandes/create-demande-modal"
 import { UserRequestsChart } from "@/components/charts/user-requests-chart"
 import UserDetailsModal from "@/components/modals/user-details-modal"
 import ValidatedRequestsHistory from "@/components/dashboard/validated-requests-history"
+import DemandesCategoryModal from "@/components/modals/demandes-category-modal"
+import ValidatedDemandesModal from "@/components/modals/validated-demandes-modal"
+import DashboardDebug from "@/components/debug/dashboard-debug"
+import MobileResponsiveTest from "@/components/debug/mobile-responsive-test"
 
 export default function EmployeDashboard() {
   const { currentUser, demandes, projets, loadDemandes, loadProjets, isLoading } = useStore()
@@ -57,9 +69,11 @@ export default function EmployeDashboard() {
   const [detailsModalType, setDetailsModalType] = useState<"total" | "enCours" | "validees" | "brouillons">("total")
   const [detailsModalTitle, setDetailsModalTitle] = useState("")
   const [validatedHistoryModalOpen, setValidatedHistoryModalOpen] = useState(false)
+  const [validatedDemandesModalOpen, setValidatedDemandesModalOpen] = useState(false)
   const [dataLoaded, setDataLoaded] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [activeChart, setActiveChart] = useState<"material" | "tooling">("material")
+  const [mobileTestModalOpen, setMobileTestModalOpen] = useState(false)
 
   // Chargement initial des données
   useEffect(() => {
@@ -81,22 +95,102 @@ export default function EmployeDashboard() {
     }
   }, [currentUser?.id, dataLoaded])
 
-  // Calcul des statistiques
+  // Fonction pour obtenir les demandes selon le rôle
+  const getDemandesForRole = () => {
+    if (!currentUser || !demandes) return []
+
+    switch (currentUser.role) {
+      case "conducteur_travaux":
+        // Demandes matériel qu'il doit valider ou qu'il a validées
+        return demandes.filter(d => 
+          d.type === "materiel" && (
+            d.status === "en_attente_validation_conducteur" ||
+            d.status === "soumise" ||
+            ["en_attente_validation_qhse", "en_attente_validation_responsable_travaux", "en_attente_validation_charge_affaire", "en_attente_preparation_appro", "en_attente_validation_logistique", "en_attente_validation_finale_demandeur", "confirmee_demandeur", "cloturee", "archivee"].includes(d.status)
+          )
+        )
+      
+      case "responsable_qhse":
+        // Demandes outillage qu'il doit valider ou qu'il a validées
+        return demandes.filter(d => 
+          d.type === "outillage" && (
+            d.status === "en_attente_validation_qhse" ||
+            ["en_attente_validation_responsable_travaux", "en_attente_validation_charge_affaire", "en_attente_preparation_appro", "en_attente_validation_logistique", "en_attente_validation_finale_demandeur", "confirmee_demandeur", "cloturee", "archivee"].includes(d.status)
+          )
+        )
+      
+      case "responsable_travaux":
+        // Demandes qu'il doit valider ou qu'il a validées
+        return demandes.filter(d => 
+          d.status === "en_attente_validation_responsable_travaux" ||
+          ["en_attente_validation_charge_affaire", "en_attente_preparation_appro", "en_attente_validation_logistique", "en_attente_validation_finale_demandeur", "confirmee_demandeur", "cloturee", "archivee"].includes(d.status)
+        )
+      
+      case "charge_affaire":
+        // Demandes qu'il doit valider ou qu'il a validées
+        return demandes.filter(d => 
+          d.status === "en_attente_validation_charge_affaire" ||
+          ["en_attente_preparation_appro", "en_attente_validation_logistique", "en_attente_validation_finale_demandeur", "confirmee_demandeur", "cloturee", "archivee"].includes(d.status)
+        )
+      
+      case "responsable_appro":
+        // Demandes qu'il doit traiter ou qu'il a traitées
+        return demandes.filter(d => 
+          d.status === "en_attente_preparation_appro" ||
+          ["en_attente_validation_logistique", "en_attente_validation_finale_demandeur", "confirmee_demandeur", "cloturee", "archivee"].includes(d.status)
+        )
+      
+      case "responsable_logistique":
+        // Demandes qu'il doit valider ou qu'il a validées
+        return demandes.filter(d => 
+          d.status === "en_attente_validation_logistique" ||
+          ["en_attente_validation_finale_demandeur", "confirmee_demandeur", "cloturee", "archivee"].includes(d.status)
+        )
+      
+      default:
+        // Pour les employés normaux, leurs propres demandes
+        return demandes.filter(d => d.technicienId === currentUser.id)
+    }
+  }
+
+  // Calcul des statistiques selon le rôle
   useEffect(() => {
     if (currentUser && demandes) {
-      const mesDemandes = demandes.filter((d) => d.technicienId === currentUser.id)
+      const demandesForRole = getDemandesForRole()
 
-      setStats({
-        total: mesDemandes.length,
-        enCours: mesDemandes.filter((d) => ![
-          "brouillon", 
-          "cloturee", 
-          "rejetee", 
-          "archivee"
-        ].includes(d.status)).length,
-        validees: mesDemandes.filter((d) => ["cloturee", "archivee"].includes(d.status)).length,
-        brouillons: mesDemandes.filter((d) => d.status === "brouillon").length,
-      })
+      if (["conducteur_travaux", "responsable_qhse", "responsable_travaux", "charge_affaire", "responsable_appro", "responsable_logistique"].includes(currentUser.role)) {
+        // Pour les rôles de validation
+        setStats({
+          total: demandesForRole.length,
+          enCours: demandesForRole.filter((d) => {
+            const enAttenteStatuses = [
+              "en_attente_validation_conducteur",
+              "en_attente_validation_qhse", 
+              "en_attente_validation_responsable_travaux",
+              "en_attente_validation_charge_affaire",
+              "en_attente_preparation_appro",
+              "en_attente_validation_logistique"
+            ]
+            return enAttenteStatuses.includes(d.status)
+          }).length,
+          validees: demandesForRole.filter((d) => ["cloturee", "archivee", "confirmee_demandeur", "en_attente_validation_finale_demandeur"].includes(d.status)).length,
+          brouillons: 0, // Les validateurs ne voient pas les brouillons
+        })
+      } else {
+        // Pour les employés normaux
+        const mesDemandes = demandesForRole
+        setStats({
+          total: mesDemandes.length,
+          enCours: mesDemandes.filter((d) => ![
+            "brouillon", 
+            "cloturee", 
+            "rejetee", 
+            "archivee"
+          ].includes(d.status)).length,
+          validees: mesDemandes.filter((d) => ["cloturee", "archivee"].includes(d.status)).length,
+          brouillons: mesDemandes.filter((d) => d.status === "brouillon").length,
+        })
+      }
     }
   }, [currentUser?.id, demandes])
 
@@ -155,14 +249,70 @@ export default function EmployeDashboard() {
     )
   }
 
-  const mesProjetIds = currentUser.projets || []
+  const mesProjetIds = currentUser?.projets || []
   const mesProjets = projets.filter((p) => mesProjetIds.includes(p.id)) || []
-  const mesDemandes = demandes.filter((d) => d.technicienId === currentUser.id) || []
-  const demandesValidationFinale = mesDemandes.filter(d => d.status === "en_attente_validation_finale_demandeur")
+  const demandesForRole = getDemandesForRole()
+  const demandesValidationFinale = demandesForRole.filter(d => d.status === "en_attente_validation_finale_demandeur")
+
+  // Fonction pour filtrer les demandes selon la catégorie et le rôle
+  const getFilteredDemandes = (type: "total" | "enCours" | "validees" | "brouillons") => {
+    const demandesToFilter = demandesForRole
+
+    switch (type) {
+      case "total":
+        return demandesToFilter
+      case "enCours":
+        if (["conducteur_travaux", "responsable_qhse", "responsable_travaux", "charge_affaire", "responsable_appro", "responsable_logistique"].includes(currentUser?.role || "")) {
+          // Pour les validateurs : demandes en attente de leur validation
+          const enAttenteStatuses = [
+            "en_attente_validation_conducteur",
+            "en_attente_validation_qhse", 
+            "en_attente_validation_responsable_travaux",
+            "en_attente_validation_charge_affaire",
+            "en_attente_preparation_appro",
+            "en_attente_validation_logistique"
+          ]
+          return demandesToFilter.filter((d) => enAttenteStatuses.includes(d.status))
+        } else {
+          // Pour les employés : demandes en cours de traitement
+          return demandesToFilter.filter((d) => ![
+            "brouillon", 
+            "cloturee", 
+            "rejetee", 
+            "archivee"
+          ].includes(d.status))
+        }
+      case "validees":
+        if (["conducteur_travaux", "responsable_qhse", "responsable_travaux", "charge_affaire", "responsable_appro", "responsable_logistique"].includes(currentUser?.role || "")) {
+          // Pour les validateurs : demandes qu'ils ont validées (passées à l'étape suivante)
+          return demandesToFilter.filter((d) => ["cloturee", "archivee", "confirmee_demandeur", "en_attente_validation_finale_demandeur"].includes(d.status))
+        } else {
+          // Pour les employés : leurs demandes clôturées
+          return demandesToFilter.filter((d) => ["cloturee", "archivee"].includes(d.status))
+        }
+      case "brouillons":
+        // Seuls les employés ont des brouillons
+        if (["conducteur_travaux", "responsable_qhse", "responsable_travaux", "charge_affaire", "responsable_appro", "responsable_logistique"].includes(currentUser?.role || "")) {
+          return [] // Les validateurs ne voient pas les brouillons
+        } else {
+          return demandesToFilter.filter((d) => d.status === "brouillon")
+        }
+      default:
+        return []
+    }
+  }
 
   const handleCardClick = (type: "total" | "enCours" | "validees" | "brouillons", title: string) => {
-    if (type === "total") {
-      setValidatedHistoryModalOpen(true)
+    // Pour les rôles de validation, afficher le modal spécialisé pour les demandes validées
+    if (type === "validees" && currentUser && [
+      "conducteur_travaux", 
+      "responsable_qhse", 
+      "responsable_travaux", 
+      "charge_affaire", 
+      "responsable_appro", 
+      "responsable_logistique"
+    ].includes(currentUser.role)) {
+      setValidatedDemandesModalOpen(true)
     } else {
       setDetailsModalType(type)
       setDetailsModalTitle(title)
@@ -172,8 +322,8 @@ export default function EmployeDashboard() {
 
   // Génération des données de graphique
   const generateChartData = () => {
-    const materialRequests = mesDemandes.filter(d => d.type === "materiel")
-    const toolingRequests = mesDemandes.filter(d => d.type === "outillage")
+    const materialRequests = demandesForRole.filter(d => d.type === "materiel")
+    const toolingRequests = demandesForRole.filter(d => d.type === "outillage")
     
     const materialFlowData = [
       { name: "Jan", value: Math.round(materialRequests.length * 0.15) },
@@ -219,15 +369,224 @@ export default function EmployeDashboard() {
     }
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50 p-2 sm:p-4 lg:p-6">
-      <div className="max-w-full mx-auto">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">Tableau de Bord Employé</h1>
+  // Fonction pour obtenir les 3 dernières demandes pour mobile
+  const getLastThreeRequests = () => {
+    const demandesToShow = demandesForRole
+      .sort((a, b) => new Date(b.dateCreation).getTime() - new Date(a.dateCreation).getTime())
+      .slice(0, 3)
+    return demandesToShow
+  }
 
-        {/* Layout principal : responsive */}
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
+  // Fonction pour obtenir les initiales de l'utilisateur
+  const getUserInitials = (user: any) => {
+    if (!user) return "U"
+    const firstName = user.prenom || user.nom || "U"
+    const lastName = user.nom || ""
+    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase()
+  }
+
+  // Fonction pour formater le statut pour mobile
+  const getStatusForMobile = (status: string) => {
+    const statusMap = {
+      brouillon: { label: "Brouillon", class: "status-brouillon" },
+      soumise: { label: "Soumise", class: "status-soumise" },
+      en_attente_validation_conducteur: { label: "En cours", class: "status-en-cours" },
+      en_attente_validation_qhse: { label: "En cours", class: "status-en-cours" },
+      en_attente_validation_responsable_travaux: { label: "En cours", class: "status-en-cours" },
+      en_attente_validation_charge_affaire: { label: "En cours", class: "status-en-cours" },
+      en_attente_preparation_appro: { label: "En cours", class: "status-en-cours" },
+      en_attente_validation_logistique: { label: "En cours", class: "status-en-cours" },
+      en_attente_validation_finale_demandeur: { label: "Validée", class: "status-validee" },
+      confirmee_demandeur: { label: "Validée", class: "status-validee" },
+      cloturee: { label: "Validée", class: "status-validee" },
+      rejetee: { label: "Rejetée", class: "status-rejetee" },
+      archivee: { label: "Validée", class: "status-validee" },
+    }
+    return statusMap[status as keyof typeof statusMap] || { label: status, class: "status-brouillon" }
+  }
+
+  // Composant Mobile Dashboard
+  const MobileDashboard = () => (
+    <div className="mobile-dashboard">
+      {/* Header Mobile */}
+      <div className="mobile-header">
+        <div className="mobile-header-left">
+          <div className="mobile-logo">
+            L
+          </div>
+          <div className="mobile-header-title">
+            <h1>Gestion Demandes</h1>
+            <p>{currentUser?.role === "employe" ? "Employé" : 
+               currentUser?.role === "conducteur_travaux" ? "Conducteur Travaux" :
+               currentUser?.role === "responsable_qhse" ? "Responsable QHSE" :
+               currentUser?.role === "responsable_travaux" ? "Responsable Travaux" :
+               currentUser?.role === "charge_affaire" ? "Chargé d'Affaire" :
+               currentUser?.role === "responsable_appro" ? "Responsable Appro" :
+               currentUser?.role === "responsable_logistique" ? "Responsable Logistique" :
+               "Utilisateur"}</p>
+          </div>
+        </div>
+        <div className="mobile-header-actions">
+          <div className="mobile-header-icon">
+            <Settings size={18} />
+          </div>
+          <div className="mobile-header-icon">
+            <Bell size={18} />
+          </div>
+          <div className="mobile-avatar">
+            {getUserInitials(currentUser)}
+          </div>
+        </div>
+      </div>
+
+      {/* Contenu Mobile */}
+      <div className="mobile-content">
+        {/* Bouton Principal */}
+        <button 
+          className="mobile-main-button"
+          onClick={() => setCreateDemandeModalOpen(true)}
+        >
+          <Plus size={20} />
+          Nouvelle Demande
+        </button>
+
+        {/* Mes 3 dernières demandes */}
+        <div className="mobile-section">
+          <h2 className="mobile-section-title">Mes 3 dernières demandes</h2>
+          <div className="mobile-demandes-list">
+            {getLastThreeRequests().length > 0 ? (
+              getLastThreeRequests().map((demande) => {
+                const statusInfo = getStatusForMobile(demande.status)
+                return (
+                  <div key={demande.id} className="mobile-demande-item">
+                    <div className="mobile-demande-header">
+                      <h3 className="mobile-demande-title">
+                        DA-{demande.numero} - {demande.type === "materiel" ? "Matériel" : "Outillage"}
+                      </h3>
+                      <span className={`mobile-demande-status ${statusInfo.class}`}>
+                        {statusInfo.label}
+                      </span>
+                    </div>
+                    <p className="mobile-demande-info">
+                      {new Date(demande.dateCreation).toLocaleDateString('fr-FR')} • {demande.items?.length || 0} article(s)
+                    </p>
+                  </div>
+                )
+              })
+            ) : (
+              <p className="mobile-demande-info">Aucune demande récente</p>
+            )}
+          </div>
+        </div>
+
+        {/* Actions Rapides */}
+        <div>
+          <h2 className="mobile-actions-title">Actions Rapides</h2>
+          <div className="mobile-actions-grid">
+            <button 
+              className="mobile-action-button mobile-action-primary"
+              onClick={() => {
+                setDemandeType("materiel")
+                setCreateDemandeModalOpen(true)
+              }}
+            >
+              <Package className="mobile-action-icon" />
+              DA-Matériel
+            </button>
+            
+            <button 
+              className="mobile-action-button mobile-action-secondary"
+              onClick={() => {
+                setDemandeType("outillage")
+                setCreateDemandeModalOpen(true)
+              }}
+            >
+              <Wrench className="mobile-action-icon" />
+              DA-Outillage
+            </button>
+            
+            <button 
+              className="mobile-action-button mobile-action-secondary"
+              onClick={() => {
+                // Fonctionnalité future - Nouveau Projet
+                console.log("Nouveau Projet - À implémenter")
+              }}
+            >
+              <FolderOpen className="mobile-action-icon" />
+              Nouveau Projet
+            </button>
+            
+            <button 
+              className="mobile-action-button mobile-action-secondary"
+              onClick={() => {
+                // Fonctionnalité future - Nouvel Utilisateur
+                console.log("Nouvel Utilisateur - À implémenter")
+              }}
+            >
+              <Users className="mobile-action-icon" />
+              Nouvel Utilisateur
+            </button>
+            
+            <button 
+              className="mobile-action-button mobile-action-secondary"
+              onClick={() => {
+                // Fonctionnalité future - Rapport
+                console.log("Rapport - À implémenter")
+              }}
+            >
+              <BarChart3 className="mobile-action-icon" />
+              Rapport
+            </button>
+            
+            <button 
+              className="mobile-action-button mobile-action-accent"
+              onClick={() => {
+                // Fonctionnalité future - DA-Paiement
+                console.log("DA-Paiement - À implémenter")
+              }}
+            >
+              <CreditCard className="mobile-action-icon" />
+              DA-Paiement
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Navigation Bottom */}
+      <div className="mobile-bottom-nav">
+        <div className="mobile-nav-item active">
+          <Home className="mobile-nav-icon" />
+          <span className="mobile-nav-label">Accueil</span>
+        </div>
+        <div 
+          className="mobile-nav-item"
+          onClick={() => handleCardClick("total", "Toutes mes demandes")}
+        >
+          <Archive className="mobile-nav-icon" />
+          <span className="mobile-nav-label">Mes demandes</span>
+        </div>
+        <div className="mobile-nav-item">
+          <User className="mobile-nav-icon" />
+          <span className="mobile-nav-label">Profil</span>
+        </div>
+      </div>
+    </div>
+  )
+
+  return (
+    <>
+      {/* Interface Mobile */}
+      <MobileDashboard />
+      
+      {/* Interface Desktop */}
+      <div className="desktop-dashboard dashboard-fullscreen bg-gray-50 flex flex-col">
+        <div className="flex-1 flex flex-col m-0 p-0 w-full">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 px-4 py-3 mb-0 bg-white shadow-sm border-b">Tableau de Bord Employé</h1>
+
+        {/* Layout principal : pleine largeur avec distribution équilibrée */}
+        <div className="flex-1 grid grid-cols-1 xl:grid-cols-4 gap-2 h-full p-2 m-0 w-full">
           {/* Colonne de gauche (large) - 3/4 de la largeur */}
-          <div className="xl:col-span-3 space-y-4">
+          <div className="xl:col-span-3 flex flex-col justify-between space-y-4 h-full">
             {/* Vue d'ensemble - Cards statistiques */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#015fc4' }} onClick={() => handleCardClick("total", "Toutes mes demandes")}>
@@ -277,16 +636,16 @@ export default function EmployeDashboard() {
 
             {/* Mes projets - Tableau fixe scrollable */}
             {mesProjets.length > 0 && (
-              <Card className="h-fit">
-                <CardHeader>
+              <Card className="flex-1 flex flex-col min-h-0">
+                <CardHeader className="flex-shrink-0">
                   <CardTitle className="flex items-center gap-2 text-gray-800">
                     <FolderOpen className="h-5 w-5" />
                     Mes projets ({mesProjets.length})
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-0">
+                <CardContent className="flex-1 p-0 flex flex-col min-h-0">
                     {/* Tableau fixe scrollable - Responsive */}
-                    <div className="overflow-hidden border border-gray-200 rounded-lg">
+                    <div className="flex-1 overflow-hidden border border-gray-200 rounded-lg flex flex-col">
                       <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-gray-200">
                           <thead className="bg-gray-50 sticky top-0 z-10">
@@ -366,7 +725,7 @@ export default function EmployeDashboard() {
           </div>
 
           {/* Colonne de droite (fine) - 1/4 de la largeur */}
-          <div className="xl:col-span-1 space-y-4">
+          <div className="xl:col-span-1 flex flex-col justify-between space-y-4 h-full">
             {/* Actions rapides */}
             <Card>
               <CardHeader>
@@ -397,6 +756,15 @@ export default function EmployeDashboard() {
                   >
                     <Wrench className="h-4 w-4 mr-2" />
                     <span className="text-sm">Nouvelle demande outillage</span>
+                  </Button>
+                  <Button
+                    className="justify-start text-white"
+                    style={{ backgroundColor: '#fc2d1f' }}
+                    size="sm"
+                    onClick={() => setMobileTestModalOpen(true)}
+                  >
+                    <Smartphone className="h-4 w-4 mr-2" />
+                    <span className="text-sm">Test Interface Mobile</span>
                   </Button>
                 </div>
               </CardContent>
@@ -499,24 +867,34 @@ export default function EmployeDashboard() {
         </div>
       </div>
 
-      {/* Modals fonctionnels */}
+      {/* Modals fonctionnels - Partagés entre mobile et desktop */}
       <CreateDemandeModal
         isOpen={createDemandeModalOpen}
         onClose={() => setCreateDemandeModalOpen(false)}
         type={demandeType}
       />
-      <UserDetailsModal
+      <DemandesCategoryModal
         isOpen={detailsModalOpen}
         onClose={() => setDetailsModalOpen(false)}
+        demandes={getFilteredDemandes(detailsModalType)}
         title={detailsModalTitle}
-        data={mesDemandes}
-        type={detailsModalType}
+        categoryType={detailsModalType}
+        currentUser={currentUser}
       />
       <ValidatedRequestsHistory
         isOpen={validatedHistoryModalOpen}
         onClose={() => setValidatedHistoryModalOpen(false)}
       />
-    </div>
+      <ValidatedDemandesModal
+        isOpen={validatedDemandesModalOpen}
+        onClose={() => setValidatedDemandesModalOpen(false)}
+        currentUser={currentUser}
+      />
+      <MobileResponsiveTest
+        isOpen={mobileTestModalOpen}
+        onClose={() => setMobileTestModalOpen(false)}
+      />
+      </div>
+    </>
   )
 }
- 

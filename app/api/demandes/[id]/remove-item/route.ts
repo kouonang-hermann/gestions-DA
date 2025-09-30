@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getCurrentUser } from "@/lib/auth"
+import { requireAuth } from "@/lib/auth"
 
 /**
  * DELETE /api/demandes/[id]/remove-item - Supprime un article d'une demande
@@ -8,15 +8,12 @@ import { getCurrentUser } from "@/lib/auth"
 export const DELETE = async (request: NextRequest, context: { params: Promise<{ id: string }> }) => {
   try {
     const params = await context.params
-    const currentUser = await getCurrentUser(request)
-    
-    // Vérifier l'authentification
-    if (!currentUser) {
-      return NextResponse.json({ 
-        success: false, 
-        error: "Non authentifié" 
-      }, { status: 401 })
+    const authResult = await requireAuth(request)
+    if (!authResult.success) {
+      return NextResponse.json({ success: false, error: authResult.error }, { status: 401 })
     }
+    
+    const currentUser = authResult.user
 
     const { itemId, justification } = await request.json()
 
@@ -211,14 +208,12 @@ export const DELETE = async (request: NextRequest, context: { params: Promise<{ 
 export const GET = async (request: NextRequest, context: { params: Promise<{ id: string }> }) => {
   try {
     const params = await context.params
-    const currentUser = await getCurrentUser(request)
-    
-    if (!currentUser) {
-      return NextResponse.json({ 
-        success: false, 
-        error: "Non authentifié" 
-      }, { status: 401 })
+    const authResult = await requireAuth(request)
+    if (!authResult.success) {
+      return NextResponse.json({ success: false, error: authResult.error }, { status: 401 })
     }
+    
+    const currentUser = authResult.user
 
     // Récupérer la demande avec ses items
     const demande = await prisma.demande.findUnique({

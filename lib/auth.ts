@@ -111,6 +111,35 @@ export async function hashPassword(password: string): Promise<string> {
 }
 
 /**
+ * Middleware d'authentification pour les routes API
+ */
+export async function requireAuth(request: NextRequest): Promise<{ success: boolean; user?: any; error?: string }> {
+  try {
+    const authHeader = request.headers.get("authorization")
+    const token = extractTokenFromHeader(authHeader)
+    
+    if (!token) {
+      return { success: false, error: "Token manquant" }
+    }
+
+    const payload = verifyToken(token)
+    if (!payload) {
+      return { success: false, error: "Token invalide" }
+    }
+
+    const user = await getUserById(payload.userId)
+    if (!user) {
+      return { success: false, error: "Utilisateur non trouvé" }
+    }
+
+    return { success: true, user }
+  } catch (error) {
+    console.error("Erreur d'authentification:", error)
+    return { success: false, error: "Erreur d'authentification" }
+  }
+}
+
+/**
  * Vérifie si l'utilisateur a les permissions pour une action
  */
 export function hasPermission(user: any, action: string): boolean {

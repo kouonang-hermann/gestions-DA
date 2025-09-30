@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { hashPassword, getCurrentUser, hasPermission } from "@/lib/auth"
+import { hashPassword, requireAuth, hasPermission } from "@/lib/auth"
 import { withPermission } from "@/lib/middleware"
 import { registerSchema } from "@/lib/validations"
 
@@ -9,8 +9,13 @@ import { registerSchema } from "@/lib/validations"
  */
 export const GET = async (request: NextRequest) => {
   try {
-    const currentUser = await getCurrentUser(request)
-    if (!currentUser || (!hasPermission(currentUser, "create_user"))) {
+    const authResult = await requireAuth(request)
+    if (!authResult.success) {
+      return NextResponse.json({ success: false, error: authResult.error }, { status: 401 })
+    }
+
+    const currentUser = authResult.user
+    if (!hasPermission(currentUser, "create_user")) {
       return NextResponse.json({ success: false, error: "Accès non autorisé" }, { status: 403 })
     }
     const users = await prisma.user.findMany({
@@ -52,8 +57,13 @@ export const GET = async (request: NextRequest) => {
  */
 export const POST = async (request: NextRequest) => {
   try {
-    const currentUser = await getCurrentUser(request)
-    if (!currentUser || (!hasPermission(currentUser, "create_user"))) {
+    const authResult = await requireAuth(request)
+    if (!authResult.success) {
+      return NextResponse.json({ success: false, error: authResult.error }, { status: 401 })
+    }
+
+    const currentUser = authResult.user
+    if (!hasPermission(currentUser, "create_user")) {
       return NextResponse.json({ success: false, error: "Accès non autorisé" }, { status: 403 })
     }
     const body = await request.json()

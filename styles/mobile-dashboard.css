@@ -1,0 +1,400 @@
+/* Mobile Dashboard Styles - Responsive Design */
+
+/* Variables CSS pour cohérence */
+:root {
+  --primary-blue: #015fc4;
+  --secondary-blue: #b8d1df;
+  --accent-red: #fc2d1f;
+  --gray-light: #f8f9fa;
+  --gray-medium: #6c757d;
+  --white: #ffffff;
+  --border-radius: 12px;
+  --shadow-light: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --shadow-medium: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* Mobile Layout - Visible uniquement sur mobile */
+.mobile-dashboard {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-dashboard {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background-color: var(--gray-light);
+  }
+  
+  .desktop-dashboard {
+    display: none !important;
+  }
+}
+
+/* Header Mobile */
+.mobile-header {
+  background: var(--white);
+  padding: 12px 16px;
+  box-shadow: var(--shadow-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.mobile-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mobile-logo {
+  width: 32px;
+  height: 32px;
+  background: var(--primary-blue);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--white);
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.mobile-header-title {
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-header-title h1 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.mobile-header-title p {
+  font-size: 12px;
+  color: var(--gray-medium);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.mobile-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mobile-header-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--gray-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.mobile-header-icon:hover {
+  background: #e9ecef;
+}
+
+.mobile-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--primary-blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--white);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* Content Mobile */
+.mobile-content {
+  flex: 1;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-bottom: 80px; /* Espace pour la navigation bottom */
+}
+
+/* Bouton Principal */
+.mobile-main-button {
+  background: var(--primary-blue);
+  color: var(--white);
+  border: none;
+  border-radius: var(--border-radius);
+  padding: 16px 20px;
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: var(--shadow-light);
+}
+
+.mobile-main-button:hover {
+  background: #014a9b;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-medium);
+}
+
+.mobile-main-button:active {
+  transform: translateY(0);
+}
+
+/* Section Mes Demandes */
+.mobile-section {
+  background: var(--white);
+  border-radius: var(--border-radius);
+  padding: 16px;
+  box-shadow: var(--shadow-light);
+}
+
+.mobile-section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 12px 0;
+}
+
+.mobile-demandes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mobile-demande-item {
+  padding: 12px;
+  background: var(--gray-light);
+  border-radius: 8px;
+  border-left: 4px solid var(--primary-blue);
+}
+
+.mobile-demande-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 4px;
+}
+
+.mobile-demande-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1f2937;
+  margin: 0;
+}
+
+.mobile-demande-status {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.mobile-demande-info {
+  font-size: 12px;
+  color: var(--gray-medium);
+  margin: 0;
+}
+
+/* Actions Rapides */
+.mobile-actions-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 16px 0;
+}
+
+.mobile-actions-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mobile-action-button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--border-radius);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  box-shadow: var(--shadow-light);
+}
+
+.mobile-action-button:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-medium);
+}
+
+.mobile-action-button:active {
+  transform: translateY(0);
+}
+
+/* Couleurs des boutons d'action */
+.mobile-action-primary {
+  background: var(--primary-blue);
+  color: var(--white);
+}
+
+.mobile-action-secondary {
+  background: var(--gray-light);
+  color: #374151;
+}
+
+.mobile-action-accent {
+  background: var(--accent-red);
+  color: var(--white);
+}
+
+.mobile-action-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+/* Navigation Bottom */
+.mobile-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--white);
+  border-top: 1px solid #e5e7eb;
+  padding: 8px 0;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 50;
+}
+
+.mobile-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: color 0.2s;
+  text-decoration: none;
+  color: var(--gray-medium);
+}
+
+.mobile-nav-item.active {
+  color: var(--primary-blue);
+}
+
+.mobile-nav-item:hover {
+  color: var(--primary-blue);
+}
+
+.mobile-nav-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.mobile-nav-label {
+  font-size: 10px;
+  font-weight: 500;
+}
+
+/* États de statut pour les demandes */
+.status-brouillon {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.status-soumise {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.status-en-cours {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-validee {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-rejetee {
+  background: #fecaca;
+  color: #dc2626;
+}
+
+/* Animations */
+@keyframes slideInUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.mobile-section,
+.mobile-action-button {
+  animation: slideInUp 0.3s ease-out;
+}
+
+/* Responsive pour très petits écrans */
+@media (max-width: 375px) {
+  .mobile-content {
+    padding: 12px;
+    gap: 16px;
+  }
+  
+  .mobile-header {
+    padding: 10px 12px;
+  }
+  
+  .mobile-section {
+    padding: 12px;
+  }
+  
+  .mobile-main-button {
+    padding: 14px 16px;
+    font-size: 15px;
+  }
+}
+
+/* Masquer sur desktop */
+@media (min-width: 769px) {
+  .mobile-dashboard,
+  .mobile-bottom-nav {
+    display: none !important;
+  }
+  
+  .desktop-dashboard {
+    display: flex !important;
+  }
+}
+
+/* Masquer desktop sur mobile */
+@media (max-width: 768px) {
+  .desktop-dashboard {
+    display: none !important;
+  }
+}

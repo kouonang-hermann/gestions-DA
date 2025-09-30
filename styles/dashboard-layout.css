@@ -1,0 +1,167 @@
+/* Dashboard Layout - Pleine hauteur avec distribution équilibrée */
+
+/* Classes spécifiques pour le dashboard sans espaces */
+.dashboard-fullscreen {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  overflow: auto;
+}
+
+.dashboard-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  max-width: none !important;
+}
+
+.dashboard-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+}
+
+/* Supprimer tous les espaces par défaut */
+.dashboard-no-margin {
+  margin: 0 !important;
+}
+
+.dashboard-no-padding {
+  padding: 0 !important;
+}
+
+.dashboard-full-width {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+.dashboard-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  height: 100%;
+}
+
+@media (min-width: 1280px) {
+  .dashboard-grid {
+    grid-template-columns: 3fr 1fr;
+  }
+}
+
+.dashboard-left-column {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1rem;
+  height: 100%;
+}
+
+.dashboard-right-column {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1rem;
+  height: 100%;
+}
+
+.dashboard-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .dashboard-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .dashboard-stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.dashboard-projects-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.dashboard-projects-header {
+  flex-shrink: 0;
+}
+
+.dashboard-projects-content {
+  flex: 1;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.dashboard-projects-table-container {
+  flex: 1;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-projects-table-scroll {
+  flex: 1;
+  overflow-y: auto;
+  max-height: calc(100vh - 400px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 1279px) {
+  .dashboard-left-column,
+  .dashboard-right-column {
+    height: auto;
+    justify-content: flex-start;
+  }
+  
+  .dashboard-projects-table-scroll {
+    max-height: 400px;
+  }
+}
+
+/* Smooth transitions */
+.dashboard-card {
+  transition: all 0.2s ease-in-out;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Ensure proper spacing */
+.dashboard-space-between > * + * {
+  margin-top: 1rem;
+}
+
+@media (min-width: 1280px) {
+  .dashboard-space-between {
+    justify-content: space-between;
+  }
+  
+  .dashboard-space-between > * + * {
+    margin-top: 0;
+  }
+}

@@ -73,6 +73,8 @@ export interface ItemDemande {
 }
 
 export interface Demande {
+  validationLogistique: any
+  validationResponsableTravaux: any
   id: string
   numero: string
   projetId: string

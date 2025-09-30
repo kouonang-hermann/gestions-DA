@@ -68,7 +68,11 @@ export default function LoginForm() {
       return;
     }
 
-    await login(email, password);
+    const success = await login(email, password);
+    if (success) {
+      // Redirection vers le dashboard après connexion réussie
+      window.location.href = '/dashboard';
+    }
   };
 
   // Détecter la taille d'écran pour optimisations

@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { withAuth } from "@/lib/middleware"
-import { hasPermission } from "@/lib/auth"
+import { requireAuth, hasPermission } from "@/lib/auth"
 import { createDemandeSchema } from "@/lib/validations"
 
 /**
@@ -49,7 +48,13 @@ function getNextStatus(currentStatus: string, userRole: string): string | null {
 /**
  * GET /api/demandes - Récupère les demandes selon le rôle
  */
-export const GET = withAuth(async (request: NextRequest, currentUser: any) => {
+export const GET = async (request: NextRequest) => {
+  const authResult = await requireAuth(request)
+  if (!authResult.success) {
+    return NextResponse.json({ success: false, error: authResult.error }, { status: 401 })
+  }
+
+  const currentUser = authResult.user
   try {
     const { searchParams } = new URL(request.url)
     const projetId = searchParams.get("projetId")
@@ -172,13 +177,19 @@ export const GET = withAuth(async (request: NextRequest, currentUser: any) => {
     console.error("Erreur lors de la récupération des demandes:", error)
     return NextResponse.json({ success: false, error: "Erreur serveur" }, { status: 500 })
   }
-})
+}
 
 /**
  * POST /api/demandes - Crée une nouvelle demande
  * Tous les rôles peuvent créer des demandes selon la mémoire
  */
-export const POST = withAuth(async (request: NextRequest, currentUser: any) => {
+export const POST = async (request: NextRequest) => {
+  const authResult = await requireAuth(request)
+  if (!authResult.success) {
+    return NextResponse.json({ success: false, error: authResult.error }, { status: 401 })
+  }
+
+  const currentUser = authResult.user
   try {
     // Vérifier les permissions - tous les rôles peuvent créer des demandes
     if (!hasPermission(currentUser, "create_demande")) {
@@ -303,4 +314,4 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any) => {
     console.error("Erreur lors de la création de la demande:", error)
     return NextResponse.json({ success: false, error: "Erreur serveur" }, { status: 500 })
   }
-})
+}

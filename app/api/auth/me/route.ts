@@ -1,16 +1,17 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getCurrentUser } from "@/lib/auth"
+import { requireAuth } from "@/lib/auth"
 
 /**
  * GET /api/auth/me - Récupère les informations de l'utilisateur connecté
  */
 export async function GET(request: NextRequest) {
   try {
-    const user = await getCurrentUser(request)
-
-    if (!user) {
-      return NextResponse.json({ success: false, error: "Non authentifié" }, { status: 401 })
+    const authResult = await requireAuth(request)
+    if (!authResult.success) {
+      return NextResponse.json({ success: false, error: authResult.error }, { status: 401 })
     }
+
+    const user = authResult.user
 
     return NextResponse.json({
       success: true,

@@ -12,6 +12,7 @@ import { CheckCircle, XCircle, Calendar, User, Building, Package, AlertCircle, T
 import type { Demande } from "@/types"
 import PurchaseRequestCard from "@/components/demandes/purchase-request-card"
 import RemoveItemConfirmationModal from "@/components/modals/remove-item-confirmation-modal"
+import { useStore } from "@/stores/useStore"
 
 interface DemandeDetailsModalProps {
   isOpen: boolean
@@ -36,6 +37,7 @@ export default function DemandeDetailsModal({
   validationAction = "valider",
   validationLabel = "Valider"
 }: DemandeDetailsModalProps) {
+  const { token } = useStore()
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [quantitesValidees, setQuantitesValidees] = useState<{ [itemId: string]: number }>({})
   const [quantitesOriginales, setQuantitesOriginales] = useState<{ [itemId: string]: number }>({})
@@ -157,7 +159,7 @@ export default function DemandeDetailsModal({
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("token")}`,
+          "Authorization": `Bearer ${token}`,
         },
         body: JSON.stringify({
           itemId: itemToRemove.id,
