@@ -398,3 +398,218 @@
     display: none !important;
   }
 }
+
+/* RESPONSIVE UNIVERSEL POUR TOUS LES DASHBOARDS */
+
+/* Masquer les interfaces desktop sur mobile pour TOUS les dashboards */
+@media (max-width: 768px) {
+  /* Masquer tous les contenus desktop */
+  .min-h-screen.bg-gray-50:not(.mobile-dashboard),
+  .dashboard-fullscreen:not(.mobile-dashboard) {
+    display: none !important;
+  }
+  
+  /* Forcer l'affichage mobile pour tous les dashboards */
+  body {
+    overflow-x: hidden;
+  }
+  
+  /* Styles pour tous les dashboards non-employé */
+  .dashboard-container {
+    display: none !important;
+  }
+}
+
+/* Interface mobile universelle pour tous les rôles */
+@media (max-width: 768px) {
+  /* Créer une interface mobile générique pour tous les dashboards */
+  .universal-mobile-dashboard {
+    display: flex !important;
+    flex-direction: column;
+    min-height: 100vh;
+    background-color: #f8f9fa;
+  }
+  
+  /* Header universel */
+  .universal-mobile-header {
+    background: linear-gradient(135deg, #015fc4 0%, #b8d1df 100%);
+    color: white;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  }
+  
+  .universal-mobile-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .universal-mobile-logo {
+    width: 40px;
+    height: 40px;
+    background-color: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 16px;
+  }
+  
+  .universal-mobile-header-text h1 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+    line-height: 1.2;
+  }
+  
+  .universal-mobile-header-text p {
+    font-size: 12px;
+    opacity: 0.9;
+    margin: 0;
+  }
+  
+  .universal-mobile-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .universal-mobile-header-icon {
+    width: 36px;
+    height: 36px;
+    background-color: rgba(255,255,255,0.1);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .universal-mobile-header-icon:hover {
+    background-color: rgba(255,255,255,0.2);
+  }
+  
+  .universal-mobile-avatar {
+    width: 32px;
+    height: 32px;
+    background-color: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+  }
+  
+  /* Contenu universel */
+  .universal-mobile-content {
+    flex: 1;
+    padding: 1rem;
+    padding-bottom: 80px; /* Espace pour la navigation bottom */
+    overflow-y: auto;
+  }
+  
+  /* Message universel pour dashboards non-employé */
+  .universal-mobile-message {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    margin-bottom: 1.5rem;
+  }
+  
+  .universal-mobile-message h2 {
+    color: #015fc4;
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+  
+  .universal-mobile-message p {
+    color: #6b7280;
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
+  }
+  
+  .universal-mobile-button {
+    background-color: #015fc4;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .universal-mobile-button:hover {
+    background-color: #014a9b;
+  }
+  
+  /* Actions rapides universelles */
+  .universal-mobile-actions {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  }
+  
+  .universal-mobile-actions h3 {
+    color: #374151;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 1rem;
+  }
+  
+  .universal-mobile-actions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+  
+  .universal-mobile-action-item {
+    background-color: #f8f9fa;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .universal-mobile-action-item:hover {
+    background-color: #f3f4f6;
+    border-color: #015fc4;
+    transform: translateY(-1px);
+  }
+  
+  .universal-mobile-action-item svg {
+    color: #015fc4;
+  }
+  
+  .universal-mobile-action-item span {
+    font-size: 12px;
+    font-weight: 500;
+    color: #374151;
+  }
+}
