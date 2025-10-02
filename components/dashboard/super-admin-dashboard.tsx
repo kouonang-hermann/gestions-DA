@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import "@/styles/mobile-dashboard-new.css"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -23,7 +24,10 @@ import {
   Search, 
   ChevronLeft, 
   ChevronRight, 
-  Activity 
+  Activity,
+  Bell,
+  Home,
+  User
 } from "lucide-react"
 import {
   PieChart,
@@ -50,6 +54,10 @@ import ManageAdminRoles from "../admin/manage-admin-roles"
 export default function SuperAdminDashboard() {
   const { currentUser, users, projets, demandes, loadUsers, loadProjets, loadDemandes, isLoading } = useStore()
 
+  // Hook pour détecter mobile
+  const [isMobile, setIsMobile] = useState(false)
+  const [activeTab, setActiveTab] = useState("accueil")
+
   const [stats, setStats] = useState({
     totalUtilisateurs: 0,
     totalProjets: 0,
@@ -75,6 +83,17 @@ export default function SuperAdminDashboard() {
   const [currentPage, setCurrentPage] = useState(1)
   const [activeChart, setActiveChart] = useState<"material" | "tooling">("material")
   const itemsPerPage = 7
+
+  // Effet pour détecter mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768)
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   useEffect(() => {
     if (currentUser) {
@@ -228,6 +247,157 @@ export default function SuperAdminDashboard() {
     )
   }
 
+  // Version mobile
+  if (isMobile) {
+    return (
+      <div className="mobile-dashboard">
+        {/* Header Mobile */}
+        <div className="mobile-header">
+          <div className="mobile-header-left">
+            <Avatar className="mobile-avatar">
+              <AvatarFallback className="mobile-avatar-fallback">L</AvatarFallback>
+            </Avatar>
+            <div className="mobile-header-text">
+              <h1 className="mobile-title">Gestion Demandes</h1>
+              <p className="mobile-subtitle">Super Administrateur</p>
+            </div>
+          </div>
+          <div className="mobile-header-right">
+            <Settings className="mobile-icon" />
+            <Bell className="mobile-icon" />
+            <Badge className="mobile-user-badge">TA</Badge>
+          </div>
+        </div>
+
+        {/* Contenu Mobile */}
+        <div className="mobile-content">
+          {/* Bouton Principal */}
+          <Button 
+            className="mobile-primary-button"
+            onClick={() => {
+              setDemandeType("materiel")
+              setCreateDemandeModalOpen(true)
+            }}
+          >
+            <Plus className="mobile-button-icon" />
+            Nouvelle Demande
+          </Button>
+
+          {/* Carte Dernières Demandes */}
+          <Card className="mobile-card">
+            <CardContent className="mobile-card-content">
+              <p className="mobile-card-text">Mes 3 dernières demandes</p>
+            </CardContent>
+          </Card>
+
+          {/* Actions Rapides */}
+          <div className="mobile-actions-section">
+            <h2 className="mobile-section-title">Actions Rapides</h2>
+            <div className="mobile-actions-list">
+              <Button 
+                className="mobile-action-button mobile-action-active"
+                onClick={() => {
+                  setDemandeType("materiel")
+                  setCreateDemandeModalOpen(true)
+                }}
+              >
+                <Package className="mobile-action-icon" />
+                DA-Matériel
+              </Button>
+              
+              <Button 
+                className="mobile-action-button"
+                onClick={() => {
+                  setDemandeType("outillage")
+                  setCreateDemandeModalOpen(true)
+                }}
+              >
+                <Wrench className="mobile-action-icon" />
+                DA-Outillage
+              </Button>
+              
+              <Button 
+                className="mobile-action-button"
+                onClick={() => setCreateProjectModalOpen(true)}
+              >
+                <FolderOpen className="mobile-action-icon" />
+                Nouveau Projet
+              </Button>
+              
+              <Button 
+                className="mobile-action-button"
+                onClick={() => setCreateUserModalOpen(true)}
+              >
+                <Users className="mobile-action-icon" />
+                Nouvel Utilisateur
+              </Button>
+              
+              <Button 
+                className="mobile-action-button"
+                onClick={() => setValidatedHistoryModalOpen(true)}
+              >
+                <BarChart3 className="mobile-action-icon" />
+                Rapport
+              </Button>
+              
+              <Button className="mobile-action-button mobile-action-danger">
+                <CreditCard className="mobile-action-icon" />
+                DA-Paiement
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Navigation Bottom */}
+        <div className="mobile-bottom-nav">
+          <button 
+            className={`mobile-nav-item ${activeTab === 'accueil' ? 'mobile-nav-active' : ''}`}
+            onClick={() => setActiveTab('accueil')}
+          >
+            <Home className="mobile-nav-icon" />
+            <span className="mobile-nav-text">Accueil</span>
+          </button>
+          
+          <button 
+            className={`mobile-nav-item ${activeTab === 'demandes' ? 'mobile-nav-active' : ''}`}
+            onClick={() => setActiveTab('demandes')}
+          >
+            <FileText className="mobile-nav-icon" />
+            <span className="mobile-nav-text">Mes demandes</span>
+          </button>
+          
+          <button 
+            className={`mobile-nav-item ${activeTab === 'profil' ? 'mobile-nav-active' : ''}`}
+            onClick={() => setActiveTab('profil')}
+          >
+            <User className="mobile-nav-icon" />
+            <span className="mobile-nav-text">Profil</span>
+          </button>
+        </div>
+
+        {/* Modals */}
+        <CreateDemandeModal
+          isOpen={createDemandeModalOpen}
+          onClose={() => setCreateDemandeModalOpen(false)}
+          type={demandeType}
+        />
+        <CreateUserModal
+          isOpen={createUserModalOpen}
+          onClose={() => setCreateUserModalOpen(false)}
+        />
+        <CreateProjectModal
+          isOpen={createProjectModalOpen}
+          onClose={() => setCreateProjectModalOpen(false)}
+        />
+        <ValidatedRequestsHistory
+          isOpen={validatedHistoryModalOpen}
+          onClose={() => setValidatedHistoryModalOpen(false)}
+        />
+      </div>
+    )
+  }
+
+  // Version Desktop
   return (
     <div className="min-h-screen bg-gray-50 p-2">
       <div className="max-w-full mx-auto">

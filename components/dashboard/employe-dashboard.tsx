@@ -52,6 +52,7 @@ import DemandesCategoryModal from "@/components/modals/demandes-category-modal"
 import ValidatedDemandesModal from "@/components/modals/validated-demandes-modal"
 import DashboardDebug from "@/components/debug/dashboard-debug"
 import MobileResponsiveTest from "@/components/debug/mobile-responsive-test"
+import UniversalClosureModal from "@/components/modals/universal-closure-modal"
 
 export default function EmployeDashboard() {
   const { currentUser, demandes, projets, loadDemandes, loadProjets, isLoading } = useStore()
@@ -74,6 +75,7 @@ export default function EmployeDashboard() {
   const [searchTerm, setSearchTerm] = useState("")
   const [activeChart, setActiveChart] = useState<"material" | "tooling">("material")
   const [mobileTestModalOpen, setMobileTestModalOpen] = useState(false)
+  const [universalClosureModalOpen, setUniversalClosureModalOpen] = useState(false)
 
   // Chargement initial des données
   useEffect(() => {
@@ -518,13 +520,10 @@ export default function EmployeDashboard() {
             
             <button 
               className="mobile-action-button mobile-action-secondary"
-              onClick={() => {
-                // Fonctionnalité future - Nouvel Utilisateur
-                console.log("Nouvel Utilisateur - À implémenter")
-              }}
+              onClick={() => setUniversalClosureModalOpen(true)}
             >
-              <Users className="mobile-action-icon" />
-              Nouvel Utilisateur
+              <CheckCircle className="mobile-action-icon" />
+              Clôturer Demandes
             </button>
             
             <button 
@@ -759,6 +758,15 @@ export default function EmployeDashboard() {
                   </Button>
                   <Button
                     className="justify-start text-white"
+                    style={{ backgroundColor: '#16a34a' }}
+                    size="sm"
+                    onClick={() => setUniversalClosureModalOpen(true)}
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    <span className="text-sm">Clôturer mes demandes</span>
+                  </Button>
+                  <Button
+                    className="justify-start text-white"
                     style={{ backgroundColor: '#fc2d1f' }}
                     size="sm"
                     onClick={() => setMobileTestModalOpen(true)}
@@ -893,6 +901,10 @@ export default function EmployeDashboard() {
       <MobileResponsiveTest
         isOpen={mobileTestModalOpen}
         onClose={() => setMobileTestModalOpen(false)}
+      />
+      <UniversalClosureModal
+        isOpen={universalClosureModalOpen}
+        onClose={() => setUniversalClosureModalOpen(false)}
       />
       </div>
     </>

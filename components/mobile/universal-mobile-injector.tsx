@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useStore } from '@/stores/useStore'
+import UniversalClosureModal from '@/components/modals/universal-closure-modal'
 import { 
   Settings, 
   Bell, 
@@ -14,13 +15,15 @@ import {
   CreditCard,
   Package,
   Wrench,
-  Plus
+  Plus,
+  CheckCircle
 } from 'lucide-react'
 
 // Composant qui s'injecte automatiquement sur mobile pour tous les dashboards
 export default function UniversalMobileInjector() {
   const { currentUser } = useStore()
   const [isMobile, setIsMobile] = useState(false)
+  const [universalClosureModalOpen, setUniversalClosureModalOpen] = useState(false)
 
   useEffect(() => {
     const checkMobile = () => {
@@ -66,57 +69,67 @@ export default function UniversalMobileInjector() {
   }
 
   const getQuickActions = () => {
-    const actionsMap: Record<string, Array<{ icon: React.ReactNode; label: string }>> = {
+    const actionsMap: Record<string, Array<{ icon: React.ReactNode; label: string; action?: string }>> = {
       'superadmin': [
         { icon: <Users size={18} />, label: 'Utilisateurs' },
         { icon: <FolderOpen size={18} />, label: 'Projets' },
-        { icon: <BarChart3 size={18} />, label: 'Rapports' },
-        { icon: <Settings size={18} />, label: 'Paramètres' }
+        { icon: <CheckCircle size={18} />, label: 'Clôturer', action: 'closure' },
+        { icon: <BarChart3 size={18} />, label: 'Rapports' }
       ],
       'employe': [
         { icon: <Package size={18} />, label: 'DA-Matériel' },
         { icon: <Wrench size={18} />, label: 'DA-Outillage' },
-        { icon: <FolderOpen size={18} />, label: 'Projets' },
+        { icon: <CheckCircle size={18} />, label: 'Clôturer', action: 'closure' },
         { icon: <BarChart3 size={18} />, label: 'Rapports' }
       ],
       'conducteur_travaux': [
         { icon: <FileText size={18} />, label: 'Valider' },
-        { icon: <FolderOpen size={18} />, label: 'Projets' },
+        { icon: <CheckCircle size={18} />, label: 'Clôturer', action: 'closure' },
         { icon: <Users size={18} />, label: 'Équipe' },
         { icon: <BarChart3 size={18} />, label: 'Rapports' }
       ],
       'responsable_travaux': [
         { icon: <FileText size={18} />, label: 'Valider' },
+        { icon: <CheckCircle size={18} />, label: 'Clôturer', action: 'closure' },
         { icon: <Users size={18} />, label: 'Équipe' },
-        { icon: <FolderOpen size={18} />, label: 'Projets' },
         { icon: <BarChart3 size={18} />, label: 'Rapports' }
       ],
       'responsable_qhse': [
         { icon: <FileText size={18} />, label: 'Sécurité' },
+        { icon: <CheckCircle size={18} />, label: 'Clôturer', action: 'closure' },
         { icon: <BarChart3 size={18} />, label: 'Rapports' },
-        { icon: <Settings size={18} />, label: 'Normes' },
-        { icon: <Users size={18} />, label: 'Formation' }
+        { icon: <Settings size={18} />, label: 'Normes' }
       ],
       'responsable_appro': [
         { icon: <Package size={18} />, label: 'Préparer' },
+        { icon: <CheckCircle size={18} />, label: 'Clôturer', action: 'closure' },
         { icon: <Wrench size={18} />, label: 'Stock' },
-        { icon: <BarChart3 size={18} />, label: 'Rapports' },
-        { icon: <Settings size={18} />, label: 'Fournisseurs' }
+        { icon: <BarChart3 size={18} />, label: 'Rapports' }
       ],
       'charge_affaire': [
         { icon: <CreditCard size={18} />, label: 'Budget' },
+        { icon: <CheckCircle size={18} />, label: 'Clôturer', action: 'closure' },
         { icon: <BarChart3 size={18} />, label: 'Rapports' },
-        { icon: <FolderOpen size={18} />, label: 'Projets' },
-        { icon: <FileText size={18} />, label: 'Contrats' }
+        { icon: <FolderOpen size={18} />, label: 'Projets' }
       ],
       'responsable_logistique': [
         { icon: <FileText size={18} />, label: 'Valider' },
+        { icon: <CheckCircle size={18} />, label: 'Clôturer', action: 'closure' },
         { icon: <Package size={18} />, label: 'Livraisons' },
-        { icon: <BarChart3 size={18} />, label: 'Rapports' },
-        { icon: <Settings size={18} />, label: 'Transport' }
+        { icon: <BarChart3 size={18} />, label: 'Rapports' }
       ]
     }
     return actionsMap[currentUser?.role || ''] || []
+  }
+
+  const handleActionClick = (action?: string) => {
+    switch (action) {
+      case 'closure':
+        setUniversalClosureModalOpen(true)
+        break
+      default:
+        console.log('Action non implémentée:', action)
+    }
   }
 
   if (!isMobile || !currentUser) return null
@@ -167,7 +180,11 @@ export default function UniversalMobileInjector() {
           <h3>Actions Rapides</h3>
           <div className="universal-mobile-actions-grid">
             {quickActions.map((action, index) => (
-              <div key={index} className="universal-mobile-action-item">
+              <div 
+                key={index} 
+                className="universal-mobile-action-item"
+                onClick={() => handleActionClick(action.action)}
+              >
                 {action.icon}
                 <span>{action.label}</span>
               </div>
@@ -191,6 +208,12 @@ export default function UniversalMobileInjector() {
           <span className="mobile-nav-label">Profil</span>
         </div>
       </div>
+
+      {/* Modal de clôture universelle */}
+      <UniversalClosureModal
+        isOpen={universalClosureModalOpen}
+        onClose={() => setUniversalClosureModalOpen(false)}
+      />
     </div>
   )
 }

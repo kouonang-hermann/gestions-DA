@@ -2,8 +2,13 @@
 node_modules
 
 # Build output
-.next
-out
+.next/
+out/
+.next/**/*
+.next/trace
+.next/cache/
+.next/static/
+.next/server/
 
 # Env files
 .env
