@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import "@/styles/dashboard-layout.css"
+import "@/styles/universal-mobile-responsive.css"
 import "@/styles/mobile-dashboard.css"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"

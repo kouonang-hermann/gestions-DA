@@ -1,0 +1,403 @@
+/* RESPONSIVE UNIVERSEL POUR TOUTE L'APPLICATION */
+
+/* ========================================
+   DASHBOARDS RESPONSIVES
+======================================== */
+
+/* Tous les dashboards deviennent responsives sur mobile */
+@media (max-width: 768px) {
+  
+  /* Container principal des dashboards */
+  .min-h-screen {
+    padding: 8px !important;
+  }
+  
+  /* Titres des dashboards */
+  h1 {
+    font-size: 20px !important;
+    margin-bottom: 16px !important;
+    padding: 0 8px;
+  }
+  
+  /* Grilles des dashboards */
+  .grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  
+  /* Cards des dashboards */
+  .border-l-4 {
+    margin-bottom: 12px;
+  }
+  
+  /* Colonnes sur mobile */
+  .xl\\:col-span-3,
+  .xl\\:col-span-1,
+  .lg\\:col-span-4,
+  .sm\\:col-span-2 {
+    grid-column: span 1 !important;
+  }
+}
+
+/* ========================================
+   MODALS RESPONSIVES
+======================================== */
+
+@media (max-width: 768px) {
+  
+  /* Tous les modals Dialog */
+  [data-radix-dialog-content] {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    height: auto !important;
+    max-height: 90vh !important;
+    margin: 0 !important;
+    padding: 16px !important;
+    border-radius: 12px !important;
+    overflow-y: auto !important;
+  }
+  
+  /* Headers des modals */
+  [data-radix-dialog-title] {
+    font-size: 18px !important;
+    margin-bottom: 12px !important;
+  }
+  
+  [data-radix-dialog-description] {
+    font-size: 14px !important;
+    margin-bottom: 16px !important;
+  }
+  
+  /* Contenu des modals */
+  .dialog-content {
+    padding: 12px !important;
+  }
+  
+  /* Formulaires dans les modals */
+  .space-y-4 > * + * {
+    margin-top: 12px !important;
+  }
+  
+  .space-y-6 > * + * {
+    margin-top: 16px !important;
+  }
+  
+  /* Inputs dans les modals */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  textarea,
+  select {
+    width: 100% !important;
+    padding: 12px !important;
+    font-size: 16px !important; /* Évite le zoom sur iOS */
+    border-radius: 8px !important;
+    border: 1px solid #d1d5db !important;
+  }
+  
+  /* Labels */
+  label {
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    margin-bottom: 4px !important;
+    display: block !important;
+  }
+  
+  /* Boutons dans les modals */
+  .flex.justify-end {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  
+  .flex.justify-end button {
+    width: 100% !important;
+    padding: 12px !important;
+    font-size: 16px !important;
+  }
+  
+  /* Boutons avec gap */
+  .flex.gap-2 {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  
+  .flex.gap-4 {
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+}
+
+/* ========================================
+   FORMULAIRES RESPONSIVES
+======================================== */
+
+@media (max-width: 768px) {
+  
+  /* Grilles de formulaires */
+  .grid-cols-2 {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .grid-cols-3 {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .grid-cols-4 {
+    grid-template-columns: 1fr !important;
+  }
+  
+  /* Flex items */
+  .flex-row {
+    flex-direction: column !important;
+  }
+  
+  .items-center {
+    align-items: stretch !important;
+  }
+  
+  /* Cards dans les formulaires */
+  .card {
+    margin-bottom: 16px !important;
+    padding: 12px !important;
+  }
+  
+  /* Tables responsives */
+  .table-responsive {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  
+  table {
+    min-width: 600px !important;
+    font-size: 14px !important;
+  }
+  
+  th, td {
+    padding: 8px !important;
+    white-space: nowrap !important;
+  }
+}
+
+/* ========================================
+   NAVIGATION ET MENUS
+======================================== */
+
+@media (max-width: 768px) {
+  
+  /* Menus déroulants */
+  [data-radix-dropdown-content] {
+    width: 90vw !important;
+    max-width: 300px !important;
+  }
+  
+  /* Tooltips */
+  [data-radix-tooltip-content] {
+    font-size: 12px !important;
+    padding: 6px 8px !important;
+  }
+  
+  /* Popover */
+  [data-radix-popover-content] {
+    width: 90vw !important;
+    max-width: 350px !important;
+    padding: 12px !important;
+  }
+}
+
+/* ========================================
+   COMPOSANTS SPÉCIFIQUES
+======================================== */
+
+@media (max-width: 768px) {
+  
+  /* Avatar */
+  .avatar {
+    width: 32px !important;
+    height: 32px !important;
+  }
+  
+  /* Badges */
+  .badge {
+    font-size: 11px !important;
+    padding: 2px 6px !important;
+  }
+  
+  /* Icons */
+  .lucide {
+    width: 18px !important;
+    height: 18px !important;
+  }
+  
+  /* Boutons principaux */
+  .btn-primary {
+    width: 100% !important;
+    padding: 12px !important;
+    font-size: 16px !important;
+    margin-bottom: 8px !important;
+  }
+  
+  /* Boutons secondaires */
+  .btn-secondary {
+    width: 100% !important;
+    padding: 10px !important;
+    font-size: 14px !important;
+  }
+  
+  /* Loading spinners */
+  .animate-spin {
+    width: 24px !important;
+    height: 24px !important;
+  }
+}
+
+/* ========================================
+   CHARTS ET GRAPHIQUES
+======================================== */
+
+@media (max-width: 768px) {
+  
+  /* Conteneurs de graphiques */
+  .recharts-wrapper {
+    width: 100% !important;
+    height: 200px !important;
+  }
+  
+  /* Légendes */
+  .recharts-legend-wrapper {
+    font-size: 12px !important;
+  }
+  
+  /* Tooltips des graphiques */
+  .recharts-tooltip-wrapper {
+    font-size: 12px !important;
+  }
+}
+
+/* ========================================
+   UTILITAIRES MOBILE
+======================================== */
+
+@media (max-width: 768px) {
+  
+  /* Classes utilitaires */
+  .mobile-hidden {
+    display: none !important;
+  }
+  
+  .mobile-full-width {
+    width: 100% !important;
+  }
+  
+  .mobile-text-center {
+    text-align: center !important;
+  }
+  
+  .mobile-padding {
+    padding: 12px !important;
+  }
+  
+  .mobile-margin {
+    margin: 8px !important;
+  }
+  
+  /* Scroll horizontal pour tables */
+  .mobile-scroll-x {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  
+  /* Touch targets */
+  .mobile-touch-target {
+    min-height: 44px !important;
+    min-width: 44px !important;
+  }
+}
+
+/* ========================================
+   CORRECTIONS SPÉCIFIQUES
+======================================== */
+
+@media (max-width: 768px) {
+  
+  /* Corriger les z-index */
+  .fixed {
+    z-index: 9999 !important;
+  }
+  
+  /* Corriger les overflows */
+  body {
+    overflow-x: hidden !important;
+  }
+  
+  /* Corriger les positions */
+  .absolute {
+    position: relative !important;
+  }
+  
+  /* Corriger les widths */
+  .w-full {
+    width: 100% !important;
+  }
+  
+  .max-w-full {
+    max-width: 100% !important;
+  }
+  
+  /* Corriger les heights */
+  .h-screen {
+    height: 100vh !important;
+  }
+  
+  .min-h-screen {
+    min-height: 100vh !important;
+  }
+}
+
+/* ========================================
+   ANIMATIONS MOBILES
+======================================== */
+
+@media (max-width: 768px) {
+  
+  /* Réduire les animations sur mobile */
+  * {
+    transition-duration: 0.2s !important;
+  }
+  
+  /* Animations d'entrée */
+  @keyframes mobileSlideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .mobile-animate {
+    animation: mobileSlideUp 0.3s ease-out;
+  }
+}
+
+/* ========================================
+   SUPPORT DARK MODE MOBILE
+======================================== */
+
+@media (max-width: 768px) and (prefers-color-scheme: dark) {
+  
+  /* Ajustements pour le mode sombre */
+  [data-radix-dialog-content] {
+    background-color: #1f2937 !important;
+    color: #f9fafb !important;
+    border: 1px solid #374151 !important;
+  }
+  
+  input, textarea, select {
+    background-color: #374151 !important;
+    color: #f9fafb !important;
+    border-color: #4b5563 !important;
+  }
+}

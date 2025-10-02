@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import "@/styles/mobile-dashboard-new.css"
+import "@/styles/universal-mobile-responsive.css"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -247,10 +248,11 @@ export default function SuperAdminDashboard() {
     )
   }
 
-  // Version mobile
+  // Version mobile - SEULE interface sur mobile
   if (isMobile) {
     return (
-      <div className="mobile-dashboard">
+      <>
+        <div className="mobile-dashboard">
         {/* Header Mobile */}
         <div className="mobile-header">
           <div className="mobile-header-left">
@@ -340,7 +342,13 @@ export default function SuperAdminDashboard() {
                 Rapport
               </Button>
               
-              <Button className="mobile-action-button mobile-action-danger">
+              <Button 
+                className="mobile-action-button mobile-action-danger"
+                onClick={() => {
+                  // Action pour DA-Paiement
+                  console.log("DA-Paiement clicked")
+                }}
+              >
                 <CreditCard className="mobile-action-icon" />
                 DA-Paiement
               </Button>
@@ -393,13 +401,14 @@ export default function SuperAdminDashboard() {
           isOpen={validatedHistoryModalOpen}
           onClose={() => setValidatedHistoryModalOpen(false)}
         />
-      </div>
+        </div>
+      </>
     )
   }
 
-  // Version Desktop
+  // Version Desktop (masquée sur mobile via CSS)
   return (
-    <div className="min-h-screen bg-gray-50 p-2">
+    <div className="min-h-screen bg-gray-50 p-2 desktop-dashboard">
       <div className="max-w-full mx-auto">
         <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">Tableau de Bord Super Administrateur</h1>
 
