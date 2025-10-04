@@ -195,28 +195,112 @@ export const useStore = create<AppState>()(
         }
 
         try {
-          console.log("Chargement des demandes pour l'utilisateur:", currentUser.id)
-          const params = new URLSearchParams()
-          Object.entries(filters).forEach(([key, value]) => {
-            if (value) params.append(key, String(value))
-          })
-
-          const response = await fetch(`/api/demandes?${params}`, {
-            headers: {
-              "Authorization": `Bearer ${token}`,
+          console.log("🔄 [LOCAL MODE] Chargement des demandes pour l'utilisateur:", currentUser.nom, currentUser.prenom)
+          
+          // Mode local - Simulation des demandes
+          const localDemandes = [
+            {
+              id: "demande-1",
+              numero: "DA-2024-001",
+              projetId: "projet-1",
+              projet: {
+                id: "projet-1",
+                nom: "Rénovation Bâtiment A",
+                description: "Rénovation complète du bâtiment A",
+                dateDebut: new Date("2024-01-01"),
+                dateFin: new Date("2024-12-31"),
+                createdBy: "user-1",
+                utilisateurs: ["user-1", "user-2", "user-3"],
+                actif: true,
+                createdAt: new Date("2024-01-01")
+              },
+              technicienId: currentUser.id, // Assigné à l'utilisateur actuel
+              type: "materiel" as const,
+              items: [
+                {
+                  id: "item-1",
+                  articleId: "article-1",
+                  quantiteDemandee: 10,
+                  quantiteValidee: 10,
+                  quantiteSortie: 10,
+                  quantiteRecue: 10,
+                  commentaire: "Livré complet"
+                }
+              ],
+              status: "confirmee_demandeur" as const,
+              dateCreation: new Date("2024-01-15"),
+              dateModification: new Date("2024-01-20"),
+              commentaires: "Demande de matériel pour rénovation",
+              validationLogistique: undefined,
+              validationResponsableTravaux: undefined
             },
-          })
+            {
+              id: "demande-2", 
+              numero: "DA-2024-002",
+              projetId: "projet-1",
+              projet: {
+                id: "projet-1",
+                nom: "Rénovation Bâtiment A",
+                description: "Rénovation complète du bâtiment A",
+                dateDebut: new Date("2024-01-01"),
+                dateFin: new Date("2024-12-31"),
+                createdBy: "user-1",
+                utilisateurs: ["user-1", "user-2", "user-3"],
+                actif: true,
+                createdAt: new Date("2024-01-01")
+              },
+              technicienId: currentUser.id, // Assigné à l'utilisateur actuel
+              type: "outillage" as const,
+              items: [
+                {
+                  id: "item-2",
+                  articleId: "article-2", 
+                  quantiteDemandee: 5,
+                  quantiteValidee: 5,
+                  quantiteSortie: 5,
+                  commentaire: "En cours de livraison"
+                }
+              ],
+              status: "en_attente_validation_finale_demandeur" as const,
+              dateCreation: new Date("2024-01-16"),
+              dateModification: new Date("2024-01-21"),
+              commentaires: "Demande d'outillage spécialisé",
+              validationLogistique: undefined,
+              validationResponsableTravaux: undefined
+            }
+          ]
 
-          const result = await response.json()
-          if (result.success) {
-            console.log("Demandes chargées:", result.data.length)
-            set({ demandes: result.data })
-          } else {
-            console.error("Erreur API demandes:", result.error)
-            set({ error: result.error })
+          // Filtrer selon le rôle et les permissions
+          let filteredDemandes = [...localDemandes]
+
+          switch (currentUser.role) {
+            case "superadmin":
+              // Voit toutes les demandes
+              break
+            case "employe":
+              // Voit ses propres demandes
+              filteredDemandes = localDemandes.filter(d => d.technicienId === currentUser.id)
+              break
+            default:
+              // Autres rôles voient les demandes de leurs projets
+              filteredDemandes = localDemandes.filter(d => 
+                currentUser.projets && currentUser.projets.includes(d.projetId)
+              )
           }
+
+          // Appliquer les filtres
+          if (filters.status) {
+            filteredDemandes = filteredDemandes.filter(d => d.status === filters.status)
+          }
+          if (filters.type) {
+            filteredDemandes = filteredDemandes.filter(d => d.type === filters.type)
+          }
+
+          console.log(`✅ [LOCAL MODE] ${filteredDemandes.length} demandes chargées pour ${currentUser.role}`)
+          set({ demandes: filteredDemandes })
+
         } catch (error) {
-          console.error("Erreur lors du chargement des demandes:", error)
+          console.error("❌ [LOCAL MODE] Erreur lors du chargement des demandes:", error)
           set({ error: "Erreur lors du chargement des demandes" })
         }
       },

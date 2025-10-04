@@ -35,7 +35,9 @@ const localDemandes: Demande[] = [
     status: "confirmee_demandeur",
     dateCreation: new Date("2024-01-15"),
     dateModification: new Date("2024-01-20"),
-    commentaires: "Demande de matériel pour rénovation"
+    commentaires: "Demande de matériel pour rénovation",
+    validationLogistique: undefined,
+    validationResponsableTravaux: undefined
   },
   {
     id: "demande-2", 
@@ -67,7 +69,9 @@ const localDemandes: Demande[] = [
     status: "en_attente_validation_finale_demandeur",
     dateCreation: new Date("2024-01-16"),
     dateModification: new Date("2024-01-21"),
-    commentaires: "Demande d'outillage spécialisé"
+    commentaires: "Demande d'outillage spécialisé",
+    validationLogistique: undefined,
+    validationResponsableTravaux: undefined
   },
   {
     id: "demande-3",
@@ -98,7 +102,9 @@ const localDemandes: Demande[] = [
     status: "en_attente_preparation_appro",
     dateCreation: new Date("2024-02-05"),
     dateModification: new Date("2024-02-10"),
-    commentaires: "Matériel électrique urgent"
+    commentaires: "Matériel électrique urgent",
+    validationLogistique: undefined,
+    validationResponsableTravaux: undefined
   }
 ]
 
