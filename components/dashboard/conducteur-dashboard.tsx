@@ -22,6 +22,7 @@ import {
   BarChart3,
   TrendingUp
 } from 'lucide-react'
+import SharedDemandesSection from "@/components/dashboard/shared-demandes-section"
 import {
   PieChart,
   Pie,
@@ -218,31 +219,11 @@ export default function ConducteurDashboard() {
               </Card>
             </div>
 
+            {/* Section partagée pour les demandes en cours et clôture */}
+            <SharedDemandesSection />
+
             {/* Liste des demandes à valider */}
             <ValidationDemandesList type="materiel" title="Demandes de matériel à valider" />
-
-            {/* Demandes personnelles prêtes à clôturer */}
-            {demandesValidationFinale.length > 0 && (
-              <Card className="bg-emerald-50 border-emerald-200">
-                <CardHeader>
-                  <CardTitle className="text-emerald-800 flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5" />
-                    Mes demandes prêtes à clôturer ({demandesValidationFinale.length})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {demandesValidationFinale.map((demande) => (
-                      <DemandeClotureCard 
-                        key={demande.id} 
-                        demande={demande} 
-                        onCloture={() => loadDemandes()} 
-                      />
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </div>
 
           {/* Colonne de droite (fine) - 1/4 de la largeur */}
