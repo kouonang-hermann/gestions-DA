@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import "@/styles/dashboard-layout.css"
-import "@/styles/universal-mobile-responsive.css"
 import "@/styles/mobile-dashboard.css"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -48,6 +47,7 @@ import {
 import CreateDemandeModal from "@/components/demandes/create-demande-modal"
 import { UserRequestsChart } from "@/components/charts/user-requests-chart"
 import UserDetailsModal from "@/components/modals/user-details-modal"
+import MesDemandesACloturer from "@/components/demandes/mes-demandes-a-cloturer"
 import ValidatedRequestsHistory from "@/components/dashboard/validated-requests-history"
 import DemandesCategoryModal from "@/components/modals/demandes-category-modal"
 import ValidatedDemandesModal from "@/components/modals/validated-demandes-modal"
@@ -633,6 +633,9 @@ export default function EmployeDashboard() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Mes demandes à clôturer */}
+            <MesDemandesACloturer />
 
             {/* Mes projets - Tableau fixe scrollable */}
             {mesProjets.length > 0 && (

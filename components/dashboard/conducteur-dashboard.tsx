@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { useStore } from "@/stores/useStore"
+import MesDemandesACloturer from "@/components/demandes/mes-demandes-a-cloturer"
 import { 
   Package, 
   Clock, 
@@ -375,6 +376,9 @@ export default function ConducteurDashboard() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Mes demandes à clôturer */}
+          <MesDemandesACloturer />
         </div>
       </div>
 

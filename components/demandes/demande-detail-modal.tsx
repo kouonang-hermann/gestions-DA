@@ -176,6 +176,13 @@ export default function DemandeDetailModal({ isOpen, onClose, demandeId, mode }:
           demande.technicienId === currentUser.id
         )
 
+      case "cloturer":
+        // Permettre à l'utilisateur de clôturer sa propre demande si elle est confirmée
+        return (
+          demande.technicienId === currentUser.id &&
+          (status === "confirmee_demandeur" || status === "en_attente_validation_finale_demandeur")
+        )
+
       case "archiver":
         return (role as string) === "superadmin" && status === "cloturee"
 
@@ -510,6 +517,17 @@ export default function DemandeDetailModal({ isOpen, onClose, demandeId, mode }:
                   >
                     <Package className="h-4 w-4 mr-2" />
                     Confirmer réception
+                  </Button>
+                )}
+
+                {canPerformAction("cloturer") && (
+                  <Button
+                    onClick={() => handleAction("cloturer", false, true)}
+                    disabled={actionLoading}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Clôturer ma demande
                   </Button>
                 )}
 

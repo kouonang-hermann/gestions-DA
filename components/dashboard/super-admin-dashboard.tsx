@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import "@/styles/mobile-dashboard-new.css"
-import "@/styles/universal-mobile-responsive.css"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
