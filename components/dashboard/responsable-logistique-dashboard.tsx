@@ -54,7 +54,8 @@ export default function ResponsableLogistiqueDashboard() {
     enAttenteValidation: 0,
   })
 
-  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [createDemandeModalOpen, setCreateDemandeModalOpen] = useState(false)
+  const [demandeType, setDemandeType] = useState<"materiel" | "outillage">("materiel")
   const [showUserModal, setShowUserModal] = useState(false)
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null)
   const [filterTitle, setFilterTitle] = useState("")
@@ -381,7 +382,10 @@ export default function ResponsableLogistiqueDashboard() {
                         className="justify-start text-white" 
                         style={{ backgroundColor: '#015fc4' }}
                         size="sm"
-                        onClick={() => setShowCreateModal(true)}
+                        onClick={() => {
+                          setDemandeType("materiel")
+                          setCreateDemandeModalOpen(true)
+                        }}
                       >
                         <Package className="h-4 w-4 mr-2" />
                         <span className="text-sm">Nouvelle demande matériel</span>
@@ -390,7 +394,10 @@ export default function ResponsableLogistiqueDashboard() {
                         className="justify-start text-gray-700"
                         style={{ backgroundColor: '#b8d1df' }}
                         size="sm"
-                        onClick={() => setShowCreateModal(true)}
+                        onClick={() => {
+                          setDemandeType("outillage")
+                          setCreateDemandeModalOpen(true)
+                        }}
                       >
                         <Wrench className="h-4 w-4 mr-2" />
                         <span className="text-sm">Nouvelle demande outillage</span>
@@ -500,8 +507,9 @@ export default function ResponsableLogistiqueDashboard() {
 
       {/* Modals fonctionnels */}
       <CreateDemandeModal 
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
+        isOpen={createDemandeModalOpen}
+        onClose={() => setCreateDemandeModalOpen(false)}
+        type={demandeType}
       />
       <UserDetailsModal 
         isOpen={showUserModal}

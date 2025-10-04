@@ -40,6 +40,7 @@ import {
 } from "recharts"
 import ValidationDemandesList from "@/components/validation/validation-demandes-list"
 import DemandeDetailsModal from "@/components/modals/demande-details-modal"
+import CreateDemandeModal from "@/components/demandes/create-demande-modal"
 import RequestsFlowChart from "@/components/charts/requests-flow-chart"
 import type { Demande } from "@/types"
 
@@ -56,7 +57,8 @@ export default function ResponsableTravauxDashboard() {
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
   const [selectedDemande, setSelectedDemande] = useState<Demande | null>(null)
   const [dataLoaded, setDataLoaded] = useState(false)
-  const [showCreateDemandeModal, setShowCreateDemandeModal] = useState(false)
+  const [createDemandeModalOpen, setCreateDemandeModalOpen] = useState(false)
+  const [demandeType, setDemandeType] = useState<"materiel" | "outillage">("materiel")
   const [searchTerm, setSearchTerm] = useState("")
   const [activeChart, setActiveChart] = useState<"material" | "tooling">("material")
 
@@ -106,6 +108,12 @@ export default function ResponsableTravauxDashboard() {
   const handleViewDetails = (demande: Demande) => {
     setSelectedDemande(demande)
     setDetailsModalOpen(true)
+  }
+
+  const handleCardClick = (type: "total" | "enAttente" | "validees" | "rejetees") => {
+    // Pour l'instant, on peut juste logger ou ouvrir une modal de détails
+    console.log(`Carte cliquée: ${type}`)
+    // TODO: Implémenter l'ouverture d'une modal avec les détails des demandes filtrées
   }
 
   if (!currentUser) {
@@ -190,7 +198,7 @@ export default function ResponsableTravauxDashboard() {
           <div className="lg:col-span-3 space-y-4">
             {/* Vue d'ensemble - Cards statistiques */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#015fc4' }}>
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#015fc4' }} onClick={() => handleCardClick("total")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Total demandes matériel</CardTitle>
                   <FileText className="h-4 w-4" style={{ color: '#015fc4' }} />
@@ -201,7 +209,7 @@ export default function ResponsableTravauxDashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#f97316' }}>
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#f97316' }} onClick={() => handleCardClick("enAttente")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">En attente validation</CardTitle>
                   <Clock className="h-4 w-4" style={{ color: '#f97316' }} />
@@ -212,7 +220,7 @@ export default function ResponsableTravauxDashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#22c55e' }}>
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#22c55e' }} onClick={() => handleCardClick("validees")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Validées</CardTitle>
                   <CheckCircle className="h-4 w-4" style={{ color: '#22c55e' }} />
@@ -223,7 +231,7 @@ export default function ResponsableTravauxDashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#fc2d1f' }}>
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#fc2d1f' }} onClick={() => handleCardClick("rejetees")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Rejetées</CardTitle>
                   <XCircle className="h-4 w-4" style={{ color: '#fc2d1f' }} />
@@ -284,7 +292,10 @@ export default function ResponsableTravauxDashboard() {
                     className="justify-start text-white" 
                     style={{ backgroundColor: '#015fc4' }}
                     size="sm"
-                    onClick={() => setShowCreateDemandeModal(true)}
+                    onClick={() => {
+                      setDemandeType("materiel")
+                      setCreateDemandeModalOpen(true)
+                    }}
                   >
                     <Package className="h-4 w-4 mr-2" />
                     <span className="text-sm">Nouvelle demande matériel</span>
@@ -293,7 +304,10 @@ export default function ResponsableTravauxDashboard() {
                     className="justify-start text-gray-700"
                     style={{ backgroundColor: '#b8d1df' }}
                     size="sm"
-                    onClick={() => setShowCreateDemandeModal(true)}
+                    onClick={() => {
+                      setDemandeType("outillage")
+                      setCreateDemandeModalOpen(true)
+                    }}
                   >
                     <Wrench className="h-4 w-4 mr-2" />
                     <span className="text-sm">Nouvelle demande outillage</span>
@@ -400,6 +414,11 @@ export default function ResponsableTravauxDashboard() {
       </div>
 
       {/* Modals fonctionnels */}
+      <CreateDemandeModal
+        isOpen={createDemandeModalOpen}
+        onClose={() => setCreateDemandeModalOpen(false)}
+        type={demandeType}
+      />
       <DemandeDetailsModal
         isOpen={detailsModalOpen}
         onClose={() => {
