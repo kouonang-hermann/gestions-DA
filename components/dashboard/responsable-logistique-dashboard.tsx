@@ -23,6 +23,7 @@ import {
   BarChart3,
   TrendingUp
 } from 'lucide-react'
+import SharedDemandesSection from "@/components/dashboard/shared-demandes-section"
 import {
   PieChart,
   Pie,
@@ -362,6 +363,9 @@ export default function ResponsableLogistiqueDashboard() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Section partagée pour les demandes en cours et clôture */}
+                <SharedDemandesSection />
               </div>
 
               {/* Colonne de droite (fine) - 1/4 de la largeur */}

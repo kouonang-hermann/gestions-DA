@@ -444,15 +444,6 @@ export default function EmployeDashboard() {
 
       {/* Contenu Mobile */}
       <div className="mobile-content">
-        {/* Bouton Principal */}
-        <button 
-          className="mobile-main-button"
-          onClick={() => setCreateDemandeModalOpen(true)}
-        >
-          <Plus size={20} />
-          Nouvelle Demande
-        </button>
-
         {/* Mes 3 dernières demandes */}
         <div className="mobile-section">
           <h2 className="mobile-section-title">Mes 3 dernières demandes</h2>
@@ -482,72 +473,138 @@ export default function EmployeDashboard() {
           </div>
         </div>
 
-        {/* Actions Rapides */}
-        <div>
-          <h2 className="mobile-actions-title">Actions Rapides</h2>
-          <div className="mobile-actions-grid">
-            <button 
-              className="mobile-action-button mobile-action-primary"
-              onClick={() => {
-                setDemandeType("materiel")
-                setCreateDemandeModalOpen(true)
-              }}
-            >
-              <Package className="mobile-action-icon" />
-              DA-Matériel
-            </button>
-            
-            <button 
-              className="mobile-action-button mobile-action-secondary"
-              onClick={() => {
-                setDemandeType("outillage")
-                setCreateDemandeModalOpen(true)
-              }}
-            >
-              <Wrench className="mobile-action-icon" />
-              DA-Outillage
-            </button>
-            
-            <button 
-              className="mobile-action-button mobile-action-secondary"
-              onClick={() => {
-                // Fonctionnalité future - Nouveau Projet
-                console.log("Nouveau Projet - À implémenter")
-              }}
-            >
-              <FolderOpen className="mobile-action-icon" />
-              Nouveau Projet
-            </button>
-            
-            <button 
-              className="mobile-action-button mobile-action-secondary"
-              onClick={() => setUniversalClosureModalOpen(true)}
-            >
-              <CheckCircle className="mobile-action-icon" />
-              Clôturer Demandes
-            </button>
-            
-            <button 
-              className="mobile-action-button mobile-action-secondary"
-              onClick={() => {
-                // Fonctionnalité future - Rapport
-                console.log("Rapport - À implémenter")
-              }}
-            >
-              <BarChart3 className="mobile-action-icon" />
-              Rapport
-            </button>
-            
-            <button 
-              className="mobile-action-button mobile-action-accent"
-              onClick={() => {
-                // Fonctionnalité future - DA-Paiement
-                console.log("DA-Paiement - À implémenter")
-              }}
-            >
-              <CreditCard className="mobile-action-icon" />
-              DA-Paiement
-            </button>
+        {/* Actions Rapides - Tableau Scrollable */}
+        <div className="mobile-section">
+          <h2 className="mobile-section-title">Actions Rapides</h2>
+          <div className="mobile-actions-table-container">
+            <div className="mobile-actions-table">
+              <div className="mobile-actions-table-header">
+                <div className="mobile-table-cell">Action</div>
+                <div className="mobile-table-cell">Type</div>
+                <div className="mobile-table-cell">Statut</div>
+              </div>
+              <div className="mobile-actions-table-body">
+                <div 
+                  className="mobile-table-row mobile-table-row-clickable"
+                  onClick={() => {
+                    setDemandeType("materiel")
+                    setCreateDemandeModalOpen(true)
+                  }}
+                >
+                  <div className="mobile-table-cell">
+                    <div className="mobile-action-cell">
+                      <Package className="mobile-action-icon-small" style={{ color: '#015fc4' }} />
+                      <span>DA-Matériel</span>
+                    </div>
+                  </div>
+                  <div className="mobile-table-cell">
+                    <span className="mobile-type-badge mobile-type-materiel">Matériel</span>
+                  </div>
+                  <div className="mobile-table-cell">
+                    <span className="mobile-status-badge mobile-status-active">Disponible</span>
+                  </div>
+                </div>
+                
+                <div 
+                  className="mobile-table-row mobile-table-row-clickable"
+                  onClick={() => {
+                    setDemandeType("outillage")
+                    setCreateDemandeModalOpen(true)
+                  }}
+                >
+                  <div className="mobile-table-cell">
+                    <div className="mobile-action-cell">
+                      <Wrench className="mobile-action-icon-small" style={{ color: '#7c3aed' }} />
+                      <span>DA-Outillage</span>
+                    </div>
+                  </div>
+                  <div className="mobile-table-cell">
+                    <span className="mobile-type-badge mobile-type-outillage">Outillage</span>
+                  </div>
+                  <div className="mobile-table-cell">
+                    <span className="mobile-status-badge mobile-status-active">Disponible</span>
+                  </div>
+                </div>
+                
+                <div 
+                  className="mobile-table-row mobile-table-row-clickable"
+                  onClick={() => setUniversalClosureModalOpen(true)}
+                >
+                  <div className="mobile-table-cell">
+                    <div className="mobile-action-cell">
+                      <CheckCircle className="mobile-action-icon-small" style={{ color: '#22c55e' }} />
+                      <span>Clôturer Demandes</span>
+                    </div>
+                  </div>
+                  <div className="mobile-table-cell">
+                    <span className="mobile-type-badge mobile-type-action">Action</span>
+                  </div>
+                  <div className="mobile-table-cell">
+                    <span className="mobile-status-badge mobile-status-active">Disponible</span>
+                  </div>
+                </div>
+                
+                <div 
+                  className="mobile-table-row mobile-table-row-clickable"
+                  onClick={() => {
+                    console.log("Rapport - À implémenter")
+                  }}
+                >
+                  <div className="mobile-table-cell">
+                    <div className="mobile-action-cell">
+                      <BarChart3 className="mobile-action-icon-small" style={{ color: '#f97316' }} />
+                      <span>Rapport</span>
+                    </div>
+                  </div>
+                  <div className="mobile-table-cell">
+                    <span className="mobile-type-badge mobile-type-rapport">Rapport</span>
+                  </div>
+                  <div className="mobile-table-cell">
+                    <span className="mobile-status-badge mobile-status-future">Bientôt</span>
+                  </div>
+                </div>
+                
+                <div 
+                  className="mobile-table-row mobile-table-row-clickable"
+                  onClick={() => {
+                    console.log("Nouveau Projet - À implémenter")
+                  }}
+                >
+                  <div className="mobile-table-cell">
+                    <div className="mobile-action-cell">
+                      <FolderOpen className="mobile-action-icon-small" style={{ color: '#6b7280' }} />
+                      <span>Nouveau Projet</span>
+                    </div>
+                  </div>
+                  <div className="mobile-table-cell">
+                    <span className="mobile-type-badge mobile-type-projet">Projet</span>
+                  </div>
+                  <div className="mobile-table-cell">
+                    <span className="mobile-status-badge mobile-status-future">Bientôt</span>
+                  </div>
+                </div>
+                
+                <div 
+                  className="mobile-table-row mobile-table-row-clickable"
+                  onClick={() => {
+                    console.log("DA-Paiement - À implémenter")
+                  }}
+                >
+                  <div className="mobile-table-cell">
+                    <div className="mobile-action-cell">
+                      <CreditCard className="mobile-action-icon-small" style={{ color: '#fc2d1f' }} />
+                      <span>DA-Paiement</span>
+                    </div>
+                  </div>
+                  <div className="mobile-table-cell">
+                    <span className="mobile-type-badge mobile-type-paiement">Paiement</span>
+                  </div>
+                  <div className="mobile-table-cell">
+                    <span className="mobile-status-badge mobile-status-future">Bientôt</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

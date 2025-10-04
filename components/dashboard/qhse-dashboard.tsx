@@ -21,6 +21,7 @@ import {
   BarChart3,
   TrendingUp
 } from 'lucide-react'
+import SharedDemandesSection from "@/components/dashboard/shared-demandes-section"
 import {
   PieChart,
   Pie,
@@ -206,6 +207,9 @@ export default function QHSEDashboard() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Section partagée pour les demandes en cours et clôture */}
+            <SharedDemandesSection />
 
             {/* Liste des demandes à valider */}
             <ValidationDemandesList type="outillage" title="Demandes d'outillage à valider" />

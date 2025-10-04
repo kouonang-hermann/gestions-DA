@@ -21,6 +21,7 @@ import {
   BarChart3,
   TrendingUp
 } from 'lucide-react'
+import SharedDemandesSection from "@/components/dashboard/shared-demandes-section"
 import {
   PieChart,
   Pie,
@@ -205,6 +206,9 @@ export default function ChargeAffaireDashboard() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Section partagée pour les demandes en cours et clôture */}
+            <SharedDemandesSection />
 
             {/* Liste des préparations à valider */}
             <ValidationPreparationList />

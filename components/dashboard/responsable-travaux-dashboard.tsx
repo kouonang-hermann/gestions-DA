@@ -23,6 +23,7 @@ import {
   BarChart3,
   TrendingUp
 } from 'lucide-react'
+import SharedDemandesSection from "@/components/dashboard/shared-demandes-section"
 import {
   PieChart,
   Pie,
@@ -233,6 +234,9 @@ export default function ResponsableTravauxDashboard() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Section partagée pour les demandes en cours et clôture */}
+            <SharedDemandesSection />
 
             {/* Liste des demandes en attente de validation */}
             {demandesEnAttente.length > 0 && (

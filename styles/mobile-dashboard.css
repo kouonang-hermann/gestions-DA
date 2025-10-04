@@ -7,27 +7,19 @@
   --accent-red: #fc2d1f;
   --gray-light: #f8f9fa;
   --gray-medium: #6c757d;
-  --white: #ffffff;
-  --border-radius: 12px;
-  --shadow-light: 0 2px 8px rgba(0, 0, 0, 0.1);
-  --shadow-medium: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
 
 /* Mobile Layout - Visible uniquement sur mobile */
-.mobile-dashboard {
-  display: none;
-}
-
 @media (max-width: 768px) {
-  .mobile-dashboard {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    background-color: var(--gray-light);
-  }
-  
   .desktop-dashboard {
     display: none !important;
+  }
+  
+  .mobile-dashboard {
+    display: flex !important;
+    flex-direction: column;
+    height: 100vh;
+    background-color: var(--gray-light);
   }
 }
 

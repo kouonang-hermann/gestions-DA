@@ -50,6 +50,7 @@ import CreateDemandeModal from "@/components/demandes/create-demande-modal"
 import DetailsModal from "@/components/modals/details-modal"
 import ValidatedRequestsHistory from "@/components/dashboard/validated-requests-history"
 import ManageAdminRoles from "../admin/manage-admin-roles"
+import SharedDemandesSection from "@/components/dashboard/shared-demandes-section"
 
 export default function SuperAdminDashboard() {
   const { currentUser, users, projets, demandes, loadUsers, loadProjets, loadDemandes, isLoading } = useStore()
@@ -233,6 +234,11 @@ export default function SuperAdminDashboard() {
     } else if (data.name === "Outillage") {
       setActiveChart("tooling")
     }
+  }
+
+  const handleCardClick = (type: string, title: string) => {
+    console.log(`Clic sur carte ${type}: ${title}`)
+    // Logique pour gérer les clics sur les cartes partagées
   }
 
   const handleRemoveUserFromProject = () => {
@@ -450,17 +456,11 @@ export default function SuperAdminDashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#f97316' }} onClick={handleActiveRequestsClick}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">En Cours</CardTitle>
-                  <Clock className="h-4 w-4" style={{ color: '#f97316' }} />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold" style={{ color: '#f97316' }}>{stats.demandesEnCours}</div>
-                  <p className="text-xs text-muted-foreground">En traitement</p>
-                </CardContent>
-              </Card>
+              {/* Composant partagé pour les demandes en cours et clôture */}
+              <SharedDemandesSection onCardClick={handleCardClick} />
             </div>
+
+            {/* Section Mes demandes à clôturer - Intégrée dans SharedDemandesSection */}
 
             {/* Gestion des Rôles Administrateur */}
             <Card className="h-fit">
