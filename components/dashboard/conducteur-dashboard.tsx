@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { useStore } from "@/stores/useStore"
-import MesDemandesACloturer from "@/components/demandes/mes-demandes-a-cloturer"
 import { 
   Package, 
   Clock, 
@@ -98,6 +97,11 @@ export default function ConducteurDashboard() {
   const handleCardClick = (type: "total" | "enAttente" | "enCours" | "validees" | "rejetees", title: string) => {
     if (type === "total") {
       setValidatedHistoryModalOpen(true)
+    } else if (type === "enCours") {
+      // Afficher les demandes en cours ET les demandes à clôturer
+      setDetailsModalType(type)
+      setDetailsModalTitle("Mes demandes en cours et à clôturer")
+      setDetailsModalOpen(true)
     } else {
       setDetailsModalType(type)
       setDetailsModalTitle(title)
@@ -204,10 +208,11 @@ export default function ConducteurDashboard() {
                   <div className="text-2xl font-bold" style={{ color: '#f97316' }}>
                     {demandes.filter(d => 
                       d.technicienId === currentUser?.id && 
-                      ["en_attente_validation_conducteur", "en_attente_validation_qhse", "en_attente_validation_responsable_travaux", "en_attente_validation_charge_affaire", "en_attente_preparation_appro", "en_attente_validation_logistique"].includes(d.status)
+                      (["en_attente_validation_conducteur", "en_attente_validation_qhse", "en_attente_validation_responsable_travaux", "en_attente_validation_charge_affaire", "en_attente_preparation_appro", "en_attente_validation_logistique"].includes(d.status) ||
+                       ["confirmee_demandeur", "en_attente_validation_finale_demandeur"].includes(d.status))
                     ).length}
                   </div>
-                  <p className="text-xs text-muted-foreground">Mes demandes en cours</p>
+                  <p className="text-xs text-muted-foreground">En cours + à clôturer</p>
                 </CardContent>
               </Card>
 
@@ -236,9 +241,6 @@ export default function ConducteurDashboard() {
 
             {/* Liste des demandes à valider */}
             <ValidationDemandesList type="materiel" title="Demandes de matériel à valider" />
-
-            {/* Section Mes demandes à clôturer */}
-            <MesDemandesACloturer />
           </div>
 
           {/* Colonne de droite (fine) - 1/4 de la largeur */}
@@ -372,9 +374,6 @@ export default function ConducteurDashboard() {
               </CardContent>
             </Card>
           </div>
-
-          {/* Mes demandes à clôturer */}
-          <MesDemandesACloturer />
         </div>
       </div>
 

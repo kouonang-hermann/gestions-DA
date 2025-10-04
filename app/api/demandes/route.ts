@@ -4,14 +4,41 @@ import { requireAuth, hasPermission } from "@/lib/auth"
 import { createDemandeSchema } from "@/lib/validations"
 
 /**
- * Détermine le statut initial d'une demande selon son type
+ * Détermine le statut initial d'une demande selon son type et le rôle du créateur
+ * La demande suit le flow complet mais saute les étapes où le créateur est le valideur
  */
-function getInitialStatus(type: "materiel" | "outillage"): string {
-  if (type === "materiel") {
-    return "en_attente_validation_conducteur"
-  } else {
-    return "en_attente_validation_qhse"
+function getInitialStatus(type: "materiel" | "outillage", creatorRole: string): string {
+  // Flow complet pour chaque type
+  const flows = {
+    materiel: [
+      { status: "en_attente_validation_conducteur", role: "conducteur_travaux" },
+      { status: "en_attente_validation_responsable_travaux", role: "responsable_travaux" },
+      { status: "en_attente_validation_charge_affaire", role: "charge_affaire" },
+      { status: "en_attente_preparation_appro", role: "responsable_appro" },
+      { status: "en_attente_validation_logistique", role: "responsable_logistique" },
+      { status: "en_attente_validation_finale_demandeur", role: "employe" }
+    ],
+    outillage: [
+      { status: "en_attente_validation_qhse", role: "responsable_qhse" },
+      { status: "en_attente_validation_responsable_travaux", role: "responsable_travaux" },
+      { status: "en_attente_validation_charge_affaire", role: "charge_affaire" },
+      { status: "en_attente_preparation_appro", role: "responsable_appro" },
+      { status: "en_attente_validation_logistique", role: "responsable_logistique" },
+      { status: "en_attente_validation_finale_demandeur", role: "employe" }
+    ]
   }
+
+  const flow = flows[type]
+  
+  // Trouver la première étape où le créateur n'est pas le valideur
+  for (const step of flow) {
+    if (step.role !== creatorRole) {
+      return step.status
+    }
+  }
+  
+  // Si le créateur peut valider toutes les étapes (cas improbable), aller directement à la fin
+  return "en_attente_validation_finale_demandeur"
 }
 
 /**
@@ -218,8 +245,8 @@ export const POST = async (request: NextRequest) => {
     const count = await prisma.demande.count()
     const numero = `DEM-${year}-${String(count + 1).padStart(4, "0")}`
 
-    // Déterminer le statut initial selon le type de demande
-    const initialStatus = getInitialStatus(validatedData.type)
+    // Déterminer le statut initial selon le type de demande et le rôle du créateur
+    const initialStatus = getInitialStatus(validatedData.type, currentUser.role)
 
     // Traiter les articles - créer ceux qui n'existent pas
     const processedItems = []
@@ -288,7 +315,7 @@ export const POST = async (request: NextRequest) => {
       }
     })
 
-    // Créer une entrée dans l'historique
+    // Créer une entrée dans l'historique pour la création
     await prisma.historyEntry.create({
       data: {
         demandeId: newDemande.id,
@@ -298,6 +325,49 @@ export const POST = async (request: NextRequest) => {
         signature: `creation-${Date.now()}`,
       }
     })
+
+    // Créer des entrées d'historique pour les étapes sautées
+    const flows = {
+      materiel: [
+        { status: "en_attente_validation_conducteur", role: "conducteur_travaux", label: "Validation Conducteur" },
+        { status: "en_attente_validation_responsable_travaux", role: "responsable_travaux", label: "Validation Responsable Travaux" },
+        { status: "en_attente_validation_charge_affaire", role: "charge_affaire", label: "Validation Chargé Affaire" },
+        { status: "en_attente_preparation_appro", role: "responsable_appro", label: "Préparation Appro" },
+        { status: "en_attente_validation_logistique", role: "responsable_logistique", label: "Validation Logistique" },
+        { status: "en_attente_validation_finale_demandeur", role: "employe", label: "Validation Finale Demandeur" }
+      ],
+      outillage: [
+        { status: "en_attente_validation_qhse", role: "responsable_qhse", label: "Validation QHSE" },
+        { status: "en_attente_validation_responsable_travaux", role: "responsable_travaux", label: "Validation Responsable Travaux" },
+        { status: "en_attente_validation_charge_affaire", role: "charge_affaire", label: "Validation Chargé Affaire" },
+        { status: "en_attente_preparation_appro", role: "responsable_appro", label: "Préparation Appro" },
+        { status: "en_attente_validation_logistique", role: "responsable_logistique", label: "Validation Logistique" },
+        { status: "en_attente_validation_finale_demandeur", role: "employe", label: "Validation Finale Demandeur" }
+      ]
+    }
+
+    const flow = flows[validatedData.type as keyof typeof flows]
+    
+    // Créer des entrées pour chaque étape sautée
+    for (const step of flow) {
+      if (step.role === currentUser.role && step.status !== initialStatus) {
+        await prisma.historyEntry.create({
+          data: {
+            demandeId: newDemande.id,
+            userId: currentUser.id,
+            action: `Auto-validation: ${step.label}`,
+            nouveauStatus: step.status as any,
+            commentaire: `Étape automatiquement validée car le créateur (${currentUser.role}) correspond au valideur de cette étape`,
+            signature: `auto-skip-${step.status}-${Date.now()}`,
+          }
+        })
+      }
+      
+      // Arrêter quand on atteint le statut initial (première étape non sautée)
+      if (step.status === initialStatus) {
+        break
+      }
+    }
 
     return NextResponse.json(
       {
