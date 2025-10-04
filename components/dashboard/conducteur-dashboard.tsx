@@ -22,7 +22,6 @@ import {
   BarChart3,
   TrendingUp
 } from 'lucide-react'
-import SharedDemandesSection from "@/components/dashboard/shared-demandes-section"
 import {
   PieChart,
   Pie,
@@ -57,7 +56,7 @@ export default function ConducteurDashboard() {
   const [createDemandeModalOpen, setCreateDemandeModalOpen] = useState(false)
   const [demandeType, setDemandeType] = useState<"materiel" | "outillage">("materiel")
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
-  const [detailsModalType, setDetailsModalType] = useState<"total" | "enAttente" | "validees" | "rejetees">("total")
+  const [detailsModalType, setDetailsModalType] = useState<"total" | "enAttente" | "enCours" | "validees" | "rejetees">("total")
   const [detailsModalTitle, setDetailsModalTitle] = useState("")
   const [validatedHistoryModalOpen, setValidatedHistoryModalOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
@@ -96,7 +95,7 @@ export default function ConducteurDashboard() {
   // NOUVEAU: Demandes personnelles prêtes à clôturer
   const demandesValidationFinale = mesDemandes.filter(d => d.status === "en_attente_validation_finale_demandeur")
 
-  const handleCardClick = (type: "total" | "enAttente" | "validees" | "rejetees", title: string) => {
+  const handleCardClick = (type: "total" | "enAttente" | "enCours" | "validees" | "rejetees", title: string) => {
     if (type === "total") {
       setValidatedHistoryModalOpen(true)
     } else {
@@ -173,7 +172,7 @@ export default function ConducteurDashboard() {
           {/* Colonne de gauche (large) - 3/4 de la largeur */}
           <div className="lg:col-span-3 space-y-4">
             {/* Vue d'ensemble - Cards statistiques */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#015fc4' }} onClick={() => handleCardClick("total", "Toutes les demandes")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Total demandes</CardTitle>
@@ -193,6 +192,22 @@ export default function ConducteurDashboard() {
                 <CardContent>
                   <div className="text-2xl font-bold" style={{ color: '#f97316' }}>{stats.enAttente}</div>
                   <p className="text-xs text-muted-foreground">À valider</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#f97316' }} onClick={() => handleCardClick("enCours", "Mes demandes en cours")}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">En cours</CardTitle>
+                  <Clock className="h-4 w-4" style={{ color: '#f97316' }} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" style={{ color: '#f97316' }}>
+                    {demandes.filter(d => 
+                      d.technicienId === currentUser?.id && 
+                      ["en_attente_validation_conducteur", "en_attente_validation_qhse", "en_attente_validation_responsable_travaux", "en_attente_validation_charge_affaire", "en_attente_preparation_appro", "en_attente_validation_logistique"].includes(d.status)
+                    ).length}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Mes demandes en cours</p>
                 </CardContent>
               </Card>
 
@@ -219,11 +234,11 @@ export default function ConducteurDashboard() {
               </Card>
             </div>
 
-            {/* Section partagée pour les demandes en cours et clôture */}
-            <SharedDemandesSection />
-
             {/* Liste des demandes à valider */}
             <ValidationDemandesList type="materiel" title="Demandes de matériel à valider" />
+
+            {/* Section Mes demandes à clôturer */}
+            <MesDemandesACloturer />
           </div>
 
           {/* Colonne de droite (fine) - 1/4 de la largeur */}
