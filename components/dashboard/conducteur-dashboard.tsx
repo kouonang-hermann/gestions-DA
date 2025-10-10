@@ -176,9 +176,15 @@ export default function ConducteurDashboard() {
     }
   }
 
+
   const handleCardClick = (type: "total" | "enAttente" | "enCours" | "validees" | "rejetees", title: string) => {
     if (type === "total") {
       setValidatedHistoryModalOpen(true)
+    } else if (type === "enCours") {
+      // Afficher les demandes en cours ET les demandes à clôturer
+      setDetailsModalType(type)
+      setDetailsModalTitle("Mes demandes en cours et à clôturer")
+      setDetailsModalOpen(true)
     } else {
       setDetailsModalType(type)
       setDetailsModalTitle(title)
@@ -449,19 +455,16 @@ export default function ConducteurDashboard() {
                       <Tooltip />
                       <Bar dataKey="value" fill="#b8d1df" />
                     </BarChart>
-                  )}
+                  )
                 </ResponsiveContainer>
-              </CardContent>
+              </Card>
             </Card>
           </div>
-
-          {/* RIEN - Supprimé car déjà géré dans la modal */}
         </div>
       </div>
 
       {/* Modals fonctionnels */}
       <CreateDemandeModal
-        isOpen={createDemandeModalOpen}
         onClose={() => setCreateDemandeModalOpen(false)}
         type={demandeType}
       />
