@@ -55,7 +55,7 @@ import DemandesDebug from "@/components/debug/demandes-debug"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 export default function SuperAdminDashboard() {
-  const { currentUser, users, projets, demandes, isLoading } = useStore()
+  const { currentUser, users, projets, demandes, isLoading, loadUsers, loadProjets, loadDemandes } = useStore()
 
   // Hook pour détecter mobile
   const [isMobile, setIsMobile] = useState(false)
@@ -87,22 +87,36 @@ export default function SuperAdminDashboard() {
   // États pour la pagination et recherche (nouveau design)
   const [searchTerm, setSearchTerm] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
-  const [activeChart, setActiveChart] = useState<"material" | "tooling">("material")
   const itemsPerPage = 7
 
   // Effet pour détecter mobile
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768)
+      setIsMobile(window.innerWidth < 768)
     }
-    
     checkMobile()
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  // Données chargées automatiquement par useDataLoader
+  // Chargement automatique des données au montage du composant
+  useEffect(() => {
+    const loadAllData = async () => {
+      console.log("🔄 [SUPER-ADMIN] Chargement initial des données...")
+      await Promise.all([
+        loadUsers(),
+        loadProjets(),
+        loadDemandes()
+      ])
+      console.log("✅ [SUPER-ADMIN] Données chargées avec succès")
+    }
+    
+    if (currentUser) {
+      loadAllData()
+    }
+  }, [currentUser, loadUsers, loadProjets, loadDemandes])
 
+  // Mise à jour des stats quand les données changent
   useEffect(() => {
     setStats({
       totalUtilisateurs: users.length,
