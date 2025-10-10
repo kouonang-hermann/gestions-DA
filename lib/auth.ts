@@ -152,6 +152,10 @@ export function hasPermission(user: any, action: string): boolean {
     case "create_user":
       return user.role === "superadmin" || user.isAdmin
 
+    case "read_users":
+      // Permettre la lecture des utilisateurs pour les rôles qui en ont besoin pour le filtrage
+      return ["superadmin", "responsable_travaux", "charge_affaire", "responsable_logistique", "responsable_appro", "responsable_qhse", "conducteur_travaux"].includes(user.role) || user.isAdmin
+
     case "assign_admin":
       return user.role === "superadmin"
 

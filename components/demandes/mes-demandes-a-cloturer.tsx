@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { useStore } from "@/stores/useStore"
 import { CheckCircle, Package, Clock, Eye } from "lucide-react"
 import type { Demande } from "@/types"
@@ -18,13 +19,25 @@ export default function MesDemandesACloturer() {
 
   useEffect(() => {
     if (currentUser && demandes) {
+      console.log(`🔍 [CLÔTURE] Filtrage pour ${currentUser.nom} (${currentUser.role}):`)
+      console.log(`  - Total demandes: ${demandes.length}`)
+      console.log(`  - Demandes de l'utilisateur: ${demandes.filter(d => d.technicienId === currentUser.id).length}`)
+      
       // Filtrer les demandes que l'utilisateur peut clôturer
       const mesDemandesACloturer = demandes.filter(
-        (demande) =>
-          demande.technicienId === currentUser.id &&
-          (demande.status === "confirmee_demandeur" || 
-           demande.status === "en_attente_validation_finale_demandeur")
+        (demande) => {
+          const isMyDemande = demande.technicienId === currentUser.id
+          const isCloturable = demande.status === "confirmee_demandeur" || demande.status === "en_attente_validation_finale_demandeur"
+          
+          if (isMyDemande) {
+            console.log(`    - ${demande.numero}: statut=${demande.status}, clôturable=${isCloturable}`)
+          }
+          
+          return isMyDemande && isCloturable
+        }
       )
+      
+      console.log(`  - Demandes trouvées: ${mesDemandesACloturer.length}/${demandes.length}`)
       setDemandesACloturer(mesDemandesACloturer)
     }
   }, [currentUser, demandes])

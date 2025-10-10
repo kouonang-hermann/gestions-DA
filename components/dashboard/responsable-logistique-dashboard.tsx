@@ -23,7 +23,6 @@ import {
   BarChart3,
   TrendingUp
 } from 'lucide-react'
-import SharedDemandesSection from "@/components/dashboard/shared-demandes-section"
 import {
   PieChart,
   Pie,
@@ -42,15 +41,16 @@ import CreateDemandeModal from "@/components/demandes/create-demande-modal"
 import { UserRequestsChart } from "@/components/charts/user-requests-chart"
 import UserDetailsModal from "@/components/modals/user-details-modal"
 import ValidationLogistiqueList from "@/components/logistique/validation-logistique-list"
+import { useAutoReload } from "@/hooks/useAutoReload"
 
 export default function ResponsableLogistiqueDashboard() {
-  const { currentUser, demandes, projets, loadDemandes, loadProjets, isLoading } = useStore()
+  const { currentUser, demandes, projets, isLoading } = useStore()
+  const { handleManualReload } = useAutoReload("RESPONSABLE-LOGISTIQUE")
 
   const [stats, setStats] = useState({
     total: 0,
     enCours: 0,
     validees: 0,
-    rejetees: 0,
     enAttenteValidation: 0,
   })
 
@@ -62,12 +62,7 @@ export default function ResponsableLogistiqueDashboard() {
   const [searchTerm, setSearchTerm] = useState("")
   const [activeChart, setActiveChart] = useState<"material" | "tooling">("material")
 
-  useEffect(() => {
-    if (currentUser) {
-      loadDemandes()
-      loadProjets()
-    }
-  }, [currentUser, loadDemandes, loadProjets])
+  // Données chargées automatiquement par useDataLoader
 
   useEffect(() => {
     if (demandes.length > 0 && currentUser) {
@@ -84,7 +79,6 @@ export default function ResponsableLogistiqueDashboard() {
         d.status === "en_attente_validation_finale_demandeur" ||
         d.status === "cloturee"
       ).length
-      const rejetees = mesDemandesLogistique.filter(d => d.status === "rejetee").length
       const enAttenteValidation = mesDemandesLogistique.filter(d => 
         d.status === "en_attente_validation_logistique"
       ).length
@@ -93,7 +87,6 @@ export default function ResponsableLogistiqueDashboard() {
         total,
         enCours,
         validees,
-        rejetees,
         enAttenteValidation,
       })
     }
@@ -129,8 +122,6 @@ export default function ResponsableLogistiqueDashboard() {
           d.status === "en_attente_validation_finale_demandeur" ||
           d.status === "cloturee"
         )
-      case "rejetees":
-        return mesDemandesLogistique.filter(d => d.status === "rejetee")
       case "enAttenteValidation":
         return mesDemandesLogistique.filter(d => d.status === "en_attente_validation_logistique")
       default:
@@ -234,14 +225,23 @@ export default function ResponsableLogistiqueDashboard() {
       <div className="max-w-full mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold text-gray-900">Tableau de Bord Responsable Logistique</h1>
-          {showValidationList && (
+          <div className="flex space-x-2">
             <Button 
-              variant="outline" 
-              onClick={() => setShowValidationList(false)}
+              onClick={handleManualReload}
+              variant="outline"
+              className="bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100"
             >
-              Retour au tableau de bord
+              🔄 Actualiser
             </Button>
-          )}
+            {showValidationList && (
+              <Button 
+                variant="outline" 
+                onClick={() => setShowValidationList(false)}
+              >
+                Retour au tableau de bord
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Afficher soit le dashboard soit la liste de validation */}
@@ -253,8 +253,8 @@ export default function ResponsableLogistiqueDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
               {/* Colonne de gauche (large) - 3/4 de la largeur */}
               <div className="lg:col-span-3 space-y-4">
-                {/* Vue d'ensemble - Cards statistiques (5 cartes sur 2 lignes) */}
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                {/* Vue d'ensemble - Cards statistiques (4 cartes sur 1 ligne) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#015fc4' }} onClick={() => handleCardClick("total", "Toutes mes demandes")}>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium text-muted-foreground">Total</CardTitle>
@@ -296,17 +296,6 @@ export default function ResponsableLogistiqueDashboard() {
                     <CardContent>
                       <div className="text-2xl font-bold" style={{ color: '#22c55e' }}>{stats.validees}</div>
                       <p className="text-xs text-muted-foreground">Terminées</p>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#fc2d1f' }} onClick={() => handleCardClick("rejetees", "Demandes rejetées")}>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium text-muted-foreground">Rejetées</CardTitle>
-                      <XCircle className="h-4 w-4" style={{ color: '#fc2d1f' }} />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold" style={{ color: '#fc2d1f' }}>{stats.rejetees}</div>
-                      <p className="text-xs text-muted-foreground">Refusées</p>
                     </CardContent>
                   </Card>
                 </div>
@@ -364,8 +353,6 @@ export default function ResponsableLogistiqueDashboard() {
                   </CardContent>
                 </Card>
 
-                {/* Section partagée pour les demandes en cours et clôture */}
-                <SharedDemandesSection />
               </div>
 
               {/* Colonne de droite (fine) - 1/4 de la largeur */}
@@ -502,6 +489,7 @@ export default function ResponsableLogistiqueDashboard() {
       <CreateDemandeModal 
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
+        type="materiel"
       />
       <UserDetailsModal 
         isOpen={showUserModal}

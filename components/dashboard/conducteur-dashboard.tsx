@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { useStore } from "@/stores/useStore"
-import MesDemandesACloturer from "@/components/demandes/mes-demandes-a-cloturer"
 import { 
   Package, 
   Clock, 
@@ -41,14 +40,16 @@ import ValidationDemandesList from "@/components/validation/validation-demandes-
 import { UserRequestsChart } from "@/components/charts/user-requests-chart"
 import UserDetailsModal from "@/components/modals/user-details-modal"
 import ValidatedRequestsHistory from "@/components/dashboard/validated-requests-history"
-import DemandeClotureCard from "@/components/demandes/demande-cloture-card"
+import { useAutoReload } from "@/hooks/useAutoReload"
 
 export default function ConducteurDashboard() {
-  const { currentUser, demandes, loadDemandes, isLoading } = useStore()
+  const { currentUser, demandes, isLoading } = useStore()
+  const { handleManualReload } = useAutoReload("CONDUCTEUR")
 
   const [stats, setStats] = useState({
     total: 0,
     enAttente: 0,
+    enCours: 0,
     validees: 0,
     rejetees: 0,
   })
@@ -56,46 +57,126 @@ export default function ConducteurDashboard() {
   const [createDemandeModalOpen, setCreateDemandeModalOpen] = useState(false)
   const [demandeType, setDemandeType] = useState<"materiel" | "outillage">("materiel")
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
-  const [detailsModalType, setDetailsModalType] = useState<"total" | "enAttente" | "validees" | "rejetees">("total")
+  const [detailsModalType, setDetailsModalType] = useState<"total" | "enAttente" | "enCours" | "validees" | "rejetees">("total")
   const [detailsModalTitle, setDetailsModalTitle] = useState("")
   const [validatedHistoryModalOpen, setValidatedHistoryModalOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [activeChart, setActiveChart] = useState<"material" | "tooling">("material")
 
-  useEffect(() => {
-    if (currentUser) {
-      loadDemandes()
-    }
-  }, [currentUser, loadDemandes])
+  // Données chargées automatiquement par useDataLoader
 
   useEffect(() => {
     if (currentUser && currentUser.projets) {
-      const demandesMateriels = demandes.filter(
-        (d) => d.type === "materiel" && currentUser.projets.includes(d.projetId)
+      // Mes demandes personnelles (en tant que demandeur)
+      const mesDemandesConducteur = demandes.filter((d) => d.technicienId === currentUser.id)
+      
+      // Demandes matériel que je dois valider en tant que conducteur
+      const demandesAValiderConducteur = demandes.filter((d) => 
+        d.type === "materiel" && 
+        currentUser.projets.includes(d.projetId) &&
+        d.technicienId !== currentUser.id && // Pas mes propres demandes
+        ["soumise", "en_attente_validation_conducteur"].includes(d.status)
+      )
+      
+      // Demandes que j'ai validées en tant que conducteur (demandes matériel dans mes projets)
+      const demandesValideesConducteur = demandes.filter((d) => 
+        d.type === "materiel" && 
+        currentUser.projets.includes(d.projetId) &&
+        d.technicienId !== currentUser.id && // Pas mes propres demandes
+        (
+          // Méthode 1 : Si signature de validation existe (futur)
+          d.validationConducteur?.userId === currentUser.id ||
+          // Méthode 2 : Basé sur les statuts (temporaire pour données actuelles)
+          (
+            !d.validationConducteur && // Pas encore de signature système
+            [
+              "en_attente_validation_responsable_travaux",
+              "en_attente_validation_charge_affaire", 
+              "en_attente_preparation_appro",
+              "en_attente_validation_logistique",
+              "en_attente_validation_finale_demandeur",
+              "cloturee"
+            ].includes(d.status)
+          )
+        )
       )
 
       setStats({
-        total: demandesMateriels.length,
-        enAttente: demandesMateriels.filter((d) => d.status === "en_attente_validation_conducteur").length,
-        // CORRECTION: Utiliser les vrais statuts après validation conducteur
-        validees: demandesMateriels.filter((d) => [
-          "en_attente_validation_responsable_travaux",
-          "en_attente_validation_charge_affaire", 
-          "en_attente_preparation_appro",
-          "en_attente_validation_logistique",
-          "en_attente_validation_finale_demandeur",
-          "cloturee"
+        total: mesDemandesConducteur.length,
+        // En attente = Demandes matériel que je dois valider
+        enAttente: demandesAValiderConducteur.length,
+        // En cours = MES demandes personnelles (matériel ET outillage) en cours
+        enCours: mesDemandesConducteur.filter((d) => ![
+          "brouillon", 
+          "cloturee", 
+          "rejetee", 
+          "archivee"
         ].includes(d.status)).length,
-        rejetees: demandesMateriels.filter((d) => d.status === "rejetee").length,
+        // Validées = Demandes que J'AI VALIDÉES en tant que conducteur
+        validees: demandesValideesConducteur.length,
+        // Rejetées = MES demandes rejetées
+        rejetees: mesDemandesConducteur.filter((d) => d.status === "rejetee").length,
       })
     }
   }, [currentUser, demandes])
 
   const mesDemandes = currentUser ? demandes.filter((d) => d.technicienId === currentUser.id) : []
-  // NOUVEAU: Demandes personnelles prêtes à clôturer
-  const demandesValidationFinale = mesDemandes.filter(d => d.status === "en_attente_validation_finale_demandeur")
 
-  const handleCardClick = (type: "total" | "enAttente" | "validees" | "rejetees", title: string) => {
+  // Fonction pour obtenir les demandes selon le type de carte
+  const getDemandesForType = (type: "total" | "enAttente" | "enCours" | "validees" | "rejetees") => {
+    if (!currentUser) return []
+
+    switch (type) {
+      case "total":
+        // Mes demandes personnelles (pas besoin de vérifier les projets)
+        return mesDemandes
+      case "enAttente":
+        // Demandes matériel que je dois valider en tant que conducteur (besoin des projets)
+        if (!currentUser.projets) return []
+        return demandes.filter((d) => 
+          d.type === "materiel" && 
+          currentUser.projets.includes(d.projetId) &&
+          d.technicienId !== currentUser.id && // Pas mes propres demandes
+          ["soumise", "en_attente_validation_conducteur"].includes(d.status)
+        )
+      case "enCours":
+        // Mes demandes personnelles (matériel ET outillage) en cours (pas besoin de vérifier les projets)
+        return mesDemandes.filter((d) => ![
+          "brouillon", "cloturee", "rejetee", "archivee"
+        ].includes(d.status))
+      case "validees":
+        // Demandes que j'ai validées en tant que conducteur (besoin des projets)
+        if (!currentUser.projets) return []
+        return demandes.filter((d) => 
+          d.type === "materiel" && 
+          currentUser.projets.includes(d.projetId) &&
+          d.technicienId !== currentUser.id && // Pas mes propres demandes
+          (
+            // Méthode 1 : Si signature de validation existe (futur)
+            d.validationConducteur?.userId === currentUser.id ||
+            // Méthode 2 : Basé sur les statuts (temporaire pour données actuelles)
+            (
+              !d.validationConducteur && // Pas encore de signature système
+              [
+                "en_attente_validation_responsable_travaux",
+                "en_attente_validation_charge_affaire", 
+                "en_attente_preparation_appro",
+                "en_attente_validation_logistique",
+                "en_attente_validation_finale_demandeur",
+                "cloturee"
+              ].includes(d.status)
+            )
+          )
+        )
+      case "rejetees":
+        // Mes demandes rejetées (pas besoin de vérifier les projets)
+        return mesDemandes.filter((d) => d.status === "rejetee")
+      default:
+        return []
+    }
+  }
+
+  const handleCardClick = (type: "total" | "enAttente" | "enCours" | "validees" | "rejetees", title: string) => {
     if (type === "total") {
       setValidatedHistoryModalOpen(true)
     } else {
@@ -165,7 +246,16 @@ export default function ConducteurDashboard() {
   return (
     <div className="min-h-screen bg-gray-50 p-2">
       <div className="max-w-full mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">Tableau de Bord Conducteur</h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">Tableau de Bord Conducteur</h1>
+          <Button 
+            onClick={handleManualReload}
+            variant="outline"
+            className="bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100"
+          >
+            🔄 Actualiser
+          </Button>
+        </div>
 
         {/* Layout principal : deux colonnes */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
@@ -173,76 +263,64 @@ export default function ConducteurDashboard() {
           <div className="lg:col-span-3 space-y-4">
             {/* Vue d'ensemble - Cards statistiques */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#015fc4' }} onClick={() => handleCardClick("total", "Toutes les demandes")}>
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#015fc4' }} onClick={() => handleCardClick("total", "Mes demandes")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Total demandes</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Mes demandes</CardTitle>
                   <Package className="h-4 w-4" style={{ color: '#015fc4' }} />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold" style={{ color: '#015fc4' }}>{stats.total}</div>
-                  <p className="text-xs text-muted-foreground">Toutes les demandes</p>
+                  <p className="text-xs text-muted-foreground">Mes demandes créées</p>
                 </CardContent>
               </Card>
 
-              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#f97316' }} onClick={() => handleCardClick("enAttente", "Demandes en attente")}>
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#f97316' }} onClick={() => handleCardClick("enAttente", "Demandes à valider")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">En attente</CardTitle>
                   <Clock className="h-4 w-4" style={{ color: '#f97316' }} />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold" style={{ color: '#f97316' }}>{stats.enAttente}</div>
-                  <p className="text-xs text-muted-foreground">À valider</p>
+                  <p className="text-xs text-muted-foreground">À valider par moi</p>
                 </CardContent>
               </Card>
 
-              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#22c55e' }} onClick={() => handleCardClick("validees", "Demandes validées")}>
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#3b82f6' }} onClick={() => handleCardClick("enCours", "Mes demandes en cours")}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">En cours</CardTitle>
+                  <Clock className="h-4 w-4" style={{ color: '#3b82f6' }} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" style={{ color: '#3b82f6' }}>{stats.enCours}</div>
+                  <p className="text-xs text-muted-foreground">Matériel et outillage</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#22c55e' }} onClick={() => handleCardClick("validees", "Demandes que j'ai validées")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Validées</CardTitle>
                   <CheckCircle className="h-4 w-4" style={{ color: '#22c55e' }} />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold" style={{ color: '#22c55e' }}>{stats.validees}</div>
-                  <p className="text-xs text-muted-foreground">Demandes validées</p>
+                  <p className="text-xs text-muted-foreground">Validées par moi</p>
                 </CardContent>
               </Card>
 
-              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#fc2d1f' }} onClick={() => handleCardClick("rejetees", "Demandes rejetées")}>
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#fc2d1f' }} onClick={() => handleCardClick("rejetees", "Mes demandes rejetées")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Rejetées</CardTitle>
                   <XCircle className="h-4 w-4" style={{ color: '#fc2d1f' }} />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold" style={{ color: '#fc2d1f' }}>{stats.rejetees}</div>
-                  <p className="text-xs text-muted-foreground">Demandes rejetées</p>
+                  <p className="text-xs text-muted-foreground">Refusées</p>
                 </CardContent>
               </Card>
             </div>
 
             {/* Liste des demandes à valider */}
             <ValidationDemandesList type="materiel" title="Demandes de matériel à valider" />
-
-            {/* Demandes personnelles prêtes à clôturer */}
-            {demandesValidationFinale.length > 0 && (
-              <Card className="bg-emerald-50 border-emerald-200">
-                <CardHeader>
-                  <CardTitle className="text-emerald-800 flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5" />
-                    Mes demandes prêtes à clôturer ({demandesValidationFinale.length})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {demandesValidationFinale.map((demande) => (
-                      <DemandeClotureCard 
-                        key={demande.id} 
-                        demande={demande} 
-                        onCloture={() => loadDemandes()} 
-                      />
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </div>
 
           {/* Colonne de droite (fine) - 1/4 de la largeur */}
@@ -377,8 +455,7 @@ export default function ConducteurDashboard() {
             </Card>
           </div>
 
-          {/* Mes demandes à clôturer */}
-          <MesDemandesACloturer />
+          {/* RIEN - Supprimé car déjà géré dans la modal */}
         </div>
       </div>
 
@@ -392,7 +469,7 @@ export default function ConducteurDashboard() {
         isOpen={detailsModalOpen}
         onClose={() => setDetailsModalOpen(false)}
         title={detailsModalTitle}
-        data={mesDemandes}
+        data={getDemandesForType(detailsModalType)}
         type={detailsModalType}
       />
       <ValidatedRequestsHistory

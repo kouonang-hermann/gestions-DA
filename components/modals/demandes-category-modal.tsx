@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { 
   Eye, 
+  Edit,
+  Trash2,
   Search, 
   Calendar, 
   Package, 
@@ -42,6 +44,8 @@ export default function DemandesCategoryModal({
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedDemande, setSelectedDemande] = useState<Demande | null>(null)
   const [demandeDetailsOpen, setDemandeDetailsOpen] = useState(false)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [demandeToDelete, setDemandeToDelete] = useState<Demande | null>(null)
 
   // Filtrer les demandes selon le terme de recherche
   const filteredDemandes = demandes.filter(demande => 
@@ -102,6 +106,41 @@ export default function DemandesCategoryModal({
   const handleViewDetails = (demande: Demande) => {
     setSelectedDemande(demande)
     setDemandeDetailsOpen(true)
+  }
+
+  const handleEditDemande = (demande: Demande) => {
+    // TODO: Implémenter la logique de modification
+    console.log('Modifier la demande:', demande.numero)
+    // Ici on pourrait ouvrir une modale de modification ou rediriger vers une page d'édition
+  }
+
+  const handleDeleteDemande = (demande: Demande) => {
+    setDemandeToDelete(demande)
+    setDeleteConfirmOpen(true)
+  }
+
+  const confirmDelete = () => {
+    if (demandeToDelete) {
+      // TODO: Implémenter la logique de suppression
+      console.log('Supprimer la demande:', demandeToDelete.numero)
+      // Ici on pourrait appeler une API pour supprimer la demande
+      
+      setDeleteConfirmOpen(false)
+      setDemandeToDelete(null)
+    }
+  }
+
+  // Fonction pour déterminer si une demande peut être modifiée/supprimée
+  const canModifyDemande = (demande: Demande) => {
+    // Seules les demandes en brouillon ou soumises peuvent être modifiées
+    return ["brouillon", "soumise"].includes(demande.status) && 
+           demande.technicienId === currentUser?.id
+  }
+
+  const canDeleteDemande = (demande: Demande) => {
+    // Seules les demandes en brouillon peuvent être supprimées
+    return demande.status === "brouillon" && 
+           demande.technicienId === currentUser?.id
   }
 
   const getCategoryIcon = () => {
@@ -229,15 +268,44 @@ export default function DemandesCategoryModal({
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleViewDetails(demande)}
-                                className="flex items-center gap-1"
-                              >
-                                <Eye className="h-3 w-3" />
-                                <span className="hidden sm:inline">Voir</span>
-                              </Button>
+                              <div className="flex items-center gap-1">
+                                {/* Bouton Voir */}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleViewDetails(demande)}
+                                  className="flex items-center justify-center w-8 h-8 p-0 hover:bg-blue-50 hover:border-blue-200"
+                                  title="Voir les détails"
+                                >
+                                  <Eye className="h-4 w-4 text-blue-600" />
+                                </Button>
+
+                                {/* Bouton Modifier */}
+                                {canModifyDemande(demande) && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleEditDemande(demande)}
+                                    className="flex items-center justify-center w-8 h-8 p-0 hover:bg-orange-50 hover:border-orange-200"
+                                    title="Modifier la demande"
+                                  >
+                                    <Edit className="h-4 w-4 text-orange-600" />
+                                  </Button>
+                                )}
+
+                                {/* Bouton Supprimer */}
+                                {canDeleteDemande(demande) && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleDeleteDemande(demande)}
+                                    className="flex items-center justify-center w-8 h-8 p-0 hover:bg-red-50 hover:border-red-200"
+                                    title="Supprimer la demande"
+                                  >
+                                    <Trash2 className="h-4 w-4 text-red-600" />
+                                  </Button>
+                                )}
+                              </div>
                             </TableCell>
                           </TableRow>
                         )
@@ -299,6 +367,67 @@ export default function DemandesCategoryModal({
         canValidate={false}
         canRemoveItems={false}
       />
+
+      {/* Modal de confirmation de suppression */}
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertCircle className="h-5 w-5" />
+              Confirmer la suppression
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <p className="text-gray-700">
+              Êtes-vous sûr de vouloir supprimer la demande{" "}
+              <span className="font-semibold text-gray-900">
+                {demandeToDelete?.numero}
+              </span>{" "}
+              ?
+            </p>
+            
+            {demandeToDelete && (
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  {getTypeIcon(demandeToDelete.type)}
+                  <span className="font-medium">
+                    {demandeToDelete.type === "materiel" ? "Matériel" : "Outillage"}
+                  </span>
+                  <span>•</span>
+                  <span>{demandeToDelete.projet?.nom}</span>
+                  <span>•</span>
+                  <span>{demandeToDelete.items?.length || 0} article(s)</span>
+                </div>
+              </div>
+            )}
+            
+            <p className="text-sm text-red-600">
+              ⚠️ Cette action est irréversible.
+            </p>
+            
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setDeleteConfirmOpen(false)
+                  setDemandeToDelete(null)
+                }}
+              >
+                Annuler
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={confirmDelete}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Supprimer
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

@@ -40,13 +40,16 @@ import ValidationDemandesList from "@/components/validation/validation-demandes-
 import CreateDemandeModal from "@/components/demandes/create-demande-modal"
 import { UserRequestsChart } from "@/components/charts/user-requests-chart"
 import UserDetailsModal from "@/components/modals/user-details-modal"
+import { useAutoReload } from "@/hooks/useAutoReload"
 
 export default function QHSEDashboard() {
-  const { currentUser, demandes, loadDemandes, isLoading } = useStore()
+  const { currentUser, demandes, isLoading } = useStore()
+  const { handleManualReload } = useAutoReload("QHSE")
 
   const [stats, setStats] = useState({
     total: 0,
     enAttente: 0,
+    enCours: 0,
     validees: 0,
     rejetees: 0,
   })
@@ -54,16 +57,12 @@ export default function QHSEDashboard() {
   const [createDemandeModalOpen, setCreateDemandeModalOpen] = useState(false)
   const [demandeType, setDemandeType] = useState<"materiel" | "outillage">("materiel")
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
-  const [detailsModalType, setDetailsModalType] = useState<"total" | "enAttente" | "validees" | "rejetees">("total")
+  const [detailsModalType, setDetailsModalType] = useState<"total" | "enAttente" | "enCours" | "validees" | "rejetees">("total")
   const [detailsModalTitle, setDetailsModalTitle] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
   const [activeChart, setActiveChart] = useState<"material" | "tooling">("material")
 
-  useEffect(() => {
-    if (currentUser) {
-      loadDemandes({ type: "outillage" })
-    }
-  }, [currentUser, loadDemandes])
+  // Données chargées automatiquement par useDataLoader
 
   useEffect(() => {
     if (currentUser && currentUser.projets) {
@@ -74,6 +73,14 @@ export default function QHSEDashboard() {
       setStats({
         total: demandesOutillage.length,
         enAttente: demandesOutillage.filter((d) => d.status === "en_attente_validation_qhse").length,
+        enCours: demandes.filter((d) => 
+          d.technicienId === currentUser.id && ![
+            "brouillon", 
+            "cloturee", 
+            "rejetee", 
+            "archivee"
+          ].includes(d.status)
+        ).length,
         validees: demandesOutillage.filter((d) => [
           "en_attente_validation_responsable_travaux",
           "en_attente_validation_charge_affaire", 
@@ -89,7 +96,7 @@ export default function QHSEDashboard() {
 
   const mesDemandes = currentUser ? demandes.filter((d) => d.technicienId === currentUser.id) : []
 
-  const handleCardClick = (type: "total" | "enAttente" | "validees" | "rejetees", title: string) => {
+  const handleCardClick = (type: "total" | "enAttente" | "enCours" | "validees" | "rejetees", title: string) => {
     setDetailsModalType(type)
     setDetailsModalTitle(title)
     setDetailsModalOpen(true)
@@ -155,7 +162,16 @@ export default function QHSEDashboard() {
   return (
     <div className="min-h-screen bg-gray-50 p-2">
       <div className="max-w-full mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">Tableau de Bord QHSE</h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">Tableau de Bord QHSE</h1>
+          <Button 
+            onClick={handleManualReload}
+            variant="outline"
+            className="bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100"
+          >
+            🔄 Actualiser
+          </Button>
+        </div>
 
         {/* Layout principal : deux colonnes */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
@@ -182,6 +198,17 @@ export default function QHSEDashboard() {
                 <CardContent>
                   <div className="text-2xl font-bold" style={{ color: '#f97316' }}>{stats.enAttente}</div>
                   <p className="text-xs text-muted-foreground">À valider QHSE</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#f97316' }} onClick={() => handleCardClick("enCours", "Demandes en cours")}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">En cours</CardTitle>
+                  <Clock className="h-4 w-4" style={{ color: '#f97316' }} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" style={{ color: '#f97316' }}>{stats.enCours}</div>
+                  <p className="text-xs text-muted-foreground">En traitement</p>
                 </CardContent>
               </Card>
 

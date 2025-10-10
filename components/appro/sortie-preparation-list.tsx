@@ -24,9 +24,16 @@ export default function SortiePreparationList() {
 
   useEffect(() => {
     if (currentUser) {
-      const filtered = demandes.filter(
-        (d) => d.status === "en_attente_preparation_appro"
+      const filtered = demandes.filter((d) => 
+        d.status === "en_attente_preparation_appro" &&
+        // Filtrer par projet si l'utilisateur a des projets assignés
+        (!currentUser.projets || currentUser.projets.length === 0 || currentUser.projets.includes(d.projetId))
       )
+      
+      console.log(`🔍 [SORTIE-PREPARATION-LIST] Filtrage pour ${currentUser.role}:`)
+      console.log(`  - Projets utilisateur: [${currentUser.projets?.join(', ') || 'aucun'}]`)
+      console.log(`  - Demandes à préparer: ${filtered.length}/${demandes.filter(d => d.status === "en_attente_preparation_appro").length}`)
+      
       setDemandesAPreparer(filtered)
     }
   }, [currentUser, demandes])

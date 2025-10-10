@@ -51,9 +51,11 @@ import DetailsModal from "@/components/modals/details-modal"
 import ValidatedRequestsHistory from "@/components/dashboard/validated-requests-history"
 import ManageAdminRoles from "../admin/manage-admin-roles"
 import SharedDemandesSection from "@/components/dashboard/shared-demandes-section"
+import DemandesDebug from "@/components/debug/demandes-debug"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 export default function SuperAdminDashboard() {
-  const { currentUser, users, projets, demandes, loadUsers, loadProjets, loadDemandes, isLoading } = useStore()
+  const { currentUser, users, projets, demandes, isLoading } = useStore()
 
   // Hook pour détecter mobile
   const [isMobile, setIsMobile] = useState(false)
@@ -79,6 +81,9 @@ export default function SuperAdminDashboard() {
   const [detailsModalTitle, setDetailsModalTitle] = useState("")
   const [detailsModalData, setDetailsModalData] = useState<any[]>([])
 
+  // Modale personnalisée pour demandes en cours
+  const [enCoursModalOpen, setEnCoursModalOpen] = useState(false)
+
   // États pour la pagination et recherche (nouveau design)
   const [searchTerm, setSearchTerm] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
@@ -96,13 +101,7 @@ export default function SuperAdminDashboard() {
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  useEffect(() => {
-    if (currentUser) {
-      loadUsers()
-      loadProjets()
-      loadDemandes()
-    }
-  }, [currentUser, loadUsers, loadProjets, loadDemandes])
+  // Données chargées automatiquement par useDataLoader
 
   useEffect(() => {
     setStats({
@@ -237,8 +236,26 @@ export default function SuperAdminDashboard() {
   }
 
   const handleCardClick = (type: string, title: string) => {
-    console.log(`Clic sur carte ${type}: ${title}`)
-    // Logique pour gérer les clics sur les cartes partagées
+    if (type === "enCours") {
+      setEnCoursModalOpen(true)
+    } else {
+      console.log(`Clic sur carte ${type}: ${title}`)
+    }
+  }
+
+  // Fonction pour obtenir les demandes en cours de l'utilisateur
+  const getMesDemandesEnCours = () => {
+    if (!currentUser) return []
+    return demandes.filter(
+      (demande) =>
+        demande.technicienId === currentUser.id &&
+        ![
+          "brouillon", 
+          "cloturee", 
+          "rejetee", 
+          "archivee"
+        ].includes(demande.status)
+    )
   }
 
   const handleRemoveUserFromProject = () => {
@@ -456,11 +473,9 @@ export default function SuperAdminDashboard() {
                 </CardContent>
               </Card>
 
-              {/* Composant partagé pour les demandes en cours et clôture */}
-              <SharedDemandesSection onCardClick={handleCardClick} />
+              {/* Composant partagé pour les demandes en cours (sans clôture pour super admin) */}
+              <SharedDemandesSection onCardClick={handleCardClick} hideClotureSection={true} />
             </div>
-
-            {/* Section Mes demandes à clôturer - Intégrée dans SharedDemandesSection */}
 
             {/* Gestion des Rôles Administrateur */}
             <Card className="h-fit">
@@ -714,6 +729,9 @@ export default function SuperAdminDashboard() {
                 </ResponsiveContainer>
               </CardContent>
             </Card>
+
+            {/* Debug des demandes */}
+            <DemandesDebug />
           </div>
         </div>
       </div>
@@ -742,6 +760,84 @@ export default function SuperAdminDashboard() {
         isOpen={validatedHistoryModalOpen}
         onClose={() => setValidatedHistoryModalOpen(false)}
       />
+
+      {/* Modale personnalisée pour les demandes en cours */}
+      <Dialog open={enCoursModalOpen} onOpenChange={setEnCoursModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Mes demandes en cours</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {getMesDemandesEnCours().length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <Package className="mx-auto h-12 w-12 mb-4 opacity-50" />
+                <p>Aucune demande en cours</p>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {getMesDemandesEnCours().map((demande) => (
+                  <Card key={demande.id} className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-4 mb-2">
+                          <Badge variant="outline" className="font-mono">
+                            {demande.numero}
+                          </Badge>
+                          <Badge 
+                            variant={demande.type === "materiel" ? "default" : "secondary"}
+                            className={demande.type === "materiel" ? "bg-blue-100 text-blue-800" : "bg-purple-100 text-purple-800"}
+                          >
+                            {demande.type === "materiel" ? "Matériel" : "Outillage"}
+                          </Badge>
+                          <Badge 
+                            variant="outline"
+                            className={
+                              demande.status === "en_attente_validation_finale_demandeur" ? "bg-green-100 text-green-800" :
+                              demande.status.includes("en_attente") ? "bg-orange-100 text-orange-800" :
+                              "bg-gray-100 text-gray-800"
+                            }
+                          >
+                            {demande.status === "en_attente_validation_finale_demandeur" ? "Prêt à clôturer" :
+                             demande.status.includes("en_attente") ? "En cours" :
+                             demande.status}
+                          </Badge>
+                        </div>
+                        
+                        <div className="text-sm text-gray-600 space-y-1">
+                          <p><strong>Projet:</strong> {demande.projetId}</p>
+                          <p><strong>Date de création:</strong> {new Date(demande.dateCreation).toLocaleDateString('fr-FR')}</p>
+                          {demande.commentaires && (
+                            <p><strong>Commentaires:</strong> {demande.commentaires}</p>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col items-end gap-2">
+                        <div className="text-sm text-gray-500">
+                          {new Date(demande.dateCreation).toLocaleDateString('fr-FR')}
+                        </div>
+                        {demande.status === "en_attente_validation_finale_demandeur" && (
+                          <Button 
+                            size="sm" 
+                            className="bg-green-500 hover:bg-green-600 text-white"
+                            onClick={() => {
+                              // Logique de clôture
+                              console.log('Clôturer la demande:', demande.id)
+                            }}
+                          >
+                            Clôturer
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

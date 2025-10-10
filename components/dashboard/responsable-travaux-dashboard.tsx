@@ -23,7 +23,6 @@ import {
   BarChart3,
   TrendingUp
 } from 'lucide-react'
-import SharedDemandesSection from "@/components/dashboard/shared-demandes-section"
 import {
   PieChart,
   Pie,
@@ -41,55 +40,78 @@ import {
 import ValidationDemandesList from "@/components/validation/validation-demandes-list"
 import DemandeDetailsModal from "@/components/modals/demande-details-modal"
 import RequestsFlowChart from "@/components/charts/requests-flow-chart"
+import ResponsableTravauxDebug from "@/components/debug/responsable-travaux-debug"
 import type { Demande } from "@/types"
 
 export default function ResponsableTravauxDashboard() {
-  const { currentUser, demandes, projets, loadDemandes, loadProjets, isLoading } = useStore()
+  const { currentUser, demandes, projets, isLoading, loadDemandes, loadUsers, loadProjets } = useStore()
 
   const [stats, setStats] = useState({
     total: 0,
     enAttente: 0,
+    enCours: 0,
     validees: 0,
     rejetees: 0,
   })
 
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
   const [selectedDemande, setSelectedDemande] = useState<Demande | null>(null)
-  const [dataLoaded, setDataLoaded] = useState(false)
   const [showCreateDemandeModal, setShowCreateDemandeModal] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [activeChart, setActiveChart] = useState<"material" | "tooling">("material")
+  const [showDebug, setShowDebug] = useState(false)
 
-  // Chargement initial des données
+  // Rechargement automatique des données au montage du composant
   useEffect(() => {
-    if (currentUser && !dataLoaded) {
-      const loadInitialData = async () => {
+    const reloadAllData = async () => {
+      if (currentUser) {
+        console.log(`🔄 [RESPONSABLE-TRAVAUX] Rechargement automatique des données pour ${currentUser.nom}`)
+        
         try {
-          console.log("Chargement des données pour le responsable des travaux...")
+          // Recharger toutes les données en parallèle
           await Promise.all([
-            loadProjets(),
-            loadDemandes()
+            loadDemandes(),
+            loadUsers(),
+            loadProjets()
           ])
-          setDataLoaded(true)
-          console.log("Données chargées avec succès")
+          
+          console.log(`✅ [RESPONSABLE-TRAVAUX] Toutes les données rechargées avec succès`)
         } catch (error) {
-          console.error("Erreur lors du chargement initial:", error)
+          console.error(`❌ [RESPONSABLE-TRAVAUX] Erreur lors du rechargement:`, error)
         }
       }
-      loadInitialData()
     }
-  }, [currentUser?.id, dataLoaded])
+
+    // Recharger les données au montage du composant
+    reloadAllData()
+  }, [currentUser?.id, loadDemandes, loadUsers, loadProjets])
 
   // Calcul des statistiques
   useEffect(() => {
     if (currentUser && demandes) {
-      // Filtrer les demandes de matériel qui nécessitent la validation du responsable des travaux
-      const demandesMaterielles = demandes.filter((d) => d.type === "materiel")
+      // Filtrer les demandes (matériel + outillage) qui nécessitent la validation du responsable des travaux
+      // ET qui sont dans les projets assignés à l'utilisateur
+      const demandesAValider = demandes.filter((d) => 
+        // Filtrer par projet si l'utilisateur a des projets assignés
+        (!currentUser.projets || currentUser.projets.length === 0 || currentUser.projets.includes(d.projetId))
+      )
+
+      console.log(`🔍 [RESPONSABLE-TRAVAUX-DASHBOARD] Filtrage pour ${currentUser.role}:`)
+      console.log(`  - Projets utilisateur: [${currentUser.projets?.join(', ') || 'aucun'}]`)
+      console.log(`  - Demandes dans projets: ${demandesAValider.length}/${demandes.length}`)
 
       setStats({
-        total: demandesMaterielles.length,
-        enAttente: demandesMaterielles.filter((d) => d.status === "en_attente_validation_responsable_travaux").length,
-        validees: demandesMaterielles.filter((d) => 
+        total: demandesAValider.length,
+        enAttente: demandesAValider.filter((d) => d.status === "en_attente_validation_responsable_travaux").length,
+        enCours: demandes.filter((d) => 
+          d.technicienId === currentUser.id && ![
+            "brouillon", 
+            "cloturee", 
+            "rejetee", 
+            "archivee"
+          ].includes(d.status)
+        ).length,
+        validees: demandesAValider.filter((d) => 
           [
             "en_attente_validation_charge_affaire", 
             "en_attente_preparation_appro",
@@ -98,14 +120,33 @@ export default function ResponsableTravauxDashboard() {
             "cloturee"
           ].includes(d.status)
         ).length,
-        rejetees: demandesMaterielles.filter((d) => d.status === "rejetee").length,
+        rejetees: demandesAValider.filter((d) => d.status === "rejetee").length,
       })
+
+      console.log(`  - En attente: ${demandesAValider.filter((d) => d.status === "en_attente_validation_responsable_travaux").length}`)
     }
   }, [currentUser?.id, demandes])
 
   const handleViewDetails = (demande: Demande) => {
     setSelectedDemande(demande)
     setDetailsModalOpen(true)
+  }
+
+  const handleManualReload = async () => {
+    console.log(`🔄 [RESPONSABLE-TRAVAUX] Rechargement manuel déclenché`)
+    
+    try {
+      // Recharger toutes les données en parallèle
+      await Promise.all([
+        loadDemandes(),
+        loadUsers(),
+        loadProjets()
+      ])
+      
+      console.log(`✅ [RESPONSABLE-TRAVAUX] Rechargement manuel terminé avec succès`)
+    } catch (error) {
+      console.error(`❌ [RESPONSABLE-TRAVAUX] Erreur lors du rechargement manuel:`, error)
+    }
   }
 
   if (!currentUser) {
@@ -116,7 +157,7 @@ export default function ResponsableTravauxDashboard() {
     )
   }
 
-  if (isLoading || !dataLoaded) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
@@ -126,9 +167,37 @@ export default function ResponsableTravauxDashboard() {
   }
 
   const demandesEnAttente = demandes.filter((d) => 
-    d.status === "en_attente_validation_responsable_travaux" && 
-    d.type === "materiel"
+    d.status === "en_attente_validation_responsable_travaux" &&
+    // Filtrer par projet si l'utilisateur a des projets assignés
+    (!currentUser?.projets || currentUser.projets.length === 0 || currentUser.projets.includes(d.projetId))
   )
+
+  // LOGS DE DEBUG DÉTAILLÉS
+  console.log("🔍 [RESPONSABLE-TRAVAUX] DIAGNOSTIC COMPLET:")
+  console.log(`  - Utilisateur connecté: ${currentUser?.nom} (${currentUser?.role})`)
+  console.log(`  - Projets utilisateur: [${currentUser?.projets?.join(', ') || 'aucun'}]`)
+  console.log(`  - Total demandes chargées: ${demandes.length}`)
+  
+  // Analyser toutes les demandes par statut
+  const statusCount = demandes.reduce((acc, d) => {
+    acc[d.status] = (acc[d.status] || 0) + 1
+    return acc
+  }, {} as Record<string, number>)
+  console.log("  - Répartition par statut:", statusCount)
+  
+  // Chercher spécifiquement les demandes qui devraient être visibles
+  const demandesResponsableTravaux = demandes.filter(d => d.status === "en_attente_validation_responsable_travaux")
+  console.log(`  - Demandes en attente responsable travaux (total): ${demandesResponsableTravaux.length}`)
+  
+  if (demandesResponsableTravaux.length > 0) {
+    console.log("  - Détail des demandes en attente:")
+    demandesResponsableTravaux.forEach(d => {
+      const inProject = !currentUser?.projets || currentUser.projets.length === 0 || currentUser.projets.includes(d.projetId)
+      console.log(`    * ${d.numero} (${d.type}) - Projet: ${d.projetId} - Dans mes projets: ${inProject}`)
+    })
+  }
+  
+  console.log(`  - Demandes visibles après filtrage: ${demandesEnAttente.length}`)
 
   // Génération des données de graphique
   const generateChartData = () => {
@@ -179,10 +248,32 @@ export default function ResponsableTravauxDashboard() {
     }
   }
 
+  if (showDebug) {
+    return <ResponsableTravauxDebug onClose={() => setShowDebug(false)} />
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-2">
       <div className="max-w-full mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">Tableau de Bord Responsable Travaux</h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">Tableau de Bord Responsable Travaux</h1>
+          <div className="flex space-x-2">
+            <Button 
+              onClick={handleManualReload}
+              variant="outline"
+              className="bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100"
+            >
+              🔄 Actualiser
+            </Button>
+            <Button 
+              onClick={() => setShowDebug(true)}
+              variant="outline"
+              className="bg-red-50 border-red-200 text-red-600 hover:bg-red-100"
+            >
+              🔍 Mode Debug
+            </Button>
+          </div>
+        </div>
 
         {/* Layout principal : deux colonnes */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
@@ -212,6 +303,17 @@ export default function ResponsableTravauxDashboard() {
                 </CardContent>
               </Card>
 
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#f97316' }}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">En cours</CardTitle>
+                  <Clock className="h-4 w-4" style={{ color: '#f97316' }} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" style={{ color: '#f97316' }}>{stats.enCours}</div>
+                  <p className="text-xs text-muted-foreground">En traitement</p>
+                </CardContent>
+              </Card>
+
               <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#22c55e' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Validées</CardTitle>
@@ -235,8 +337,6 @@ export default function ResponsableTravauxDashboard() {
               </Card>
             </div>
 
-            {/* Section partagée pour les demandes en cours et clôture */}
-            <SharedDemandesSection />
 
             {/* Liste des demandes en attente de validation */}
             {demandesEnAttente.length > 0 && (
@@ -247,10 +347,16 @@ export default function ResponsableTravauxDashboard() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ValidationDemandesList
-                    type="materiel"
-                    title="Demandes de matériel à valider"
-                  />
+                  <div className="space-y-6">
+                    <ValidationDemandesList
+                      type="materiel"
+                      title="Demandes de matériel à valider"
+                    />
+                    <ValidationDemandesList
+                      type="outillage"
+                      title="Demandes d'outillage à valider"
+                    />
+                  </div>
                 </CardContent>
               </Card>
             )}
@@ -411,8 +517,7 @@ export default function ResponsableTravauxDashboard() {
           // La validation sera gérée par le composant ValidationDemandesList
           setDetailsModalOpen(false)
           setSelectedDemande(null)
-          // Recharger les données
-          await loadDemandes()
+          // Données rechargées automatiquement par useDataLoader
         }}
         canValidate={selectedDemande?.status === "en_attente_validation_responsable_travaux"}
       />

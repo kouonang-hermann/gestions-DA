@@ -3,7 +3,88 @@ import { prisma } from "@/lib/prisma"
 import { withAuth } from "@/lib/middleware"
 
 /**
- * Détermine le prochain statut selon le statut actuel et le rôle
+ * Flows de validation par type de demande
+ */
+const VALIDATION_FLOWS = {
+  "materiel": [
+    "soumise",
+    "en_attente_validation_conducteur",
+    "en_attente_validation_responsable_travaux",
+    "en_attente_validation_charge_affaire",
+    "en_attente_preparation_appro",
+    "en_attente_validation_logistique",
+    "en_attente_validation_finale_demandeur",
+    "cloturee"
+  ],
+  "outillage": [
+    "soumise",
+    "en_attente_validation_qhse",
+    "en_attente_validation_responsable_travaux",
+    "en_attente_validation_charge_affaire",
+    "en_attente_preparation_appro",
+    "en_attente_validation_logistique",
+    "en_attente_validation_finale_demandeur",
+    "cloturee"
+  ]
+}
+
+const ROLE_TO_STATUS = {
+  "conducteur_travaux": "en_attente_validation_conducteur",
+  "responsable_qhse": "en_attente_validation_qhse",
+  "responsable_travaux": "en_attente_validation_responsable_travaux",
+  "charge_affaire": "en_attente_validation_charge_affaire",
+  "responsable_appro": "en_attente_preparation_appro",
+  "responsable_logistique": "en_attente_validation_logistique"
+}
+
+/**
+ * Vérifie si un utilisateur peut auto-valider une étape
+ */
+function canUserAutoValidateStep(demandeurRole: string, demandeType: string, status: string): boolean {
+  const statusForRole = ROLE_TO_STATUS[demandeurRole as keyof typeof ROLE_TO_STATUS]
+  if (!statusForRole) return false
+  
+  const flow = VALIDATION_FLOWS[demandeType as keyof typeof VALIDATION_FLOWS]
+  return status === statusForRole && flow.includes(statusForRole)
+}
+
+/**
+ * Détermine le prochain statut avec auto-validation intelligente
+ */
+function getNextStatusWithAutoValidation(currentStatus: string, userRole: string, demandeType: string, demandeurRole: string, targetStatus?: string): string | null {
+  // Si un statut cible est fourni par le frontend, l'utiliser
+  if (targetStatus) {
+    console.log(`🎯 [API] Utilisation du statut cible fourni: ${targetStatus}`)
+    return targetStatus
+  }
+
+  const flow = VALIDATION_FLOWS[demandeType as keyof typeof VALIDATION_FLOWS]
+  if (!flow) return null
+
+  const currentIndex = flow.indexOf(currentStatus)
+  if (currentIndex === -1 || currentIndex >= flow.length - 1) return null
+
+  let nextIndex = currentIndex + 1
+  let nextStatus = flow[nextIndex]
+
+  // Vérifier les auto-validations successives
+  while (nextIndex < flow.length - 1) {
+    const canAutoValidate = canUserAutoValidateStep(demandeurRole, demandeType, nextStatus)
+    
+    if (canAutoValidate) {
+      console.log(`🔄 [API AUTO-VALIDATION] ${demandeurRole} peut auto-valider l'étape: ${nextStatus}`)
+      nextIndex++
+      nextStatus = flow[nextIndex]
+    } else {
+      break
+    }
+  }
+
+  return nextStatus
+}
+
+/**
+ * Détermine le prochain statut selon le statut actuel et le rôle (fonction legacy)
  */
 function getNextStatus(currentStatus: string, userRole: string, demandeType: string): string | null {
   const transitions: Record<string, Record<string, string>> = {
@@ -41,7 +122,10 @@ function getNextStatus(currentStatus: string, userRole: string, demandeType: str
 export const POST = withAuth(async (request: NextRequest, currentUser: any, context: { params: Promise<{ id: string }> }) => {
   try {
     const params = await context.params
-    const { action, commentaire, quantitesSorties, quantites, itemsModifications } = await request.json()
+    const { action, commentaire, quantitesSorties, quantites, itemsModifications, targetStatus } = await request.json()
+
+    console.log(`🚀 [API] ${currentUser.nom} (${currentUser.role}) exécute "${action}" sur ${params.id}`)
+    console.log(`📋 [API] Payload reçu:`, { action, commentaire, targetStatus })
 
     // Récupérer la demande
     const demande = await prisma.demande.findUnique({
@@ -60,10 +144,13 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
     })
 
     if (!demande) {
+      console.log(`❌ [API] Demande ${params.id} non trouvée`)
       return NextResponse.json({ success: false, error: "Demande non trouvée" }, { status: 404 })
     }
 
-    // Vérifier l'accès au projet
+    console.log(`📋 [API] Demande trouvée: ${demande.numero}, statut=${demande.status}, demandeur=${demande.technicienId}`)
+
+    // Vérifier l'accès au projet (sauf pour le demandeur original qui peut toujours clôturer sa demande)
     const userProjet = await prisma.userProjet.findFirst({
       where: {
         userId: currentUser.id,
@@ -71,7 +158,16 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
       }
     })
 
-    if (!userProjet && currentUser.role !== "superadmin") {
+    const isOriginalRequester = demande.technicienId === currentUser.id
+    const isSuperAdmin = currentUser.role === "superadmin"
+    
+    console.log(`🔐 [API] Vérifications d'accès:`)
+    console.log(`  - Utilisateur dans projet: ${!!userProjet}`)
+    console.log(`  - Demandeur original: ${isOriginalRequester}`)
+    console.log(`  - Super admin: ${isSuperAdmin}`)
+    
+    if (!userProjet && !isOriginalRequester && !isSuperAdmin) {
+      console.log(`❌ [API] Accès refusé au projet ${demande.projetId}`)
       return NextResponse.json({ success: false, error: "Accès non autorisé à ce projet" }, { status: 403 })
     }
 
@@ -81,39 +177,51 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
     // Vérifier les permissions et exécuter l'action
     switch (action) {
       case "valider":
-        // Validation générique basée sur le statut et le rôle
-        const nextStatus = getNextStatus(demande.status, currentUser.role, demande.type)
+        // Utiliser la nouvelle logique d'auto-validation intelligente
+        const nextStatus = getNextStatusWithAutoValidation(
+          demande.status, 
+          currentUser.role, 
+          demande.type, 
+          demande.technicien?.role || "employe",
+          targetStatus
+        )
+        
         if (!nextStatus) {
           return NextResponse.json({ success: false, error: "Action non autorisée pour ce rôle et statut" }, { status: 403 })
         }
         
-        // Vérifications spécifiques par type de demande
-        if (demande.status === "en_attente_validation_conducteur" && currentUser.role !== "conducteur_travaux") {
-          return NextResponse.json({ success: false, error: "Seul le conducteur de travaux peut valider les demandes de matériel" }, { status: 403 })
-        }
+        console.log(`🔄 [API] Transition: ${demande.status} → ${nextStatus} (demandeur: ${demande.technicien?.role})`)
         
-        if (demande.status === ("en_attente_validation_responsable_travaux" as any) && currentUser.role !== "responsable_travaux") {
-          return NextResponse.json({ success: false, error: "Seul le responsable des travaux peut valider à cette étape" }, { status: 403 })
-        }
-        
-        if (demande.status === "en_attente_validation_qhse" && currentUser.role !== "responsable_qhse") {
-          return NextResponse.json({ success: false, error: "Seul le responsable QHSE peut valider les demandes d'outillage" }, { status: 403 })
-        }
-        
-        if (demande.status === "en_attente_validation_charge_affaire" && currentUser.role !== "charge_affaire") {
-          return NextResponse.json({ success: false, error: "Seul le chargé d'affaires peut valider à cette étape" }, { status: 403 })
-        }
-        
-        if (demande.status === "en_attente_preparation_appro" && currentUser.role !== "responsable_appro") {
-          return NextResponse.json({ success: false, error: "Seul le responsable appro peut préparer la sortie" }, { status: 403 })
-        }
-        
-        if (demande.status === "en_attente_validation_logistique" && currentUser.role !== "responsable_logistique") {
-          return NextResponse.json({ success: false, error: "Seul le responsable logistique peut valider à cette étape" }, { status: 403 })
-        }
-        
-        if (demande.status === "en_attente_validation_finale_demandeur" && demande.technicienId !== currentUser.id) {
-          return NextResponse.json({ success: false, error: "Seul le demandeur peut valider finalement sa demande" }, { status: 403 })
+        // Vérifications de permissions (seulement si pas d'auto-validation)
+        if (!targetStatus) {
+          // Vérifications spécifiques par type de demande
+          if (demande.status === "en_attente_validation_conducteur" && currentUser.role !== "conducteur_travaux") {
+            return NextResponse.json({ success: false, error: "Seul le conducteur de travaux peut valider les demandes de matériel" }, { status: 403 })
+          }
+          
+          if (demande.status === ("en_attente_validation_responsable_travaux" as any) && currentUser.role !== "responsable_travaux") {
+            return NextResponse.json({ success: false, error: "Seul le responsable des travaux peut valider à cette étape" }, { status: 403 })
+          }
+          
+          if (demande.status === "en_attente_validation_qhse" && currentUser.role !== "responsable_qhse") {
+            return NextResponse.json({ success: false, error: "Seul le responsable QHSE peut valider les demandes d'outillage" }, { status: 403 })
+          }
+          
+          if (demande.status === "en_attente_validation_charge_affaire" && currentUser.role !== "charge_affaire") {
+            return NextResponse.json({ success: false, error: "Seul le chargé d'affaires peut valider à cette étape" }, { status: 403 })
+          }
+          
+          if (demande.status === "en_attente_preparation_appro" && currentUser.role !== "responsable_appro") {
+            return NextResponse.json({ success: false, error: "Seul le responsable appro peut préparer la sortie" }, { status: 403 })
+          }
+          
+          if (demande.status === "en_attente_validation_logistique" && currentUser.role !== "responsable_logistique") {
+            return NextResponse.json({ success: false, error: "Seul le responsable logistique peut valider à cette étape" }, { status: 403 })
+          }
+          
+          if (demande.status === "en_attente_validation_finale_demandeur" && demande.technicienId !== currentUser.id) {
+            return NextResponse.json({ success: false, error: "Seul le demandeur peut valider finalement sa demande" }, { status: 403 })
+          }
         }
         
         newStatus = nextStatus as any
@@ -222,11 +330,22 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         break
 
       case "cloturer":
+        console.log(`🔒 [API] Tentative de clôture:`)
+        console.log(`  - Statut actuel: ${demande.status}`)
+        console.log(`  - Demandeur: ${demande.technicienId}`)
+        console.log(`  - Utilisateur actuel: ${currentUser.id}`)
+        console.log(`  - Est le demandeur: ${demande.technicienId === currentUser.id}`)
+        
         // Action spécifique pour le demandeur - clôturer la demande après livraison
-        if (demande.status === "en_attente_validation_finale_demandeur") {
+        if (demande.status === "en_attente_validation_finale_demandeur" && demande.technicienId === currentUser.id) {
+          console.log(`✅ [API] Clôture autorisée`)
           newStatus = "cloturee"
+        } else if (demande.status !== "en_attente_validation_finale_demandeur") {
+          console.log(`❌ [API] Statut incorrect pour clôture: ${demande.status}`)
+          return NextResponse.json({ success: false, error: "La demande n'est pas prête à être clôturée" }, { status: 403 })
         } else {
-          return NextResponse.json({ success: false, error: "Action non autorisée pour ce statut" }, { status: 403 })
+          console.log(`❌ [API] Utilisateur non autorisé à clôturer`)
+          return NextResponse.json({ success: false, error: "Seul le demandeur original peut clôturer sa demande" }, { status: 403 })
         }
         break
 

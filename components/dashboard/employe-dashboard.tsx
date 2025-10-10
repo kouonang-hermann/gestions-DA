@@ -49,14 +49,14 @@ import { UserRequestsChart } from "@/components/charts/user-requests-chart"
 import UserDetailsModal from "@/components/modals/user-details-modal"
 import MesDemandesACloturer from "@/components/demandes/mes-demandes-a-cloturer"
 import ValidatedRequestsHistory from "@/components/dashboard/validated-requests-history"
-import DemandesCategoryModal from "@/components/modals/demandes-category-modal"
 import ValidatedDemandesModal from "@/components/modals/validated-demandes-modal"
+import DemandesCategoryModal from "@/components/modals/demandes-category-modal"
 import DashboardDebug from "@/components/debug/dashboard-debug"
 import MobileResponsiveTest from "@/components/debug/mobile-responsive-test"
 import UniversalClosureModal from "@/components/modals/universal-closure-modal"
 
 export default function EmployeDashboard() {
-  const { currentUser, demandes, projets, loadDemandes, loadProjets, isLoading } = useStore()
+  const { currentUser, demandes, projets, isLoading } = useStore()
 
   const [stats, setStats] = useState({
     total: 0,
@@ -72,31 +72,12 @@ export default function EmployeDashboard() {
   const [detailsModalTitle, setDetailsModalTitle] = useState("")
   const [validatedHistoryModalOpen, setValidatedHistoryModalOpen] = useState(false)
   const [validatedDemandesModalOpen, setValidatedDemandesModalOpen] = useState(false)
-  const [dataLoaded, setDataLoaded] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [activeChart, setActiveChart] = useState<"material" | "tooling">("material")
   const [mobileTestModalOpen, setMobileTestModalOpen] = useState(false)
   const [universalClosureModalOpen, setUniversalClosureModalOpen] = useState(false)
 
-  // Chargement initial des données
-  useEffect(() => {
-    if (currentUser && !dataLoaded) {
-      const loadInitialData = async () => {
-        try {
-          console.log("Chargement des données pour l'employé...")
-          await Promise.all([
-            loadProjets(),
-            loadDemandes()
-          ])
-          setDataLoaded(true)
-          console.log("Données chargées avec succès")
-        } catch (error) {
-          console.error("Erreur lors du chargement initial:", error)
-        }
-      }
-      loadInitialData()
-    }
-  }, [currentUser?.id, dataLoaded])
+  // Données chargées automatiquement par useDataLoader
 
   // Fonction pour obtenir les demandes selon le rôle
   const getDemandesForRole = () => {
@@ -243,7 +224,7 @@ export default function EmployeDashboard() {
     )
   }
 
-  if (isLoading || !dataLoaded) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>

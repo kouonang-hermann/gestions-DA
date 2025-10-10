@@ -20,13 +20,24 @@ export default function ValidationPreparationList() {
     if (currentUser) {
       loadDemandes()
     }
-  }, [currentUser, loadDemandes])
+  }, [currentUser]) // Supprimé loadDemandes des dépendances
 
   useEffect(() => {
     if (currentUser) {
       const filtered = demandes.filter(
-        (d) => d.status === "en_attente_validation_charge_affaire"
+        (d) => d.status === "en_attente_validation_charge_affaire" &&
+               // Filtrer par projet si l'utilisateur a des projets assignés
+               (!currentUser.projets || currentUser.projets.length === 0 || currentUser.projets.includes(d.projetId))
       )
+      
+      console.log(`🔍 [CHARGE-AFFAIRE] Filtrage pour ${currentUser.role}:`)
+      console.log(`  - Status recherché: en_attente_validation_charge_affaire`)
+      console.log(`  - Projets utilisateur: [${currentUser.projets?.join(', ') || 'aucun'}]`)
+      console.log(`  - Demandes trouvées: ${filtered.length}/${demandes.length}`)
+      if (filtered.length > 0) {
+        console.log(`  - IDs demandes: [${filtered.map(d => d.numero).join(', ')}]`)
+      }
+      
       setDemandesAValider(filtered)
     }
   }, [currentUser, demandes])

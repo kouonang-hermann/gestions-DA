@@ -9,25 +9,24 @@ import MesDemandesACloturer from "@/components/demandes/mes-demandes-a-cloturer"
 
 interface SharedDemandesSectionProps {
   onCardClick?: (type: string, title: string) => void
+  hideClotureSection?: boolean
 }
 
-export default function SharedDemandesSection({ onCardClick }: SharedDemandesSectionProps) {
+export default function SharedDemandesSection({ onCardClick, hideClotureSection = false }: SharedDemandesSectionProps) {
   const { currentUser, demandes } = useStore()
   const [demandesEnCours, setDemandesEnCours] = useState<Demande[]>([])
 
   useEffect(() => {
     if (currentUser && demandes) {
-      // Filtrer les demandes en cours pour l'utilisateur actuel
+      // Filtrer les demandes en cours pour l'utilisateur actuel (CORRIGÉ)
       const mesDemandesEnCours = demandes.filter(
         (demande) =>
           demande.technicienId === currentUser.id &&
-          [
-            "en_attente_validation_conducteur",
-            "en_attente_validation_qhse", 
-            "en_attente_validation_responsable_travaux",
-            "en_attente_validation_charge_affaire",
-            "en_attente_preparation_appro",
-            "en_attente_validation_logistique"
+          ![
+            "brouillon", 
+            "cloturee", 
+            "rejetee", 
+            "archivee"
           ].includes(demande.status)
       )
       setDemandesEnCours(mesDemandesEnCours)
@@ -56,19 +55,12 @@ export default function SharedDemandesSection({ onCardClick }: SharedDemandesSec
           <div className="text-2xl font-bold" style={{ color: '#f97316' }}>
             {demandesEnCours.length}
           </div>
-          <p className="text-xs text-muted-foreground">
-            {demandesEnCours.length === 0 
-              ? "Aucune demande en cours" 
-              : demandesEnCours.length === 1 
-                ? "demande en validation"
-                : "demandes en validation"
-            }
-          </p>
+          <p className="text-xs text-muted-foreground">En traitement</p>
         </CardContent>
       </Card>
 
       {/* Section Mes demandes à clôturer */}
-      <MesDemandesACloturer />
+      {!hideClotureSection && <MesDemandesACloturer />}
     </>
   )
 }

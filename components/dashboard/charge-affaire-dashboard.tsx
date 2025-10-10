@@ -21,7 +21,6 @@ import {
   BarChart3,
   TrendingUp
 } from 'lucide-react'
-import SharedDemandesSection from "@/components/dashboard/shared-demandes-section"
 import {
   PieChart,
   Pie,
@@ -40,13 +39,18 @@ import CreateDemandeModal from "@/components/demandes/create-demande-modal"
 import ValidationPreparationList from "@/components/charge-affaire/validation-preparation-list"
 import { UserRequestsChart } from "@/components/charts/user-requests-chart"
 import UserDetailsModal from "@/components/modals/user-details-modal"
+import { useAutoReload } from "@/hooks/useAutoReload"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Badge } from "@/components/ui/badge"
 
 export default function ChargeAffaireDashboard() {
-  const { currentUser, demandes, loadDemandes, isLoading } = useStore()
+  const { currentUser, demandes, isLoading } = useStore()
+  const { handleManualReload } = useAutoReload("CHARGE-AFFAIRE")
 
   const [stats, setStats] = useState({
     total: 0,
     aValider: 0,
+    enCours: 0,
     validees: 0,
     rejetees: 0,
   })
@@ -54,16 +58,12 @@ export default function ChargeAffaireDashboard() {
   const [createDemandeModalOpen, setCreateDemandeModalOpen] = useState(false)
   const [demandeType, setDemandeType] = useState<"materiel" | "outillage">("materiel")
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
-  const [detailsModalType, setDetailsModalType] = useState<"total" | "aValider" | "validees" | "rejetees">("total")
+  const [detailsModalType, setDetailsModalType] = useState<"total" | "aValider" | "enCours" | "validees" | "rejetees">("total")
   const [detailsModalTitle, setDetailsModalTitle] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
   const [activeChart, setActiveChart] = useState<"material" | "tooling">("material")
 
-  useEffect(() => {
-    if (currentUser) {
-      loadDemandes()
-    }
-  }, [currentUser, loadDemandes])
+  // Données chargées automatiquement par useDataLoader
 
   useEffect(() => {
     if (currentUser) {
@@ -74,6 +74,14 @@ export default function ChargeAffaireDashboard() {
       setStats({
         total: mesDemandesCA.length,
         aValider: mesDemandesCA.filter((d) => d.status === "en_attente_validation_charge_affaire").length,
+        enCours: demandes.filter((d) => 
+          d.technicienId === currentUser.id && ![
+            "brouillon", 
+            "cloturee", 
+            "rejetee", 
+            "archivee"
+          ].includes(d.status)
+        ).length,
         // CORRECTION: Inclure tous les statuts après validation du chargé d'affaires
         validees: mesDemandesCA.filter((d) => 
           d.status === "en_attente_preparation_appro" || 
@@ -88,7 +96,36 @@ export default function ChargeAffaireDashboard() {
 
   const mesDemandes = currentUser ? demandes.filter((d) => d.technicienId === currentUser.id) : []
 
-  const handleCardClick = (type: "total" | "aValider" | "validees" | "rejetees", title: string) => {
+  // Fonction pour filtrer les demandes selon la catégorie
+  const getFilteredDemandes = (type: "total" | "aValider" | "enCours" | "validees" | "rejetees") => {
+    switch (type) {
+      case "total":
+        return demandes // Toutes les demandes pour le rôle de validation
+      case "aValider":
+        return demandes.filter((d) => d.status === "en_attente_validation_charge_affaire")
+      case "enCours":
+        // MES demandes en cours (en tant que demandeur)
+        return mesDemandes.filter((d) => ![
+          "brouillon", 
+          "cloturee", 
+          "rejetee", 
+          "archivee"
+        ].includes(d.status))
+      case "validees":
+        return demandes.filter((d) => 
+          d.status === "en_attente_preparation_appro" || 
+          d.status === "en_attente_validation_logistique" || 
+          d.status === "en_attente_validation_finale_demandeur" ||
+          d.status === "cloturee"
+        )
+      case "rejetees":
+        return demandes.filter((d) => d.status === "rejetee")
+      default:
+        return []
+    }
+  }
+
+  const handleCardClick = (type: "total" | "aValider" | "enCours" | "validees" | "rejetees", title: string) => {
     setDetailsModalType(type)
     setDetailsModalTitle(title)
     setDetailsModalOpen(true)
@@ -154,7 +191,16 @@ export default function ChargeAffaireDashboard() {
   return (
     <div className="min-h-screen bg-gray-50 p-2">
       <div className="max-w-full mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">Tableau de Bord Chargé Affaire</h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">Tableau de Bord Chargé Affaire</h1>
+          <Button 
+            onClick={handleManualReload}
+            variant="outline"
+            className="bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100"
+          >
+            🔄 Actualiser
+          </Button>
+        </div>
 
         {/* Layout principal : deux colonnes */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
@@ -184,6 +230,17 @@ export default function ChargeAffaireDashboard() {
                 </CardContent>
               </Card>
 
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#f97316' }} onClick={() => handleCardClick("enCours", "Demandes en cours")}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">En cours</CardTitle>
+                  <Clock className="h-4 w-4" style={{ color: '#f97316' }} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" style={{ color: '#f97316' }}>{stats.enCours}</div>
+                  <p className="text-xs text-muted-foreground">En traitement</p>
+                </CardContent>
+              </Card>
+
               <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#22c55e' }} onClick={() => handleCardClick("validees", "Demandes validées")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Validées</CardTitle>
@@ -207,8 +264,6 @@ export default function ChargeAffaireDashboard() {
               </Card>
             </div>
 
-            {/* Section partagée pour les demandes en cours et clôture */}
-            <SharedDemandesSection />
 
             {/* Liste des préparations à valider */}
             <ValidationPreparationList />
@@ -354,13 +409,83 @@ export default function ChargeAffaireDashboard() {
         onClose={() => setCreateDemandeModalOpen(false)}
         type={demandeType}
       />
-      <UserDetailsModal
-        isOpen={detailsModalOpen}
-        onClose={() => setDetailsModalOpen(false)}
-        title={detailsModalTitle}
-        data={mesDemandes}
-        type={detailsModalType}
-      />
+      {/* Modale personnalisée pour les détails des demandes */}
+      <Dialog open={detailsModalOpen} onOpenChange={setDetailsModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{detailsModalTitle}</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {getFilteredDemandes(detailsModalType).length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <Package className="mx-auto h-12 w-12 mb-4 opacity-50" />
+                <p>Aucune demande trouvée pour cette catégorie</p>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {getFilteredDemandes(detailsModalType).map((demande) => (
+                  <Card key={demande.id} className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-4 mb-2">
+                          <Badge variant="outline" className="font-mono">
+                            {demande.numero}
+                          </Badge>
+                          <Badge 
+                            variant={demande.type === "materiel" ? "default" : "secondary"}
+                            className={demande.type === "materiel" ? "bg-blue-100 text-blue-800" : "bg-purple-100 text-purple-800"}
+                          >
+                            {demande.type === "materiel" ? "Matériel" : "Outillage"}
+                          </Badge>
+                          <Badge 
+                            variant="outline"
+                            className={
+                              demande.status === "en_attente_validation_finale_demandeur" ? "bg-green-100 text-green-800" :
+                              demande.status.includes("en_attente") ? "bg-orange-100 text-orange-800" :
+                              "bg-gray-100 text-gray-800"
+                            }
+                          >
+                            {demande.status === "en_attente_validation_finale_demandeur" ? "Prêt à clôturer" :
+                             demande.status.includes("en_attente") ? "En cours" :
+                             demande.status}
+                          </Badge>
+                        </div>
+                        
+                        <div className="text-sm text-gray-600 space-y-1">
+                          <p><strong>Projet:</strong> {demande.projetId}</p>
+                          <p><strong>Date de création:</strong> {new Date(demande.dateCreation).toLocaleDateString('fr-FR')}</p>
+                          {demande.commentaires && (
+                            <p><strong>Commentaires:</strong> {demande.commentaires}</p>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col items-end gap-2">
+                        <div className="text-sm text-gray-500">
+                          {new Date(demande.dateCreation).toLocaleDateString('fr-FR')}
+                        </div>
+                        {demande.status === "en_attente_validation_finale_demandeur" && (
+                          <Button 
+                            size="sm" 
+                            className="bg-green-500 hover:bg-green-600 text-white"
+                            onClick={() => {
+                              // Ici on peut ajouter la logique de clôture
+                              console.log('Clôturer la demande:', demande.id)
+                            }}
+                          >
+                            Clôturer
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

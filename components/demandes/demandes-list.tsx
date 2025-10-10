@@ -60,7 +60,7 @@ export default function DemandesList() {
     if (currentUser) {
       loadDemandes()
     }
-  }, [currentUser, loadDemandes])
+  }, [currentUser]) // Supprimé loadDemandes des dépendances
 
   useEffect(() => {
     filterDemandes()

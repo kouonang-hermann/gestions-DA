@@ -25,7 +25,7 @@ export default function ValidationDemandesList({ type, title }: ValidationDemand
     if (currentUser) {
       loadDemandes({ type })
     }
-  }, [currentUser, type, loadDemandes])
+  }, [currentUser, type]) // Supprimé loadDemandes des dépendances pour éviter la boucle infinie
 
   useEffect(() => {
     if (currentUser) {
@@ -45,8 +45,20 @@ export default function ValidationDemandesList({ type, title }: ValidationDemand
       }
       
       const filtered = demandes.filter(
-        (d) => d.type === type && d.status === statusToFilter
+        (d) => d.type === type && 
+               d.status === statusToFilter &&
+               // Filtrer par projet si l'utilisateur a des projets assignés
+               (!currentUser.projets || currentUser.projets.length === 0 || currentUser.projets.includes(d.projetId))
       )
+      
+      console.log(`🔍 [VALIDATION-${type.toUpperCase()}] Filtrage pour ${currentUser.role}:`)
+      console.log(`  - Status recherché: ${statusToFilter}`)
+      console.log(`  - Projets utilisateur: [${currentUser.projets?.join(', ') || 'aucun'}]`)
+      console.log(`  - Demandes trouvées: ${filtered.length}/${demandes.length}`)
+      if (filtered.length > 0) {
+        console.log(`  - IDs demandes: [${filtered.map(d => d.numero).join(', ')}]`)
+      }
+      
       setDemandesAValider(filtered)
     }
   }, [currentUser, demandes, type])

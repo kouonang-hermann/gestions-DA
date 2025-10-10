@@ -2,49 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, Mail, Lock, Loader2 } from 'lucide-react';
 import { useStore } from '@/stores/useStore';
-
-// Composant logo InstrumElec miniature
-const InstrumElecMiniLogo = () => (
-  <svg width="60" height="72" viewBox="0 0 100 120" className="drop-shadow-lg">
-    <path 
-      d="M50 10 L70 10 L70 5 L30 5 L30 10 L50 10 C28 10, 10 28, 10 60 C10 92, 28 110, 50 110 L70 110 L70 115 L30 115 L30 110 L50 110 C72 110, 90 92, 90 60 C90 28, 72 10, 50 10 Z" 
-      fill="url(#perfectGeometryGradient)" 
-      stroke="#1e40af" 
-      strokeWidth="2"
-    />
-    <g transform="translate(50,60)">
-      <rect x="-20" y="-40" width="7" height="80" fill="white"/>
-      <rect x="-13" y="-40" width="28" height="7" fill="white"/>
-      <rect x="-13" y="-7" width="18" height="7" fill="white"/>
-      <rect x="-13" y="33" width="28" height="7" fill="white"/>
-    </g>
-    <g transform="translate(50,60)">
-      <path 
-        d="M6 -30 L-6 -5 L1 -5 L1 30 L13 5 L6 5 Z" 
-        fill="url(#perfectRedGradient)"
-        stroke="#b91c1c"
-        strokeWidth="0.3"
-      />
-      <path 
-        d="M6 -30 L-6 -5 L-2 -5 L6 -30 Z" 
-        fill="rgba(252, 165, 165, 0.7)"
-      />
-    </g>
-    <defs>
-      <radialGradient id="perfectGeometryGradient" cx="0.25" cy="0.25" r="1">
-        <stop offset="0%" stopColor="#93c5fd"/>
-        <stop offset="50%" stopColor="#3b82f6"/>
-        <stop offset="100%" stopColor="#1e40af"/>
-      </radialGradient>
-      <linearGradient id="perfectRedGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#fca5a5"/>
-        <stop offset="40%" stopColor="#f87171"/>
-        <stop offset="80%" stopColor="#ef4444"/>
-        <stop offset="100%" stopColor="#dc2626"/>
-      </linearGradient>
-    </defs>
-  </svg>
-);
+import InstrumElecLogo from '@/components/ui/instrumelec-logo';
 
 export default function LoginForm() {
   const { login, isLoading, error } = useStore();
@@ -115,10 +73,7 @@ export default function LoginForm() {
           {/* Logo et slogan */}
           <div>
             <div className="flex items-center mb-6">
-              <div className="mr-4">
-                <InstrumElecMiniLogo />
-              </div>
-              <h1 className="text-4xl font-bold font-serif text-white">InstrumElec</h1>
+              <InstrumElecLogo width={80} height={107} showText={false} className="drop-shadow-lg" />
             </div>
             <p className="text-lg font-light leading-relaxed max-w-md">
               Votre partenaire de confiance pour la gestion intelligente du matériel et de l'outillage professionnel
@@ -148,7 +103,7 @@ export default function LoginForm() {
             {/* Logo responsive */}
             <div className="flex justify-center mb-3 sm:mb-4">
               <div className="login-logo-mobile">
-                <InstrumElecMiniLogo />
+                <InstrumElecLogo width={60} height={80} showText={false} className="drop-shadow-lg" />
               </div>
             </div>
             {/* Logo mobile alternatif pour très petits écrans */}

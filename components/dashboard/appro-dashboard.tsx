@@ -21,7 +21,6 @@ import {
   BarChart3,
   TrendingUp
 } from 'lucide-react'
-import SharedDemandesSection from "@/components/dashboard/shared-demandes-section"
 import {
   PieChart,
   Pie,
@@ -40,13 +39,18 @@ import SortiePreparationList from "@/components/appro/sortie-preparation-list"
 import CreateDemandeModal from "@/components/demandes/create-demande-modal"
 import { UserRequestsChart } from "@/components/charts/user-requests-chart"
 import UserDetailsModal from "@/components/modals/user-details-modal"
+import { useAutoReload } from "@/hooks/useAutoReload"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Badge } from "@/components/ui/badge"
 
 export default function ApproDashboard() {
-  const { currentUser, demandes, loadDemandes, isLoading } = useStore()
+  const { currentUser, demandes, isLoading } = useStore()
+  const { handleManualReload } = useAutoReload("APPRO")
 
   const [stats, setStats] = useState({
     total: 0,
     aPreparer: 0,
+    enCours: 0,
     preparees: 0,
     livrees: 0,
   })
@@ -54,42 +58,107 @@ export default function ApproDashboard() {
   const [createDemandeModalOpen, setCreateDemandeModalOpen] = useState(false)
   const [demandeType, setDemandeType] = useState<"materiel" | "outillage">("materiel")
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
-  const [detailsModalType, setDetailsModalType] = useState<"total" | "aPreparer" | "preparees" | "livrees">("total")
+  const [detailsModalType, setDetailsModalType] = useState<"total" | "aPreparer" | "enCours" | "preparees" | "livrees">("total")
   const [detailsModalTitle, setDetailsModalTitle] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
   const [activeChart, setActiveChart] = useState<"material" | "tooling">("material")
 
-  useEffect(() => {
-    if (currentUser) {
-      loadDemandes()
-    }
-  }, [currentUser, loadDemandes])
+  // Données chargées automatiquement par useDataLoader
 
   useEffect(() => {
     if (currentUser) {
-      const mesDemandesAppro = demandes.filter((d) => currentUser.projets.includes(d.projetId))
+      // Filtrer les demandes par projet si l'utilisateur a des projets assignés
+      const demandesFiltered = demandes.filter((d) => 
+        (!currentUser.projets || currentUser.projets.length === 0 || currentUser.projets.includes(d.projetId))
+      )
+
+      // 1. MES DEMANDES CRÉÉES (en tant que demandeur)
+      const mesDemandesCreees = demandesFiltered.filter((d) => d.technicienId === currentUser.id)
+
+      // 2. DEMANDES À TRAITER (en tant qu'Appro dans le flow)
+      const demandesATraiter = demandesFiltered.filter((d) => d.status === "en_attente_preparation_appro")
+      
+      // 3. DEMANDES PRÉPARÉES (préparées par moi, en attente logistique)
+      const demandesPreparees = demandesFiltered.filter((d) => d.status === "en_attente_validation_logistique")
+      
+      // 4. DEMANDES EN ATTENTE DE LIVRAISON (validées logistique, en attente demandeur)
+      const demandesEnAttenteLivraison = demandesFiltered.filter((d) => 
+        d.status === "en_attente_validation_finale_demandeur"
+      )
+
+      // 5. MES DEMANDES EN COURS (comme employé)
+      const mesDemandesEnCours = mesDemandesCreees.filter((d) => ![
+        "brouillon", 
+        "cloturee", 
+        "rejetee", 
+        "archivee"
+      ].includes(d.status))
+
+      console.log(`🔍 [APPRO-DASHBOARD] Statistiques pour ${currentUser.nom} (${currentUser.role}):`)
+      console.log(`  - Projets utilisateur: [${currentUser.projets?.join(', ') || 'aucun'}]`)
+      console.log(`  - Total demandes émises par moi: ${mesDemandesCreees.length}`)
+      console.log(`  - Demandes à préparer (flow Appro): ${demandesATraiter.length}`)
+      console.log(`  - Mes demandes en cours: ${mesDemandesEnCours.length}`)
+      console.log(`  - Demandes préparées (en attente logistique): ${demandesPreparees.length}`)
+      console.log(`  - Demandes en attente de livraison: ${demandesEnAttenteLivraison.length}`)
 
       setStats({
-        total: mesDemandesAppro.length,
-        aPreparer: mesDemandesAppro.filter((d) =>
-          d.status === "en_attente_preparation_appro"
-        ).length,
-        preparees: mesDemandesAppro.filter((d) => 
-          d.status === "en_attente_validation_logistique"
-        ).length,
-        livrees: mesDemandesAppro.filter((d) => 
-          ["en_attente_validation_finale_demandeur", "cloturee", "archivee"].includes(d.status)
-        ).length,
+        total: mesDemandesCreees.length, // MES demandes créées
+        aPreparer: demandesATraiter.length, // Demandes que JE dois préparer
+        enCours: mesDemandesEnCours.length, // MES demandes en cours (comme employé)
+        preparees: demandesPreparees.length, // Demandes que J'AI préparées
+        livrees: demandesEnAttenteLivraison.length, // En attente de livraison
       })
     }
   }, [currentUser, demandes])
 
   const mesDemandes = currentUser ? demandes.filter((d) => d.technicienId === currentUser.id) : []
 
-  const handleCardClick = (type: "total" | "aPreparer" | "preparees" | "livrees", title: string) => {
+  const handleCardClick = (type: "total" | "aPreparer" | "enCours" | "preparees" | "livrees", title: string) => {
     setDetailsModalType(type)
     setDetailsModalTitle(title)
     setDetailsModalOpen(true)
+  }
+
+  // Fonction pour obtenir les demandes selon le type de carte
+  const getDemandesByType = (type: "total" | "aPreparer" | "enCours" | "preparees" | "livrees") => {
+    if (!currentUser) return []
+
+    const demandesFiltered = demandes.filter((d) => 
+      (!currentUser.projets || currentUser.projets.length === 0 || currentUser.projets.includes(d.projetId))
+    )
+
+    switch (type) {
+      case "total":
+        // MES demandes créées (en tant que demandeur)
+        return demandesFiltered.filter((d) => d.technicienId === currentUser.id)
+      
+      case "aPreparer":
+        // Demandes à préparer (en tant qu'Appro)
+        return demandesFiltered.filter((d) => d.status === "en_attente_preparation_appro")
+      
+      case "enCours":
+        // MES demandes en cours (comme employé)
+        return demandesFiltered.filter((d) => 
+          d.technicienId === currentUser.id && ![
+            "brouillon", 
+            "cloturee", 
+            "rejetee", 
+            "archivee"
+          ].includes(d.status)
+        )
+      
+      case "preparees":
+        // Demandes préparées (en attente logistique)
+        return demandesFiltered.filter((d) => d.status === "en_attente_validation_logistique")
+      
+      case "livrees":
+        // Demandes en attente de livraison
+        return demandesFiltered.filter((d) => d.status === "en_attente_validation_finale_demandeur")
+      
+      default:
+        return []
+    }
   }
 
   if (isLoading) {
@@ -152,22 +221,31 @@ export default function ApproDashboard() {
   return (
     <div className="min-h-screen bg-gray-50 p-2">
       <div className="max-w-full mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">Tableau de Bord Appro</h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">Tableau de Bord Appro</h1>
+          <Button 
+            onClick={handleManualReload}
+            variant="outline"
+            className="bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100"
+          >
+            🔄 Actualiser
+          </Button>
+        </div>
 
         {/* Layout principal : deux colonnes */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
           {/* Colonne de gauche (large) - 3/4 de la largeur */}
           <div className="lg:col-span-3 space-y-4">
             {/* Vue d'ensemble - Cards statistiques */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#015fc4' }} onClick={() => handleCardClick("total", "Toutes les demandes")}>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#015fc4' }} onClick={() => handleCardClick("total", "Mes demandes émises")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Total demandes</CardTitle>
                   <Package className="h-4 w-4" style={{ color: '#015fc4' }} />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold" style={{ color: '#015fc4' }}>{stats.total}</div>
-                  <p className="text-xs text-muted-foreground">Toutes les demandes</p>
+                  <p className="text-xs text-muted-foreground">Émises par moi</p>
                 </CardContent>
               </Card>
 
@@ -178,7 +256,18 @@ export default function ApproDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold" style={{ color: '#f97316' }}>{stats.aPreparer}</div>
-                  <p className="text-xs text-muted-foreground">À préparer</p>
+                  <p className="text-xs text-muted-foreground">À préparer par moi</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#3b82f6' }} onClick={() => handleCardClick("enCours", "Mes demandes en cours")}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">En cours</CardTitle>
+                  <Clock className="h-4 w-4" style={{ color: '#3b82f6' }} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" style={{ color: '#3b82f6' }}>{stats.enCours}</div>
+                  <p className="text-xs text-muted-foreground">Mes demandes en cours</p>
                 </CardContent>
               </Card>
 
@@ -189,24 +278,22 @@ export default function ApproDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold" style={{ color: '#b8d1df' }}>{stats.preparees}</div>
-                  <p className="text-xs text-muted-foreground">Prêtes à livrer</p>
+                  <p className="text-xs text-muted-foreground">Préparées par moi</p>
                 </CardContent>
               </Card>
 
-              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#22c55e' }} onClick={() => handleCardClick("livrees", "Demandes livrées")}>
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#22c55e' }} onClick={() => handleCardClick("livrees", "En attente de livraison")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Livrées</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">En attente livraison</CardTitle>
                   <CheckCircle className="h-4 w-4" style={{ color: '#22c55e' }} />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold" style={{ color: '#22c55e' }}>{stats.livrees}</div>
-                  <p className="text-xs text-muted-foreground">Demandes livrées</p>
+                  <p className="text-xs text-muted-foreground">Prêtes à livrer</p>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Section partagée pour les demandes en cours et clôture */}
-            <SharedDemandesSection />
 
             {/* Liste des demandes à préparer */}
             <SortiePreparationList />
@@ -352,13 +439,79 @@ export default function ApproDashboard() {
         onClose={() => setCreateDemandeModalOpen(false)}
         type={demandeType}
       />
-      <UserDetailsModal
-        isOpen={detailsModalOpen}
-        onClose={() => setDetailsModalOpen(false)}
-        title={detailsModalTitle}
-        data={mesDemandes}
-        type={detailsModalType}
-      />
+      {/* Modale de détails des demandes */}
+      <Dialog open={detailsModalOpen} onOpenChange={setDetailsModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{detailsModalTitle}</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {getDemandesByType(detailsModalType).length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <Package className="mx-auto h-12 w-12 mb-4 opacity-50" />
+                <p>Aucune demande trouvée pour cette catégorie</p>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {getDemandesByType(detailsModalType).map((demande) => (
+                  <Card key={demande.id} className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-4 mb-2">
+                          <Badge variant="outline" className="font-mono">
+                            {demande.numero}
+                          </Badge>
+                          <Badge 
+                            variant={demande.type === "materiel" ? "default" : "secondary"}
+                            className={demande.type === "materiel" ? "bg-blue-100 text-blue-800" : "bg-purple-100 text-purple-800"}
+                          >
+                            {demande.type === "materiel" ? "Matériel" : "Outillage"}
+                          </Badge>
+                          <Badge 
+                            variant="outline"
+                            className={
+                              demande.status === "en_attente_preparation_appro" ? "bg-orange-100 text-orange-800" :
+                              demande.status === "en_attente_validation_logistique" ? "bg-blue-100 text-blue-800" :
+                              demande.status === "en_attente_validation_finale_demandeur" ? "bg-green-100 text-green-800" :
+                              "bg-gray-100 text-gray-800"
+                            }
+                          >
+                            {demande.status === "en_attente_preparation_appro" ? "À préparer" :
+                             demande.status === "en_attente_validation_logistique" ? "En attente logistique" :
+                             demande.status === "en_attente_validation_finale_demandeur" ? "En attente livraison" :
+                             demande.status}
+                          </Badge>
+                        </div>
+                        
+                        <div className="text-sm text-gray-600 space-y-1">
+                          <p><strong>Projet:</strong> {demande.projetId}</p>
+                          <p><strong>Demandeur:</strong> {demande.technicienId}</p>
+                          <p><strong>Date de création:</strong> {new Date(demande.dateCreation).toLocaleDateString('fr-FR')}</p>
+                          {demande.commentaires && (
+                            <p><strong>Commentaires:</strong> {demande.commentaires}</p>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col items-end gap-2">
+                        <div className="text-sm text-gray-500">
+                          {new Date(demande.dateCreation).toLocaleDateString('fr-FR')}
+                        </div>
+                        {demande.status === "en_attente_preparation_appro" && (
+                          <Badge className="bg-orange-500 text-white">
+                            Action requise
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

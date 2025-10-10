@@ -84,17 +84,14 @@ export default function UserDetailsModal({ isOpen, onClose, title, data, type }:
     }
   }
 
+  // Pas de filtrage supplémentaire pour "enCours" car déjà filtré par le dashboard
+  // Les autres types peuvent nécessiter un filtrage supplémentaire pour compatibilité
   const filteredData = data.filter(item => {
     switch (type) {
       case "total":
-        return true
       case "enCours":
-        return ![
-          "brouillon", 
-          "cloturee", 
-          "rejetee", 
-          "archivee"
-        ].includes(item.status)
+        // Faire confiance aux données déjà filtrées du dashboard
+        return true
       case "validees":
         return ["cloturee", "archivee"].includes(item.status)
       case "rejetees":
@@ -121,7 +118,8 @@ export default function UserDetailsModal({ isOpen, onClose, title, data, type }:
     try {
       const commentaire = commentaires[demandeId]?.trim() || "Demande clôturée par le demandeur"
       
-      const success = await executeAction(demandeId, "validation_finale_demandeur", { 
+      // Utiliser "cloturer" au lieu de "validation_finale_demandeur" pour supporter tous les rôles
+      const success = await executeAction(demandeId, "cloturer", { 
         commentaire 
       })
       

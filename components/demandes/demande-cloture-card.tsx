@@ -24,7 +24,8 @@ export default function DemandeClotureCard({ demande, onCloture }: DemandeClotur
   const handleCloture = async () => {
     setIsLoading(true)
     try {
-      const success = await executeAction(demande.id, "validation_finale_demandeur", { 
+      // Utiliser "cloturer" au lieu de "validation_finale_demandeur" pour supporter tous les rôles
+      const success = await executeAction(demande.id, "cloturer", { 
         commentaire: commentaire.trim() || "Demande clôturée par le demandeur" 
       })
       

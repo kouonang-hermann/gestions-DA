@@ -15,7 +15,7 @@ export const GET = async (request: NextRequest) => {
     }
 
     const currentUser = authResult.user
-    if (!hasPermission(currentUser, "create_user")) {
+    if (!hasPermission(currentUser, "read_users")) {
       return NextResponse.json({ success: false, error: "Accès non autorisé" }, { status: 403 })
     }
     const users = await prisma.user.findMany({

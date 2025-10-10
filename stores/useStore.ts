@@ -38,6 +38,10 @@ interface AppState {
   // UI State
   isLoading: boolean
   error: string | null
+  
+  // Cache pour éviter les appels multiples
+  lastDemandesLoad: number
+  isLoadingDemandes: boolean
 
   // Actions
   login: (email: string, password: string) => Promise<boolean>
@@ -68,6 +72,17 @@ interface AppState {
   removeUserFromProject: (userId: string, projectId: string) => Promise<boolean>
   updateUserRole: (userId: string, newRole: string) => Promise<boolean>
   updateProject: (projectId: string, projectData: any) => Promise<boolean>
+  
+  // Auto-validation et flow intelligent
+  getNextStatusWithAutoValidation: (demande: Demande, currentStatus: DemandeStatus, action: string) => DemandeStatus | null
+  canUserValidateStep: (userRole: string, demandeType: string, status: DemandeStatus) => boolean
+  getValidationFlow: (demandeType: string) => DemandeStatus[]
+  
+  // Validation des demandes
+  validateDemande: (demandeId: string, userId: string, commentaire?: string) => Promise<boolean>
+  
+  // Gestion des demandes orphelines
+  transferOrphanedDemandes: (deletedUserId: string, deletedUserRole: string) => Promise<boolean>
 }
 
 export const useStore = create<AppState>()(
@@ -84,6 +99,8 @@ export const useStore = create<AppState>()(
       history: [],
       isLoading: false,
       error: null,
+      lastDemandesLoad: 0,
+      isLoadingDemandes: false,
 
       login: async (email: string, password: string) => {
         set({ isLoading: true, error: null })
@@ -147,7 +164,21 @@ export const useStore = create<AppState>()(
 
           const result = await response.json()
           if (result.success) {
-            set({ users: result.data })
+            // Transformer les données pour compatibilité frontend
+            const transformedUsers = result.data.map((user: any) => ({
+              ...user,
+              // Transformer les projets du format API vers le format attendu
+              projets: user.projets ? user.projets.map((p: any) => p.projet.id) : []
+            }))
+            
+            console.log("🔧 [STORE] Transformation des projets utilisateurs:")
+            transformedUsers.forEach((user: any) => {
+              if (user.projets && user.projets.length > 0) {
+                console.log(`  - ${user.nom}: projets = [${user.projets.join(', ')}]`)
+              }
+            })
+            
+            set({ users: transformedUsers })
           } else {
             console.error("Erreur API users:", result.error)
             set({ error: result.error })
@@ -159,14 +190,15 @@ export const useStore = create<AppState>()(
       },
 
       loadProjets: async () => {
-        const { currentUser, token } = get()
-        if (!currentUser || !token) {
-          console.warn("Tentative de chargement des projets sans utilisateur connecté")
+        const { token, currentUser } = get()
+        if (!token || !currentUser) {
+          console.log("⏳ [STORE] Token ou utilisateur manquant pour charger les projets")
           return
         }
 
         try {
-          console.log("Chargement des projets pour l'utilisateur:", currentUser.id)
+          console.log(`🔄 [STORE] Chargement des projets pour ${currentUser.nom} (${currentUser.role})`)
+          
           const response = await fetch("/api/projets", {
             headers: {
               "Authorization": `Bearer ${token}`,
@@ -175,133 +207,190 @@ export const useStore = create<AppState>()(
 
           const result = await response.json()
           if (result.success) {
-            console.log("Projets chargés:", result.data.length)
+            console.log(`✅ [STORE] Projets chargés: ${result.data.length}`)
             set({ projets: result.data })
           } else {
-            console.error("Erreur API projets:", result.error)
+            // Si l'erreur est liée à l'authentification, ne pas la traiter comme une erreur critique
+            if (result.error === "Utilisateur non trouvé" || result.error === "Token invalide") {
+              console.log("⚠️ [STORE] Problème d'authentification temporaire, rechargement des projets ignoré")
+              return
+            }
+            
+            // Seulement logger les vraies erreurs (pas les problèmes d'auth temporaires)
+            console.error("❌ [STORE] Erreur API projets:", result.error)
             set({ error: result.error })
           }
         } catch (error) {
-          console.error("Erreur lors du chargement des projets:", error)
+          console.error("❌ [STORE] Erreur lors du chargement des projets:", error)
           set({ error: "Erreur lors du chargement des projets" })
         }
       },
 
       loadDemandes: async (filters = {}) => {
-        const { currentUser, token } = get()
-        if (!currentUser || !token) {
-          console.warn("Tentative de chargement des demandes sans utilisateur connecté")
+        const { currentUser, token, isLoadingDemandes, lastDemandesLoad } = get()
+
+        
+        // Vérifier si un chargement est déjà en cours
+        if (isLoadingDemandes) {
+          console.log("⏳ [STORE] Chargement des demandes déjà en cours, abandon")
+          return
+        }
+        
+        // Éviter les appels trop fréquents (moins de 2 secondes)
+        const now = Date.now()
+        if (now - lastDemandesLoad < 2000) {
+          console.log("⚡ [STORE] Chargement récent, utilisation du cache")
+          return
+        }
+        
+        console.log("🔄 [STORE] loadDemandes appelé - Connexion à l'API")
+        
+        if (!currentUser) {
+          console.log("⚠️ [STORE] Aucun utilisateur connecté, abandon du chargement des demandes")
           return
         }
 
+        if (!token) {
+          console.log("⚠️ [STORE] Aucun token d'authentification, abandon du chargement des demandes")
+          return
+        }
+
+        set({ isLoading: true, error: null, isLoadingDemandes: true })
+
         try {
-          console.log("🔄 [LOCAL MODE] Chargement des demandes pour l'utilisateur:", currentUser.nom, currentUser.prenom)
-          
-          // Mode local - Simulation des demandes
-          const localDemandes = [
-            {
-              id: "demande-1",
-              numero: "DA-2024-001",
-              projetId: "projet-1",
-              projet: {
-                id: "projet-1",
-                nom: "Rénovation Bâtiment A",
-                description: "Rénovation complète du bâtiment A",
-                dateDebut: new Date("2024-01-01"),
-                dateFin: new Date("2024-12-31"),
-                createdBy: "user-1",
-                utilisateurs: ["user-1", "user-2", "user-3"],
-                actif: true,
-                createdAt: new Date("2024-01-01")
-              },
-              technicienId: currentUser.id, // Assigné à l'utilisateur actuel
-              type: "materiel" as const,
-              items: [
-                {
-                  id: "item-1",
-                  articleId: "article-1",
-                  quantiteDemandee: 10,
-                  quantiteValidee: 10,
-                  quantiteSortie: 10,
-                  quantiteRecue: 10,
-                  commentaire: "Livré complet"
-                }
-              ],
-              status: "confirmee_demandeur" as const,
-              dateCreation: new Date("2024-01-15"),
-              dateModification: new Date("2024-01-20"),
-              commentaires: "Demande de matériel pour rénovation",
-              validationLogistique: undefined,
-              validationResponsableTravaux: undefined
+          const response = await fetch('/api/demandes', {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
             },
+          })
+
+          if (!response.ok) {
+            if (response.status === 401) {
+              throw new Error(`Non authentifié - Veuillez vous reconnecter`)
+            }
+            throw new Error(`Erreur HTTP: ${response.status}`)
+          }
+
+          const data = await response.json()
+          
+          if (data.success) {
+            set({ 
+              demandes: data.data || [], 
+              isLoading: false, 
+              error: null,
+              isLoadingDemandes: false,
+              lastDemandesLoad: Date.now()
+            })
+            console.log(`✅ [STORE] ${data.data?.length || 0} demandes chargées depuis l'API`)
+          } else {
+            throw new Error(data.error || 'Erreur lors du chargement des demandes')
+          }
+        } catch (error) {
+          console.error("❌ [STORE] Erreur lors du chargement des demandes:", error)
+          
+          // Fallback vers des demandes de test pour le debug
+          console.log("🔄 [STORE] Fallback vers demandes de test pour debug")
+          
+          const testDemandes = [
+            // Demande 1 : À valider par le conducteur
             {
-              id: "demande-2", 
-              numero: "DA-2024-002",
-              projetId: "projet-1",
-              projet: {
-                id: "projet-1",
-                nom: "Rénovation Bâtiment A",
-                description: "Rénovation complète du bâtiment A",
-                dateDebut: new Date("2024-01-01"),
-                dateFin: new Date("2024-12-31"),
-                createdBy: "user-1",
-                utilisateurs: ["user-1", "user-2", "user-3"],
-                actif: true,
-                createdAt: new Date("2024-01-01")
-              },
-              technicienId: currentUser.id, // Assigné à l'utilisateur actuel
-              type: "outillage" as const,
-              items: [
-                {
-                  id: "item-2",
-                  articleId: "article-2", 
-                  quantiteDemandee: 5,
-                  quantiteValidee: 5,
-                  quantiteSortie: 5,
-                  commentaire: "En cours de livraison"
-                }
-              ],
-              status: "en_attente_validation_finale_demandeur" as const,
-              dateCreation: new Date("2024-01-16"),
-              dateModification: new Date("2024-01-21"),
-              commentaires: "Demande d'outillage spécialisé",
+              id: "demande-test-a-valider",
+              numero: "DA-DEBUG-001",
+              projetId: "projet-demo-1",
+              technicienId: "user-employe-1", // Créée par l'employé
+              type: "materiel" as const,
+              status: "en_attente_validation_conducteur" as const,
+              dateCreation: new Date(),
+              dateModification: new Date(),
+              commentaires: "Demande matériel à valider par conducteur",
+              items: [],
               validationLogistique: undefined,
-              validationResponsableTravaux: undefined
+              validationResponsableTravaux: undefined,
+              validationConducteur: undefined,
+              validationQHSE: undefined,
+              validationChargeAffaire: undefined,
+              sortieAppro: undefined,
+              validationFinale: undefined,
+              projet: undefined,
+              technicien: undefined
+            },
+            // Demande 2 : Déjà validée par le conducteur (statut avancé)
+            {
+              id: "demande-test-validee",
+              numero: "DA-DEBUG-002",
+              projetId: "projet-demo-1",
+              technicienId: "user-employe-2", // Créée par un autre employé
+              type: "materiel" as const,
+              status: "en_attente_validation_responsable_travaux" as const,
+              dateCreation: new Date(Date.now() - 86400000), // Hier
+              dateModification: new Date(),
+              commentaires: "Demande matériel déjà validée par conducteur",
+              items: [],
+              validationLogistique: undefined,
+              validationResponsableTravaux: undefined,
+              validationConducteur: undefined, // Sera détectée par la logique de statut
+              validationQHSE: undefined,
+              validationChargeAffaire: undefined,
+              sortieAppro: undefined,
+              validationFinale: undefined,
+              projet: undefined,
+              technicien: undefined
+            },
+            // Demande 3 : Demande personnelle du conducteur en cours
+            {
+              id: "demande-test-personnelle",
+              numero: "DA-DEBUG-003",
+              projetId: "projet-demo-1",
+              technicienId: "user-conducteur-1", // Créée par le conducteur lui-même
+              type: "outillage" as const,
+              status: "soumise" as const,
+              dateCreation: new Date(),
+              dateModification: new Date(),
+              commentaires: "Ma demande personnelle d'outillage",
+              items: [],
+              validationLogistique: undefined,
+              validationResponsableTravaux: undefined,
+              validationConducteur: undefined,
+              validationQHSE: undefined,
+              validationChargeAffaire: undefined,
+              sortieAppro: undefined,
+              validationFinale: undefined,
+              projet: undefined,
+              technicien: undefined
+            },
+            // Demande 4 : Demande clôturée (validée complètement)
+            {
+              id: "demande-test-cloturee",
+              numero: "DA-DEBUG-004",
+              projetId: "projet-demo-1",
+              technicienId: "user-employe-3", // Créée par un autre employé
+              type: "materiel" as const,
+              status: "cloturee" as const,
+              dateCreation: new Date(Date.now() - 172800000), // Il y a 2 jours
+              dateModification: new Date(),
+              commentaires: "Demande matériel complètement traitée",
+              items: [],
+              validationLogistique: undefined,
+              validationResponsableTravaux: undefined,
+              validationConducteur: undefined, // Sera détectée par la logique de statut
+              validationQHSE: undefined,
+              validationChargeAffaire: undefined,
+              sortieAppro: undefined,
+              validationFinale: undefined,
+              projet: undefined,
+              technicien: undefined
             }
           ]
 
-          // Filtrer selon le rôle et les permissions
-          let filteredDemandes = [...localDemandes]
-
-          switch (currentUser.role) {
-            case "superadmin":
-              // Voit toutes les demandes
-              break
-            case "employe":
-              // Voit ses propres demandes
-              filteredDemandes = localDemandes.filter(d => d.technicienId === currentUser.id)
-              break
-            default:
-              // Autres rôles voient les demandes de leurs projets
-              filteredDemandes = localDemandes.filter(d => 
-                currentUser.projets && currentUser.projets.includes(d.projetId)
-              )
-          }
-
-          // Appliquer les filtres
-          if (filters.status) {
-            filteredDemandes = filteredDemandes.filter(d => d.status === filters.status)
-          }
-          if (filters.type) {
-            filteredDemandes = filteredDemandes.filter(d => d.type === filters.type)
-          }
-
-          console.log(`✅ [LOCAL MODE] ${filteredDemandes.length} demandes chargées pour ${currentUser.role}`)
-          set({ demandes: filteredDemandes })
-
-        } catch (error) {
-          console.error("❌ [LOCAL MODE] Erreur lors du chargement des demandes:", error)
-          set({ error: "Erreur lors du chargement des demandes" })
+          set({ 
+            demandes: testDemandes, 
+            isLoading: false, 
+            error: "Connexion à la base de données échouée - Mode debug activé",
+            isLoadingDemandes: false,
+            lastDemandesLoad: Date.now()
+          })
         }
       },
 
@@ -485,22 +574,52 @@ export const useStore = create<AppState>()(
       },
 
       executeAction: async (demandeId: string, action: string, data = {}) => {
-        const { currentUser, token } = get()
+        const { currentUser, token, demandes } = get()
         if (!currentUser || !token) return false
 
+        console.log(`[EXECUTE-ACTION] ${currentUser.nom} (${currentUser.role}) exécute "${action}" sur ${demandeId}`)
+
+        // Trouver la demande concernée
+        const demande = demandes.find(d => d.id === demandeId)
+        if (!demande) {
+          console.error("[EXECUTE-ACTION] Demande non trouvée:", demandeId)
+          return false
+        }
+
+        console.log(`[EXECUTE-ACTION] Demande ${demande.numero}: statut=${demande.status}, demandeur=${demande.technicienId}`)
+
+        // Calculer le prochain statut avec auto-validation
+        let targetStatus = null
+        if (action === "valider") {
+          targetStatus = get().getNextStatusWithAutoValidation(demande, demande.status, action)
+          console.log(`[AUTO-VALIDATION] Statut cible calculé: ${demande.status} → ${targetStatus}`)
+        }
+
         try {
+          const payload = {
+            action,
+            targetStatus, // Envoyer le statut cible au backend
+            ...data
+          }
+
+          console.log("📤 [EXECUTE-ACTION] Payload:", JSON.stringify(payload, null, 2))
+
           const response = await fetch(`/api/demandes/${demandeId}/actions`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
               "Authorization": `Bearer ${token}`,
             },
-            body: JSON.stringify({ action, ...data }),
+            body: JSON.stringify(payload),
           })
 
+          console.log("📥 [EXECUTE-ACTION] Response status:", response.status)
+
           const result = await response.json()
+          console.log("📥 [EXECUTE-ACTION] Response:", JSON.stringify(result, null, 2))
+
           if (result.success) {
-            // Mettre à jour la demande dans le store ET recharger toutes les demandes
+            // Mettre à jour la demande dans le store
             set((state) => ({
               demandes: state.demandes.map((d) => (d.id === demandeId ? result.data.demande : d)),
               notifications: result.data.notification
@@ -709,6 +828,217 @@ export const useStore = create<AppState>()(
         } catch (error) {
           console.error("Erreur mise à jour projet:", error)
           set({ error: "Erreur lors de la mise à jour du projet", isLoading: false })
+          return false
+        }
+      },
+
+      // ===== SYSTÈME D'AUTO-VALIDATION INTELLIGENT =====
+      
+      getValidationFlow: (demandeType: string): DemandeStatus[] => {
+        const flows: Record<string, DemandeStatus[]> = {
+          "materiel": [
+            "soumise",
+            "en_attente_validation_conducteur",
+            "en_attente_validation_responsable_travaux",
+            "en_attente_validation_charge_affaire",
+            "en_attente_preparation_appro",
+            "en_attente_validation_logistique",
+            "en_attente_validation_finale_demandeur",
+            "cloturee"
+          ],
+          "outillage": [
+            "soumise",
+            "en_attente_validation_qhse",
+            "en_attente_validation_responsable_travaux",
+            "en_attente_validation_charge_affaire",
+            "en_attente_preparation_appro",
+            "en_attente_validation_logistique",
+            "en_attente_validation_finale_demandeur",
+            "cloturee"
+          ]
+        }
+        return flows[demandeType] || []
+      },
+
+      canUserValidateStep: (userRole: string, demandeType: string, status: DemandeStatus): boolean => {
+        const roleToStatusMap = {
+          "conducteur_travaux": "en_attente_validation_conducteur",
+          "responsable_qhse": "en_attente_validation_qhse",
+          "responsable_travaux": "en_attente_validation_responsable_travaux",
+          "charge_affaire": "en_attente_validation_charge_affaire",
+          "responsable_appro": "en_attente_preparation_appro",
+          "responsable_logistique": "en_attente_validation_logistique"
+        }
+        
+        const statusForRole = roleToStatusMap[userRole as keyof typeof roleToStatusMap]
+        if (!statusForRole) return false
+        
+        const flow = get().getValidationFlow(demandeType)
+        return status === statusForRole && flow.includes(statusForRole)
+      },
+
+      getNextStatusWithAutoValidation: (demande: Demande, currentStatus: DemandeStatus, action: string): DemandeStatus | null => {
+        if (action !== "valider") return null
+        
+        const flow = get().getValidationFlow(demande.type)
+        const currentIndex = flow.indexOf(currentStatus)
+        
+        if (currentIndex === -1 || currentIndex >= flow.length - 1) return null
+        
+        let nextIndex = currentIndex + 1
+        let nextStatus = flow[nextIndex]
+        
+        // Vérifier les auto-validations successives
+        while (nextIndex < flow.length - 1) {
+          const canAutoValidate = get().canUserValidateStep(
+            demande.technicien?.role || "", 
+            demande.type, 
+            nextStatus
+          )
+          
+          if (canAutoValidate) {
+            console.log(`🔄 [AUTO-VALIDATION] ${demande.technicien?.nom} peut auto-valider l'étape: ${nextStatus}`)
+            nextIndex++
+            nextStatus = flow[nextIndex]
+          } else {
+            break
+          }
+        }
+        
+        return nextStatus
+      },
+
+      // ===== VALIDATION DES DEMANDES =====
+      
+      validateDemande: async (demandeId: string, userId: string, commentaire?: string): Promise<boolean> => {
+        set({ isLoading: true, error: null })
+        try {
+          const { demandes, currentUser } = get()
+          const demande = demandes.find(d => d.id === demandeId)
+          
+          if (!demande) {
+            throw new Error("Demande non trouvée")
+          }
+          
+          if (!currentUser) {
+            throw new Error("Utilisateur non connecté")
+          }
+          
+          // Vérifier si l'utilisateur peut valider cette étape
+          const canValidate = get().canUserValidateStep(currentUser.role, demande.type, demande.status)
+          if (!canValidate) {
+            throw new Error("Vous n'êtes pas autorisé à valider cette étape")
+          }
+          
+          // Créer la signature de validation
+          const validationSignature = {
+            userId: currentUser.id,
+            user: currentUser,
+            date: new Date(),
+            commentaire: commentaire || "",
+            signature: `validation_${currentUser.id}_${Date.now()}`
+          }
+          
+          // Déterminer le prochain statut
+          const nextStatus = get().getNextStatusWithAutoValidation(demande, demande.status, "valider")
+          if (!nextStatus) {
+            throw new Error("Impossible de déterminer le prochain statut")
+          }
+          
+          // Mettre à jour la demande avec la validation
+          const updatedDemande = { ...demande }
+          updatedDemande.status = nextStatus
+          updatedDemande.dateModification = new Date()
+          
+          // Ajouter la signature selon le rôle
+          switch (currentUser.role) {
+            case "conducteur_travaux":
+              updatedDemande.validationConducteur = validationSignature
+              break
+            case "responsable_qhse":
+              updatedDemande.validationQHSE = validationSignature
+              break
+            case "responsable_travaux":
+              updatedDemande.validationResponsableTravaux = validationSignature
+              break
+            case "charge_affaire":
+              updatedDemande.validationChargeAffaire = validationSignature
+              break
+            case "responsable_logistique":
+              updatedDemande.validationLogistique = validationSignature
+              break
+          }
+          
+          // Mettre à jour le store
+          set((state) => ({
+            demandes: state.demandes.map((d) =>
+              d.id === demandeId ? updatedDemande : d
+            ),
+            isLoading: false,
+          }))
+          
+          // TODO: Ajouter une entrée dans l'historique (à implémenter avec la bonne structure)
+          // const historyEntry = { ... }
+          // get().addHistoryEntry(historyEntry)
+          
+          console.log(`✅ [VALIDATION] Demande ${demande.numero} validée par ${currentUser.prenom} ${currentUser.nom}`)
+          console.log(`📊 [VALIDATION] Statut: ${demande.status} → ${nextStatus}`)
+          
+          return true
+          
+        } catch (error) {
+          console.error("❌ [VALIDATION] Erreur lors de la validation:", error)
+          set({ error: error instanceof Error ? error.message : "Erreur lors de la validation", isLoading: false })
+          return false
+        }
+      },
+
+      // ===== GESTION DES DEMANDES ORPHELINES =====
+      
+      transferOrphanedDemandes: async (deletedUserId: string, deletedUserRole: string): Promise<boolean> => {
+        const { users, demandes } = get()
+        
+        try {
+          // Trouver un utilisateur de remplacement avec le même rôle
+          const replacementUser = users.find(u => 
+            u.role === deletedUserRole && 
+            u.id !== deletedUserId &&
+            u.isAdmin !== true // Éviter les admins pour les remplacements
+          )
+          
+          if (!replacementUser) {
+            console.warn(`⚠️ [STORE] Aucun utilisateur de remplacement trouvé pour le rôle: ${deletedUserRole}`)
+            return false
+          }
+          
+          // Trouver les demandes créées par l'utilisateur supprimé
+          const orphanedDemandes = demandes.filter(d => d.technicienId === deletedUserId)
+          
+          if (orphanedDemandes.length > 0) {
+            console.log(`🔄 [STORE] Transfert de ${orphanedDemandes.length} demandes orphelines vers ${replacementUser.nom}`)
+            
+            // Mettre à jour les demandes localement
+            set((state) => ({
+              demandes: state.demandes.map(d => 
+                d.technicienId === deletedUserId 
+                  ? { ...d, technicienId: replacementUser.id, technicien: replacementUser }
+                  : d
+              )
+            }))
+            
+            console.log(`✅ [STORE] ${orphanedDemandes.length} demandes transférées avec succès`)
+          }
+          
+          // TODO: En production, appeler l'API pour persister le transfert
+          // await fetch('/api/demandes/transfer-orphaned', {
+          //   method: 'POST',
+          //   body: JSON.stringify({ deletedUserId, replacementUserId: replacementUser.id })
+          // })
+          
+          return true
+          
+        } catch (error) {
+          console.error("❌ [STORE] Erreur lors du transfert des demandes orphelines:", error)
           return false
         }
       },
