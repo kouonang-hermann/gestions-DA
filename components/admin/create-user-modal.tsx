@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -40,6 +40,7 @@ export default function CreateUserModal({ isOpen, onClose }: CreateUserModalProp
   }
 
   const roles = [
+    { value: "superadmin", label: "Super Administrateur" },
     { value: "employe", label: "Employé" },
     { value: "conducteur_travaux", label: "Conducteur de Travaux" },
     { value: "responsable_travaux", label: "Responsable des Travaux" },
@@ -48,6 +49,13 @@ export default function CreateUserModal({ isOpen, onClose }: CreateUserModalProp
     { value: "charge_affaire", label: "Chargé d'Affaire" },
     { value: "responsable_logistique", label: "Responsable Logistique" },
   ]
+
+  // Activer automatiquement isAdmin si le rôle est superadmin
+  useEffect(() => {
+    if (formData.role === "superadmin") {
+      setFormData((prev) => ({ ...prev, isAdmin: true }))
+    }
+  }, [formData.role])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

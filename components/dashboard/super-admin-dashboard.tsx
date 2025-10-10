@@ -89,6 +89,9 @@ export default function SuperAdminDashboard() {
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 7
 
+  // État pour les graphiques
+  const [activeChart, setActiveChart] = useState<"material" | "tooling">("material")
+
   // Effet pour détecter mobile
   useEffect(() => {
     const checkMobile = () => {

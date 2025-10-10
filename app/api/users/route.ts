@@ -91,6 +91,7 @@ export const POST = async (request: NextRequest) => {
         email: validatedData.email,
         password: hashedPassword,
         role: validatedData.role as any,
+        isAdmin: validatedData.isAdmin || validatedData.role === "superadmin" || false,
       },
       select: {
         id: true,
@@ -98,6 +99,7 @@ export const POST = async (request: NextRequest) => {
         prenom: true,
         email: true,
         role: true,
+        isAdmin: true,
         createdAt: true,
       }
     })
