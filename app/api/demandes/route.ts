@@ -5,10 +5,12 @@ import { createDemandeSchema } from "@/lib/validations"
 
 /**
  * Détermine le statut initial d'une demande selon son type et le rôle du créateur
- * La demande suit le flow complet mais saute les étapes où le créateur est le valideur
+ * La demande saute automatiquement les étapes de validation où le créateur pourrait valider
  */
 function getInitialStatus(type: "materiel" | "outillage", creatorRole: string): string {
-  // Flow complet pour chaque type
+  console.log(`🎬 [INITIAL-STATUS] Type: ${type}, Créateur: ${creatorRole}`)
+  
+  // Flow complet pour chaque type avec les rôles valideurs
   const flows = {
     materiel: [
       { status: "en_attente_validation_conducteur", role: "conducteur_travaux" },
@@ -28,16 +30,55 @@ function getInitialStatus(type: "materiel" | "outillage", creatorRole: string): 
     ]
   }
 
+  // Mapping des rôles qui peuvent sauter plusieurs étapes
+  // Chaque rôle liste les étapes qu'il peut valider (donc qu'il doit sauter quand il crée)
+  const skipRules: Record<string, string[]> = {
+    // Conducteur peut valider l'étape "conducteur" uniquement
+    "conducteur_travaux": ["en_attente_validation_conducteur"],
+    
+    // Responsable QHSE peut valider l'étape "QHSE" uniquement
+    "responsable_qhse": ["en_attente_validation_qhse"],
+    
+    // Responsable travaux peut valider "conducteur" ET "responsable travaux" pour matériel
+    // et "QHSE" ET "responsable travaux" pour outillage
+    "responsable_travaux": [
+      "en_attente_validation_conducteur",
+      "en_attente_validation_qhse", 
+      "en_attente_validation_responsable_travaux"
+    ],
+    
+    // Chargé affaires peut valider "conducteur", "QHSE", "responsable travaux" ET "chargé affaires"
+    "charge_affaire": [
+      "en_attente_validation_conducteur",
+      "en_attente_validation_qhse",
+      "en_attente_validation_responsable_travaux",
+      "en_attente_validation_charge_affaire"
+    ],
+    
+    // Superadmin a les mêmes privilèges que chargé affaires
+    "superadmin": [
+      "en_attente_validation_conducteur",
+      "en_attente_validation_qhse",
+      "en_attente_validation_responsable_travaux",
+      "en_attente_validation_charge_affaire"
+    ]
+  }
+
   const flow = flows[type]
+  const stepsToSkip = skipRules[creatorRole] || []
   
-  // Trouver la première étape où le créateur n'est pas le valideur
+  console.log(`📋 [INITIAL-STATUS] Étapes à sauter pour ${creatorRole}:`, stepsToSkip)
+  
+  // Trouver la première étape qui n'est pas dans la liste des étapes à sauter
   for (const step of flow) {
-    if (step.role !== creatorRole) {
+    if (!stepsToSkip.includes(step.status)) {
+      console.log(`✅ [INITIAL-STATUS] Statut initial déterminé: ${step.status}`)
       return step.status
     }
   }
   
-  // Si le créateur peut valider toutes les étapes (cas improbable), aller directement à la fin
+  // Si toutes les étapes sont sautées, aller à la validation finale
+  console.log(`⚠️ [INITIAL-STATUS] Toutes les étapes sautées, va à validation finale`)
   return "en_attente_validation_finale_demandeur"
 }
 

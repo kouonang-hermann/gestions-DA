@@ -68,7 +68,10 @@ export default function ResponsableLogistiqueDashboard() {
   useEffect(() => {
     if (demandes.length > 0 && currentUser) {
       // Filtrer les demandes des projets où le responsable logistique travaille
+      // Si pas de projets assignés, voir toutes les demandes (comportement superadmin)
       const mesDemandesLogistique = demandes.filter((d) => 
+        !currentUser.projets || 
+        currentUser.projets.length === 0 || 
         currentUser.projets.includes(d.projetId)
       )
       
@@ -83,6 +86,13 @@ export default function ResponsableLogistiqueDashboard() {
       const enAttenteValidation = mesDemandesLogistique.filter(d => 
         d.status === "en_attente_validation_logistique"
       ).length
+
+      console.log(`🔍 [LOGISTIQUE-DASHBOARD] Statistiques pour ${currentUser.nom}:`)
+      console.log(`  - Projets utilisateur: [${currentUser.projets?.join(', ') || 'aucun'}]`)
+      console.log(`  - Total demandes dans mes projets: ${total}`)
+      console.log(`  - Demandes à valider (logistique): ${enAttenteValidation}`)
+      console.log(`  - Demandes en cours: ${enCours}`)
+      console.log(`  - Demandes validées: ${validees}`)
 
       setStats({
         total,
@@ -107,7 +117,10 @@ export default function ResponsableLogistiqueDashboard() {
     if (!currentUser) return []
     
     // Filtrer d'abord par projets du responsable logistique
+    // Si pas de projets assignés, voir toutes les demandes
     const mesDemandesLogistique = demandes.filter((d) => 
+      !currentUser.projets || 
+      currentUser.projets.length === 0 || 
       currentUser.projets.includes(d.projetId)
     )
     

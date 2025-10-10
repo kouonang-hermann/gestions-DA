@@ -149,6 +149,7 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
     }
 
     console.log(`📋 [API] Demande trouvée: ${demande.numero}, statut=${demande.status}, demandeur=${demande.technicienId}`)
+    console.log(`📋 [API] Projet de la demande: ${demande.projetId} (${demande.projet?.nom})`)
 
     // Vérifier l'accès au projet (sauf pour le demandeur original qui peut toujours clôturer sa demande)
     const userProjet = await prisma.userProjet.findFirst({
@@ -160,16 +161,25 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
 
     const isOriginalRequester = demande.technicienId === currentUser.id
     const isSuperAdmin = currentUser.role === "superadmin"
+    const isTransversalValidator = ["responsable_appro", "responsable_logistique"].includes(currentUser.role)
     
     console.log(`🔐 [API] Vérifications d'accès:`)
-    console.log(`  - Utilisateur dans projet: ${!!userProjet}`)
+    console.log(`  - User ID: ${currentUser.id}`)
+    console.log(`  - Projet ID: ${demande.projetId}`)
+    console.log(`  - UserProjet trouvé: ${!!userProjet}`)
     console.log(`  - Demandeur original: ${isOriginalRequester}`)
     console.log(`  - Super admin: ${isSuperAdmin}`)
+    console.log(`  - Validateur transversal (appro/logistique): ${isTransversalValidator}`)
     
-    if (!userProjet && !isOriginalRequester && !isSuperAdmin) {
+    if (!userProjet && !isOriginalRequester && !isSuperAdmin && !isTransversalValidator) {
       console.log(`❌ [API] Accès refusé au projet ${demande.projetId}`)
-      return NextResponse.json({ success: false, error: "Accès non autorisé à ce projet" }, { status: 403 })
+      return NextResponse.json({ 
+        success: false, 
+        error: `Accès non autorisé à ce projet. Vous devez être assigné au projet "${demande.projet?.nom || demande.projetId}"` 
+      }, { status: 403 })
     }
+    
+    console.log(`✅ [API] Accès au projet autorisé`)
 
     let newStatus = demande.status
     const updates: any = {}
@@ -362,11 +372,22 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         break
 
       case "preparer_sortie":
+        console.log(`📦 [PREPARER-SORTIE] Vérifications:`)
+        console.log(`  - Status demande: ${demande.status}`)
+        console.log(`  - Role utilisateur: ${currentUser.role}`)
+        console.log(`  - Status attendu: en_attente_preparation_appro`)
+        console.log(`  - Role attendu: responsable_appro`)
+        
         if (demande.status === ("en_attente_preparation_appro" as any) && currentUser.role === "responsable_appro") {
           const nextStatus = getNextStatus(demande.status, currentUser.role, demande.type)
+          console.log(`  - Next status calculé: ${nextStatus}`)
+          
           if (!nextStatus) {
-            return NextResponse.json({ success: false, error: "Action non autorisée pour ce rôle et statut" }, { status: 403 })
+            console.log(`❌ [PREPARER-SORTIE] Impossible de déterminer le prochain statut`)
+            return NextResponse.json({ success: false, error: "Impossible de déterminer le prochain statut de la demande" }, { status: 403 })
           }
+          
+          console.log(`✅ [PREPARER-SORTIE] Préparation de sortie validée, transition: ${demande.status} → ${nextStatus}`)
           
           newStatus = nextStatus as any
           
@@ -381,8 +402,16 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
               dateModificationLimite: new Date(Date.now() + 45 * 60 * 1000) // +45 minutes
             }
           })
+          
+          console.log(`✅ [PREPARER-SORTIE] Sortie signature créée`)
         } else {
-          return NextResponse.json({ success: false, error: "Action non autorisée" }, { status: 403 })
+          console.log(`❌ [PREPARER-SORTIE] Conditions non remplies:`)
+          console.log(`  - Status correct: ${demande.status === "en_attente_preparation_appro"}`)
+          console.log(`  - Role correct: ${currentUser.role === "responsable_appro"}`)
+          return NextResponse.json({ 
+            success: false, 
+            error: `Action non autorisée. Status: ${demande.status}, Role: ${currentUser.role}` 
+          }, { status: 403 })
         }
         break
 
