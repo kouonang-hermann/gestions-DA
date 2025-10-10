@@ -455,9 +455,9 @@ export default function ConducteurDashboard() {
                       <Tooltip />
                       <Bar dataKey="value" fill="#b8d1df" />
                     </BarChart>
-                  )
+                  )}
                 </ResponsiveContainer>
-              </Card>
+              </CardContent>
             </Card>
           </div>
         </div>
@@ -465,6 +465,7 @@ export default function ConducteurDashboard() {
 
       {/* Modals fonctionnels */}
       <CreateDemandeModal
+        isOpen={createDemandeModalOpen}
         onClose={() => setCreateDemandeModalOpen(false)}
         type={demandeType}
       />
