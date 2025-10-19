@@ -45,17 +45,6 @@ export default function ValidatedRequestsHistory({ isOpen, onClose }: ValidatedR
     setIsLoading(true)
     try {
       const token = useStore.getState().token
-      console.log('=== DEBUG: Frontend token check ===')
-      console.log('Token exists:', !!token)
-      console.log('Token length:', token ? token.length : 0)
-      console.log('Token first 20 chars:', token ? token.substring(0, 20) : 'null')
-      console.log('Token format check:', token && token.split('.').length === 3 ? 'Valid JWT format' : 'Invalid JWT format')
-      
-      // Debug store state
-      const { currentUser, isAuthenticated } = useStore.getState()
-      console.log('Store state - currentUser:', currentUser ? { id: currentUser.id, role: currentUser.role } : 'null')
-      console.log('Store state - isAuthenticated:', isAuthenticated)
-      console.log('Store state - token from getState:', useStore.getState().token ? 'exists' : 'null')
       
       // Check localStorage as fallback
       const localToken = localStorage.getItem('token')

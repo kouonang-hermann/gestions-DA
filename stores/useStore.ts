@@ -723,25 +723,35 @@ export const useStore = create<AppState>()(
       addUserToProject: async (userId: string, projectId: string, role?: string) => {
         set({ isLoading: true, error: null })
         try {
-          // Pour l'instant, fonctionnement en mode local
-          // TODO: Implémenter l'API /api/projects/add-user
+          const token = get().token
           
-          // Simulation d'un délai API
-          await new Promise(resolve => setTimeout(resolve, 500))
-          
-          // Mettre à jour l'utilisateur localement
-          set((state) => ({
-            users: state.users.map((user) =>
-              user.id === userId
-                ? { ...user, projets: [...(user.projets || []), projectId], role: (role as any) || user.role }
-                : user
-            ),
-            isLoading: false,
-          }))
-          
-          console.log(`✅ [LOCAL] Utilisateur ${userId} ajouté au projet ${projectId} avec le rôle ${role || 'employe'}`)
-          return true
-          
+          const response = await fetch(`/api/projets/${projectId}/add-user`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`,
+            },
+            body: JSON.stringify({ userId }),
+          })
+
+          const result = await response.json()
+
+          if (result.success) {
+            // Mettre à jour localement après succès API
+            set((state) => ({
+              users: state.users.map((user) =>
+                user.id === userId
+                  ? { ...user, projets: [...(user.projets || []), projectId] }
+                  : user
+              ),
+              isLoading: false,
+            }))
+            
+            console.log(`✅ [API] Utilisateur ${userId} ajouté au projet ${projectId}`)
+            return true
+          } else {
+            throw new Error(result.error || "Erreur lors de l'ajout")
+          }
         } catch (error) {
           console.error("Erreur ajout utilisateur au projet:", error)
           set({ error: "Erreur lors de l'ajout de l'utilisateur au projet", isLoading: false })
@@ -752,25 +762,35 @@ export const useStore = create<AppState>()(
       removeUserFromProject: async (userId: string, projectId: string) => {
         set({ isLoading: true, error: null })
         try {
-          // Pour l'instant, fonctionnement en mode local
-          // TODO: Implémenter l'API /api/projects/remove-user
+          const token = get().token
           
-          // Simulation d'un délai API
-          await new Promise(resolve => setTimeout(resolve, 500))
-          
-          // Mettre à jour l'utilisateur localement
-          set((state) => ({
-            users: state.users.map((user) =>
-              user.id === userId
-                ? { ...user, projets: (user.projets || []).filter(id => id !== projectId) }
-                : user
-            ),
-            isLoading: false,
-          }))
-          
-          console.log(`✅ [LOCAL] Utilisateur ${userId} retiré du projet ${projectId}`)
-          return true
-          
+          const response = await fetch(`/api/projets/${projectId}/remove-user`, {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`,
+            },
+            body: JSON.stringify({ userId }),
+          })
+
+          const result = await response.json()
+
+          if (result.success) {
+            // Mettre à jour localement après succès API
+            set((state) => ({
+              users: state.users.map((user) =>
+                user.id === userId
+                  ? { ...user, projets: (user.projets || []).filter(id => id !== projectId) }
+                  : user
+              ),
+              isLoading: false,
+            }))
+            
+            console.log(`✅ [API] Utilisateur ${userId} retiré du projet ${projectId}`)
+            return true
+          } else {
+            throw new Error(result.error || "Erreur lors de la suppression")
+          }
         } catch (error) {
           console.error("Erreur suppression utilisateur du projet:", error)
           set({ error: "Erreur lors de la suppression de l'utilisateur du projet", isLoading: false })
@@ -781,23 +801,33 @@ export const useStore = create<AppState>()(
       updateUserRole: async (userId: string, newRole: string) => {
         set({ isLoading: true, error: null })
         try {
-          // Pour l'instant, fonctionnement en mode local
-          // TODO: Implémenter l'API /api/users/update-role
+          const token = get().token
           
-          // Simulation d'un délai API
-          await new Promise(resolve => setTimeout(resolve, 300))
-          
-          // Mettre à jour l'utilisateur localement
-          set((state) => ({
-            users: state.users.map((user) =>
-              user.id === userId ? { ...user, role: newRole as any } : user
-            ),
-            isLoading: false,
-          }))
-          
-          console.log(`✅ [LOCAL] Rôle de l'utilisateur ${userId} mis à jour vers ${newRole}`)
-          return true
-          
+          const response = await fetch(`/api/users/${userId}/update-role`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`,
+            },
+            body: JSON.stringify({ newRole }),
+          })
+
+          const result = await response.json()
+
+          if (result.success) {
+            // Mettre à jour localement après succès API
+            set((state) => ({
+              users: state.users.map((user) =>
+                user.id === userId ? { ...user, role: newRole as any } : user
+              ),
+              isLoading: false,
+            }))
+            
+            console.log(`✅ [API] Rôle de l'utilisateur ${userId} mis à jour vers ${newRole}`)
+            return true
+          } else {
+            throw new Error(result.error || "Erreur lors de la mise à jour du rôle")
+          }
         } catch (error) {
           console.error("Erreur mise à jour rôle utilisateur:", error)
           set({ error: "Erreur lors de la mise à jour du rôle", isLoading: false })
@@ -808,23 +838,33 @@ export const useStore = create<AppState>()(
       updateProject: async (projectId: string, projectData: any) => {
         set({ isLoading: true, error: null })
         try {
-          // Pour l'instant, fonctionnement en mode local
-          // TODO: Implémenter l'API /api/projects/update
+          const token = get().token
           
-          // Simulation d'un délai API
-          await new Promise(resolve => setTimeout(resolve, 400))
-          
-          // Mettre à jour le projet localement
-          set((state) => ({
-            projets: state.projets.map((projet) =>
-              projet.id === projectId ? { ...projet, ...projectData } : projet
-            ),
-            isLoading: false,
-          }))
-          
-          console.log(`✅ [LOCAL] Projet ${projectId} mis à jour:`, projectData)
-          return true
-          
+          const response = await fetch(`/api/projets/${projectId}/update`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`,
+            },
+            body: JSON.stringify(projectData),
+          })
+
+          const result = await response.json()
+
+          if (result.success) {
+            // Mettre à jour le projet localement
+            set((state) => ({
+              projets: state.projets.map((projet) =>
+                projet.id === projectId ? { ...projet, ...projectData } : projet
+              ),
+              isLoading: false,
+            }))
+            
+            console.log(`✅ [API] Projet ${projectId} mis à jour:`, projectData)
+            return true
+          } else {
+            throw new Error(result.error || "Erreur lors de la mise à jour du projet")
+          }
         } catch (error) {
           console.error("Erreur mise à jour projet:", error)
           set({ error: "Erreur lors de la mise à jour du projet", isLoading: false })

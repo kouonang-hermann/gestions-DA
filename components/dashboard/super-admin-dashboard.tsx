@@ -51,7 +51,6 @@ import DetailsModal from "@/components/modals/details-modal"
 import ValidatedRequestsHistory from "@/components/dashboard/validated-requests-history"
 import ManageAdminRoles from "../admin/manage-admin-roles"
 import SharedDemandesSection from "@/components/dashboard/shared-demandes-section"
-import DemandesDebug from "@/components/debug/demandes-debug"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 export default function SuperAdminDashboard() {
@@ -747,8 +746,6 @@ export default function SuperAdminDashboard() {
               </CardContent>
             </Card>
 
-            {/* Debug des demandes */}
-            <DemandesDebug />
           </div>
         </div>
       </div>

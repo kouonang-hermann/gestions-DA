@@ -284,6 +284,13 @@ export default function UserDetailsModal({ isOpen, onClose, title, data, type }:
             ))
           )}
         </div>
+
+        {/* Bouton de fermeture */}
+        <div className="flex justify-center pt-4 border-t mt-4">
+          <Button variant="outline" onClick={onClose} className="min-w-[120px]">
+            Fermer
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   )

@@ -22,7 +22,7 @@ interface EditProjectModalProps {
 }
 
 export default function EditProjectModal({ isOpen, onClose, project, onProjectUpdated }: EditProjectModalProps) {
-  const { updateProject, users, addUserToProject, removeUserFromProject, updateUserRole } = useStore()
+  const { updateProject, users, addUserToProject, removeUserFromProject } = useStore()
   const [activeTab, setActiveTab] = useState<'details' | 'users'>('details')
   const [formData, setFormData] = useState({
     nom: "",
@@ -92,11 +92,12 @@ export default function EditProjectModal({ isOpen, onClose, project, onProjectUp
     !user.projets?.includes(project?.id) && user.role !== 'superadmin'
   )
 
-  const handleAddUser = async (userId: string, role: string = 'employe') => {
+  const handleAddUser = async (userId: string) => {
     if (project?.id) {
-      const success = await addUserToProject(userId, project.id, role)
+      const success = await addUserToProject(userId, project.id)
       if (success) {
-        onProjectUpdated()
+        // Mise à jour locale sans recharger tous les projets
+        // onProjectUpdated() sera appelé à la fermeture si nécessaire
       }
     }
   }
@@ -105,17 +106,14 @@ export default function EditProjectModal({ isOpen, onClose, project, onProjectUp
     if (project?.id) {
       const success = await removeUserFromProject(userId, project.id)
       if (success) {
-        onProjectUpdated()
+        // Mise à jour locale sans recharger tous les projets
+        // onProjectUpdated() sera appelé à la fermeture si nécessaire
       }
     }
   }
 
-  const handleChangeUserRole = async (userId: string, newRole: string) => {
-    const success = await updateUserRole(userId, newRole)
-    if (success) {
-      onProjectUpdated()
-    }
-  }
+  // Note: Le rôle est géré globalement dans la gestion des utilisateurs
+  // Pas de modification de rôle au niveau du projet
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
@@ -311,18 +309,6 @@ export default function EditProjectModal({ isOpen, onClose, project, onProjectUp
                                 </div>
                               </div>
                               <div className="flex items-center gap-2">
-                                <select
-                                  value={user.role}
-                                  onChange={(e) => handleChangeUserRole(user.id, e.target.value)}
-                                  className="text-xs px-2 py-1 border border-gray-300 rounded"
-                                >
-                                  <option value="employe">Employé</option>
-                                  <option value="conducteur_travaux">Conducteur Travaux</option>
-                                  <option value="responsable_travaux">Responsable Travaux</option>
-                                  <option value="responsable_qhse">Responsable QHSE</option>
-                                  <option value="charge_affaire">Chargé d'Affaire</option>
-                                  <option value="responsable_logistique">Responsable Logistique</option>
-                                </select>
                                 <Badge className={`text-xs ${getRoleBadgeColor(user.role)}`}>
                                   {getRoleLabel(user.role)}
                                 </Badge>
@@ -376,7 +362,7 @@ export default function EditProjectModal({ isOpen, onClose, project, onProjectUp
                               </div>
                               <Button
                                 size="sm"
-                                onClick={() => handleAddUser(user.id, user.role)}
+                                onClick={() => handleAddUser(user.id)}
                                 style={{ backgroundColor: '#015fc4' }}
                                 className="text-white"
                               >
@@ -397,7 +383,10 @@ export default function EditProjectModal({ isOpen, onClose, project, onProjectUp
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={onClose}
+                  onClick={() => {
+                    onProjectUpdated() // Recharger les données une seule fois à la fermeture
+                    onClose()
+                  }}
                 >
                   <X className="h-4 w-4 mr-2" />
                   Fermer

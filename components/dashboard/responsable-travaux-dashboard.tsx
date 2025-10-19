@@ -41,7 +41,6 @@ import ValidationDemandesList from "@/components/validation/validation-demandes-
 import DemandeDetailsModal from "@/components/modals/demande-details-modal"
 import CreateDemandeModal from "@/components/demandes/create-demande-modal"
 import RequestsFlowChart from "@/components/charts/requests-flow-chart"
-import ResponsableTravauxDebug from "@/components/debug/responsable-travaux-debug"
 import type { Demande } from "@/types"
 
 export default function ResponsableTravauxDashboard() {
@@ -61,7 +60,6 @@ export default function ResponsableTravauxDashboard() {
   const [demandeType, setDemandeType] = useState<"materiel" | "outillage">("materiel")
   const [searchTerm, setSearchTerm] = useState("")
   const [activeChart, setActiveChart] = useState<"material" | "tooling">("material")
-  const [showDebug, setShowDebug] = useState(false)
 
   // Rechargement automatique des données au montage du composant
   useEffect(() => {
@@ -180,33 +178,6 @@ export default function ResponsableTravauxDashboard() {
     (!currentUser?.projets || currentUser.projets.length === 0 || currentUser.projets.includes(d.projetId))
   )
 
-  // LOGS DE DEBUG DÉTAILLÉS
-  console.log("🔍 [RESPONSABLE-TRAVAUX] DIAGNOSTIC COMPLET:")
-  console.log(`  - Utilisateur connecté: ${currentUser?.nom} (${currentUser?.role})`)
-  console.log(`  - Projets utilisateur: [${currentUser?.projets?.join(', ') || 'aucun'}]`)
-  console.log(`  - Total demandes chargées: ${demandes.length}`)
-  
-  // Analyser toutes les demandes par statut
-  const statusCount = demandes.reduce((acc, d) => {
-    acc[d.status] = (acc[d.status] || 0) + 1
-    return acc
-  }, {} as Record<string, number>)
-  console.log("  - Répartition par statut:", statusCount)
-  
-  // Chercher spécifiquement les demandes qui devraient être visibles
-  const demandesResponsableTravaux = demandes.filter(d => d.status === "en_attente_validation_responsable_travaux")
-  console.log(`  - Demandes en attente responsable travaux (total): ${demandesResponsableTravaux.length}`)
-  
-  if (demandesResponsableTravaux.length > 0) {
-    console.log("  - Détail des demandes en attente:")
-    demandesResponsableTravaux.forEach(d => {
-      const inProject = !currentUser?.projets || currentUser.projets.length === 0 || currentUser.projets.includes(d.projetId)
-      console.log(`    * ${d.numero} (${d.type}) - Projet: ${d.projetId} - Dans mes projets: ${inProject}`)
-    })
-  }
-  
-  console.log(`  - Demandes visibles après filtrage: ${demandesEnAttente.length}`)
-
   // Génération des données de graphique
   const generateChartData = () => {
     const materialRequests = demandes.filter(d => d.type === "materiel")
@@ -256,9 +227,6 @@ export default function ResponsableTravauxDashboard() {
     }
   }
 
-  if (showDebug) {
-    return <ResponsableTravauxDebug onClose={() => setShowDebug(false)} />
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-2">
@@ -272,13 +240,6 @@ export default function ResponsableTravauxDashboard() {
               className="bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100"
             >
               🔄 Actualiser
-            </Button>
-            <Button 
-              onClick={() => setShowDebug(true)}
-              variant="outline"
-              className="bg-red-50 border-red-200 text-red-600 hover:bg-red-100"
-            >
-              🔍 Mode Debug
             </Button>
           </div>
         </div>

@@ -51,8 +51,6 @@ import MesDemandesACloturer from "@/components/demandes/mes-demandes-a-cloturer"
 import ValidatedRequestsHistory from "@/components/dashboard/validated-requests-history"
 import ValidatedDemandesModal from "@/components/modals/validated-demandes-modal"
 import DemandesCategoryModal from "@/components/modals/demandes-category-modal"
-import DashboardDebug from "@/components/debug/dashboard-debug"
-import MobileResponsiveTest from "@/components/debug/mobile-responsive-test"
 import UniversalClosureModal from "@/components/modals/universal-closure-modal"
 
 export default function EmployeDashboard() {
@@ -74,7 +72,6 @@ export default function EmployeDashboard() {
   const [validatedDemandesModalOpen, setValidatedDemandesModalOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [activeChart, setActiveChart] = useState<"material" | "tooling">("material")
-  const [mobileTestModalOpen, setMobileTestModalOpen] = useState(false)
   const [universalClosureModalOpen, setUniversalClosureModalOpen] = useState(false)
 
   // Données chargées automatiquement par useDataLoader
@@ -807,15 +804,6 @@ export default function EmployeDashboard() {
                     <CheckCircle className="h-4 w-4 mr-2" />
                     <span className="text-sm">Clôturer mes demandes</span>
                   </Button>
-                  <Button
-                    className="justify-start text-white"
-                    style={{ backgroundColor: '#fc2d1f' }}
-                    size="sm"
-                    onClick={() => setMobileTestModalOpen(true)}
-                  >
-                    <Smartphone className="h-4 w-4 mr-2" />
-                    <span className="text-sm">Test Interface Mobile</span>
-                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -939,10 +927,6 @@ export default function EmployeDashboard() {
         isOpen={validatedDemandesModalOpen}
         onClose={() => setValidatedDemandesModalOpen(false)}
         currentUser={currentUser}
-      />
-      <MobileResponsiveTest
-        isOpen={mobileTestModalOpen}
-        onClose={() => setMobileTestModalOpen(false)}
       />
       <UniversalClosureModal
         isOpen={universalClosureModalOpen}
