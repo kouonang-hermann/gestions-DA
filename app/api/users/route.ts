@@ -24,6 +24,7 @@ export const GET = async (request: NextRequest) => {
         nom: true,
         prenom: true,
         email: true,
+        phone: true,
         role: true,
         isAdmin: true,
         createdAt: true,
@@ -71,13 +72,22 @@ export const POST = async (request: NextRequest) => {
     // Validation des données
     const validatedData = registerSchema.parse(body)
 
-    // Vérifier si l'email existe déjà
-    const existingUser = await prisma.user.findUnique({
-      where: { email: validatedData.email }
-    })
+    // Vérifier si l'email existe déjà (seulement si fourni et non vide)
+    const emailToCheck = validatedData.email?.trim()
+    if (emailToCheck && emailToCheck !== '') {
+      const existingUser = await prisma.user.findUnique({
+        where: { email: emailToCheck }
+      })
 
-    if (existingUser) {
-      return NextResponse.json({ success: false, error: "Cet email est déjà utilisé" }, { status: 400 })
+      if (existingUser) {
+        return NextResponse.json({ success: false, error: "Cet email est déjà utilisé" }, { status: 400 })
+      }
+    }
+
+    // Vérifier si le téléphone existe déjà (obligatoire)
+    const existingPhone = await prisma.user.findFirst({ where: { phone: validatedData.phone } })
+    if (existingPhone) {
+      return NextResponse.json({ success: false, error: "Ce numéro de téléphone est déjà utilisé" }, { status: 400 })
     }
 
     // Hash du mot de passe
@@ -88,7 +98,8 @@ export const POST = async (request: NextRequest) => {
       data: {
         nom: validatedData.nom,
         prenom: validatedData.prenom,
-        email: validatedData.email,
+        email: emailToCheck && emailToCheck !== '' ? emailToCheck : undefined,
+        phone: validatedData.phone,
         password: hashedPassword,
         role: validatedData.role as any,
         isAdmin: validatedData.isAdmin || validatedData.role === "superadmin" || false,
@@ -98,6 +109,7 @@ export const POST = async (request: NextRequest) => {
         nom: true,
         prenom: true,
         email: true,
+        phone: true,
         role: true,
         isAdmin: true,
         createdAt: true,

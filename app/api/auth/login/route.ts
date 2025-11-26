@@ -7,13 +7,15 @@ import { generateToken } from "@/lib/jwt"
  */
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json()
+    const body = await request.json()
+    const identifier = body.identifier || body.email // compat: accepter encore `email`
+    const password = body.password
 
-    if (!email || !password) {
-      return NextResponse.json({ success: false, error: "Email et mot de passe requis" }, { status: 400 })
+    if (!identifier || !password) {
+      return NextResponse.json({ success: false, error: "Identifiant et mot de passe requis" }, { status: 400 })
     }
 
-    const user = await authenticateUser(email, password)
+    const user = await authenticateUser(identifier, password)
 
     if (!user) {
       return NextResponse.json({ success: false, error: "Identifiants invalides" }, { status: 401 })

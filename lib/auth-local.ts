@@ -3,12 +3,14 @@ import type { User } from "@/types"
 import { verifyToken, extractTokenFromHeader } from "./jwt"
 
 // Données utilisateurs locales (simulation de base de données)
+// NOTE: L'authentification se fait par numéro de téléphone (format: 6XXXXXXXX)
 const localUsers: User[] = [
   {
     id: "user-1",
     nom: "Admin",
     prenom: "Super",
     email: "admin@instrumelec.com",
+    phone: "600000001",
     role: "superadmin",
     isAdmin: true,
     createdAt: new Date(),
@@ -20,6 +22,7 @@ const localUsers: User[] = [
     nom: "Dupont",
     prenom: "Jean",
     email: "jean.dupont@instrumelec.com",
+    phone: "600000002",
     role: "employe",
     isAdmin: false,
     createdAt: new Date(),
@@ -30,7 +33,8 @@ const localUsers: User[] = [
     id: "user-3",
     nom: "Martin",
     prenom: "Pierre",
-    email: "pierre.martin@instrumelec.com", 
+    email: "pierre.martin@instrumelec.com",
+    phone: "600000003",
     role: "conducteur_travaux",
     isAdmin: false,
     createdAt: new Date(),
@@ -42,6 +46,7 @@ const localUsers: User[] = [
     nom: "Bernard",
     prenom: "Marie",
     email: "marie.bernard@instrumelec.com",
+    phone: "600000004",
     role: "responsable_qhse",
     isAdmin: false,
     createdAt: new Date(),
@@ -53,6 +58,7 @@ const localUsers: User[] = [
     nom: "Durand",
     prenom: "Paul",
     email: "paul.durand@instrumelec.com",
+    phone: "600000005",
     role: "responsable_travaux",
     isAdmin: false,
     createdAt: new Date(),
@@ -62,17 +68,18 @@ const localUsers: User[] = [
 ]
 
 /**
- * Authentifie un utilisateur avec email/password (mode local)
+ * Authentifie un utilisateur avec numéro de téléphone et mot de passe (mode local)
  */
-export async function authenticateUserLocal(email: string, password: string): Promise<User | null> {
+export async function authenticateUserLocal(phone: string, password: string): Promise<User | null> {
   try {
-    console.log(`[LOCAL AUTH] Tentative de connexion pour: ${email}`)
+    console.log(`[LOCAL AUTH] Tentative de connexion pour: ${phone}`)
     
     // En mode local, on accepte n'importe quel mot de passe pour simplifier
-    const user = localUsers.find(u => u.email === email)
+    // Recherche par numéro de téléphone uniquement
+    const user = localUsers.find(u => u.phone === phone)
     
     if (!user) {
-      console.log(`[LOCAL AUTH] Utilisateur non trouvé: ${email}`)
+      console.log(`[LOCAL AUTH] Utilisateur non trouvé avec téléphone: ${phone}`)
       return null
     }
 

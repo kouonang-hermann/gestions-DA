@@ -134,7 +134,7 @@ export default function ChangeUserRoleModal({
               <h3 className="font-medium text-gray-900 mb-2">Utilisateur</h3>
               <div className="space-y-1">
                 <p><strong>Nom:</strong> {user.prenom} {user.nom}</p>
-                <p><strong>Email:</strong> {user.email}</p>
+                <p><strong>Téléphone:</strong> {user.phone || 'Non défini'}</p>
                 <div className="flex items-center gap-2">
                   <strong>Rôle actuel:</strong>
                   <Badge variant="outline">

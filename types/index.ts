@@ -30,6 +30,7 @@ export interface User {
   nom: string
   prenom: string
   email: string
+  phone?: string
   role: UserRole
   isAdmin: boolean
   createdAt: Date

@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { withAuth } from "@/lib/middleware"
+import { notificationService } from "@/services/notificationService"
 
 /**
  * Flows de validation par type de demande
@@ -477,6 +478,41 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         projetId: demande.projetId
       }
     })
+
+    // 📧 ENVOYER LES NOTIFICATIONS EMAIL
+    try {
+      console.log(`📧 [API] Envoi des notifications email pour changement de statut: ${demande.status} → ${newStatus}`)
+      
+      // Récupérer tous les utilisateurs pour les notifications
+      const allUsers = await prisma.user.findMany({
+        include: {
+          projets: {
+            select: {
+              projetId: true
+            }
+          }
+        }
+      })
+      
+      // Transformer les projets en tableau d'IDs
+      const usersWithProjetIds = allUsers.map(user => ({
+        ...user,
+        projets: user.projets.map(p => p.projetId)
+      }))
+      
+      // Envoyer les notifications email (au demandeur + aux prochains valideurs)
+      await notificationService.handleStatusChange(
+        updatedDemande as any,
+        demande.status as any,
+        newStatus as any,
+        usersWithProjetIds as any
+      )
+      
+      console.log(`✅ [API] Notifications email envoyées avec succès`)
+    } catch (emailError) {
+      // Ne pas bloquer la réponse si l'envoi d'email échoue
+      console.error(`⚠️ [API] Erreur lors de l'envoi des emails (non bloquant):`, emailError)
+    }
 
     return NextResponse.json({
       success: true,

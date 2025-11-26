@@ -2,14 +2,19 @@ import { z } from "zod"
 
 // Schémas de validation pour l'authentification
 export const loginSchema = z.object({
-  email: z.string().email("Email invalide"),
+  // Numéro de téléphone (format: 6XXXXXXXX - 9 chiffres)
+  identifier: z.string().min(1, "Numéro de téléphone requis"),
   password: z.string().min(1, "Mot de passe requis"),
 })
 
 export const registerSchema = z.object({
   nom: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
   prenom: z.string().min(2, "Le prénom doit contenir au moins 2 caractères"),
-  email: z.string().email("Email invalide"),
+  email: z.string().email("Email invalide").optional().or(z.literal('')),
+  phone: z
+    .string()
+    .length(9, "Le numéro de téléphone doit contenir exactement 9 chiffres")
+    .regex(/^6\d{8}$/, "Le numéro de téléphone doit commencer par 6 et contenir 9 chiffres"),
   password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères"),
   role: z.enum([
     "superadmin",

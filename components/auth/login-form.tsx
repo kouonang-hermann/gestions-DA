@@ -1,12 +1,12 @@
 "use client"
 import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, Mail, Lock, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Phone, Lock, Loader2 } from 'lucide-react';
 import { useStore } from '@/stores/useStore';
 import InstrumElecLogo from '@/components/ui/instrumelec-logo';
 
 export default function LoginForm() {
   const { login, isLoading, error } = useStore();
-  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [validationError, setValidationError] = useState("");
@@ -17,16 +17,12 @@ export default function LoginForm() {
     e.preventDefault();
     setValidationError("");
 
-    if (!email || !password) {
-      setValidationError("L'email et le mot de passe sont requis");
-      return;
-    }
-    if (!email.includes('@')) {
-      setValidationError("Le format de l'email est invalide");
+    if (!phone || !password) {
+      setValidationError("Le numéro de téléphone et le mot de passe sont requis");
       return;
     }
 
-    const success = await login(email, password);
+    const success = await login(phone, password);
     if (success) {
       // Redirection vers le dashboard après connexion réussie
       window.location.href = '/dashboard';
@@ -128,13 +124,13 @@ export default function LoginForm() {
 
           {/* Formulaire de connexion */}
           <form onSubmit={handleSubmit} className="login-form" style={{ gap: screenHeight < 600 ? '0.75rem' : '1.5rem', display: 'flex', flexDirection: 'column' }}>
-            {/* Champ Email */}
+            {/* Champ Téléphone */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium mb-2" style={{ color: '#015fc4' }}>
-                Adresse Email
+              <label htmlFor="phone" className="block text-sm font-medium mb-2" style={{ color: '#015fc4' }}>
+                Numéro de téléphone
               </label>
               <div className="relative">
-                <Mail 
+                <Phone 
                   className="login-input-icon absolute top-1/2 transform -translate-y-1/2" 
                   style={{ 
                     color: '#b8d1df',
@@ -144,11 +140,11 @@ export default function LoginForm() {
                   }}
                 />
                 <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder={isMobile ? "Email" : "votre.email@example.com"}
+                  id="phone"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder={isMobile ? "Numéro de téléphone" : "+33 6 12 34 56 78"}
                   className="login-input w-full border-2 rounded-lg focus:outline-none focus:ring-2 transition-colors"
                   style={{ 
                     borderColor: '#b8d1df',

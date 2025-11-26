@@ -44,7 +44,7 @@ interface AppState {
   isLoadingDemandes: boolean
 
   // Actions
-  login: (email: string, password: string) => Promise<boolean>
+  login: (phone: string, password: string) => Promise<boolean>
   logout: () => void
   loadUsers: () => Promise<void>
   loadProjets: () => Promise<void>
@@ -102,7 +102,7 @@ export const useStore = create<AppState>()(
       lastDemandesLoad: 0,
       isLoadingDemandes: false,
 
-      login: async (email: string, password: string) => {
+      login: async (identifier: string, password: string) => {
         set({ isLoading: true, error: null })
 
         try {
@@ -111,7 +111,7 @@ export const useStore = create<AppState>()(
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify({ identifier, password }),
           })
 
           const result = await response.json()

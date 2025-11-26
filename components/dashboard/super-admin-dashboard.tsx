@@ -209,7 +209,8 @@ export default function SuperAdminDashboard() {
   const filteredUsers = users.filter(
     (user) =>
       user.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (user.phone && user.phone.toLowerCase().includes(searchTerm.toLowerCase())) ||
       getRoleLabel(user.role).toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
@@ -536,7 +537,7 @@ export default function SuperAdminDashboard() {
                               </Avatar>
                               <div>
                                 <p className="font-medium text-sm">{user.nom}</p>
-                                <p className="text-xs text-muted-foreground">{user.email}</p>
+                                <p className="text-xs text-muted-foreground">{user.phone || user.email}</p>
                               </div>
                             </div>
                           </td>

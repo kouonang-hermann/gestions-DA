@@ -5,12 +5,15 @@ import { prisma } from "./prisma"
 import { verifyToken, extractTokenFromHeader, type JWTPayload } from "./jwt"
 
 /**
- * Authentifie un utilisateur avec email/password
+ * Authentifie un utilisateur avec numéro de téléphone et mot de passe
  */
-export async function authenticateUser(email: string, password: string): Promise<any | null> {
+export async function authenticateUser(identifier: string, password: string): Promise<any | null> {
   try {
-    const user = await prisma.user.findUnique({
-      where: { email },
+    // Recherche uniquement par numéro de téléphone
+    const user = await prisma.user.findFirst({
+      where: {
+        phone: identifier,
+      },
       include: {
         projets: {
           select: {
@@ -28,7 +31,7 @@ export async function authenticateUser(email: string, password: string): Promise
     // Transformer les projets en tableau d'IDs
     const userWithProjets = {
       ...user,
-      projets: user.projets.map(p => p.projetId)
+      projets: user.projets.map((p: { projetId: string }) => p.projetId)
     }
 
     return userWithProjets

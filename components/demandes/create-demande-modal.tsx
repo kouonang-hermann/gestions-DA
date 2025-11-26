@@ -143,8 +143,13 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel" 
     }
   }
 
-  // Tous les projets actifs sont disponibles pour créer une demande
-  const mesProjets = projets.filter(p => p.actif)
+  // Tous les projets actifs et non terminés sont disponibles pour créer une demande
+  const now = new Date()
+  const mesProjets = projets.filter(p => {
+    const fin = p?.dateFin ? new Date(p.dateFin as any) : null
+    const notEnded = !fin || fin >= now
+    return p.actif && notEnded
+  })
 
   const unites = ["pièce", "kg", "m", "m²", "m³", "L", "sac", "barre", "rouleau", "boîte", "paquet"]
 

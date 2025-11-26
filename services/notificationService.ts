@@ -75,11 +75,11 @@ export class NotificationService {
         break
 
       case 'en_attente_preparation_appro':
-        await this.notifyValidators(demande, users, ['approvisionneur'], requester)
+        await this.notifyValidators(demande, users, ['responsable_appro'], requester)
         break
 
       case 'en_attente_validation_logistique':
-        await this.notifyValidators(demande, users, ['logisticien'], requester)
+        await this.notifyValidators(demande, users, ['responsable_logistique'], requester)
         break
 
       case 'en_attente_validation_finale_demandeur':
@@ -222,6 +222,12 @@ export class NotificationService {
         break
       case 'en_attente_validation_charge_affaire':
         reminderRecipients = users.filter(u => u.role === 'charge_affaire' && u.email)
+        break
+      case 'en_attente_preparation_appro':
+        reminderRecipients = users.filter(u => u.role === 'responsable_appro' && u.email)
+        break
+      case 'en_attente_validation_logistique':
+        reminderRecipients = users.filter(u => u.role === 'responsable_logistique' && u.email)
         break
       case 'en_attente_validation_finale_demandeur':
         reminderRecipients = [requester]

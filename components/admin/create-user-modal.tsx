@@ -21,6 +21,7 @@ export default function CreateUserModal({ isOpen, onClose }: CreateUserModalProp
     nom: "",
     prenom: "",
     email: "",
+    phone: "",
     password: "",
     role: "",
     isAdmin: false,
@@ -61,35 +62,57 @@ export default function CreateUserModal({ isOpen, onClose }: CreateUserModalProp
     e.preventDefault()
     setError("")
 
-    if (!formData.nom || !formData.prenom || !formData.email || !formData.password || !formData.role) {
-      setError("Tous les champs sont requis")
+    if (!formData.nom || !formData.prenom || !formData.phone || !formData.password || !formData.role) {
+      setError("Tous les champs requis doivent être remplis (Nom, Prénom, Téléphone, Mot de passe, Rôle)")
       return
     }
 
-    if (formData.password.length < 6) {
-      setError("Le mot de passe doit contenir au moins 6 caractères")
+    // Validation du téléphone (commence par 6, exactement 9 chiffres)
+    if (formData.phone.length !== 9) {
+      setError("Le numéro de téléphone doit contenir exactement 9 chiffres")
+      return
+    }
+    if (!formData.phone.startsWith('6')) {
+      setError("Le numéro de téléphone doit commencer par 6")
+      return
+    }
+    if (!/^\d+$/.test(formData.phone)) {
+      setError("Le numéro de téléphone doit contenir uniquement des chiffres")
       return
     }
 
-    // Validation email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(formData.email)) {
-      setError("Format d'email invalide")
-      return
+    // Validation email (seulement si fourni)
+    if (formData.email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(formData.email)) {
+        setError("Format d'email invalide")
+        return
+      }
     }
 
-    const success = await createUser(formData as any)
-    if (success) {
-      onClose()
-      setFormData({
-        nom: "",
-        prenom: "",
-        email: "",
-        password: "",
-        role: "",
-        isAdmin: false,
-        projets: [],
-      })
+    try {
+      const success = await createUser(formData as any)
+      if (success) {
+        onClose()
+        setFormData({
+          nom: "",
+          prenom: "",
+          email: "",
+          phone: "",
+          password: "",
+          role: "",
+          isAdmin: false,
+          projets: [],
+        })
+        setError("")
+      } else {
+        // Récupérer l'erreur du store
+        const currentError = useStore.getState().error
+        setError(currentError || "Erreur lors de la création de l'utilisateur")
+      }
+    } catch (err) {
+      console.error("Erreur création utilisateur:", err)
+      setError("Erreur lors de la création de l'utilisateur")
     }
   }
 
@@ -136,7 +159,7 @@ export default function CreateUserModal({ isOpen, onClose }: CreateUserModalProp
 
               <div>
                 <label htmlFor="email" className="block text-sm font-medium mb-2">
-                  Email *
+                  Email (optionnel)
                 </label>
                 <input
                   id="email"
@@ -144,7 +167,21 @@ export default function CreateUserModal({ isOpen, onClose }: CreateUserModalProp
                   value={formData.email}
                   onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  placeholder="email@example.com"
+                  placeholder="email@example.com (optionnel)"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="phone" className="block text-sm font-medium mb-2">
+                  Numéro de téléphone *
+                </label>
+                <input
+                  id="phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  placeholder="+33 6 12 34 56 78"
                   required
                 />
               </div>

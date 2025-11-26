@@ -281,6 +281,23 @@ export const POST = async (request: NextRequest) => {
       return NextResponse.json({ success: false, error: "Vous n'avez pas accès à ce projet" }, { status: 403 })
     }
 
+    // Interdire la création de demande sur un projet inactif ou terminé
+    const projetDetails = await prisma.projet.findUnique({
+      where: { id: validatedData.projetId },
+      select: { actif: true, dateFin: true, nom: true }
+    })
+
+    const now = new Date()
+    if (!projetDetails) {
+      return NextResponse.json({ success: false, error: "Projet introuvable" }, { status: 404 })
+    }
+    if (!projetDetails.actif || (projetDetails.dateFin && projetDetails.dateFin < now)) {
+      return NextResponse.json({ 
+        success: false, 
+        error: `Le projet "${projetDetails.nom}" est terminé ou inactif. Vous ne pouvez plus y créer de demande.` 
+      }, { status: 400 })
+    }
+
     // Générer un numéro de demande
     const year = new Date().getFullYear()
     const count = await prisma.demande.count()

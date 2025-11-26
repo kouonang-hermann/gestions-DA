@@ -237,7 +237,12 @@ export default function DemandeFormModal({ isOpen, onClose, demande, mode, type 
   }
 
   const mesProjetIds = currentUser?.projets || []
-  const mesProjets = projets.filter(p => mesProjetIds.includes(p.id) && p.actif)
+  const now = new Date()
+  const mesProjets = projets.filter(p => {
+    const fin = p?.dateFin ? new Date(p.dateFin as any) : null
+    const notEnded = !fin || fin >= now
+    return mesProjetIds.includes(p.id) && p.actif && notEnded
+  })
 
   const unites = ["pièce", "kg", "m", "m²", "m³", "L", "sac", "barre", "rouleau", "boîte", "paquet"]
 

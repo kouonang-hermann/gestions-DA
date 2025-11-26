@@ -168,7 +168,7 @@ export default function RemoveUserFromProjectModal({
                               <div className="font-medium text-gray-900">
                                 {user.prenom} {user.nom}
                               </div>
-                              <div className="text-sm text-gray-600">{user.email}</div>
+                              <div className="text-sm text-gray-600">{user.phone || user.email}</div>
                               <div className="flex items-center gap-2 mt-1">
                                 <Badge variant="outline">{user.role}</Badge>
                                 <span className="text-xs text-green-600">
@@ -210,7 +210,7 @@ export default function RemoveUserFromProjectModal({
                               <div className="font-medium text-gray-900">
                                 {user.prenom} {user.nom}
                               </div>
-                              <div className="text-sm text-gray-600">{user.email}</div>
+                              <div className="text-sm text-gray-600">{user.phone || user.email}</div>
                               <div className="flex items-center gap-2 mt-1">
                                 <Badge variant="outline">{user.role}</Badge>
                                 {user.isCreator && (
@@ -285,7 +285,7 @@ export default function RemoveUserFromProjectModal({
                 <h4 className="font-medium text-gray-900 mb-2">Utilisateur à retirer</h4>
                 <div className="space-y-1">
                   <p><strong>Nom:</strong> {selectedUser.prenom} {selectedUser.nom}</p>
-                  <p><strong>Email:</strong> {selectedUser.email}</p>
+                  <p><strong>Téléphone:</strong> {selectedUser.phone || 'Non défini'}</p>
                   <p><strong>Rôle:</strong> {selectedUser.role}</p>
                   <p><strong>Demandes en cours:</strong> {selectedUser.demandesEnCours}</p>
                 </div>
