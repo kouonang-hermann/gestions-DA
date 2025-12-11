@@ -39,6 +39,7 @@ import CreateDemandeModal from "@/components/demandes/create-demande-modal"
 import ValidationPreparationList from "@/components/charge-affaire/validation-preparation-list"
 import { UserRequestsChart } from "@/components/charts/user-requests-chart"
 import UserDetailsModal from "@/components/modals/user-details-modal"
+import MesDemandesACloturer from "@/components/demandes/mes-demandes-a-cloturer"
 import { useAutoReload } from "@/hooks/useAutoReload"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
@@ -230,13 +231,13 @@ export default function ChargeAffaireDashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#f97316' }} onClick={() => handleCardClick("enCours", "Demandes en cours")}>
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#3b82f6' }} onClick={() => handleCardClick("enCours", "Demandes en cours")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">En cours</CardTitle>
-                  <Clock className="h-4 w-4" style={{ color: '#f97316' }} />
+                  <Clock className="h-4 w-4" style={{ color: '#3b82f6' }} />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold" style={{ color: '#f97316' }}>{stats.enCours}</div>
+                  <div className="text-2xl font-bold" style={{ color: '#3b82f6' }}>{stats.enCours}</div>
                   <p className="text-xs text-muted-foreground">En traitement</p>
                 </CardContent>
               </Card>
@@ -267,6 +268,9 @@ export default function ChargeAffaireDashboard() {
 
             {/* Liste des préparations à valider */}
             <ValidationPreparationList />
+            
+            {/* Mes demandes à clôturer */}
+            <MesDemandesACloturer />
           </div>
 
           {/* Colonne de droite (fine) - 1/4 de la largeur */}

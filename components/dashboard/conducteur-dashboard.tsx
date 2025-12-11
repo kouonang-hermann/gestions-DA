@@ -35,11 +35,14 @@ import {
   BarChart,
   Bar,
 } from "recharts"
+import DemandeDetailsModal from "@/components/modals/demande-details-modal"
 import CreateDemandeModal from "@/components/demandes/create-demande-modal"
+import RequestsFlowChart from "@/components/charts/requests-flow-chart"
+import MesDemandesACloturer from "@/components/demandes/mes-demandes-a-cloturer"
 import ValidationDemandesList from "@/components/validation/validation-demandes-list"
-import { UserRequestsChart } from "@/components/charts/user-requests-chart"
 import UserDetailsModal from "@/components/modals/user-details-modal"
 import ValidatedRequestsHistory from "@/components/dashboard/validated-requests-history"
+import type { Demande } from "@/types"
 import { useAutoReload } from "@/hooks/useAutoReload"
 
 export default function ConducteurDashboard() {
@@ -327,6 +330,9 @@ export default function ConducteurDashboard() {
 
             {/* Liste des demandes à valider */}
             <ValidationDemandesList type="materiel" title="Demandes de matériel à valider" />
+            
+            {/* Mes demandes à clôturer */}
+            <MesDemandesACloturer />
           </div>
 
           {/* Colonne de droite (fine) - 1/4 de la largeur */}

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, Phone, Lock, Loader2 } from 'lucide-react';
 import { useStore } from '@/stores/useStore';
 import InstrumElecLogo from '@/components/ui/instrumelec-logo';
+import ForgotPasswordModal from '@/components/auth/forgot-password-modal';
 
 export default function LoginForm() {
   const { login, isLoading, error } = useStore();
@@ -10,6 +11,7 @@ export default function LoginForm() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [validationError, setValidationError] = useState("");
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
 
   const togglePassword = () => setShowPassword(!showPassword);
 
@@ -255,6 +257,7 @@ export default function LoginForm() {
             <div className="text-right">
               <button 
                 type="button"
+                onClick={() => setShowForgotPasswordModal(true)}
                 className="login-link login-touch-target hover:underline" 
                 style={{ 
                   color: '#015fc4', 
@@ -316,6 +319,12 @@ export default function LoginForm() {
           </div>
         </div>
       </div>
+
+      {/* Modal de récupération de mot de passe */}
+      <ForgotPasswordModal 
+        isOpen={showForgotPasswordModal} 
+        onClose={() => setShowForgotPasswordModal(false)} 
+      />
     </div>
   );
 }

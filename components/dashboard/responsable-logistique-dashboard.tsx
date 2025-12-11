@@ -41,6 +41,7 @@ import CreateDemandeModal from "@/components/demandes/create-demande-modal"
 import { UserRequestsChart } from "@/components/charts/user-requests-chart"
 import UserDetailsModal from "@/components/modals/user-details-modal"
 import ValidationLogistiqueList from "@/components/logistique/validation-logistique-list"
+import MesDemandesACloturer from "@/components/demandes/mes-demandes-a-cloturer"
 import { useAutoReload } from "@/hooks/useAutoReload"
 
 export default function ResponsableLogistiqueDashboard() {
@@ -313,6 +314,9 @@ export default function ResponsableLogistiqueDashboard() {
                     </CardContent>
                   </Card>
                 </div>
+
+                {/* Mes demandes à clôturer */}
+                <MesDemandesACloturer />
 
                 {/* Liste des demandes */}
                 <Card>

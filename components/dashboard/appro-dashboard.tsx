@@ -39,6 +39,7 @@ import SortiePreparationList from "@/components/appro/sortie-preparation-list"
 import CreateDemandeModal from "@/components/demandes/create-demande-modal"
 import { UserRequestsChart } from "@/components/charts/user-requests-chart"
 import UserDetailsModal from "@/components/modals/user-details-modal"
+import MesDemandesACloturer from "@/components/demandes/mes-demandes-a-cloturer"
 import { useAutoReload } from "@/hooks/useAutoReload"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
@@ -271,13 +272,13 @@ export default function ApproDashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#b8d1df' }} onClick={() => handleCardClick("preparees", "Demandes préparées")}>
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#8b5cf6' }} onClick={() => handleCardClick("preparees", "Demandes préparées")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Préparées</CardTitle>
-                  <Truck className="h-4 w-4" style={{ color: '#b8d1df' }} />
+                  <Truck className="h-4 w-4" style={{ color: '#8b5cf6' }} />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold" style={{ color: '#b8d1df' }}>{stats.preparees}</div>
+                  <div className="text-2xl font-bold" style={{ color: '#8b5cf6' }}>{stats.preparees}</div>
                   <p className="text-xs text-muted-foreground">Préparées par moi</p>
                 </CardContent>
               </Card>
@@ -297,6 +298,9 @@ export default function ApproDashboard() {
 
             {/* Liste des demandes à préparer */}
             <SortiePreparationList />
+            
+            {/* Mes demandes à clôturer */}
+            <MesDemandesACloturer />
           </div>
 
           {/* Colonne de droite (fine) - 1/4 de la largeur */}

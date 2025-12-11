@@ -41,6 +41,7 @@ import ValidationDemandesList from "@/components/validation/validation-demandes-
 import DemandeDetailsModal from "@/components/modals/demande-details-modal"
 import CreateDemandeModal from "@/components/demandes/create-demande-modal"
 import RequestsFlowChart from "@/components/charts/requests-flow-chart"
+import MesDemandesACloturer from "@/components/demandes/mes-demandes-a-cloturer"
 import type { Demande } from "@/types"
 
 export default function ResponsableTravauxDashboard() {
@@ -318,6 +319,9 @@ export default function ResponsableTravauxDashboard() {
                 </CardContent>
               </Card>
             )}
+            
+            {/* Mes demandes à clôturer */}
+            <MesDemandesACloturer />
 
             {/* Message si aucune demande en attente */}
             {demandesEnAttente.length === 0 && (

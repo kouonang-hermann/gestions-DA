@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guide d'Utilisation Visuel - Gestion des Demandes</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="guide-styles.css">
+    <link rel="stylesheet" href="guide-visual.css">
+</head>
+<body>
+    <!-- Navigation fixe améliorée -->
+    <nav class="navbar">
+        <div class="logo"><div class="logo-icon">L</div><span>Guide Visuel</span></div>
+        <ul class="nav-links">
+            <li><a href="#intro">Introduction</a></li>
+            <li><a href="#demo-video">Démo Interactive</a></li>
+            <li><a href="#connexion">Connexion</a></li>
+            <li><a href="#roles">Rôles</a></li>
+            <li><a href="#demande">Créer Demande</a></li>
+            <li><a href="#workflow">Workflow</a></li>
+            <li><a href="#guides-roles">Guides par Rôle</a></li>
+            <li><a href="#faq">FAQ</a></li>
+        </ul>
+        <button class="nav-toggle" onclick="toggleMobileMenu()" aria-label="Menu">
+            <span></span><span></span><span></span>
+        </button>
+    </nav>
+
+    <!-- Hero Section amélioré -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="hero-badge animated"><span>✨</span> Guide Interactif v2.0</div>
+            <h1>📚 Guide d'Utilisation Visuel</h1>
+            <p>Découvrez pas à pas comment utiliser l'application de Gestion des Demandes de Matériel et Outillage</p>
+            <div class="hero-buttons">
+                <a href="#demo-video" class="hero-btn primary">▶️ Voir la démo</a>
+                <a href="#connexion" class="hero-btn secondary">🚀 Commencer</a>
+            </div>
+        </div>
+        <div class="hero-visual">
+            <div class="floating-mockup">
+                <div class="mockup-screen">
+                    <div class="mockup-header">
+                        <div class="mockup-dots"><span></span><span></span><span></span></div>
+                        <span>Gestion des Demandes</span>
+                    </div>
+                    <div class="mockup-content">
+                        <div class="mockup-stat blue">12</div>
+                        <div class="mockup-stat green">8</div>
+                        <div class="mockup-stat orange">4</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Indicateur de progression -->
+    <div class="progress-indicator" id="progressBar"></div>
+
+    <div class="container">
+        <div class="toc">
+            <h4>📑 Table des Matières - Cliquez pour naviguer</h4>
+            <div class="toc-grid">
+                <a href="#intro">1. 🎯 Introduction</a>
+                <a href="#demo-video">2. 🎬 Démo Interactive</a>
+                <a href="#connexion">3. 🔐 Se Connecter</a>
+                <a href="#dashboard">4. 📊 Dashboard</a>
+                <a href="#roles">5. 👥 Les Rôles</a>
+                <a href="#demande">6. ➕ Créer une Demande</a>
+                <a href="#workflow">7. 🔄 Workflow</a>
+                <a href="#guides-roles">8. 📖 Guides par Rôle</a>
+                <a href="#validation">9. ✅ Valider</a>
+                <a href="#statuts">10. 🏷️ Statuts</a>
+                <a href="#faq">11. ❓ FAQ</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION DÉMO INTERACTIVE -->
+    <section id="demo-video" class="demo-section">
+        <div class="container demo-container">
+            <h2 class="section-title">🎬 Démonstration Interactive</h2>
+            <p class="section-subtitle">Explorez l'interface de l'application en temps réel</p>
+
+            <div class="demo-tabs">
+                <button class="demo-tab active" onclick="showDemoPanel('login')">
+                    <span>🔐</span> Connexion
+                </button>
+                <button class="demo-tab" onclick="showDemoPanel('dashboard')">
+                    <span>📊</span> Dashboard
+                </button>
+                <button class="demo-tab" onclick="showDemoPanel('demande')">
+                    <span>➕</span> Créer Demande
+                </button>
+                <button class="demo-tab" onclick="showDemoPanel('validation')">
+                    <span>✅</span> Validation
+                </button>
+            </div>
+
+            <div class="demo-screen">
+                <div class="demo-browser">
+                    <div class="browser-bar">
+                        <div class="browser-dots">
+                            <span></span><span></span><span></span>
+                        </div>
+                        <div class="browser-url">gestion-demandes.instrumelec.com</div>
+                    </div>
+
+                    <div class="demo-content">
+                        <!-- Panel Login -->
+                        <div id="demo-login" class="demo-panel active">
+                            <div class="login-demo">
+                                <div class="login-demo-left">
+                                    <div style="font-size: 4rem; margin-bottom: 1rem;">🔐</div>
+                                    <h2>Bienvenue</h2>
+                                    <p>Connectez-vous pour accéder à votre espace personnalisé</p>
+                                </div>
+                                <div class="login-demo-right">
+                                    <div class="login-form-demo">
+                                        <h3>Connexion</h3>
+                                        <p>Entrez vos identifiants</p>
+                                        <div class="input-demo">
+                                            <label>📧 Email</label>
+                                            <input type="email" placeholder="votre.email@entreprise.com" class="typing">
+                                        </div>
+                                        <div class="input-demo">
+                                            <label>🔒 Mot de passe</label>
+                                            <input type="password" placeholder="••••••••">
+                                        </div>
+                                        <button class="btn-demo">
+                                            <span>Se connecter</span>
+                                            <span>→</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Panel Dashboard -->
+                        <div id="demo-dashboard" class="demo-panel">
+                            <div class="dashboard-demo-full">
+                                <div class="sidebar-demo">
+                                    <div class="sidebar-logo">
+                                        <div class="sidebar-logo-icon">L</div>
+                                        <span>Gestion Demandes</span>
+                                    </div>
+                                    <ul class="sidebar-menu">
+                                        <li class="active">🏠 Tableau de bord</li>
+                                        <li>📋 Mes demandes</li>
+                                        <li>✅ À valider</li>
+                                        <li>📊 Statistiques</li>
+                                        <li>⚙️ Paramètres</li>
+                                    </ul>
+                                </div>
+                                <div class="main-demo">
+                                    <div class="main-header">
+                                        <h2>👋 Bonjour, Jean Dupont</h2>
+                                        <div class="header-actions">
+                                            <button class="btn-action-demo secondary">🔔</button>
+                                            <button class="btn-action-demo primary">➕ Nouvelle demande</button>
+                                        </div>
+                                    </div>
+                                    <div class="stats-demo">
+                                        <div class="stat-card-demo blue">
+                                            <span class="icon">📦</span>
+                                            <h4>Total demandes</h4>
+                                            <div class="value">24</div>
+                                        </div>
+                                        <div class="stat-card-demo orange">
+                                            <span class="icon">⏳</span>
+                                            <h4>En attente</h4>
+                                            <div class="value">5</div>
+                                        </div>
+                                        <div class="stat-card-demo green">
+                                            <span class="icon">✅</span>
+                                            <h4>Validées</h4>
+                                            <div class="value">16</div>
+                                        </div>
+                                        <div class="stat-card-demo red">
+                                            <span class="icon">❌</span>
+                                            <h4>Rejetées</h4>
+                                            <div class="value">3</div>
+                                        </div>
+                                    </div>
+                                    <div class="table-demo-container">
+                                        <div class="table-demo-header">
+                                            <h3>📋 Dernières demandes</h3>
+                                        </div>
+                                        <table class="table-demo">
+                                            <thead>
+                                                <tr>
+                                                    <th>N°</th>
+                                                    <th>Type</th>
+                                                    <th>Date</th>
+                                                    <th>Statut</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>DA-2024-001</td>
+                                                    <td>📦 Matériel</td>
+                                                    <td>05/12/2024</td>
+                                                    <td><span class="status-badge-demo pending">⏳ En attente</span></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>DA-2024-002</td>
+                                                    <td>🔧 Outillage</td>
+                                                    <td>04/12/2024</td>
+                                                    <td><span class="status-badge-demo validated">✅ Validée</span></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>DA-2024-003</td>
+                                                    <td>📦 Matériel</td>
+                                                    <td>03/12/2024</td>
+                                                    <td><span class="status-badge-demo progress">🔄 En cours</span></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Panel Création Demande -->
+                        <div id="demo-demande" class="demo-panel">
+                            <div class="creation-demo">
+                                <div class="creation-header">
+                                    <h2>➕ Nouvelle Demande</h2>
+                                    <p>Remplissez le formulaire ci-dessous</p>
+                                </div>
+                                <div class="creation-form">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label>📁 Type de demande</label>
+                                            <div class="type-selector">
+                                                <div class="type-option selected">
+                                                    <span>📦</span>
+                                                    <strong>Matériel</strong>
+                                                </div>
+                                                <div class="type-option">
+                                                    <span>🔧</span>
+                                                    <strong>Outillage</strong>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label>🏗️ Projet</label>
+                                            <select class="form-select">
+                                                <option>Chantier Paris Nord</option>
+                                                <option>Rénovation Bureau</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="articles-section">
+                                        <h4>📦 Articles demandés</h4>
+                                        <table class="articles-table">
+                                            <tr>
+                                                <th>Article</th>
+                                                <th>Quantité</th>
+                                                <th>Unité</th>
+                                            </tr>
+                                            <tr>
+                                                <td>Câble électrique 3x2.5mm²</td>
+                                                <td><input type="number" value="50" style="width:60px;"></td>
+                                                <td>mètres</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Disjoncteur 20A</td>
+                                                <td><input type="number" value="10" style="width:60px;"></td>
+                                                <td>pièces</td>
+                                            </tr>
+                                        </table>
+                                        <button class="add-article-btn">+ Ajouter un article</button>
+                                    </div>
+                                    <div class="form-actions">
+                                        <button class="btn-draft">📝 Enregistrer brouillon</button>
+                                        <button class="btn-submit">✅ Soumettre la demande</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Panel Validation -->
+                        <div id="demo-validation" class="demo-panel">
+                            <div class="validation-demo">
+                                <div class="validation-header">
+                                    <h2>✅ Demandes à valider</h2>
+                                    <span class="badge-count">3 en attente</span>
+                                </div>
+                                <div class="validation-list">
+                                    <div class="validation-card">
+                                        <div class="validation-info">
+                                            <div class="validation-number">DA-2024-015</div>
+                                            <div class="validation-meta">
+                                                <span>👤 Marie Martin</span>
+                                                <span>🏗️ Chantier Lyon</span>
+                                                <span>📦 Matériel</span>
+                                            </div>
+                                            <div class="validation-articles">
+                                                2 articles • Câble, Disjoncteurs
+                                            </div>
+                                        </div>
+                                        <div class="validation-actions">
+                                            <button class="action-btn view">👁️ Voir</button>
+                                            <button class="action-btn approve">✅ Valider</button>
+                                            <button class="action-btn reject">❌ Rejeter</button>
+                                        </div>
+                                    </div>
+                                    <div class="validation-card">
+                                        <div class="validation-info">
+                                            <div class="validation-number">DA-2024-016</div>
+                                            <div class="validation-meta">
+                                                <span>👤 Pierre Durand</span>
+                                                <span>🏗️ Projet Alpha</span>
+                                                <span>🔧 Outillage</span>
+                                            </div>
+                                            <div class="validation-articles">
+                                                3 articles • Perceuse, Casque, Gants
+                                            </div>
+                                        </div>
+                                        <div class="validation-actions">
+                                            <button class="action-btn view">👁️ Voir</button>
+                                            <button class="action-btn approve">✅ Valider</button>
+                                            <button class="action-btn reject">❌ Rejeter</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- INTRODUCTION -->
+    <section id="intro" class="section">
+        <div class="container">
+            <h2 class="section-title">🎯 Introduction</h2>
+            <p class="section-subtitle">Bienvenue dans l'application de gestion des demandes</p>
+            
+            <div class="cards-grid">
+                <div class="card"><div class="card-icon">📦</div><h3>Demandes Matériel</h3><p>Créez et suivez vos demandes de matériel. Validation par le conducteur des travaux.</p></div>
+                <div class="card"><div class="card-icon">🔧</div><h3>Demandes Outillage</h3><p>Gérez vos besoins en outillage avec validation QHSE pour la sécurité.</p></div>
+                <div class="card"><div class="card-icon">✅</div><h3>Workflow Validation</h3><p>Processus multi-niveaux pour garantir contrôle et traçabilité.</p></div>
+                <div class="card"><div class="card-icon">📊</div><h3>Suivi Temps Réel</h3><p>Dashboard personnalisé selon votre rôle pour suivre les demandes.</p></div>
+            </div>
+
+            <div class="info-box blue">
+                <h4>💡 À savoir</h4>
+                <p>L'application dispose de <strong>8 rôles</strong> différents, chacun avec ses permissions et son dashboard. Le workflow varie selon le type (matériel ou outillage).</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- CONNEXION -->
+    <section id="connexion" class="section bg-light">
+        <div class="container">
+            <h2 class="section-title">🔐 Se Connecter</h2>
+            
+            <div class="steps">
+                <div class="step">
+                    <div class="step-num">1</div>
+                    <div class="step-content">
+                        <h4>Accédez à la page de connexion</h4>
+                        <p>Ouvrez votre navigateur et accédez à l'URL de l'application.</p>
+                        <div class="login-mock">
+                            <div class="mock-logo">L</div>
+                            <h3>Connexion</h3>
+                            <div class="mock-input">📧 Email</div>
+                            <div class="mock-input">🔒 Mot de passe</div>
+                            <div class="mock-btn">Se connecter</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">2</div>
+                    <div class="step-content">
+                        <h4>Entrez vos identifiants</h4>
+                        <p>Saisissez l'email et mot de passe fournis par l'administrateur.</p>
+                        <div class="tips-box">
+                            <h5>💡 Conseils</h5>
+                            <ul>
+                                <li>Utilisez l'email fourni par votre admin</li>
+                                <li>Mot de passe sensible à la casse</li>
+                                <li>En cas d'oubli, contactez le SuperAdmin</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">3</div>
+                    <div class="step-content">
+                        <h4>Accédez à votre dashboard</h4>
+                        <p>Vous êtes redirigé vers votre tableau de bord personnalisé selon votre rôle.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- DASHBOARD -->
+    <section id="dashboard" class="section">
+        <div class="container">
+            <h2 class="section-title">📊 Le Tableau de Bord</h2>
+            
+            <div class="dashboard-mock">
+                <div class="mock-navbar"><span>🏠 Gestion Demandes</span><div class="mock-nav-items"></div></div>
+                <div class="mock-layout">
+                    <div class="mock-sidebar"><div class="menu-item active"></div><div class="menu-item"></div><div class="menu-item"></div></div>
+                    <div class="mock-main">
+                        <div class="stat-cards"><div class="stat blue"></div><div class="stat green"></div><div class="stat orange"></div><div class="stat red"></div></div>
+                        <div class="mock-table"><div class="table-row header"></div><div class="table-row"></div><div class="table-row"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature"><span class="icon blue">📈</span><h4>Cartes Statistiques</h4><p>Nombre de demandes en cours, validées, en attente</p></div>
+                <div class="feature"><span class="icon green">📋</span><h4>Liste Demandes</h4><p>Consultez et gérez toutes vos demandes</p></div>
+                <div class="feature"><span class="icon orange">⚡</span><h4>Actions Rapides</h4><p>Créez une demande en un clic</p></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- RÔLES -->
+    <section id="roles" class="section bg-light">
+        <div class="container">
+            <h2 class="section-title">👥 Les Rôles Utilisateurs</h2>
+            <p class="section-subtitle">8 rôles distincts avec des responsabilités spécifiques</p>
+
+            <div class="roles-grid">
+                <div class="role-card"><span class="badge gold">👑 SuperAdmin</span><h4>Super Administrateur</h4><p>Accès total. Gère utilisateurs et projets.</p><ul><li>Création d'utilisateurs</li><li>Gestion des projets</li><li>Statistiques globales</li></ul></div>
+                
+                <div class="role-card"><span class="badge blue">👤 Employé</span><h4>Employé</h4><p>Crée des demandes et suit leur avancement.</p><ul><li>Créer des demandes</li><li>Suivre ses demandes</li><li>Confirmer réception</li></ul></div>
+                
+                <div class="role-card"><span class="badge green">🏗️ Conducteur</span><h4>Conducteur Travaux</h4><p>Validation technique des demandes matériel.</p><ul><li>Valider matériel</li><li>Modifier quantités</li><li>Rejeter si besoin</li></ul></div>
+                
+                <div class="role-card"><span class="badge red">🛡️ QHSE</span><h4>Responsable QHSE</h4><p>Valide l'outillage selon normes sécurité.</p><ul><li>Valider outillage</li><li>Contrôle sécurité</li><li>Vérification EPI</li></ul></div>
+                
+                <div class="role-card"><span class="badge purple">📋 Resp. Travaux</span><h4>Responsable Travaux</h4><p>Validation hiérarchique après conducteur/QHSE.</p><ul><li>Validation générale</li><li>Matériel ET outillage</li><li>Supervision</li></ul></div>
+                
+                <div class="role-card"><span class="badge yellow">💼 Chargé Affaire</span><h4>Chargé d'Affaire</h4><p>Validation budgétaire des demandes.</p><ul><li>Validation budget</li><li>Contrôle coûts</li><li>Gestion priorités</li></ul></div>
+                
+                <div class="role-card"><span class="badge pink">📦 Appro</span><h4>Responsable Appro</h4><p>Prépare les sorties de stock.</p><ul><li>Préparer sorties</li><li>Gestion stocks</li><li>Ajuster quantités</li></ul></div>
+                
+                <div class="role-card"><span class="badge cyan">🚚 Logistique</span><h4>Resp. Logistique</h4><p>Valide la livraison finale.</p><ul><li>Validation livraison</li><li>Coordination</li><li>Suivi expéditions</li></ul></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CRÉER DEMANDE -->
+    <section id="demande" class="section">
+        <div class="container">
+            <h2 class="section-title">➕ Créer une Demande</h2>
+            
+            <div class="steps">
+                <div class="step"><div class="step-num">1</div><div class="step-content"><h4>Cliquez sur "Nouvelle Demande"</h4><p>Depuis votre dashboard, cliquez sur le bouton correspondant.</p><div class="btn-group"><span class="btn primary">➕ Nouvelle Demande Matériel</span><span class="btn secondary">🔧 Nouvelle Demande Outillage</span></div></div></div>
+                
+                <div class="step"><div class="step-num">2</div><div class="step-content"><h4>Choisissez le type</h4><p>Sélectionnez <strong>Matériel</strong> ou <strong>Outillage</strong>. Cela détermine le workflow.</p><div class="type-choice"><div class="type blue"><span>📦</span>Matériel<small>Équipements, pièces...</small></div><div class="type orange"><span>🔧</span>Outillage<small>Outils, EPI...</small></div></div></div></div>
+                
+                <div class="step"><div class="step-num">3</div><div class="step-content"><h4>Sélectionnez le projet</h4><p>Choisissez le projet concerné parmi ceux qui vous sont assignés.</p></div></div>
+                
+                <div class="step"><div class="step-num">4</div><div class="step-content"><h4>Ajoutez les articles</h4><p>Sélectionnez les articles du catalogue et indiquez les quantités.</p><table class="demo-table"><tr><th>Article</th><th>Référence</th><th>Quantité</th></tr><tr><td>Câble 3x2.5mm²</td><td>CAB-2.5</td><td>50 m</td></tr><tr><td>Disjoncteur 20A</td><td>DISJ-20A</td><td>10 pcs</td></tr></table></div></div>
+                
+                <div class="step"><div class="step-num">5</div><div class="step-content"><h4>Ajoutez un commentaire</h4><p>Précisez les détails importants pour les valideurs.</p><div class="tips-box"><h5>💡 Bonnes pratiques</h5><ul><li>Date de livraison souhaitée</li><li>Niveau d'urgence</li><li>Contraintes particulières</li></ul></div></div></div>
+                
+                <div class="step"><div class="step-num">6</div><div class="step-content"><h4>Soumettez</h4><p>Vérifiez puis cliquez sur <strong>"Soumettre"</strong>.</p><div class="btn-group"><span class="btn light">📝 Brouillon</span><span class="btn primary">✅ Soumettre</span></div></div></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- WORKFLOW -->
+    <section id="workflow" class="section bg-dark">
+        <div class="container">
+            <h2 class="section-title light">🔄 Workflow de Validation</h2>
+            
+            <div class="workflow-box">
+                <h3>📦 Flow Matériel</h3>
+                <div class="flow"><span class="flow-step">1<br>Demandeur</span><span class="arrow">→</span><span class="flow-step">2<br>Conducteur</span><span class="arrow">→</span><span class="flow-step">3<br>Resp. Travaux</span><span class="arrow">→</span><span class="flow-step">4<br>Chargé Affaire</span><span class="arrow">→</span><span class="flow-step">5<br>Appro</span><span class="arrow">→</span><span class="flow-step">6<br>Logistique</span><span class="arrow">→</span><span class="flow-step">7<br>Demandeur</span></div>
+            </div>
+            
+            <div class="workflow-box">
+                <h3>🔧 Flow Outillage</h3>
+                <div class="flow"><span class="flow-step">1<br>Demandeur</span><span class="arrow">→</span><span class="flow-step red">2<br>QHSE</span><span class="arrow">→</span><span class="flow-step">3<br>Resp. Travaux</span><span class="arrow">→</span><span class="flow-step">4<br>Chargé Affaire</span><span class="arrow">→</span><span class="flow-step">5<br>Appro</span><span class="arrow">→</span><span class="flow-step">6<br>Logistique</span><span class="arrow">→</span><span class="flow-step">7<br>Demandeur</span></div>
+            </div>
+
+            <div class="info-box transparent">
+                <h4>⚡ Auto-validation</h4>
+                <p>Si le demandeur est aussi valideur, son étape est automatiquement passée.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- VALIDATION -->
+    <section id="validation" class="section">
+        <div class="container">
+            <h2 class="section-title">✅ Valider une Demande</h2>
+            
+            <div class="steps">
+                <div class="step"><div class="step-num">1</div><div class="step-content"><h4>Consultez les demandes en attente</h4><p>Section "À valider" de votre dashboard.</p><div class="alert warning">⚠️ <strong>3 demandes en attente</strong></div></div></div>
+                
+                <div class="step"><div class="step-num">2</div><div class="step-content"><h4>Examinez les détails</h4><p>Cliquez pour voir : articles, quantités, projet, commentaires.</p></div></div>
+                
+                <div class="step"><div class="step-num">3</div><div class="step-content"><h4>Prenez votre décision</h4><div class="actions-grid"><div class="action green"><span>✅</span>Valider<small>Approuver</small></div><div class="action red"><span>❌</span>Rejeter<small>Avec motif</small></div><div class="action blue"><span>✏️</span>Modifier<small>Quantités</small></div></div></div></div>
+                
+                <div class="step"><div class="step-num">4</div><div class="step-content"><h4>Ajoutez un commentaire</h4><div class="tips-box"><h5>💡 Important</h5><ul><li>Commentaire <strong>obligatoire</strong> si rejet</li><li>Actions horodatées et tracées</li><li>Signature électronique générée</li></ul></div></div></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- STATUTS -->
+    <section id="statuts" class="section bg-light">
+        <div class="container">
+            <h2 class="section-title">🏷️ Les Statuts</h2>
+            
+            <div class="status-grid">
+                <div class="status-item"><span class="dot gray"></span><strong>Brouillon</strong> - En création</div>
+                <div class="status-item"><span class="dot blue"></span><strong>Soumise</strong> - Envoyée pour validation</div>
+                <div class="status-item"><span class="dot orange"></span><strong>En attente</strong> - Validation en cours</div>
+                <div class="status-item"><span class="dot cyan"></span><strong>Préparation</strong> - Appro prépare</div>
+                <div class="status-item"><span class="dot purple"></span><strong>Logistique</strong> - En livraison</div>
+                <div class="status-item"><span class="dot green"></span><strong>Confirmée</strong> - Réception OK</div>
+                <div class="status-item"><span class="dot dark"></span><strong>Clôturée</strong> - Terminée</div>
+                <div class="status-item"><span class="dot red"></span><strong>Rejetée</strong> - Refusée</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" class="section">
+        <div class="container">
+            <h2 class="section-title">❓ Questions Fréquentes</h2>
+            
+            <div class="faq-list">
+                <div class="faq-item"><h4>Comment modifier une demande soumise ?</h4><p>Une demande soumise ne peut plus être modifiée. Contactez le valideur actuel ou créez une nouvelle demande.</p></div>
+                <div class="faq-item"><h4>Pourquoi ma demande est bloquée ?</h4><p>Elle attend la validation d'un acteur. Consultez le statut pour voir l'étape actuelle.</p></div>
+                <div class="faq-item"><h4>Comment changer mon mot de passe ?</h4><p>Contactez votre SuperAdmin pour la réinitialisation.</p></div>
+                <div class="faq-item"><h4>Une demande peut-elle être annulée ?</h4><p>Seul un SuperAdmin peut annuler une demande en cours.</p></div>
+                <div class="faq-item"><h4>Comment voir l'historique d'une demande ?</h4><p>Cliquez sur la demande pour voir tous les détails et l'historique des validations.</p></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION GUIDES PAR RÔLE -->
+    <section id="guides-roles" class="role-guides-section">
+        <div class="container">
+            <h2 class="section-title">📖 Guides par Rôle</h2>
+            <p class="section-subtitle">Sélectionnez votre rôle pour voir les instructions spécifiques</p>
+
+            <div class="role-selector">
+                <button class="role-btn active" onclick="showRoleGuide('employe')">
+                    <span class="role-icon">👤</span>
+                    <span class="role-name">Employé</span>
+                </button>
+                <button class="role-btn" onclick="showRoleGuide('conducteur')">
+                    <span class="role-icon">🏗️</span>
+                    <span class="role-name">Conducteur</span>
+                </button>
+                <button class="role-btn" onclick="showRoleGuide('qhse')">
+                    <span class="role-icon">🛡️</span>
+                    <span class="role-name">QHSE</span>
+                </button>
+                <button class="role-btn" onclick="showRoleGuide('resptravaux')">
+                    <span class="role-icon">📋</span>
+                    <span class="role-name">Resp. Travaux</span>
+                </button>
+                <button class="role-btn" onclick="showRoleGuide('chargeaffaire')">
+                    <span class="role-icon">💼</span>
+                    <span class="role-name">Chargé Affaire</span>
+                </button>
+                <button class="role-btn" onclick="showRoleGuide('appro')">
+                    <span class="role-icon">📦</span>
+                    <span class="role-name">Appro</span>
+                </button>
+                <button class="role-btn" onclick="showRoleGuide('logistique')">
+                    <span class="role-icon">🚚</span>
+                    <span class="role-name">Logistique</span>
+                </button>
+                <button class="role-btn" onclick="showRoleGuide('superadmin')">
+                    <span class="role-icon">👑</span>
+                    <span class="role-name">Super-Admin</span>
+                </button>
+            </div>
+
+            <div class="role-guide-content">
+                <!-- Guide Employé -->
+                <div id="guide-employe" class="role-guide-panel active">
+                    <div class="guide-header">
+                        <div class="guide-icon">👤</div>
+                        <div class="guide-title">
+                            <h3>Guide Employé</h3>
+                            <p>Créez et suivez vos demandes de matériel et outillage</p>
+                        </div>
+                    </div>
+                    <div class="guide-features">
+                        <div class="guide-feature">
+                            <div class="feature-icon">➕</div>
+                            <div class="feature-text">
+                                <h4>Créer une demande</h4>
+                                <p>Nouveau matériel ou outillage nécessaire pour votre travail</p>
+                            </div>
+                        </div>
+                        <div class="guide-feature">
+                            <div class="feature-icon">📋</div>
+                            <div class="feature-text">
+                                <h4>Suivre mes demandes</h4>
+                                <p>Consultez l'état d'avancement de vos demandes</p>
+                            </div>
+                        </div>
+                        <div class="guide-feature">
+                            <div class="feature-icon">✅</div>
+                            <div class="feature-text">
+                                <h4>Confirmer la réception</h4>
+                                <p>Validez la réception du matériel livré</p>
+                            </div>
+                        </div>
+                        <div class="guide-feature">
+                            <div class="feature-icon">📝</div>
+                            <div class="feature-text">
+                                <h4>Clôturer</h4>
+                                <p>Finalisez vos demandes une fois le matériel reçu</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="guide-steps-visual">
+                        <h4>📍 Votre parcours type</h4>
+                        <div class="steps-timeline">
+                            <div class="timeline-step">
+                                <div class="timeline-marker">1</div>
+                                <div class="timeline-content">
+                                    <h5>Créez votre demande</h5>
+                                    <p>Sélectionnez les articles et soumettez</p>
+                                </div>
+                            </div>
+                            <div class="timeline-step">
+                                <div class="timeline-marker">2</div>
+                                <div class="timeline-content">
+                                    <h5>Attendez les validations</h5>
+                                    <p>Suivez l'avancement dans votre dashboard</p>
+                                </div>
+                            </div>
+                            <div class="timeline-step">
+                                <div class="timeline-marker">3</div>
+                                <div class="timeline-content">
+                                    <h5>Réceptionnez le matériel</h5>
+                                    <p>Confirmez la livraison dans l'application</p>
+                                </div>
+                            </div>
+                            <div class="timeline-step">
+                                <div class="timeline-marker">4</div>
+                                <div class="timeline-content">
+                                    <h5>Clôturez la demande</h5>
+                                    <p>Finalisez pour archiver</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Guide Conducteur -->
+                <div id="guide-conducteur" class="role-guide-panel">
+                    <div class="guide-header">
+                        <div class="guide-icon">🏗️</div>
+                        <div class="guide-title">
+                            <h3>Guide Conducteur de Travaux</h3>
+                            <p>Validez les demandes de matériel de votre équipe</p>
+                        </div>
+                    </div>
+                    <div class="guide-features">
+                        <div class="guide-feature">
+                            <div class="feature-icon">✅</div>
+                            <div class="feature-text">
+                                <h4>Valider le matériel</h4>
+                                <p>Approuvez les demandes de matériel de votre projet</p>
+                            </div>
+                        </div>
+                        <div class="guide-feature">
+                            <div class="feature-icon">✏️</div>
+                            <div class="feature-text">
+                                <h4>Modifier les quantités</h4>
+                                <p>Ajustez les quantités si nécessaire avant validation</p>
+                            </div>
+                        </div>
+                        <div class="guide-feature">
+                            <div class="feature-icon">❌</div>
+                            <div class="feature-text">
+                                <h4>Rejeter si besoin</h4>
+                                <p>Refusez avec un motif obligatoire</p>
+                            </div>
+                        </div>
+                        <div class="guide-feature">
+                            <div class="feature-icon">➕</div>
+                            <div class="feature-text">
+                                <h4>Créer mes demandes</h4>
+                                <p>Vous pouvez aussi créer vos propres demandes</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="guide-steps-visual">
+                        <h4>📍 Processus de validation</h4>
+                        <div class="steps-timeline">
+                            <div class="timeline-step">
+                                <div class="timeline-marker">1</div>
+                                <div class="timeline-content">
+                                    <h5>Consultez les demandes en attente</h5>
+                                    <p>Section "À valider" de votre dashboard</p>
+                                </div>
+                            </div>
+                            <div class="timeline-step">
+                                <div class="timeline-marker">2</div>
+                                <div class="timeline-content">
+                                    <h5>Examinez les détails</h5>
+                                    <p>Articles, quantités, projet concerné</p>
+                                </div>
+                            </div>
+                            <div class="timeline-step">
+                                <div class="timeline-marker">3</div>
+                                <div class="timeline-content">
+                                    <h5>Validez ou rejetez</h5>
+                                    <p>Avec commentaire si nécessaire</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Guide QHSE -->
+                <div id="guide-qhse" class="role-guide-panel">
+                    <div class="guide-header">
+                        <div class="guide-icon">🛡️</div>
+                        <div class="guide-title">
+                            <h3>Guide Responsable QHSE</h3>
+                            <p>Validez les demandes d'outillage selon les normes de sécurité</p>
+                        </div>
+                    </div>
+                    <div class="guide-features">
+                        <div class="guide-feature">
+                            <div class="feature-icon">🔧</div>
+                            <div class="feature-text">
+                                <h4>Valider l'outillage</h4>
+                                <p>Approuvez les demandes d'outillage et EPI</p>
+                            </div>
+                        </div>
+                        <div class="guide-feature">
+                            <div class="feature-icon">🛡️</div>
+                            <div class="feature-text">
+                                <h4>Contrôle sécurité</h4>
+                                <p>Vérifiez la conformité aux normes de sécurité</p>
+                            </div>
+                        </div>
+                        <div class="guide-feature">
+                            <div class="feature-icon">📋</div>
+                            <div class="feature-text">
+                                <h4>Vérification EPI</h4>
+                                <p>Contrôlez les équipements de protection individuelle</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="guide-steps-visual" style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);">
+                        <h4>⚠️ Points de vigilance</h4>
+                        <div class="steps-timeline">
+                            <div class="timeline-step">
+                                <div class="timeline-marker">!</div>
+                                <div class="timeline-content">
+                                    <h5>Conformité réglementaire</h5>
+                                    <p>Vérifiez que l'outillage respecte les normes</p>
+                                </div>
+                            </div>
+                            <div class="timeline-step">
+                                <div class="timeline-marker">!</div>
+                                <div class="timeline-content">
+                                    <h5>Formations requises</h5>
+                                    <p>Assurez-vous que l'utilisateur est formé</p>
+                                </div>
+                            </div>
+                            <div class="timeline-step">
+                                <div class="timeline-marker">!</div>
+                                <div class="timeline-content">
+                                    <h5>Documentation</h5>
+                                    <p>Traçabilité complète des validations</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Guide Responsable Travaux -->
+                <div id="guide-resptravaux" class="role-guide-panel">
+                    <div class="guide-header">
+                        <div class="guide-icon">📋</div>
+                        <div class="guide-title">
+                            <h3>Guide Responsable des Travaux</h3>
+                            <p>Supervision et validation hiérarchique de toutes les demandes</p>
+                        </div>
+                    </div>
+                    <div class="guide-features">
+                        <div class="guide-feature">
+                            <div class="feature-icon">📦</div>
+                            <div class="feature-text">
+                                <h4>Valider matériel</h4>
+                                <p>Après le conducteur de travaux</p>
+                            </div>
+                        </div>
+                        <div class="guide-feature">
+                            <div class="feature-icon">🔧</div>
+                            <div class="feature-text">
+                                <h4>Valider outillage</h4>
+                                <p>Après le responsable QHSE</p>
+                            </div>
+                        </div>
+                        <div class="guide-feature">
+                            <div class="feature-icon">👁️</div>
+                            <div class="feature-text">
+                                <h4>Supervision globale</h4>
+                                <p>Vue d'ensemble de tous les projets</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Guide Chargé d'Affaire -->
+                <div id="guide-chargeaffaire" class="role-guide-panel">
+                    <div class="guide-header">
+                        <div class="guide-icon">💼</div>
+                        <div class="guide-title">
+                            <h3>Guide Chargé d'Affaire</h3>
+                            <p>Validation budgétaire et suivi des coûts</p>
+                        </div>
+                    </div>
+                    <div class="guide-features">
+                        <div class="guide-feature">
+                            <div class="feature-icon">💰</div>
+                            <div class="feature-text">
+                                <h4>Validation budget</h4>
+                                <p>Contrôlez l'impact financier des demandes</p>
+                            </div>
+                        </div>
+                        <div class="guide-feature">
+                            <div class="feature-icon">📊</div>
+                            <div class="feature-text">
+                                <h4>Suivi des coûts</h4>
+                                <p>Analysez les dépenses par projet</p>
+                            </div>
+                        </div>
+                        <div class="guide-feature">
+                            <div class="feature-icon">⚡</div>
+                            <div class="feature-text">
+                                <h4>Gestion priorités</h4>
+                                <p>Priorisez selon l'urgence et le budget</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Guide Appro -->
+                <div id="guide-appro" class="role-guide-panel">
+                    <div class="guide-header">
+                        <div class="guide-icon">📦</div>
+                        <div class="guide-title">
+                            <h3>Guide Responsable Appro</h3>
+                            <p>Préparation des sorties de stock</p>
+                        </div>
+                    </div>
+                    <div class="guide-features">
+                        <div class="guide-feature">
+                            <div class="feature-icon">📤</div>
+                            <div class="feature-text">
+                                <h4>Préparer les sorties</h4>
+                                <p>Rassemblez le matériel demandé</p>
+                            </div>
+                        </div>
+                        <div class="guide-feature">
+                            <div class="feature-icon">📊</div>
+                            <div class="feature-text">
+                                <h4>Gestion des stocks</h4>
+                                <p>Suivez les niveaux de stock</p>
+                            </div>
+                        </div>
+                        <div class="guide-feature">
+                            <div class="feature-icon">✏️</div>
+                            <div class="feature-text">
+                                <h4>Ajuster les quantités</h4>
+                                <p>Adaptez selon la disponibilité</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="guide-steps-visual" style="background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);">
+                        <h4>📍 Processus de préparation</h4>
+                        <div class="steps-timeline">
+                            <div class="timeline-step">
+                                <div class="timeline-marker">1</div>
+                                <div class="timeline-content">
+                                    <h5>Demande reçue</h5>
+                                    <p>Après validation du chargé d'affaire</p>
+                                </div>
+                            </div>
+                            <div class="timeline-step">
+                                <div class="timeline-marker">2</div>
+                                <div class="timeline-content">
+                                    <h5>Vérification stock</h5>
+                                    <p>Disponibilité des articles</p>
+                                </div>
+                            </div>
+                            <div class="timeline-step">
+                                <div class="timeline-marker">3</div>
+                                <div class="timeline-content">
+                                    <h5>Préparation sortie</h5>
+                                    <p>Rassemblement du matériel</p>
+                                </div>
+                            </div>
+                            <div class="timeline-step">
+                                <div class="timeline-marker">4</div>
+                                <div class="timeline-content">
+                                    <h5>Transmission logistique</h5>
+                                    <p>Envoi vers la livraison</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Guide Logistique -->
+                <div id="guide-logistique" class="role-guide-panel">
+                    <div class="guide-header">
+                        <div class="guide-icon">🚚</div>
+                        <div class="guide-title">
+                            <h3>Guide Responsable Logistique</h3>
+                            <p>Coordination et validation des livraisons</p>
+                        </div>
+                    </div>
+                    <div class="guide-features">
+                        <div class="guide-feature">
+                            <div class="feature-icon">🚚</div>
+                            <div class="feature-text">
+                                <h4>Validation livraison</h4>
+                                <p>Confirmez l'expédition du matériel</p>
+                            </div>
+                        </div>
+                        <div class="guide-feature">
+                            <div class="feature-icon">📍</div>
+                            <div class="feature-text">
+                                <h4>Coordination</h4>
+                                <p>Planifiez les tournées de livraison</p>
+                            </div>
+                        </div>
+                        <div class="guide-feature">
+                            <div class="feature-icon">📋</div>
+                            <div class="feature-text">
+                                <h4>Suivi expéditions</h4>
+                                <p>Tracez les livraisons en cours</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Guide Super-Admin -->
+                <div id="guide-superadmin" class="role-guide-panel">
+                    <div class="guide-header">
+                        <div class="guide-icon">👑</div>
+                        <div class="guide-title">
+                            <h3>Guide Super-Administrateur</h3>
+                            <p>Accès complet à toutes les fonctionnalités</p>
+                        </div>
+                    </div>
+                    <div class="guide-features">
+                        <div class="guide-feature">
+                            <div class="feature-icon">👥</div>
+                            <div class="feature-text">
+                                <h4>Gestion utilisateurs</h4>
+                                <p>Créer, modifier, supprimer des comptes</p>
+                            </div>
+                        </div>
+                        <div class="guide-feature">
+                            <div class="feature-icon">🏗️</div>
+                            <div class="feature-text">
+                                <h4>Gestion projets</h4>
+                                <p>Administrer tous les projets</p>
+                            </div>
+                        </div>
+                        <div class="guide-feature">
+                            <div class="feature-icon">📊</div>
+                            <div class="feature-text">
+                                <h4>Statistiques globales</h4>
+                                <p>Vue d'ensemble de l'activité</p>
+                            </div>
+                        </div>
+                        <div class="guide-feature">
+                            <div class="feature-icon">⚙️</div>
+                            <div class="feature-text">
+                                <h4>Configuration</h4>
+                                <p>Paramètres avancés de l'application</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="guide-steps-visual" style="background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);">
+                        <h4>👑 Fonctionnalités exclusives</h4>
+                        <div class="steps-timeline">
+                            <div class="timeline-step">
+                                <div class="timeline-marker">★</div>
+                                <div class="timeline-content">
+                                    <h5>Création d'utilisateurs</h5>
+                                    <p>Ajoutez de nouveaux comptes avec rôles</p>
+                                </div>
+                            </div>
+                            <div class="timeline-step">
+                                <div class="timeline-marker">★</div>
+                                <div class="timeline-content">
+                                    <h5>Assignation aux projets</h5>
+                                    <p>Affectez les utilisateurs aux projets</p>
+                                </div>
+                            </div>
+                            <div class="timeline-step">
+                                <div class="timeline-marker">★</div>
+                                <div class="timeline-content">
+                                    <h5>Rapports et exports</h5>
+                                    <p>Générez des rapports détaillés</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Boutons d'accès rapide -->
+    <div class="quick-access">
+        <button class="quick-btn back-to-top" onclick="scrollToTop()" title="Retour en haut">↑</button>
+        <a href="/" class="quick-btn" title="Aller à l'application">🚀</a>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-logo">
+                <div class="logo-icon">L</div>
+                <span>InstrumElec</span>
+            </div>
+            <p>Guide d'utilisation - Application Gestion des Demandes de Matériel et Outillage</p>
+            <p>© 2024 InstrumElec - Tous droits réservés</p>
+            <div class="footer-links">
+                <a href="/">Accéder à l'application</a>
+                <a href="#intro">Retour au début</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts JavaScript -->
+    <script>
+        // Navigation mobile
+        function toggleMobileMenu() {
+            const navLinks = document.querySelector('.nav-links');
+            navLinks.classList.toggle('active');
+        }
+
+        // Démo interactive - changement de panels
+        function showDemoPanel(panelId) {
+            // Masquer tous les panels
+            document.querySelectorAll('.demo-panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+            // Afficher le panel sélectionné
+            document.getElementById('demo-' + panelId).classList.add('active');
+            
+            // Mettre à jour les tabs
+            document.querySelectorAll('.demo-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.closest('.demo-tab').classList.add('active');
+        }
+
+        // Guides par rôle - changement de panels
+        function showRoleGuide(roleId) {
+            // Masquer tous les guides
+            document.querySelectorAll('.role-guide-panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+            // Afficher le guide sélectionné
+            document.getElementById('guide-' + roleId).classList.add('active');
+            
+            // Mettre à jour les boutons
+            document.querySelectorAll('.role-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.closest('.role-btn').classList.add('active');
+        }
+
+        // Retour en haut
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Indicateur de progression de lecture
+        window.addEventListener('scroll', () => {
+            const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scrolled = (winScroll / height) * 100;
+            document.getElementById('progressBar').style.width = scrolled + '%';
+        });
+
+        // Animations au scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.scroll-animate').forEach(el => {
+            observer.observe(el);
+        });
+
+        // Navigation fluide pour les ancres
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Fermer le menu mobile lors du clic sur un lien
+        document.querySelectorAll('.nav-links a').forEach(link => {
+            link.addEventListener('click', () => {
+                document.querySelector('.nav-links').classList.remove('active');
+            });
+        });
+    </script>
+</body>
+</html>

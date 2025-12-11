@@ -1,4 +1,5 @@
 import { emailService } from './emailService'
+import { whatsappService } from './whatsappService'
 import type { User, Demande, DemandeStatus } from '@/types'
 
 export interface NotificationTrigger {
@@ -8,6 +9,12 @@ export interface NotificationTrigger {
   userId?: string
   action: 'status_change' | 'validation_request' | 'closure_request'
 }
+
+// Configuration des canaux de notification (depuis variables d'environnement)
+const getNotificationChannels = () => ({
+  email: process.env.ENABLE_EMAIL_NOTIFICATIONS !== 'false', // Activé par défaut
+  whatsapp: process.env.ENABLE_WHATSAPP_NOTIFICATIONS === 'true' // Désactivé par défaut
+})
 
 export class NotificationService {
   private static instance: NotificationService
@@ -23,6 +30,7 @@ export class NotificationService {
 
   /**
    * Traite un changement de statut et envoie les notifications appropriées
+   * Envoie sur les deux canaux : Email + WhatsApp (si activés)
    */
   async handleStatusChange(
     demande: Demande,
@@ -31,30 +39,41 @@ export class NotificationService {
     users: User[]
   ): Promise<void> {
     try {
-      console.log(`Traitement changement de statut: ${oldStatus} -> ${newStatus} pour demande ${demande.numero}`)
+      const channels = getNotificationChannels()
+      console.log(`📬 Traitement notifications: ${oldStatus} -> ${newStatus} pour ${demande.numero}`)
+      console.log(`📧 Email: ${channels.email ? 'activé' : 'désactivé'} | 📱 WhatsApp: ${channels.whatsapp ? 'activé' : 'désactivé'}`)
 
       // 1. Notification au demandeur du changement de statut
       const requester = users.find(u => u.id === demande.technicienId)
-      if (requester?.email) {
-        await emailService.notifyStatusUpdate(requester, demande, oldStatus, newStatus)
+      if (requester) {
+        // Email
+        if (channels.email && requester.email) {
+          await emailService.notifyStatusUpdate(requester, demande, oldStatus, newStatus)
+        }
+        // WhatsApp
+        if (channels.whatsapp && requester.phone) {
+          await whatsappService.notifyStatusUpdate(requester, demande, oldStatus, newStatus)
+        }
       }
 
       // 2. Notifications spécifiques selon le nouveau statut
       await this.handleSpecificStatusNotifications(demande, newStatus, users)
 
     } catch (error) {
-      console.error('Erreur lors du traitement des notifications:', error)
+      console.error('❌ Erreur lors du traitement des notifications:', error)
     }
   }
 
   /**
    * Gère les notifications spécifiques selon le statut
+   * Envoie sur Email + WhatsApp selon la configuration
    */
   private async handleSpecificStatusNotifications(
     demande: Demande,
     status: DemandeStatus,
     users: User[]
   ): Promise<void> {
+    const channels = getNotificationChannels()
     const requester = users.find(u => u.id === demande.technicienId)
 
     switch (status) {
@@ -83,9 +102,14 @@ export class NotificationService {
         break
 
       case 'en_attente_validation_finale_demandeur':
-        // Notification au demandeur pour clôture
-        if (requester?.email) {
-          await emailService.notifyClosureRequest(requester, demande)
+        // Notification au demandeur pour clôture (Email + WhatsApp)
+        if (requester) {
+          if (channels.email && requester.email) {
+            await emailService.notifyClosureRequest(requester, demande)
+          }
+          if (channels.whatsapp && requester.phone) {
+            await whatsappService.notifyClosureRequest(requester, demande)
+          }
         }
         break
 
@@ -96,8 +120,8 @@ export class NotificationService {
         break
 
       case 'rejetee':
-        // Notification de rejet au demandeur
-        if (requester?.email) {
+        // Notification de rejet au demandeur (Email + WhatsApp)
+        if (requester) {
           await this.notifyRejection(requester, demande)
         }
         break
@@ -105,7 +129,7 @@ export class NotificationService {
   }
 
   /**
-   * Notifie les validateurs appropriés
+   * Notifie les validateurs appropriés (Email + WhatsApp)
    */
   private async notifyValidators(
     demande: Demande,
@@ -115,31 +139,38 @@ export class NotificationService {
   ): Promise<void> {
     if (!requester) return
 
+    const channels = getNotificationChannels()
+
     // Trouver les utilisateurs avec les rôles de validation appropriés
+    // Inclure ceux qui ont email OU téléphone
     const validators = users.filter(user => 
       validatorRoles.includes(user.role) && 
-      user.email &&
+      (user.email || user.phone) &&
       user.id !== requester.id // Ne pas notifier le demandeur lui-même
     )
 
     // Si c'est lié à un projet, ne notifier que les validateurs du projet
+    let targetValidators = validators
     if (demande.projetId) {
       const projectValidators = validators.filter(validator =>
         validator.projets?.includes(demande.projetId)
       )
       
       if (projectValidators.length > 0) {
-        // Utiliser les validateurs du projet
-        for (const validator of projectValidators) {
-          await emailService.notifyValidationRequest(validator, demande, requester)
-        }
-        return
+        targetValidators = projectValidators
       }
     }
 
-    // Sinon, notifier tous les validateurs avec le bon rôle
-    for (const validator of validators) {
-      await emailService.notifyValidationRequest(validator, demande, requester)
+    // Envoyer les notifications sur les deux canaux
+    for (const validator of targetValidators) {
+      // Email
+      if (channels.email && validator.email) {
+        await emailService.notifyValidationRequest(validator, demande, requester)
+      }
+      // WhatsApp
+      if (channels.whatsapp && validator.phone) {
+        await whatsappService.notifyValidationRequest(validator, demande, requester)
+      }
     }
   }
 
@@ -170,16 +201,25 @@ export class NotificationService {
   }
 
   /**
-   * Notifie le rejet d'une demande
+   * Notifie le rejet d'une demande (Email + WhatsApp)
    */
   private async notifyRejection(requester: User, demande: Demande): Promise<void> {
-    // Utiliser le template de mise à jour de statut pour le rejet
-    await emailService.notifyStatusUpdate(
-      requester,
-      demande,
-      'en_attente_validation_conducteur', // Statut générique
-      'rejetee'
-    )
+    const channels = getNotificationChannels()
+    
+    // Email
+    if (channels.email && requester.email) {
+      await emailService.notifyStatusUpdate(
+        requester,
+        demande,
+        'en_attente_validation_conducteur', // Statut générique
+        'rejetee'
+      )
+    }
+    
+    // WhatsApp
+    if (channels.whatsapp && requester.phone) {
+      await whatsappService.notifyRejection(requester, demande, demande.rejetMotif)
+    }
   }
 
   /**
@@ -201,47 +241,63 @@ export class NotificationService {
   }
 
   /**
-   * Envoie un rappel pour une demande spécifique
+   * Envoie un rappel pour une demande spécifique (Email + WhatsApp)
    */
   private async sendReminderForDemande(demande: Demande, users: User[]): Promise<void> {
+    const channels = getNotificationChannels()
     const requester = users.find(u => u.id === demande.technicienId)
     if (!requester) return
 
     // Déterminer qui doit recevoir le rappel selon le statut
+    // Inclure ceux qui ont email OU téléphone
     let reminderRecipients: User[] = []
+    let actionLabel = 'Validation requise'
 
     switch (demande.status) {
       case 'en_attente_validation_conducteur':
-        reminderRecipients = users.filter(u => u.role === 'conducteur_travaux' && u.email)
+        reminderRecipients = users.filter(u => u.role === 'conducteur_travaux' && (u.email || u.phone))
+        actionLabel = 'Validation conducteur'
         break
       case 'en_attente_validation_qhse':
-        reminderRecipients = users.filter(u => u.role === 'responsable_qhse' && u.email)
+        reminderRecipients = users.filter(u => u.role === 'responsable_qhse' && (u.email || u.phone))
+        actionLabel = 'Validation QHSE'
         break
       case 'en_attente_validation_responsable_travaux':
-        reminderRecipients = users.filter(u => u.role === 'responsable_travaux' && u.email)
+        reminderRecipients = users.filter(u => u.role === 'responsable_travaux' && (u.email || u.phone))
+        actionLabel = 'Validation resp. travaux'
         break
       case 'en_attente_validation_charge_affaire':
-        reminderRecipients = users.filter(u => u.role === 'charge_affaire' && u.email)
+        reminderRecipients = users.filter(u => u.role === 'charge_affaire' && (u.email || u.phone))
+        actionLabel = 'Validation chargé affaire'
         break
       case 'en_attente_preparation_appro':
-        reminderRecipients = users.filter(u => u.role === 'responsable_appro' && u.email)
+        reminderRecipients = users.filter(u => u.role === 'responsable_appro' && (u.email || u.phone))
+        actionLabel = 'Préparation appro'
         break
       case 'en_attente_validation_logistique':
-        reminderRecipients = users.filter(u => u.role === 'responsable_logistique' && u.email)
+        reminderRecipients = users.filter(u => u.role === 'responsable_logistique' && (u.email || u.phone))
+        actionLabel = 'Validation logistique'
         break
       case 'en_attente_validation_finale_demandeur':
         reminderRecipients = [requester]
+        actionLabel = 'Clôture de la demande'
         break
     }
 
-    // Envoyer les rappels
+    // Envoyer les rappels sur les deux canaux
     for (const recipient of reminderRecipients) {
-      if (recipient.email) {
+      // Email
+      if (channels.email && recipient.email) {
         if (demande.status === 'en_attente_validation_finale_demandeur') {
           await emailService.notifyClosureRequest(recipient, demande)
         } else {
           await emailService.notifyValidationRequest(recipient, demande, requester)
         }
+      }
+      
+      // WhatsApp
+      if (channels.whatsapp && recipient.phone) {
+        await whatsappService.notifyReminder(recipient, demande, actionLabel)
       }
     }
   }

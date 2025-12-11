@@ -1,11 +1,24 @@
-# 📧 Système de Notifications par Email
+# 📬 Système de Notifications Multi-Canal (Email + WhatsApp)
 
 ## Vue d'ensemble
 
-Le système de notifications par email permet d'envoyer automatiquement des emails aux utilisateurs lors de sollicitations spécifiques :
+Le système de notifications permet d'envoyer automatiquement des notifications aux utilisateurs via **deux canaux** :
+
+### 📧 Email
+- Communications formelles et détaillées
+- Historique consultable
+- Liens d'action directs
+
+### 📱 WhatsApp (via Twilio)
+- Notifications instantanées sur mobile
+- Lecture rapide des alertes
+- Idéal pour les urgences
+
+### Types de notifications
 - **Demandes de validation** pour les valideurs
 - **Demandes de clôture** pour les demandeurs
 - **Mises à jour de statut** pour toutes les parties prenantes
+- **Rappels automatiques** pour demandes en attente >24h
 
 ## 🚀 Configuration
 
@@ -44,6 +57,54 @@ SMTP_SECURE=false
 SMTP_USER=votre-utilisateur
 SMTP_PASSWORD=votre-mot-de-passe
 ```
+
+---
+
+## 📱 Configuration WhatsApp (Twilio)
+
+### 1. Créer un compte Twilio
+
+1. Inscrivez-vous sur [twilio.com](https://www.twilio.com/try-twilio)
+2. Validez votre numéro de téléphone
+3. Accédez à la console Twilio
+
+### 2. Activer le Sandbox WhatsApp
+
+1. Dans la console Twilio : **Messaging → Try it out → Send a WhatsApp message**
+2. Notez le code affiché (ex: `join example-sandbox`)
+3. Depuis votre WhatsApp, envoyez ce code au **+1 415 523 8886**
+4. Vous recevrez une confirmation d'inscription au sandbox
+
+### 3. Récupérer les credentials
+
+1. Dans la console Twilio, allez dans **Account → API keys & tokens**
+2. Copiez votre **Account SID** et **Auth Token**
+3. Ajoutez-les dans `.env.local` :
+
+```env
+# Configuration WhatsApp (Twilio)
+TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_AUTH_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_WHATSAPP_NUMBER=whatsapp:+14155238886
+
+# Activer WhatsApp
+ENABLE_WHATSAPP_NOTIFICATIONS=true
+```
+
+### 4. Important : Sandbox vs Production
+
+| Mode | Numéro | Usage |
+|------|--------|-------|
+| **Sandbox** | +1 415 523 8886 | Tests uniquement. Chaque destinataire doit rejoindre le sandbox |
+| **Production** | Votre numéro WhatsApp Business | Production. Nécessite validation Meta |
+
+### 5. Coûts Twilio
+
+| Type | Prix approximatif |
+|------|-------------------|
+| Sandbox | Gratuit |
+| Production (conversation initiée par vous) | ~0.005€/message |
+| Production (réponse utilisateur) | ~0.003€/message |
 
 ## 📋 Types de notifications
 
@@ -140,9 +201,7 @@ Le système détecte automatiquement les changements de statut et envoie les not
 
 ## 🧪 Test du système
 
-### Composant de test
-
-Utilisez le composant `NotificationTest` pour tester les emails :
+### Composant de test Email
 
 ```tsx
 import NotificationTest from '@/components/admin/notification-test'
@@ -150,13 +209,30 @@ import NotificationTest from '@/components/admin/notification-test'
 <NotificationTest users={users} demandes={demandes} />
 ```
 
-### Test manuel
+### Composant de test WhatsApp
+
+```tsx
+import WhatsAppTest from '@/components/admin/whatsapp-test'
+
+<WhatsAppTest />
+```
+
+### Test manuel Email
 
 1. Configurez les variables d'environnement
 2. Sélectionnez un utilisateur avec email
 3. Choisissez une demande de test
 4. Cliquez sur "Tester Email de Validation" ou "Tester Email de Clôture"
 5. Vérifiez la réception dans la boîte email
+
+### Test manuel WhatsApp
+
+1. Créez un compte Twilio et activez le sandbox
+2. Rejoignez le sandbox depuis votre WhatsApp (envoyez le code au +1 415 523 8886)
+3. Configurez les variables Twilio dans `.env.local`
+4. Définissez `ENABLE_WHATSAPP_NOTIFICATIONS=true`
+5. Utilisez le composant `WhatsAppTest` ou l'API directement
+6. Vérifiez la réception sur votre WhatsApp
 
 ## 📊 Templates d'emails
 
