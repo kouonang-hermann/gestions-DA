@@ -20,8 +20,15 @@ export default function MesDemandesACloturer() {
   useEffect(() => {
     if (currentUser && demandes) {
       console.log(`🔍 [CLÔTURE] Filtrage pour ${currentUser.nom} (${currentUser.role}):`)
+      console.log(`  - ID utilisateur: ${currentUser.id}`)
       console.log(`  - Total demandes: ${demandes.length}`)
-      console.log(`  - Demandes de l'utilisateur: ${demandes.filter(d => d.technicienId === currentUser.id).length}`)
+      
+      // Afficher toutes les demandes de l'utilisateur avec leurs statuts
+      const mesDemandesAll = demandes.filter(d => d.technicienId === currentUser.id)
+      console.log(`  - Demandes de l'utilisateur: ${mesDemandesAll.length}`)
+      mesDemandesAll.forEach(d => {
+        console.log(`    • ${d.numero}: statut="${d.status}", type=${d.type}`)
+      })
       
       // Filtrer les demandes que l'utilisateur peut clôturer
       const mesDemandesACloturer = demandes.filter(
@@ -29,15 +36,17 @@ export default function MesDemandesACloturer() {
           const isMyDemande = demande.technicienId === currentUser.id
           const isCloturable = demande.status === "confirmee_demandeur" || demande.status === "en_attente_validation_finale_demandeur"
           
-          if (isMyDemande) {
-            console.log(`    - ${demande.numero}: statut=${demande.status}, clôturable=${isCloturable}`)
-          }
-          
           return isMyDemande && isCloturable
         }
       )
       
-      console.log(`  - Demandes trouvées: ${mesDemandesACloturer.length}/${demandes.length}`)
+      console.log(`  - Demandes à clôturer trouvées: ${mesDemandesACloturer.length}`)
+      if (mesDemandesACloturer.length > 0) {
+        console.log(`  - IDs des demandes à clôturer:`, mesDemandesACloturer.map(d => d.numero))
+      } else {
+        console.log(`  ⚠️ Aucune demande avec statut "confirmee_demandeur" ou "en_attente_validation_finale_demandeur"`)
+      }
+      
       setDemandesACloturer(mesDemandesACloturer)
     }
   }, [currentUser, demandes])

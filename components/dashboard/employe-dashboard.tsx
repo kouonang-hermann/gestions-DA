@@ -54,7 +54,7 @@ import DemandesCategoryModal from "@/components/modals/demandes-category-modal"
 import UniversalClosureModal from "@/components/modals/universal-closure-modal"
 
 export default function EmployeDashboard() {
-  const { currentUser, demandes, projets, isLoading } = useStore()
+  const { currentUser, demandes, projets, isLoading, loadDemandes, loadProjets } = useStore()
 
   const [stats, setStats] = useState({
     total: 0,
@@ -74,7 +74,27 @@ export default function EmployeDashboard() {
   const [activeChart, setActiveChart] = useState<"material" | "tooling">("material")
   const [universalClosureModalOpen, setUniversalClosureModalOpen] = useState(false)
 
-  // Données chargées automatiquement par useDataLoader
+  // Rechargement automatique des données au montage
+  useEffect(() => {
+    const reloadAllData = async () => {
+      if (currentUser) {
+        console.log(`🔄 [EMPLOYE-DASHBOARD] Rechargement automatique des données pour ${currentUser.nom}`)
+        
+        try {
+          await Promise.all([
+            loadDemandes(),
+            loadProjets()
+          ])
+          
+          console.log(`✅ [EMPLOYE-DASHBOARD] Toutes les données rechargées avec succès`)
+        } catch (error) {
+          console.error(`❌ [EMPLOYE-DASHBOARD] Erreur lors du rechargement:`, error)
+        }
+      }
+    }
+
+    reloadAllData()
+  }, [currentUser?.id, loadDemandes, loadProjets])
 
   // Fonction pour obtenir les demandes selon le rôle
   const getDemandesForRole = () => {

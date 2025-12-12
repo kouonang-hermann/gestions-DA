@@ -138,67 +138,77 @@ export const GET = async (request: NextRequest) => {
         break
 
       case "employe":
-        // Voit ses propres demandes + celles des projets où il est assigné
-        const userProjets = await prisma.userProjet.findMany({
-          where: { userId: currentUser.id },
-          select: { projetId: true }
-        })
-        const projetIds = userProjets.map((up: any) => up.projetId)
+        // Voit UNIQUEMENT ses propres demandes (pas celles des autres dans ses projets)
+        console.log(`👤 [API-DEMANDES] Employé ${currentUser.nom} ${currentUser.prenom}:`)
+        console.log(`   - ID: ${currentUser.id}`)
+        console.log(`   - Filtre: Uniquement ses propres demandes`)
         
         whereClause = {
-          OR: [
-            { technicienId: currentUser.id },
-            { projetId: { in: projetIds } }
-          ]
+          technicienId: currentUser.id
         }
         break
 
       case "conducteur_travaux":
-        // Voit les demandes de matériel des projets où il est assigné
+        // Voit ses propres demandes + les demandes de matériel des projets où il est assigné
         const conducteurProjets = await prisma.userProjet.findMany({
           where: { userId: currentUser.id },
           select: { projetId: true }
         })
         whereClause = {
-          type: "materiel",
-          projetId: { in: conducteurProjets.map((up: any) => up.projetId) }
+          OR: [
+            { technicienId: currentUser.id }, // Ses propres demandes
+            { 
+              type: "materiel",
+              projetId: { in: conducteurProjets.map((up: any) => up.projetId) }
+            }
+          ]
         }
         break
 
       case "responsable_qhse":
-        // Voit les demandes d'outillage des projets où il est assigné
+        // Voit ses propres demandes + les demandes d'outillage des projets où il est assigné
         const qhseProjets = await prisma.userProjet.findMany({
           where: { userId: currentUser.id },
           select: { projetId: true }
         })
         whereClause = {
-          type: "outillage",
-          projetId: { in: qhseProjets.map((up: any) => up.projetId) }
+          OR: [
+            { technicienId: currentUser.id }, // Ses propres demandes
+            {
+              type: "outillage",
+              projetId: { in: qhseProjets.map((up: any) => up.projetId) }
+            }
+          ]
         }
         break
 
       case "responsable_travaux":
-        // Voit les demandes de matériel des projets où il est assigné
+        // Voit ses propres demandes + les demandes matériel ET outillage des projets où il est assigné
         const responsableProjets = await prisma.userProjet.findMany({
           where: { userId: currentUser.id },
           select: { projetId: true }
         })
         whereClause = {
-          type: "materiel",
-          projetId: { in: responsableProjets.map((up: any) => up.projetId) }
+          OR: [
+            { technicienId: currentUser.id }, // Ses propres demandes
+            { projetId: { in: responsableProjets.map((up: any) => up.projetId) } }
+          ]
         }
         break
 
       case "responsable_appro":
       case "charge_affaire":
       case "responsable_logistique":
-        // Voient les demandes des projets où ils sont assignés
+        // Voient leurs propres demandes + les demandes des projets où ils sont assignés
         const approProjets = await prisma.userProjet.findMany({
           where: { userId: currentUser.id },
           select: { projetId: true }
         })
         whereClause = {
-          projetId: { in: approProjets.map((up: any) => up.projetId) }
+          OR: [
+            { technicienId: currentUser.id }, // Ses propres demandes
+            { projetId: { in: approProjets.map((up: any) => up.projetId) } }
+          ]
         }
         break
 
@@ -236,6 +246,8 @@ export const GET = async (request: NextRequest) => {
       },
       orderBy: { dateCreation: 'desc' }
     })
+
+    console.log(`📊 [API-DEMANDES] ${demandes.length} demande(s) trouvée(s) pour ${currentUser.role}`)
 
     return NextResponse.json({
       success: true,
