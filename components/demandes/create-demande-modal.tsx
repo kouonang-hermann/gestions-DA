@@ -155,10 +155,10 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel" 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-6xl max-h-[90vh] overflow-y-auto p-3 sm:p-6">
         <DialogHeader>
-          <DialogTitle>Nouvelle demande de {type === "materiel" ? "matériel" : "outillage"}</DialogTitle>
-          <DialogDescription>Créez une nouvelle demande en saisissant manuellement les articles</DialogDescription>
+          <DialogTitle className="text-base sm:text-lg">Nouvelle demande de {type === "materiel" ? "matériel" : "outillage"}</DialogTitle>
+          <DialogDescription className="text-xs sm:text-sm">Créez une nouvelle demande</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">

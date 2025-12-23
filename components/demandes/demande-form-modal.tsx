@@ -248,13 +248,13 @@ export default function DemandeFormModal({ isOpen, onClose, demande, mode, type 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-6xl max-h-[90vh] overflow-y-auto p-3 sm:p-6">
         <DialogHeader>
-          <DialogTitle>
-            {mode === "create" ? "Nouvelle demande" : "Modifier la demande"} de {formData.type === "materiel" ? "matériel" : "outillage"}
+          <DialogTitle className="text-base sm:text-lg">
+            {mode === "create" ? "Nouvelle" : "Modifier"} demande {formData.type === "materiel" ? "matériel" : "outillage"}
           </DialogTitle>
-          <DialogDescription>
-            {mode === "create" ? "Créez une nouvelle demande en saisissant manuellement les articles" : "Modifiez les détails de la demande"}
+          <DialogDescription className="text-xs sm:text-sm">
+            {mode === "create" ? "Saisissez les articles" : "Modifiez les détails"}
           </DialogDescription>
         </DialogHeader>
 

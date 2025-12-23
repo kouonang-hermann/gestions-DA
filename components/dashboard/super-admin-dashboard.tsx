@@ -587,7 +587,7 @@ export default function SuperAdminDashboard() {
           </div>
 
           {/* Colonne de droite (fine) - 1/4 de la largeur */}
-          <div className="lg:col-span-1 space-y-4">
+          <div className="xl:col-span-1 space-y-3 sm:space-y-4 order-1 xl:order-2">
             {/* Actions rapides */}
             <Card>
               <CardHeader>

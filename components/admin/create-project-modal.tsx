@@ -136,10 +136,10 @@ export default function CreateProjectModal({ isOpen, onClose }: CreateProjectMod
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[95vh] overflow-y-auto p-3 sm:p-6">
         <DialogHeader>
-          <DialogTitle>Créer un nouveau projet</DialogTitle>
-          <DialogDescription>Ajoutez un nouveau projet et assignez des utilisateurs</DialogDescription>
+          <DialogTitle className="text-base sm:text-lg">Créer un nouveau projet</DialogTitle>
+          <DialogDescription className="text-xs sm:text-sm">Ajoutez un nouveau projet et assignez des utilisateurs</DialogDescription>
         </DialogHeader>
 
         <Card>
@@ -174,7 +174,7 @@ export default function CreateProjectModal({ isOpen, onClose }: CreateProjectMod
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="dateDebut" className="block text-sm font-medium mb-2">
                     Date de début *

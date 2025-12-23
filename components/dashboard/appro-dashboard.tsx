@@ -40,9 +40,12 @@ import CreateDemandeModal from "@/components/demandes/create-demande-modal"
 import { UserRequestsChart } from "@/components/charts/user-requests-chart"
 import UserDetailsModal from "@/components/modals/user-details-modal"
 import MesDemandesACloturer from "@/components/demandes/mes-demandes-a-cloturer"
+import UniversalClosureModal from "@/components/modals/universal-closure-modal"
 import { useAutoReload } from "@/hooks/useAutoReload"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
+import DemandeDetailModal from "@/components/demandes/demande-detail-modal"
+import { Eye } from 'lucide-react'
 
 export default function ApproDashboard() {
   const { currentUser, demandes, isLoading } = useStore()
@@ -63,6 +66,9 @@ export default function ApproDashboard() {
   const [detailsModalTitle, setDetailsModalTitle] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
   const [activeChart, setActiveChart] = useState<"material" | "tooling">("material")
+  const [universalClosureModalOpen, setUniversalClosureModalOpen] = useState(false)
+  const [selectedDemandeId, setSelectedDemandeId] = useState<string | null>(null)
+  const [demandeDetailOpen, setDemandeDetailOpen] = useState(false)
 
   // Données chargées automatiquement par useDataLoader
 
@@ -220,25 +226,26 @@ export default function ApproDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-2">
+    <div className="min-h-screen bg-gray-50 p-2 sm:p-4 md:p-6">
       <div className="max-w-full mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Tableau de Bord Appro</h1>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 sm:mb-6">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Tableau de Bord Appro</h1>
           <Button 
             onClick={handleManualReload}
             variant="outline"
-            className="bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100"
+            className="bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100 w-full sm:w-auto"
+            size="sm"
           >
             🔄 Actualiser
           </Button>
         </div>
 
         {/* Layout principal : deux colonnes */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-3 sm:gap-4">
           {/* Colonne de gauche (large) - 3/4 de la largeur */}
-          <div className="lg:col-span-3 space-y-4">
+          <div className="xl:col-span-3 space-y-3 sm:space-y-4 order-2 xl:order-1">
             {/* Vue d'ensemble - Cards statistiques */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
               <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#015fc4' }} onClick={() => handleCardClick("total", "Mes demandes émises")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Total demandes</CardTitle>
@@ -304,7 +311,7 @@ export default function ApproDashboard() {
           </div>
 
           {/* Colonne de droite (fine) - 1/4 de la largeur */}
-          <div className="lg:col-span-1 space-y-4">
+          <div className="xl:col-span-1 space-y-3 sm:space-y-4 order-1 xl:order-2">
             {/* Actions rapides */}
             <Card>
               <CardHeader>
@@ -335,6 +342,15 @@ export default function ApproDashboard() {
                   >
                     <Wrench className="h-4 w-4 mr-2" />
                     <span className="text-sm">Nouvelle demande outillage</span>
+                  </Button>
+                  <Button
+                    className="justify-start text-white"
+                    style={{ backgroundColor: '#16a34a' }}
+                    size="sm"
+                    onClick={() => setUniversalClosureModalOpen(true)}
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    <span className="text-sm">Clôturer mes demandes</span>
                   </Button>
                 </div>
               </CardContent>
@@ -445,41 +461,41 @@ export default function ApproDashboard() {
       />
       {/* Modale de détails des demandes */}
       <Dialog open={detailsModalOpen} onOpenChange={setDetailsModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] overflow-y-auto p-3 sm:p-6">
           <DialogHeader>
-            <DialogTitle>{detailsModalTitle}</DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl">{detailsModalTitle}</DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {getDemandesByType(detailsModalType).length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <Package className="mx-auto h-12 w-12 mb-4 opacity-50" />
-                <p>Aucune demande trouvée pour cette catégorie</p>
+              <div className="text-center py-6 sm:py-8 text-gray-500">
+                <Package className="mx-auto h-10 w-10 sm:h-12 sm:w-12 mb-3 sm:mb-4 opacity-50" />
+                <p className="text-sm sm:text-base">Aucune demande trouvée pour cette catégorie</p>
               </div>
             ) : (
-              <div className="grid gap-4">
+              <div className="grid gap-3 sm:gap-4">
                 {getDemandesByType(detailsModalType).map((demande) => (
-                  <Card key={demande.id} className="p-4">
-                    <div className="flex items-center justify-between">
+                  <Card key={demande.id} className="p-3 sm:p-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex-1">
-                        <div className="flex items-center gap-4 mb-2">
-                          <Badge variant="outline" className="font-mono">
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <Badge variant="outline" className="font-mono text-xs">
                             {demande.numero}
                           </Badge>
                           <Badge 
                             variant={demande.type === "materiel" ? "default" : "secondary"}
-                            className={demande.type === "materiel" ? "bg-blue-100 text-blue-800" : "bg-purple-100 text-purple-800"}
+                            className={`text-xs ${demande.type === "materiel" ? "bg-blue-100 text-blue-800" : "bg-purple-100 text-purple-800"}`}
                           >
                             {demande.type === "materiel" ? "Matériel" : "Outillage"}
                           </Badge>
                           <Badge 
                             variant="outline"
-                            className={
+                            className={`text-xs ${
                               demande.status === "en_attente_preparation_appro" ? "bg-orange-100 text-orange-800" :
                               demande.status === "en_attente_validation_logistique" ? "bg-blue-100 text-blue-800" :
                               demande.status === "en_attente_validation_finale_demandeur" ? "bg-green-100 text-green-800" :
                               "bg-gray-100 text-gray-800"
-                            }
+                            }`}
                           >
                             {demande.status === "en_attente_preparation_appro" ? "À préparer" :
                              demande.status === "en_attente_validation_logistique" ? "En attente logistique" :
@@ -488,22 +504,32 @@ export default function ApproDashboard() {
                           </Badge>
                         </div>
                         
-                        <div className="text-sm text-gray-600 space-y-1">
+                        <div className="text-xs sm:text-sm text-gray-600 space-y-1">
                           <p><strong>Projet:</strong> {demande.projetId}</p>
                           <p><strong>Demandeur:</strong> {demande.technicienId}</p>
-                          <p><strong>Date de création:</strong> {new Date(demande.dateCreation).toLocaleDateString('fr-FR')}</p>
+                          <p><strong>Date:</strong> {new Date(demande.dateCreation).toLocaleDateString('fr-FR')}</p>
                           {demande.commentaires && (
-                            <p><strong>Commentaires:</strong> {demande.commentaires}</p>
+                            <p className="truncate"><strong>Commentaires:</strong> {demande.commentaires}</p>
                           )}
                         </div>
                       </div>
                       
-                      <div className="flex flex-col items-end gap-2">
-                        <div className="text-sm text-gray-500">
-                          {new Date(demande.dateCreation).toLocaleDateString('fr-FR')}
-                        </div>
+                      <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedDemandeId(demande.id)
+                            setDemandeDetailOpen(true)
+                          }}
+                          title="Voir les détails complets"
+                          className="flex-1 sm:flex-none"
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          <span className="hidden xs:inline">Détails</span>
+                        </Button>
                         {demande.status === "en_attente_preparation_appro" && (
-                          <Badge className="bg-orange-500 text-white">
+                          <Badge className="bg-orange-500 text-white text-xs">
                             Action requise
                           </Badge>
                         )}
@@ -516,6 +542,19 @@ export default function ApproDashboard() {
           </div>
         </DialogContent>
       </Dialog>
+      <UniversalClosureModal
+        isOpen={universalClosureModalOpen}
+        onClose={() => setUniversalClosureModalOpen(false)}
+      />
+      <DemandeDetailModal
+        isOpen={demandeDetailOpen}
+        onClose={() => {
+          setDemandeDetailOpen(false)
+          setSelectedDemandeId(null)
+        }}
+        demandeId={selectedDemandeId}
+        mode="view"
+      />
     </div>
   )
 }

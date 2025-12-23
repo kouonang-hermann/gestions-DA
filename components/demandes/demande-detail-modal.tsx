@@ -49,7 +49,7 @@ const statusLabels: Record<DemandeStatus, string> = {
 }
 
 export default function DemandeDetailModal({ isOpen, onClose, demandeId, mode }: DemandeDetailModalProps) {
-  const { currentUser, articles, executeAction } = useStore()
+  const { currentUser, articles, executeAction, token } = useStore()
   const [demande, setDemande] = useState<Demande | null>(null)
   const [loading, setLoading] = useState(false)
   const [actionLoading, setActionLoading] = useState(false)
@@ -61,13 +61,14 @@ export default function DemandeDetailModal({ isOpen, onClose, demandeId, mode }:
   }, [isOpen, demandeId])
 
   const loadDemande = async () => {
-    if (!demandeId) return
+    if (!demandeId || !token) return
 
     setLoading(true)
     try {
       const response = await fetch(`/api/demandes/${demandeId}`, {
         headers: {
-          "x-user-id": currentUser?.id || "",
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
       })
       const result = await response.json()
@@ -198,7 +199,11 @@ export default function DemandeDetailModal({ isOpen, onClose, demandeId, mode }:
   if (loading) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto p-3 sm:p-6">
+          <DialogHeader>
+            <DialogTitle className="text-base sm:text-lg">Chargement...</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">Chargement des détails</DialogDescription>
+          </DialogHeader>
           <div className="flex items-center justify-center p-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
           </div>
@@ -210,7 +215,11 @@ export default function DemandeDetailModal({ isOpen, onClose, demandeId, mode }:
   if (!demande) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="w-[95vw] max-w-4xl p-3 sm:p-6">
+          <DialogHeader>
+            <DialogTitle className="text-base sm:text-lg">Demande introuvable</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">La demande n'a pas été trouvée.</DialogDescription>
+          </DialogHeader>
           <div className="text-center p-8">Demande non trouvée</div>
         </DialogContent>
       </Dialog>
@@ -219,14 +228,14 @@ export default function DemandeDetailModal({ isOpen, onClose, demandeId, mode }:
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto p-3 sm:p-6">
         <DialogHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <DialogTitle className="text-2xl">{demande.numero}</DialogTitle>
-              <DialogDescription>Détails de la demande de {demande.type}</DialogDescription>
+              <DialogTitle className="text-lg sm:text-2xl">{demande.numero}</DialogTitle>
+              <DialogDescription className="text-xs sm:text-sm">Détails - {demande.type}</DialogDescription>
             </div>
-            <Badge className={`${statusColors[demande.status]} text-white`}>{statusLabels[demande.status]}</Badge>
+            <Badge className={`${statusColors[demande.status]} text-white text-xs truncate max-w-[150px] sm:max-w-none`}>{statusLabels[demande.status]}</Badge>
           </div>
         </DialogHeader>
 

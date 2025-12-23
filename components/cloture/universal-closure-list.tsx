@@ -13,7 +13,7 @@ interface UniversalClosureListProps {
 }
 
 export default function UniversalClosureList({ onClose }: UniversalClosureListProps) {
-  const { currentUser, demandes, loadDemandes } = useStore()
+  const { currentUser, demandes, loadDemandes, token } = useStore()
   const [demandesACloturer, setDemandesACloturer] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
@@ -30,13 +30,14 @@ export default function UniversalClosureList({ onClose }: UniversalClosureListPr
   }, [demandes, currentUser])
 
   const handleCloturer = async (demandeId: string) => {
-    if (!currentUser) return
+    if (!currentUser || !token) return
 
     setIsLoading(true)
     try {
       const response = await fetch(`/api/demandes/${demandeId}`, {
         method: "PUT",
         headers: {
+          "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -145,29 +146,29 @@ export default function UniversalClosureList({ onClose }: UniversalClosureListPr
                 </div>
               </CardHeader>
               <CardContent className="pt-0">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2">
-                      <Clock className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">
+                      <Clock className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                      <span className="text-xs sm:text-sm text-gray-600 truncate">
                         Projet: {demande.projet?.nom || 'Non spécifié'}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="h-4 w-4 text-emerald-600" />
-                      <span className="text-sm text-emerald-700 font-medium">
-                        Toutes les validations sont terminées - Prêt à clôturer
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="h-4 w-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                      <span className="text-xs sm:text-sm text-emerald-700 font-medium">
+                        Prêt à clôturer
                       </span>
                     </div>
                     <p className="text-xs text-gray-500 mt-1">
-                      {demande.items?.length || 0} article(s) • Type: {demande.type === "materiel" ? "Matériel" : "Outillage"}
+                      {demande.items?.length || 0} article(s) • {demande.type === "materiel" ? "Matériel" : "Outillage"}
                     </p>
                   </div>
-                  <div className="ml-4">
+                  <div className="sm:ml-4 w-full sm:w-auto">
                     <Button
                       onClick={() => handleCloturer(demande.id)}
                       disabled={isLoading}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white w-full sm:w-auto"
                       size="sm"
                     >
                       <CheckCircle className="h-4 w-4 mr-2" />

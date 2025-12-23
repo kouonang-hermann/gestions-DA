@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Eye, Edit, Trash2, CheckCircle } from "lucide-react"
 import { useStore } from "@/stores/useStore"
+import DemandeDetailModal from "@/components/demandes/demande-detail-modal"
 
 interface UserDetailsModalProps {
   isOpen: boolean
@@ -21,6 +22,8 @@ export default function UserDetailsModal({ isOpen, onClose, title, data, type }:
   const [clotureLoading, setClotureLoading] = useState<string | null>(null)
   const [commentaires, setCommentaires] = useState<{ [key: string]: string }>({})
   const [showCommentaire, setShowCommentaire] = useState<{ [key: string]: boolean }>({})
+  const [selectedDemande, setSelectedDemande] = useState<any>(null)
+  const [demandeDetailsOpen, setDemandeDetailsOpen] = useState(false)
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -142,9 +145,9 @@ export default function UserDetailsModal({ isOpen, onClose, title, data, type }:
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] overflow-y-auto p-3 sm:p-6">
         <DialogHeader>
-          <DialogTitle>{title} ({filteredData.length})</DialogTitle>
+          <DialogTitle className="text-base sm:text-lg">{title} ({filteredData.length})</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4">
@@ -156,13 +159,13 @@ export default function UserDetailsModal({ isOpen, onClose, title, data, type }:
             filteredData.map((item) => (
               <div
                 key={item.id}
-                className="bg-white p-4 rounded-lg border border-gray-200 hover:shadow-sm transition-shadow"
+                className="bg-white p-3 sm:p-4 rounded-lg border border-gray-200 hover:shadow-sm transition-shadow"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-medium text-gray-800">{item.numero}</h3>
-                      <Badge className={`${getStatusColor(item.status)} text-white text-xs`}>
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                      <h3 className="font-medium text-gray-800 text-sm sm:text-base">{item.numero}</h3>
+                      <Badge className={`${getStatusColor(item.status)} text-white text-xs truncate max-w-[120px] sm:max-w-none`}>
                         {getStatusLabel(item.status)}
                       </Badge>
                       <Badge variant="outline" className="text-xs">
@@ -264,7 +267,16 @@ export default function UserDetailsModal({ isOpen, onClose, title, data, type }:
                     )}
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="text-blue-600 hover:text-blue-700">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="text-blue-600 hover:text-blue-700"
+                      onClick={() => {
+                        setSelectedDemande(item)
+                        setDemandeDetailsOpen(true)
+                      }}
+                      title="Voir les détails"
+                    >
                       <Eye className="h-4 w-4" />
                     </Button>
                     {/* Masquer les boutons de modification et suppression pour les demandes en cours */}
@@ -292,6 +304,19 @@ export default function UserDetailsModal({ isOpen, onClose, title, data, type }:
           </Button>
         </div>
       </DialogContent>
+
+      {/* Modale de détails de la demande */}
+      {selectedDemande && (
+        <DemandeDetailModal
+          isOpen={demandeDetailsOpen}
+          onClose={() => {
+            setDemandeDetailsOpen(false)
+            setSelectedDemande(null)
+          }}
+          demandeId={selectedDemande.id}
+          mode="view"
+        />
+      )}
     </Dialog>
   )
 }

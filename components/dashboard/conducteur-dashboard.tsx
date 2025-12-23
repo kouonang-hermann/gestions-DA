@@ -42,6 +42,7 @@ import MesDemandesACloturer from "@/components/demandes/mes-demandes-a-cloturer"
 import ValidationDemandesList from "@/components/validation/validation-demandes-list"
 import UserDetailsModal from "@/components/modals/user-details-modal"
 import ValidatedRequestsHistory from "@/components/dashboard/validated-requests-history"
+import UniversalClosureModal from "@/components/modals/universal-closure-modal"
 import type { Demande } from "@/types"
 import { useAutoReload } from "@/hooks/useAutoReload"
 
@@ -65,6 +66,7 @@ export default function ConducteurDashboard() {
   const [validatedHistoryModalOpen, setValidatedHistoryModalOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [activeChart, setActiveChart] = useState<"material" | "tooling">("material")
+  const [universalClosureModalOpen, setUniversalClosureModalOpen] = useState(false)
 
   // Données chargées automatiquement par useDataLoader
 
@@ -253,25 +255,26 @@ export default function ConducteurDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-2">
+    <div className="min-h-screen bg-gray-50 p-2 sm:p-4 md:p-6">
       <div className="max-w-full mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Tableau de Bord Conducteur</h1>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 sm:mb-6">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Tableau de Bord Conducteur</h1>
           <Button 
             onClick={handleManualReload}
             variant="outline"
-            className="bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100"
+            className="bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100 w-full sm:w-auto"
+            size="sm"
           >
             🔄 Actualiser
           </Button>
         </div>
 
         {/* Layout principal : deux colonnes */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-3 sm:gap-4">
           {/* Colonne de gauche (large) - 3/4 de la largeur */}
-          <div className="lg:col-span-3 space-y-4">
+          <div className="xl:col-span-3 space-y-3 sm:space-y-4 order-2 xl:order-1">
             {/* Vue d'ensemble - Cards statistiques */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
               <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#015fc4' }} onClick={() => handleCardClick("total", "Mes demandes")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Mes demandes</CardTitle>
@@ -336,7 +339,7 @@ export default function ConducteurDashboard() {
           </div>
 
           {/* Colonne de droite (fine) - 1/4 de la largeur */}
-          <div className="lg:col-span-1 space-y-4">
+          <div className="xl:col-span-1 space-y-3 sm:space-y-4 order-1 xl:order-2">
             {/* Actions rapides */}
             <Card>
               <CardHeader>
@@ -367,6 +370,15 @@ export default function ConducteurDashboard() {
                   >
                     <Wrench className="h-4 w-4 mr-2" />
                     <span className="text-sm">Nouvelle demande outillage</span>
+                  </Button>
+                  <Button
+                    className="justify-start text-white"
+                    style={{ backgroundColor: '#16a34a' }}
+                    size="sm"
+                    onClick={() => setUniversalClosureModalOpen(true)}
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    <span className="text-sm">Clôturer mes demandes</span>
                   </Button>
                 </div>
               </CardContent>
@@ -485,6 +497,10 @@ export default function ConducteurDashboard() {
       <ValidatedRequestsHistory
         isOpen={validatedHistoryModalOpen}
         onClose={() => setValidatedHistoryModalOpen(false)}
+      />
+      <UniversalClosureModal
+        isOpen={universalClosureModalOpen}
+        onClose={() => setUniversalClosureModalOpen(false)}
       />
     </div>
   )

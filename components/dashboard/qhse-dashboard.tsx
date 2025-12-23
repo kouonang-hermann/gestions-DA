@@ -40,6 +40,9 @@ import ValidationDemandesList from "@/components/validation/validation-demandes-
 import CreateDemandeModal from "@/components/demandes/create-demande-modal"
 import { UserRequestsChart } from "@/components/charts/user-requests-chart"
 import UserDetailsModal from "@/components/modals/user-details-modal"
+import UniversalClosureModal from "@/components/modals/universal-closure-modal"
+import ValidatedRequestsHistory from "@/components/dashboard/validated-requests-history"
+import MesDemandesACloturer from "@/components/demandes/mes-demandes-a-cloturer"
 import { useAutoReload } from "@/hooks/useAutoReload"
 
 export default function QHSEDashboard() {
@@ -61,6 +64,8 @@ export default function QHSEDashboard() {
   const [detailsModalTitle, setDetailsModalTitle] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
   const [activeChart, setActiveChart] = useState<"material" | "tooling">("material")
+  const [universalClosureModalOpen, setUniversalClosureModalOpen] = useState(false)
+  const [validatedHistoryModalOpen, setValidatedHistoryModalOpen] = useState(false)
 
   // Données chargées automatiquement par useDataLoader
 
@@ -96,10 +101,47 @@ export default function QHSEDashboard() {
 
   const mesDemandes = currentUser ? demandes.filter((d) => d.technicienId === currentUser.id) : []
 
+  // Fonction pour obtenir les demandes selon le type de carte
+  const getDemandesForType = (type: "total" | "enAttente" | "enCours" | "validees" | "rejetees") => {
+    if (!currentUser) return []
+
+    const demandesOutillage = demandes.filter(
+      (d) => d.type === "outillage" && currentUser.projets?.includes(d.projetId)
+    )
+
+    switch (type) {
+      case "total":
+        return mesDemandes
+      case "enAttente":
+        return demandesOutillage.filter((d) => d.status === "en_attente_validation_qhse")
+      case "enCours":
+        return mesDemandes.filter((d) => ![
+          "brouillon", "cloturee", "rejetee", "archivee"
+        ].includes(d.status))
+      case "validees":
+        return demandesOutillage.filter((d) => [
+          "en_attente_validation_responsable_travaux",
+          "en_attente_validation_charge_affaire", 
+          "en_attente_preparation_appro",
+          "en_attente_validation_logistique",
+          "en_attente_validation_finale_demandeur",
+          "cloturee"
+        ].includes(d.status))
+      case "rejetees":
+        return mesDemandes.filter((d) => d.status === "rejetee")
+      default:
+        return []
+    }
+  }
+
   const handleCardClick = (type: "total" | "enAttente" | "enCours" | "validees" | "rejetees", title: string) => {
-    setDetailsModalType(type)
-    setDetailsModalTitle(title)
-    setDetailsModalOpen(true)
+    if (type === "total") {
+      setValidatedHistoryModalOpen(true)
+    } else {
+      setDetailsModalType(type)
+      setDetailsModalTitle(title)
+      setDetailsModalOpen(true)
+    }
   }
 
   if (isLoading) {
@@ -160,90 +202,91 @@ export default function QHSEDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-2">
+    <div className="min-h-screen bg-gray-50 p-2 sm:p-4 md:p-6">
       <div className="max-w-full mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Tableau de Bord QHSE</h1>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 sm:mb-6">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Tableau de Bord QHSE</h1>
           <Button 
             onClick={handleManualReload}
             variant="outline"
-            className="bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100"
+            className="bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100 w-full sm:w-auto"
+            size="sm"
           >
             🔄 Actualiser
           </Button>
         </div>
 
         {/* Layout principal : deux colonnes */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-3 sm:gap-4">
           {/* Colonne de gauche (large) - 3/4 de la largeur */}
-          <div className="lg:col-span-3 space-y-4">
+          <div className="xl:col-span-3 space-y-3 sm:space-y-4 order-2 xl:order-1">
             {/* Vue d'ensemble - Cards statistiques */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#015fc4' }} onClick={() => handleCardClick("total", "Toutes les demandes")}>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#015fc4' }} onClick={() => handleCardClick("total", "Mes demandes")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Total demandes</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Mes demandes</CardTitle>
                   <Package className="h-4 w-4" style={{ color: '#015fc4' }} />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold" style={{ color: '#015fc4' }}>{stats.total}</div>
-                  <p className="text-xs text-muted-foreground">Demandes outillage</p>
+                  <div className="text-2xl font-bold" style={{ color: '#015fc4' }}>{mesDemandes.length}</div>
+                  <p className="text-xs text-muted-foreground">Mes demandes créées</p>
                 </CardContent>
               </Card>
 
-              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#f97316' }} onClick={() => handleCardClick("enAttente", "Demandes en attente")}>
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#f97316' }} onClick={() => handleCardClick("enAttente", "Demandes à valider")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">En attente</CardTitle>
                   <Clock className="h-4 w-4" style={{ color: '#f97316' }} />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold" style={{ color: '#f97316' }}>{stats.enAttente}</div>
-                  <p className="text-xs text-muted-foreground">À valider QHSE</p>
+                  <p className="text-xs text-muted-foreground">À valider par moi</p>
                 </CardContent>
               </Card>
 
-              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#f97316' }} onClick={() => handleCardClick("enCours", "Demandes en cours")}>
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#3b82f6' }} onClick={() => handleCardClick("enCours", "Mes demandes en cours")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">En cours</CardTitle>
-                  <Clock className="h-4 w-4" style={{ color: '#f97316' }} />
+                  <Clock className="h-4 w-4" style={{ color: '#3b82f6' }} />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold" style={{ color: '#f97316' }}>{stats.enCours}</div>
-                  <p className="text-xs text-muted-foreground">En traitement</p>
+                  <div className="text-2xl font-bold" style={{ color: '#3b82f6' }}>{stats.enCours}</div>
+                  <p className="text-xs text-muted-foreground">Matériel et outillage</p>
                 </CardContent>
               </Card>
 
-              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#22c55e' }} onClick={() => handleCardClick("validees", "Demandes validées")}>
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#22c55e' }} onClick={() => handleCardClick("validees", "Demandes que j'ai validées")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Validées</CardTitle>
                   <CheckCircle className="h-4 w-4" style={{ color: '#22c55e' }} />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold" style={{ color: '#22c55e' }}>{stats.validees}</div>
-                  <p className="text-xs text-muted-foreground">Demandes validées</p>
+                  <p className="text-xs text-muted-foreground">Validées par moi</p>
                 </CardContent>
               </Card>
 
-              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#fc2d1f' }} onClick={() => handleCardClick("rejetees", "Demandes rejetées")}>
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#fc2d1f' }} onClick={() => handleCardClick("rejetees", "Mes demandes rejetées")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Rejetées</CardTitle>
                   <XCircle className="h-4 w-4" style={{ color: '#fc2d1f' }} />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold" style={{ color: '#fc2d1f' }}>{stats.rejetees}</div>
-                  <p className="text-xs text-muted-foreground">Demandes rejetées</p>
+                  <p className="text-xs text-muted-foreground">Refusées</p>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Section partagée pour les demandes en cours et clôture */}
-            <SharedDemandesSection />
-
             {/* Liste des demandes à valider */}
             <ValidationDemandesList type="outillage" title="Demandes d'outillage à valider" />
+            
+            {/* Mes demandes à clôturer */}
+            <MesDemandesACloturer />
           </div>
 
           {/* Colonne de droite (fine) - 1/4 de la largeur */}
-          <div className="lg:col-span-1 space-y-4">
+          <div className="xl:col-span-1 space-y-3 sm:space-y-4 order-1 xl:order-2">
             {/* Actions rapides */}
             <Card>
               <CardHeader>
@@ -274,6 +317,15 @@ export default function QHSEDashboard() {
                   >
                     <Wrench className="h-4 w-4 mr-2" />
                     <span className="text-sm">Nouvelle demande outillage</span>
+                  </Button>
+                  <Button
+                    className="justify-start text-white"
+                    style={{ backgroundColor: '#16a34a' }}
+                    size="sm"
+                    onClick={() => setUniversalClosureModalOpen(true)}
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    <span className="text-sm">Clôturer mes demandes</span>
                   </Button>
                 </div>
               </CardContent>
@@ -386,8 +438,16 @@ export default function QHSEDashboard() {
         isOpen={detailsModalOpen}
         onClose={() => setDetailsModalOpen(false)}
         title={detailsModalTitle}
-        data={mesDemandes}
+        data={getDemandesForType(detailsModalType)}
         type={detailsModalType}
+      />
+      <UniversalClosureModal
+        isOpen={universalClosureModalOpen}
+        onClose={() => setUniversalClosureModalOpen(false)}
+      />
+      <ValidatedRequestsHistory
+        isOpen={validatedHistoryModalOpen}
+        onClose={() => setValidatedHistoryModalOpen(false)}
       />
     </div>
   )

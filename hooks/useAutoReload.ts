@@ -21,8 +21,13 @@ export function useAutoReload(dashboardName: string) {
           console.log(`🔄 [${dashboardName}] Chargement des demandes...`)
           await loadDemandes()
           
+          // Charger les utilisateurs (ignorer l'erreur si pas autorisé - normal pour les employés)
           console.log(`🔄 [${dashboardName}] Chargement des utilisateurs...`)
-          await loadUsers()
+          try {
+            await loadUsers()
+          } catch (error) {
+            console.warn(`⚠️ [${dashboardName}] Chargement utilisateurs non autorisé (normal pour certains rôles)`)
+          }
           
           // Attendre un peu plus avant de charger les projets pour s'assurer que l'auth est stable
           await new Promise(resolve => setTimeout(resolve, 200))
@@ -32,7 +37,7 @@ export function useAutoReload(dashboardName: string) {
           try {
             await loadProjets()
           } catch (error) {
-            console.warn(`⚠️ [${dashboardName}] Erreur lors du chargement des projets (ignorée):`, error)
+            console.warn(`⚠️ [${dashboardName}] Erreur lors du chargement des projets (ignorée)`)
           }
           
           console.log(`✅ [${dashboardName}] Rechargement terminé`)
@@ -54,12 +59,22 @@ export function useAutoReload(dashboardName: string) {
     console.log(`🔄 [${dashboardName}] Rechargement manuel déclenché`)
     
     try {
-      // Recharger toutes les données en parallèle
-      await Promise.all([
-        loadDemandes(),
-        loadUsers(),
-        loadProjets()
-      ])
+      // Recharger les demandes (essentiel)
+      await loadDemandes()
+      
+      // Recharger les utilisateurs (ignorer si pas autorisé)
+      try {
+        await loadUsers()
+      } catch (error) {
+        console.warn(`⚠️ [${dashboardName}] Chargement utilisateurs non autorisé`)
+      }
+      
+      // Recharger les projets (ignorer si erreur)
+      try {
+        await loadProjets()
+      } catch (error) {
+        console.warn(`⚠️ [${dashboardName}] Erreur chargement projets`)
+      }
       
       console.log(`✅ [${dashboardName}] Rechargement manuel terminé avec succès`)
     } catch (error) {

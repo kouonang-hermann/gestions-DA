@@ -161,12 +161,12 @@ export default function DemandesCategoryModal({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
+        <DialogContent className="w-[95vw] max-w-6xl max-h-[90vh] overflow-hidden p-3 sm:p-6">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-xl">
+            <DialogTitle className="flex flex-wrap items-center gap-2 text-base sm:text-xl">
               {getCategoryIcon()}
-              {title}
-              <Badge variant="outline" className="ml-2">
+              <span className="truncate">{title}</span>
+              <Badge variant="outline" className="ml-0 sm:ml-2 text-xs">
                 {filteredDemandes.length} demande{filteredDemandes.length > 1 ? 's' : ''}
               </Badge>
             </DialogTitle>
@@ -178,10 +178,10 @@ export default function DemandesCategoryModal({
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
-                  placeholder="Rechercher par numéro, projet, demandeur..."
+                  placeholder="Rechercher..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 text-sm"
                 />
               </div>
             </div>

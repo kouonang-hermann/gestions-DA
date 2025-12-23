@@ -118,10 +118,10 @@ export default function CreateUserModal({ isOpen, onClose }: CreateUserModalProp
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="w-[95vw] max-w-md p-3 sm:p-6">
         <DialogHeader>
-          <DialogTitle>Créer un nouvel utilisateur</DialogTitle>
-          <DialogDescription>Ajoutez un nouvel utilisateur au système</DialogDescription>
+          <DialogTitle className="text-base sm:text-lg">Créer un nouvel utilisateur</DialogTitle>
+          <DialogDescription className="text-xs sm:text-sm">Ajoutez un nouvel utilisateur au système</DialogDescription>
         </DialogHeader>
 
         <Card>

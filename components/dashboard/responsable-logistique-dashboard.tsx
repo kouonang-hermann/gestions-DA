@@ -21,7 +21,8 @@ import {
   Search,
   Wrench,
   BarChart3,
-  TrendingUp
+  TrendingUp,
+  Eye
 } from 'lucide-react'
 import {
   PieChart,
@@ -42,7 +43,10 @@ import { UserRequestsChart } from "@/components/charts/user-requests-chart"
 import UserDetailsModal from "@/components/modals/user-details-modal"
 import ValidationLogistiqueList from "@/components/logistique/validation-logistique-list"
 import MesDemandesACloturer from "@/components/demandes/mes-demandes-a-cloturer"
+import UniversalClosureModal from "@/components/modals/universal-closure-modal"
 import { useAutoReload } from "@/hooks/useAutoReload"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import DemandeDetailModal from "@/components/demandes/demande-detail-modal"
 
 export default function ResponsableLogistiqueDashboard() {
   const { currentUser, demandes, projets, isLoading } = useStore()
@@ -50,19 +54,22 @@ export default function ResponsableLogistiqueDashboard() {
 
   const [stats, setStats] = useState({
     total: 0,
+    aValider: 0,
     enCours: 0,
     validees: 0,
-    enAttenteValidation: 0,
+    livrees: 0,
   })
 
   const [createDemandeModalOpen, setCreateDemandeModalOpen] = useState(false)
   const [demandeType, setDemandeType] = useState<"materiel" | "outillage">("materiel")
-  const [showUserModal, setShowUserModal] = useState(false)
-  const [selectedFilter, setSelectedFilter] = useState<string | null>(null)
-  const [filterTitle, setFilterTitle] = useState("")
-  const [showValidationList, setShowValidationList] = useState(false)
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false)
+  const [detailsModalType, setDetailsModalType] = useState<"total" | "aValider" | "enCours" | "validees" | "livrees">("total")
+  const [detailsModalTitle, setDetailsModalTitle] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
   const [activeChart, setActiveChart] = useState<"material" | "tooling">("material")
+  const [universalClosureModalOpen, setUniversalClosureModalOpen] = useState(false)
+  const [selectedDemandeId, setSelectedDemandeId] = useState<string | null>(null)
+  const [demandeDetailOpen, setDemandeDetailOpen] = useState(false)
 
   // Données chargées automatiquement par useDataLoader
 
@@ -76,71 +83,92 @@ export default function ResponsableLogistiqueDashboard() {
         currentUser.projets.includes(d.projetId)
       )
       
-      const total = mesDemandesLogistique.length
-      const enCours = mesDemandesLogistique.filter(d => 
-        d.status === "en_attente_validation_logistique"
-      ).length
-      const validees = mesDemandesLogistique.filter(d => 
-        d.status === "en_attente_validation_finale_demandeur" ||
-        d.status === "cloturee"
-      ).length
-      const enAttenteValidation = mesDemandesLogistique.filter(d => 
-        d.status === "en_attente_validation_logistique"
-      ).length
+      // 1. MES DEMANDES CRÉÉES (en tant que demandeur)
+      const mesDemandesCreees = mesDemandesLogistique.filter((d) => d.technicienId === currentUser.id)
 
-      console.log(`🔍 [LOGISTIQUE-DASHBOARD] Statistiques pour ${currentUser.nom}:`)
+      // 2. DEMANDES À VALIDER (en tant que Logistique dans le flow)
+      const demandesAValider = mesDemandesLogistique.filter((d) => d.status === "en_attente_validation_logistique")
+      
+      // 3. DEMANDES EN COURS (validées par logistique, en attente demandeur)
+      const demandesEnCours = mesDemandesLogistique.filter((d) => d.status === "en_attente_validation_finale_demandeur")
+      
+      // 4. DEMANDES VALIDÉES (confirmées ou clôturées)
+      const demandesValidees = mesDemandesLogistique.filter((d) => 
+        d.status === "confirmee_demandeur" || d.status === "cloturee"
+      )
+
+      // 5. MES DEMANDES EN COURS (comme employé)
+      const mesDemandesEnCoursEmploye = mesDemandesCreees.filter((d) => ![
+        "brouillon", 
+        "cloturee", 
+        "rejetee", 
+        "archivee"
+      ].includes(d.status))
+
+      console.log(`🔍 [LOGISTIQUE-DASHBOARD] Statistiques pour ${currentUser.nom} (${currentUser.role}):`)
       console.log(`  - Projets utilisateur: [${currentUser.projets?.join(', ') || 'aucun'}]`)
-      console.log(`  - Total demandes dans mes projets: ${total}`)
-      console.log(`  - Demandes à valider (logistique): ${enAttenteValidation}`)
-      console.log(`  - Demandes en cours: ${enCours}`)
-      console.log(`  - Demandes validées: ${validees}`)
+      console.log(`  - Total demandes émises par moi: ${mesDemandesCreees.length}`)
+      console.log(`  - Demandes à valider (flow Logistique): ${demandesAValider.length}`)
+      console.log(`  - Demandes en cours (en attente demandeur): ${demandesEnCours.length}`)
+      console.log(`  - Demandes validées (terminées): ${demandesValidees.length}`)
+      console.log(`  - Mes demandes en cours: ${mesDemandesEnCoursEmploye.length}`)
 
       setStats({
-        total,
-        enCours,
-        validees,
-        enAttenteValidation,
+        total: mesDemandesCreees.length, // MES demandes créées
+        aValider: demandesAValider.length, // Demandes que JE dois valider
+        enCours: demandesEnCours.length, // En attente validation finale demandeur
+        validees: demandesValidees.length, // Confirmées ou clôturées
+        livrees: mesDemandesEnCoursEmploye.length, // MES demandes en cours (comme employé)
       })
     }
   }, [demandes, currentUser])
 
-  const handleCardClick = (filter: string, title: string) => {
-    if (filter === "enAttenteValidation") {
-      setShowValidationList(true)
-    } else {
-      setSelectedFilter(filter)
-      setFilterTitle(title)
-      setShowValidationList(false)
-    }
+  const handleCardClick = (type: "total" | "aValider" | "enCours" | "validees" | "livrees", title: string) => {
+    setDetailsModalType(type)
+    setDetailsModalTitle(title)
+    setDetailsModalOpen(true)
   }
 
-  const getFilteredDemandes = () => {
+  // Fonction pour obtenir les demandes selon le type de carte
+  const getDemandesByType = (type: "total" | "aValider" | "enCours" | "validees" | "livrees") => {
     if (!currentUser) return []
-    
-    // Filtrer d'abord par projets du responsable logistique
-    // Si pas de projets assignés, voir toutes les demandes
-    const mesDemandesLogistique = demandes.filter((d) => 
-      !currentUser.projets || 
-      currentUser.projets.length === 0 || 
-      currentUser.projets.includes(d.projetId)
-    )
-    
-    if (!selectedFilter) return mesDemandesLogistique
 
-    switch (selectedFilter) {
+    const demandesFiltered = demandes.filter((d) => 
+      (!currentUser.projets || currentUser.projets.length === 0 || currentUser.projets.includes(d.projetId))
+    )
+
+    switch (type) {
       case "total":
-        return mesDemandesLogistique
+        // MES demandes créées (en tant que demandeur)
+        return demandesFiltered.filter((d) => d.technicienId === currentUser.id)
+      
+      case "aValider":
+        // Demandes à valider (en tant que Logistique)
+        return demandesFiltered.filter((d) => d.status === "en_attente_validation_logistique")
+      
       case "enCours":
-        return mesDemandesLogistique.filter(d => d.status === "en_attente_validation_logistique")
+        // Demandes en cours (en attente validation finale demandeur)
+        return demandesFiltered.filter((d) => d.status === "en_attente_validation_finale_demandeur")
+      
       case "validees":
-        return mesDemandesLogistique.filter(d => 
-          d.status === "en_attente_validation_finale_demandeur" ||
-          d.status === "cloturee"
+        // Demandes validées (confirmées ou clôturées)
+        return demandesFiltered.filter((d) => 
+          d.status === "confirmee_demandeur" || d.status === "cloturee"
         )
-      case "enAttenteValidation":
-        return mesDemandesLogistique.filter(d => d.status === "en_attente_validation_logistique")
+      
+      case "livrees":
+        // MES demandes en cours (comme employé)
+        return demandesFiltered.filter((d) => 
+          d.technicienId === currentUser.id && ![
+            "brouillon", 
+            "cloturee", 
+            "rejetee", 
+            "archivee"
+          ].includes(d.status)
+        )
+      
       default:
-        return mesDemandesLogistique
+        return []
     }
   }
 
@@ -185,11 +213,12 @@ export default function ResponsableLogistiqueDashboard() {
     )
   }
 
+  const mesDemandes = currentUser ? demandes.filter((d) => d.technicienId === currentUser.id) : []
+
   // Génération des données de graphique
   const generateChartData = () => {
-    const filteredDemandes = getFilteredDemandes()
-    const materialRequests = filteredDemandes.filter(d => d.type === "materiel")
-    const toolingRequests = filteredDemandes.filter(d => d.type === "outillage")
+    const materialRequests = mesDemandes.filter((d) => d.type === "materiel")
+    const toolingRequests = mesDemandes.filter((d) => d.type === "outillage")
     
     const materialFlowData = [
       { name: "Jan", value: Math.round(materialRequests.length * 0.15) },
@@ -236,277 +265,230 @@ export default function ResponsableLogistiqueDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-2">
+    <div className="min-h-screen bg-gray-50 p-2 sm:p-4 md:p-6">
       <div className="max-w-full mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Tableau de Bord Responsable Logistique</h1>
-          <div className="flex space-x-2">
-            <Button 
-              onClick={handleManualReload}
-              variant="outline"
-              className="bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100"
-            >
-              🔄 Actualiser
-            </Button>
-            {showValidationList && (
-              <Button 
-                variant="outline" 
-                onClick={() => setShowValidationList(false)}
-              >
-                Retour au tableau de bord
-              </Button>
-            )}
-          </div>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 sm:mb-6">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Tableau de Bord Logistique</h1>
+          <Button 
+            onClick={handleManualReload}
+            variant="outline"
+            className="bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100 w-full sm:w-auto"
+            size="sm"
+          >
+            🔄 Actualiser
+          </Button>
         </div>
 
-        {/* Afficher soit le dashboard soit la liste de validation */}
-        {showValidationList ? (
-          <ValidationLogistiqueList />
-        ) : (
-          <>
-            {/* Layout principal : deux colonnes */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-              {/* Colonne de gauche (large) - 3/4 de la largeur */}
-              <div className="lg:col-span-3 space-y-4">
-                {/* Vue d'ensemble - Cards statistiques (4 cartes sur 1 ligne) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#015fc4' }} onClick={() => handleCardClick("total", "Toutes mes demandes")}>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium text-muted-foreground">Total</CardTitle>
-                      <FileText className="h-4 w-4" style={{ color: '#015fc4' }} />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold" style={{ color: '#015fc4' }}>{stats.total}</div>
-                      <p className="text-xs text-muted-foreground">Demandes</p>
-                    </CardContent>
-                  </Card>
+        {/* Layout principal : deux colonnes */}
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-3 sm:gap-4">
+          {/* Colonne de gauche (large) - 3/4 de la largeur */}
+          <div className="xl:col-span-3 space-y-3 sm:space-y-4 order-2 xl:order-1">
+            {/* Vue d'ensemble - Cards statistiques (5 cartes sur 1 ligne) */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#015fc4' }} onClick={() => handleCardClick("total", "Mes demandes émises")}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Total demandes</CardTitle>
+                  <Package className="h-4 w-4" style={{ color: '#015fc4' }} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" style={{ color: '#015fc4' }}>{stats.total}</div>
+                  <p className="text-xs text-muted-foreground">Émises par moi</p>
+                </CardContent>
+              </Card>
 
-                  <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#f97316' }} onClick={() => handleCardClick("enAttenteValidation", "Demandes à valider")}>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium text-muted-foreground">À valider</CardTitle>
-                      <Clock className="h-4 w-4" style={{ color: '#f97316' }} />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold" style={{ color: '#f97316' }}>{stats.enAttenteValidation}</div>
-                      <p className="text-xs text-muted-foreground">Logistique</p>
-                    </CardContent>
-                  </Card>
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#f97316' }} onClick={() => handleCardClick("aValider", "Demandes à valider")}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">À valider</CardTitle>
+                  <Clock className="h-4 w-4" style={{ color: '#f97316' }} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" style={{ color: '#f97316' }}>{stats.aValider}</div>
+                  <p className="text-xs text-muted-foreground">À valider par moi</p>
+                </CardContent>
+              </Card>
 
-                  <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#b8d1df' }} onClick={() => handleCardClick("enCours", "Demandes en cours")}>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium text-muted-foreground">En cours</CardTitle>
-                      <Truck className="h-4 w-4" style={{ color: '#b8d1df' }} />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold" style={{ color: '#b8d1df' }}>{stats.enCours}</div>
-                      <p className="text-xs text-muted-foreground">Transport</p>
-                    </CardContent>
-                  </Card>
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#3b82f6' }} onClick={() => handleCardClick("enCours", "Demandes en cours")}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">En cours</CardTitle>
+                  <Truck className="h-4 w-4" style={{ color: '#3b82f6' }} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" style={{ color: '#3b82f6' }}>{stats.enCours}</div>
+                  <p className="text-xs text-muted-foreground">En attente demandeur</p>
+                </CardContent>
+              </Card>
 
-                  <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#22c55e' }} onClick={() => handleCardClick("validees", "Demandes validées")}>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium text-muted-foreground">Validées</CardTitle>
-                      <CheckCircle className="h-4 w-4" style={{ color: '#22c55e' }} />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold" style={{ color: '#22c55e' }}>{stats.validees}</div>
-                      <p className="text-xs text-muted-foreground">Terminées</p>
-                    </CardContent>
-                  </Card>
-                </div>
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#8b5cf6' }} onClick={() => handleCardClick("validees", "Demandes validées")}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Validées</CardTitle>
+                  <CheckCircle className="h-4 w-4" style={{ color: '#8b5cf6' }} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" style={{ color: '#8b5cf6' }}>{stats.validees}</div>
+                  <p className="text-xs text-muted-foreground">Terminées</p>
+                </CardContent>
+              </Card>
 
-                {/* Mes demandes à clôturer */}
-                <MesDemandesACloturer />
-
-                {/* Liste des demandes */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>
-                      {selectedFilter ? filterTitle : "Toutes les demandes"}
-                      {selectedFilter && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => setSelectedFilter(null)}
-                          className="ml-2"
-                        >
-                          Voir tout
-                        </Button>
-                      )}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {getFilteredDemandes().length === 0 ? (
-                        <p className="text-center text-gray-500 py-8">
-                          Aucune demande trouvée
-                        </p>
-                      ) : (
-                        getFilteredDemandes().slice(0, 8).map((demande) => (
-                          <div key={demande.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-3">
-                                <Package className="h-5 w-5 text-gray-400" />
-                                <div>
-                                  <p className="font-medium">{demande.numero}</p>
-                                  <p className="text-sm text-gray-600">
-                                    {demande.projet?.nom} • {demande.items?.length || 0} articles
-                                  </p>
-                                  <p className="text-xs text-gray-500">
-                                    Créée le {new Date(demande.dateCreation).toLocaleDateString()}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex items-center space-x-3">
-                              {getStatusBadge(demande.status)}
-                              <Badge variant="outline" className="capitalize">
-                                {demande.type}
-                              </Badge>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-
-              </div>
-
-              {/* Colonne de droite (fine) - 1/4 de la largeur */}
-              <div className="lg:col-span-1 space-y-4">
-                {/* Actions rapides */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Actions Rapides</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 gap-2">
-                      <Button 
-                        className="justify-start text-white" 
-                        style={{ backgroundColor: '#015fc4' }}
-                        size="sm"
-                        onClick={() => {
-                          setDemandeType("materiel")
-                          setCreateDemandeModalOpen(true)
-                        }}
-                      >
-                        <Package className="h-4 w-4 mr-2" />
-                        <span className="text-sm">Nouvelle demande matériel</span>
-                      </Button>
-                      <Button
-                        className="justify-start text-gray-700"
-                        style={{ backgroundColor: '#b8d1df' }}
-                        size="sm"
-                        onClick={() => {
-                          setDemandeType("outillage")
-                          setCreateDemandeModalOpen(true)
-                        }}
-                      >
-                        <Wrench className="h-4 w-4 mr-2" />
-                        <span className="text-sm">Nouvelle demande outillage</span>
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Graphique en secteurs */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Répartition</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={120}>
-                      <PieChart>
-                        <Pie
-                          data={pieData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={30}
-                          outerRadius={50}
-                          dataKey="value"
-                          onClick={handlePieClick}
-                          style={{ cursor: "pointer" }}
-                        >
-                          {pieData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                      </PieChart>
-                    </ResponsiveContainer>
-                    <div className="mt-2 space-y-1">
-                      <div
-                        className={`flex items-center justify-between text-sm cursor-pointer p-1 rounded ${
-                          activeChart === "material" ? "bg-blue-50" : ""
-                        }`}
-                        onClick={() => setActiveChart("material")}
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#015fc4' }}></div>
-                          <span>Matériel</span>
-                        </div>
-                        <span className="font-medium">{pieData[0]?.value || 0}</span>
-                      </div>
-                      <div
-                        className={`flex items-center justify-between text-sm cursor-pointer p-1 rounded ${
-                          activeChart === "tooling" ? "bg-blue-50" : ""
-                        }`}
-                        onClick={() => setActiveChart("tooling")}
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#b8d1df' }}></div>
-                          <span>Outillage</span>
-                        </div>
-                        <span className="font-medium">{pieData[1]?.value || 0}</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Graphiques de flux */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      {activeChart === "material" ? (
-                        <>
-                          <TrendingUp className="h-4 w-4" style={{ color: '#015fc4' }} />
-                          Flux Demandes Matériel
-                        </>
-                      ) : (
-                        <>
-                          <BarChart3 className="h-4 w-4" style={{ color: '#b8d1df' }} />
-                          Flux Demandes Outillage
-                        </>
-                      )}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={150}>
-                      {activeChart === "material" ? (
-                        <LineChart data={materialFlowData}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="name" fontSize={12} />
-                          <YAxis fontSize={12} />
-                          <Tooltip />
-                          <Line type="monotone" dataKey="value" stroke="#015fc4" strokeWidth={2} />
-                        </LineChart>
-                      ) : (
-                        <BarChart data={toolingFlowData}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="name" fontSize={12} />
-                          <YAxis fontSize={12} />
-                          <Tooltip />
-                          <Bar dataKey="value" fill="#b8d1df" />
-                        </BarChart>
-                      )}
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-              </div>
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#22c55e' }} onClick={() => handleCardClick("livrees", "Mes demandes en cours")}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Mes demandes</CardTitle>
+                  <FileText className="h-4 w-4" style={{ color: '#22c55e' }} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" style={{ color: '#22c55e' }}>{stats.livrees}</div>
+                  <p className="text-xs text-muted-foreground">En cours</p>
+                </CardContent>
+              </Card>
             </div>
-          </>
-        )}
+
+            {/* Liste des demandes à valider */}
+            <ValidationLogistiqueList />
+            
+            {/* Mes demandes à clôturer */}
+            <MesDemandesACloturer />
+          </div>
+
+          {/* Colonne de droite (fine) - 1/4 de la largeur */}
+          <div className="xl:col-span-1 space-y-3 sm:space-y-4 order-1 xl:order-2">
+            {/* Actions rapides */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Actions Rapides</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 gap-2">
+                  <Button 
+                    className="justify-start text-white" 
+                    style={{ backgroundColor: '#015fc4' }}
+                    size="sm"
+                    onClick={() => {
+                      setDemandeType("materiel")
+                      setCreateDemandeModalOpen(true)
+                    }}
+                  >
+                    <Package className="h-4 w-4 mr-2" />
+                    <span className="text-sm">Nouvelle demande matériel</span>
+                  </Button>
+                  <Button
+                    className="justify-start text-gray-700"
+                    style={{ backgroundColor: '#b8d1df' }}
+                    size="sm"
+                    onClick={() => {
+                      setDemandeType("outillage")
+                      setCreateDemandeModalOpen(true)
+                    }}
+                  >
+                    <Wrench className="h-4 w-4 mr-2" />
+                    <span className="text-sm">Nouvelle demande outillage</span>
+                  </Button>
+                  <Button
+                    className="justify-start text-white"
+                    style={{ backgroundColor: '#16a34a' }}
+                    size="sm"
+                    onClick={() => setUniversalClosureModalOpen(true)}
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    <span className="text-sm">Clôturer mes demandes</span>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Graphique en secteurs */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Répartition</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={120}>
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={30}
+                      outerRadius={50}
+                      dataKey="value"
+                      onClick={handlePieClick}
+                      style={{ cursor: "pointer" }}
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="mt-2 space-y-1">
+                  <div
+                    className={`flex items-center justify-between text-sm cursor-pointer p-1 rounded ${
+                      activeChart === "material" ? "bg-blue-50" : ""
+                    }`}
+                    onClick={() => setActiveChart("material")}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#015fc4' }}></div>
+                      <span>Matériel</span>
+                    </div>
+                    <span className="font-medium">{pieData[0]?.value || 0}</span>
+                  </div>
+                  <div
+                    className={`flex items-center justify-between text-sm cursor-pointer p-1 rounded ${
+                      activeChart === "tooling" ? "bg-blue-50" : ""
+                    }`}
+                    onClick={() => setActiveChart("tooling")}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#b8d1df' }}></div>
+                      <span>Outillage</span>
+                    </div>
+                    <span className="font-medium">{pieData[1]?.value || 0}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Graphiques de flux */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  {activeChart === "material" ? (
+                    <>
+                      <TrendingUp className="h-4 w-4" style={{ color: '#015fc4' }} />
+                      Flux Demandes Matériel
+                    </>
+                  ) : (
+                    <>
+                      <BarChart3 className="h-4 w-4" style={{ color: '#b8d1df' }} />
+                      Flux Demandes Outillage
+                    </>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={150}>
+                  {activeChart === "material" ? (
+                    <LineChart data={materialFlowData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" fontSize={12} />
+                      <YAxis fontSize={12} />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="value" stroke="#015fc4" strokeWidth={2} />
+                    </LineChart>
+                  ) : (
+                    <BarChart data={toolingFlowData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" fontSize={12} />
+                      <YAxis fontSize={12} />
+                      <Tooltip />
+                      <Bar dataKey="value" fill="#b8d1df" />
+                    </BarChart>
+                  )}
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
 
       {/* Modals fonctionnels */}
@@ -515,12 +497,102 @@ export default function ResponsableLogistiqueDashboard() {
         onClose={() => setCreateDemandeModalOpen(false)}
         type={demandeType}
       />
-      <UserDetailsModal 
-        isOpen={showUserModal}
-        onClose={() => setShowUserModal(false)}
-        title="Mon profil"
-        data={currentUser ? [currentUser] : []}
-        type="total"
+      {/* Modale de détails des demandes */}
+      <Dialog open={detailsModalOpen} onOpenChange={setDetailsModalOpen}>
+        <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] overflow-y-auto p-3 sm:p-6">
+          <DialogHeader>
+            <DialogTitle className="text-lg sm:text-xl">{detailsModalTitle}</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-3 sm:space-y-4">
+            {getDemandesByType(detailsModalType).length === 0 ? (
+              <div className="text-center py-6 sm:py-8 text-gray-500">
+                <Package className="mx-auto h-10 w-10 sm:h-12 sm:w-12 mb-3 sm:mb-4 opacity-50" />
+                <p className="text-sm sm:text-base">Aucune demande trouvée pour cette catégorie</p>
+              </div>
+            ) : (
+              <div className="grid gap-3 sm:gap-4">
+                {getDemandesByType(detailsModalType).map((demande) => (
+                  <Card key={demande.id} className="p-3 sm:p-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex-1">
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <Badge variant="outline" className="font-mono text-xs">
+                            {demande.numero}
+                          </Badge>
+                          <Badge 
+                            variant={demande.type === "materiel" ? "default" : "secondary"}
+                            className={`text-xs ${demande.type === "materiel" ? "bg-blue-100 text-blue-800" : "bg-purple-100 text-purple-800"}`}
+                          >
+                            {demande.type === "materiel" ? "Matériel" : "Outillage"}
+                          </Badge>
+                          <Badge 
+                            variant="outline"
+                            className={`text-xs ${
+                              demande.status === "en_attente_validation_logistique" ? "bg-orange-100 text-orange-800" :
+                              demande.status === "en_attente_validation_finale_demandeur" ? "bg-blue-100 text-blue-800" :
+                              demande.status === "confirmee_demandeur" || demande.status === "cloturee" ? "bg-green-100 text-green-800" :
+                              "bg-gray-100 text-gray-800"
+                            }`}
+                          >
+                            {demande.status === "en_attente_validation_logistique" ? "À valider" :
+                             demande.status === "en_attente_validation_finale_demandeur" ? "En attente demandeur" :
+                             demande.status === "confirmee_demandeur" ? "Confirmée" :
+                             demande.status === "cloturee" ? "Clôturée" :
+                             demande.status}
+                          </Badge>
+                        </div>
+                        
+                        <div className="text-xs sm:text-sm text-gray-600 space-y-1">
+                          <p><strong>Projet:</strong> {demande.projetId}</p>
+                          <p><strong>Demandeur:</strong> {demande.technicienId}</p>
+                          <p><strong>Date:</strong> {new Date(demande.dateCreation).toLocaleDateString('fr-FR')}</p>
+                          {demande.commentaires && (
+                            <p className="truncate"><strong>Commentaires:</strong> {demande.commentaires}</p>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedDemandeId(demande.id)
+                            setDemandeDetailOpen(true)
+                          }}
+                          title="Voir les détails complets"
+                          className="flex-1 sm:flex-none"
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          Détails
+                        </Button>
+                        {demande.status === "en_attente_validation_logistique" && (
+                          <Badge className="bg-orange-500 text-white text-xs">
+                            Action requise
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+      <UniversalClosureModal
+        isOpen={universalClosureModalOpen}
+        onClose={() => setUniversalClosureModalOpen(false)}
+      />
+      <DemandeDetailModal
+        isOpen={demandeDetailOpen}
+        onClose={() => {
+          setDemandeDetailOpen(false)
+          setSelectedDemandeId(null)
+        }}
+        demandeId={selectedDemandeId}
+        mode="view"
       />
     </div>
   )

@@ -204,17 +204,18 @@ export default function DemandeDetailsModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-5xl max-h-[95vh] overflow-y-auto p-2 sm:p-6">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-center bg-gray-800 text-white py-3 px-4 rounded mb-4">
-            Demande {demande.type === "materiel" ? "Matériel" : "Outillage"} de {demande.technicien ? `${demande.technicien.prenom} ${demande.technicien.nom}` : 'N/A'}
+          <DialogTitle className="text-sm sm:text-xl font-bold text-center bg-gray-800 text-white py-2 sm:py-3 px-2 sm:px-4 rounded mb-4">
+            <span className="hidden sm:inline">Demande {demande.type === "materiel" ? "Matériel" : "Outillage"} de {demande.technicien ? `${demande.technicien.prenom} ${demande.technicien.nom}` : 'N/A'}</span>
+            <span className="sm:hidden">DA-{demande.numero}</span>
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           {/* Informations générales - Format compact */}
-          <div className="bg-gray-50 p-4 rounded border">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          <div className="bg-gray-50 p-2 sm:p-4 rounded border">
+            <div className="grid grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm">
               <div>
                 <span className="font-medium text-gray-600">Date de création:</span>
                 <p>{new Date(demande.dateCreation).toLocaleDateString('fr-FR')}</p>
@@ -240,8 +241,8 @@ export default function DemandeDetailsModal({
           </div>
 
           {/* Tableau des articles - Format compact et éditable */}
-          <div className="border rounded">
-            <Table>
+          <div className="border rounded overflow-x-auto">
+            <Table className="min-w-[600px]">
               <TableHeader>
                 <TableRow className="bg-gray-100">
                   <TableHead className="font-bold text-center border-r">Référence</TableHead>

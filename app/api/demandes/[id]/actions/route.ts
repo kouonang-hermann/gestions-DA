@@ -205,25 +205,6 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         
         // Vérifications de permissions (seulement si pas d'auto-validation)
         if (!targetStatus) {
-          // RÈGLE CRITIQUE : Empêcher l'auto-validation (un validateur ne peut pas valider sa propre demande)
-          const isOwnRequest = demande.technicienId === currentUser.id
-          const isValidationStep = [
-            "en_attente_validation_conducteur",
-            "en_attente_validation_qhse",
-            "en_attente_validation_responsable_travaux",
-            "en_attente_validation_charge_affaire",
-            "en_attente_preparation_appro",
-            "en_attente_validation_logistique"
-          ].includes(demande.status)
-          
-          if (isOwnRequest && isValidationStep) {
-            console.log(`❌ [API] Auto-validation interdite: ${currentUser.nom} ne peut pas valider sa propre demande`)
-            return NextResponse.json({ 
-              success: false, 
-              error: "Vous ne pouvez pas valider votre propre demande. Un autre validateur doit la traiter." 
-            }, { status: 403 })
-          }
-          
           // Vérifications spécifiques par type de demande
           if (demande.status === "en_attente_validation_conducteur" && currentUser.role !== "conducteur_travaux") {
             return NextResponse.json({ success: false, error: "Seul le conducteur de travaux peut valider les demandes de matériel" }, { status: 403 })
@@ -367,13 +348,10 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         console.log(`  - Est le demandeur: ${demande.technicienId === currentUser.id}`)
         
         // Action spécifique pour le demandeur - clôturer la demande après livraison
-        // Accepter les deux statuts : en_attente_validation_finale_demandeur ET confirmee_demandeur
-        const statutsCloturable = ["en_attente_validation_finale_demandeur", "confirmee_demandeur"]
-        
-        if (statutsCloturable.includes(demande.status) && demande.technicienId === currentUser.id) {
-          console.log(`✅ [API] Clôture autorisée (statut: ${demande.status})`)
+        if (demande.status === "en_attente_validation_finale_demandeur" && demande.technicienId === currentUser.id) {
+          console.log(`✅ [API] Clôture autorisée`)
           newStatus = "cloturee"
-        } else if (!statutsCloturable.includes(demande.status)) {
+        } else if (demande.status !== "en_attente_validation_finale_demandeur") {
           console.log(`❌ [API] Statut incorrect pour clôture: ${demande.status}`)
           return NextResponse.json({ success: false, error: "La demande n'est pas prête à être clôturée" }, { status: 403 })
         } else {

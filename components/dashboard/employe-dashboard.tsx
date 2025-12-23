@@ -52,9 +52,11 @@ import ValidatedRequestsHistory from "@/components/dashboard/validated-requests-
 import ValidatedDemandesModal from "@/components/modals/validated-demandes-modal"
 import DemandesCategoryModal from "@/components/modals/demandes-category-modal"
 import UniversalClosureModal from "@/components/modals/universal-closure-modal"
+import { useAutoReload } from "@/hooks/useAutoReload"
 
 export default function EmployeDashboard() {
-  const { currentUser, demandes, projets, isLoading, loadDemandes, loadProjets } = useStore()
+  const { currentUser, demandes, projets, isLoading } = useStore()
+  const { handleManualReload } = useAutoReload("EMPLOYE")
 
   const [stats, setStats] = useState({
     total: 0,
@@ -73,28 +75,6 @@ export default function EmployeDashboard() {
   const [searchTerm, setSearchTerm] = useState("")
   const [activeChart, setActiveChart] = useState<"material" | "tooling">("material")
   const [universalClosureModalOpen, setUniversalClosureModalOpen] = useState(false)
-
-  // Rechargement automatique des données au montage
-  useEffect(() => {
-    const reloadAllData = async () => {
-      if (currentUser) {
-        console.log(`🔄 [EMPLOYE-DASHBOARD] Rechargement automatique des données pour ${currentUser.nom}`)
-        
-        try {
-          await Promise.all([
-            loadDemandes(),
-            loadProjets()
-          ])
-          
-          console.log(`✅ [EMPLOYE-DASHBOARD] Toutes les données rechargées avec succès`)
-        } catch (error) {
-          console.error(`❌ [EMPLOYE-DASHBOARD] Erreur lors du rechargement:`, error)
-        }
-      }
-    }
-
-    reloadAllData()
-  }, [currentUser?.id, loadDemandes, loadProjets])
 
   // Fonction pour obtenir les demandes selon le rôle
   const getDemandesForRole = () => {
@@ -636,14 +616,14 @@ export default function EmployeDashboard() {
       {/* Interface Desktop */}
       <div className="desktop-dashboard dashboard-fullscreen bg-gray-50 flex flex-col">
         <div className="flex-1 flex flex-col m-0 p-0 w-full">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 px-4 py-3 mb-0 bg-white shadow-sm border-b">Tableau de Bord Employé</h1>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 px-2 sm:px-4 py-3 mb-0 bg-white shadow-sm border-b">Tableau de Bord Employé</h1>
 
         {/* Layout principal : pleine largeur avec distribution équilibrée */}
-        <div className="flex-1 grid grid-cols-1 xl:grid-cols-4 gap-2 h-full p-2 m-0 w-full">
+        <div className="flex-1 grid grid-cols-1 xl:grid-cols-4 gap-2 sm:gap-3 md:gap-4 h-full p-2 sm:p-4 m-0 w-full">
           {/* Colonne de gauche (large) - 3/4 de la largeur */}
-          <div className="xl:col-span-3 flex flex-col justify-between space-y-4 h-full">
+          <div className="xl:col-span-3 flex flex-col justify-between space-y-3 sm:space-y-4 h-full order-2 xl:order-1">
             {/* Vue d'ensemble - Cards statistiques */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
               <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#015fc4' }} onClick={() => handleCardClick("total", "Toutes mes demandes")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Total demandes</CardTitle>
@@ -783,7 +763,7 @@ export default function EmployeDashboard() {
           </div>
 
           {/* Colonne de droite (fine) - 1/4 de la largeur */}
-          <div className="xl:col-span-1 flex flex-col justify-between space-y-4 h-full">
+          <div className="xl:col-span-1 flex flex-col justify-between space-y-3 sm:space-y-4 h-full order-1 xl:order-2">
             {/* Actions rapides */}
             <Card>
               <CardHeader>

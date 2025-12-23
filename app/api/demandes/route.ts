@@ -138,10 +138,10 @@ export const GET = async (request: NextRequest) => {
         break
 
       case "employe":
-        // Voit UNIQUEMENT ses propres demandes (pas celles des autres dans ses projets)
+        // L'employé ne voit QUE ses propres demandes (pas celles des autres sur ses projets)
         console.log(`👤 [API-DEMANDES] Employé ${currentUser.nom} ${currentUser.prenom}:`)
         console.log(`   - ID: ${currentUser.id}`)
-        console.log(`   - Filtre: Uniquement ses propres demandes`)
+        console.log(`   - Filtre: technicienId = ${currentUser.id}`)
         
         whereClause = {
           technicienId: currentUser.id
@@ -149,66 +149,50 @@ export const GET = async (request: NextRequest) => {
         break
 
       case "conducteur_travaux":
-        // Voit ses propres demandes + les demandes de matériel des projets où il est assigné
+        // Voit les demandes de matériel des projets où il est assigné
         const conducteurProjets = await prisma.userProjet.findMany({
           where: { userId: currentUser.id },
           select: { projetId: true }
         })
         whereClause = {
-          OR: [
-            { technicienId: currentUser.id }, // Ses propres demandes
-            { 
-              type: "materiel",
-              projetId: { in: conducteurProjets.map((up: any) => up.projetId) }
-            }
-          ]
+          type: "materiel",
+          projetId: { in: conducteurProjets.map((up: any) => up.projetId) }
         }
         break
 
       case "responsable_qhse":
-        // Voit ses propres demandes + les demandes d'outillage des projets où il est assigné
+        // Voit les demandes d'outillage des projets où il est assigné
         const qhseProjets = await prisma.userProjet.findMany({
           where: { userId: currentUser.id },
           select: { projetId: true }
         })
         whereClause = {
-          OR: [
-            { technicienId: currentUser.id }, // Ses propres demandes
-            {
-              type: "outillage",
-              projetId: { in: qhseProjets.map((up: any) => up.projetId) }
-            }
-          ]
+          type: "outillage",
+          projetId: { in: qhseProjets.map((up: any) => up.projetId) }
         }
         break
 
       case "responsable_travaux":
-        // Voit ses propres demandes + les demandes matériel ET outillage des projets où il est assigné
+        // Voit les demandes matériel ET outillage des projets où il est assigné
         const responsableProjets = await prisma.userProjet.findMany({
           where: { userId: currentUser.id },
           select: { projetId: true }
         })
         whereClause = {
-          OR: [
-            { technicienId: currentUser.id }, // Ses propres demandes
-            { projetId: { in: responsableProjets.map((up: any) => up.projetId) } }
-          ]
+          projetId: { in: responsableProjets.map((up: any) => up.projetId) }
         }
         break
 
       case "responsable_appro":
       case "charge_affaire":
       case "responsable_logistique":
-        // Voient leurs propres demandes + les demandes des projets où ils sont assignés
+        // Voient les demandes des projets où ils sont assignés
         const approProjets = await prisma.userProjet.findMany({
           where: { userId: currentUser.id },
           select: { projetId: true }
         })
         whereClause = {
-          OR: [
-            { technicienId: currentUser.id }, // Ses propres demandes
-            { projetId: { in: approProjets.map((up: any) => up.projetId) } }
-          ]
+          projetId: { in: approProjets.map((up: any) => up.projetId) }
         }
         break
 

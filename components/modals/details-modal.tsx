@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { X, User, FileText, Eye, Edit, Trash2, UserCog, UserMinus } from 'lucide-react'
 import InstrumElecLogo from "@/components/ui/instrumelec-logo"
 import ProjectDetailsModal from "@/components/modals/project-details-modal"
+import DemandeDetailModal from "@/components/demandes/demande-detail-modal"
 import type { User as UserType, Projet, Demande } from "@/types"
 
 interface DetailsModalProps {
@@ -31,6 +32,8 @@ export default function DetailsModal({
 }: DetailsModalProps) {
   const [projectDetailsModalOpen, setProjectDetailsModalOpen] = useState(false)
   const [selectedProject, setSelectedProject] = useState<Projet | null>(null)
+  const [demandeDetailsOpen, setDemandeDetailsOpen] = useState(false)
+  const [selectedDemande, setSelectedDemande] = useState<Demande | null>(null)
   const getRoleLabel = (role: string) => {
     const labels = {
       superadmin: "Super Administrateur",
@@ -194,7 +197,15 @@ export default function DetailsModal({
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    setSelectedDemande(demande)
+                    setDemandeDetailsOpen(true)
+                  }}
+                  title="Voir les détails"
+                >
                   <Eye className="h-4 w-4" />
                 </Button>
               </div>
@@ -255,6 +266,19 @@ export default function DetailsModal({
           }}
           projet={selectedProject}
         />
+
+        {/* Demande Details Modal */}
+        {selectedDemande && (
+          <DemandeDetailModal
+            isOpen={demandeDetailsOpen}
+            onClose={() => {
+              setDemandeDetailsOpen(false)
+              setSelectedDemande(null)
+            }}
+            demandeId={selectedDemande.id}
+            mode="view"
+          />
+        )}
       </DialogContent>
     </Dialog>
   )

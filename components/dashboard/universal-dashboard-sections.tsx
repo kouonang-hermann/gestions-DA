@@ -18,6 +18,7 @@ import {
 import type { Demande, DemandeType, UserRole } from "@/types"
 import CreateDemandeModal from "@/components/demandes/create-demande-modal"
 import MesDemandesACloturer from "@/components/demandes/mes-demandes-a-cloturer"
+import DemandeDetailModal from "@/components/demandes/demande-detail-modal"
 
 interface UniversalDashboardSectionsProps {
   userRole: UserRole
@@ -32,6 +33,8 @@ export default function UniversalDashboardSections({ userRole, title }: Universa
   const [demandesAValider, setDemandesAValider] = useState<Demande[]>([])
   const [createDemandeModalOpen, setCreateDemandeModalOpen] = useState(false)
   const [demandeType, setDemandeType] = useState<DemandeType>("materiel")
+  const [demandeDetailsOpen, setDemandeDetailsOpen] = useState(false)
+  const [selectedDemandeId, setSelectedDemandeId] = useState<string | null>(null)
 
   // Statistiques pour "Mes demandes créées"
   const [statsCreees, setStatsCreees] = useState({
@@ -240,7 +243,15 @@ export default function UniversalDashboardSections({ userRole, title }: Universa
                         Créée le {new Date(demande.dateCreation).toLocaleDateString('fr-FR')}
                       </p>
                     </div>
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        setSelectedDemandeId(demande.id)
+                        setDemandeDetailsOpen(true)
+                      }}
+                      title="Voir les détails"
+                    >
                       <Eye className="h-4 w-4" />
                     </Button>
                   </div>
@@ -349,7 +360,15 @@ export default function UniversalDashboardSections({ userRole, title }: Universa
                       </p>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setSelectedDemandeId(demande.id)
+                          setDemandeDetailsOpen(true)
+                        }}
+                        title="Voir les détails"
+                      >
                         <Eye className="h-4 w-4" />
                       </Button>
                       <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white">
@@ -369,6 +388,17 @@ export default function UniversalDashboardSections({ userRole, title }: Universa
         isOpen={createDemandeModalOpen}
         onClose={() => setCreateDemandeModalOpen(false)}
         type={demandeType}
+      />
+
+      {/* Modal de détails de demande */}
+      <DemandeDetailModal
+        isOpen={demandeDetailsOpen}
+        onClose={() => {
+          setDemandeDetailsOpen(false)
+          setSelectedDemandeId(null)
+        }}
+        demandeId={selectedDemandeId}
+        mode="view"
       />
     </div>
   )

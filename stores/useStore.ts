@@ -149,11 +149,8 @@ export const useStore = create<AppState>()(
       },
 
       loadUsers: async () => {
-        const { currentUser, token } = get()
-        if (!currentUser || !token) {
-          console.warn("Tentative de chargement des utilisateurs sans utilisateur connecté")
-          return
-        }
+        const { token } = get()
+        if (!token) return
 
         try {
           const response = await fetch("/api/users", {
@@ -180,6 +177,12 @@ export const useStore = create<AppState>()(
             
             set({ users: transformedUsers })
           } else {
+            // Si l'erreur est "Accès non autorisé", c'est normal pour certains rôles (employé)
+            if (result.error === "Accès non autorisé") {
+              console.log("⚠️ [STORE] Chargement utilisateurs non autorisé pour ce rôle (normal)")
+              return
+            }
+            // Seulement logger les vraies erreurs
             console.error("Erreur API users:", result.error)
             set({ error: result.error })
           }
