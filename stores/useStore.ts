@@ -51,6 +51,8 @@ interface AppState {
   loadDemandes: (filters?: any) => Promise<void>
   loadArticles: (filters?: any) => Promise<void>
   loadNotifications: () => Promise<void>
+  startNotificationPolling: () => NodeJS.Timeout | undefined
+  stopNotificationPolling: (intervalId: NodeJS.Timeout) => void
   loadHistory: (filters?: any) => Promise<void>
   createUser: (userData: any) => Promise<boolean>
   createProjet: (projetData: any) => Promise<boolean>
@@ -180,6 +182,78 @@ export const useStore = create<AppState>()(
             // Si l'erreur est "Accès non autorisé", c'est normal pour certains rôles (employé)
             if (result.error === "Accès non autorisé") {
               console.log("⚠️ [STORE] Chargement utilisateurs non autorisé pour ce rôle (normal)")
+              
+              // Ajouter des utilisateurs de test pour le développement
+              console.log("🔄 [STORE] Ajout des utilisateurs de test pour le développement")
+              const testUsers = [
+                {
+                  id: "user-superadmin-1",
+                  nom: "Admin",
+                  prenom: "Super",
+                  email: "superadmin@test.com",
+                  telephone: "123456789",
+                  role: "superadmin" as const,
+                  statut: "actif",
+                  projets: [],
+                  isAdmin: true,
+                  createdAt: new Date(),
+                  updatedAt: new Date()
+                },
+                {
+                  id: "user-appro-1",
+                  nom: "Appro",
+                  prenom: "Responsable",
+                  email: "appro@test.com",
+                  telephone: "123456789",
+                  role: "responsable_appro" as const,
+                  statut: "actif",
+                  projets: ["projet-demo-1"],
+                  isAdmin: false,
+                  createdAt: new Date(),
+                  updatedAt: new Date()
+                },
+                {
+                  id: "user-livreur-1",
+                  nom: "Livreur",
+                  prenom: "Responsable",
+                  email: "livreur@test.com",
+                  telephone: "123456789",
+                  role: "responsable_livreur" as const,
+                  statut: "actif",
+                  projets: ["projet-demo-1"],
+                  isAdmin: false,
+                  createdAt: new Date(),
+                  updatedAt: new Date()
+                },
+                {
+                  id: "user-conducteur-1",
+                  nom: "Conducteur",
+                  prenom: "Travaux",
+                  email: "conducteur@test.com",
+                  telephone: "123456789",
+                  role: "conducteur_travaux" as const,
+                  statut: "actif",
+                  projets: ["projet-demo-1"],
+                  isAdmin: false,
+                  createdAt: new Date(),
+                  updatedAt: new Date()
+                },
+                {
+                  id: "user-employe-1",
+                  nom: "Employé",
+                  prenom: "Test",
+                  email: "employe@test.com",
+                  telephone: "123456789",
+                  role: "employe" as const,
+                  statut: "actif",
+                  projets: ["projet-demo-1"],
+                  isAdmin: false,
+                  createdAt: new Date(),
+                  updatedAt: new Date()
+                }
+              ]
+              
+              set({ users: testUsers })
               return
             }
             // Seulement logger les vraies erreurs
@@ -219,13 +293,20 @@ export const useStore = create<AppState>()(
               return
             }
             
-            // Seulement logger les vraies erreurs (pas les problèmes d'auth temporaires)
+            // Logger l'erreur avec plus de détails
             console.error("❌ [STORE] Erreur API projets:", result.error)
-            set({ error: result.error })
+            if (result.details) {
+              console.error("📋 [STORE] Détails de l'erreur:", result.details)
+            }
+            
+            // Ne pas bloquer l'application si les projets ne se chargent pas
+            // Initialiser avec un tableau vide pour éviter les erreurs
+            set({ projets: [], error: result.error })
           }
         } catch (error) {
           console.error("❌ [STORE] Erreur lors du chargement des projets:", error)
-          set({ error: "Erreur lors du chargement des projets" })
+          // Initialiser avec un tableau vide en cas d'erreur
+          set({ projets: [], error: "Erreur lors du chargement des projets" })
         }
       },
 
@@ -312,9 +393,9 @@ export const useStore = create<AppState>()(
               validationLogistique: undefined,
               validationResponsableTravaux: undefined,
               validationConducteur: undefined,
-              validationQHSE: undefined,
               validationChargeAffaire: undefined,
               sortieAppro: undefined,
+              validationLivreur: undefined,
               validationFinale: undefined,
               projet: undefined,
               technicien: undefined
@@ -334,7 +415,7 @@ export const useStore = create<AppState>()(
               validationLogistique: undefined,
               validationResponsableTravaux: undefined,
               validationConducteur: undefined, // Sera détectée par la logique de statut
-              validationQHSE: undefined,
+              validationLivreur: undefined,
               validationChargeAffaire: undefined,
               sortieAppro: undefined,
               validationFinale: undefined,
@@ -356,9 +437,9 @@ export const useStore = create<AppState>()(
               validationLogistique: undefined,
               validationResponsableTravaux: undefined,
               validationConducteur: undefined,
-              validationQHSE: undefined,
               validationChargeAffaire: undefined,
               sortieAppro: undefined,
+              validationLivreur: undefined,
               validationFinale: undefined,
               projet: undefined,
               technicien: undefined
@@ -378,7 +459,7 @@ export const useStore = create<AppState>()(
               validationLogistique: undefined,
               validationResponsableTravaux: undefined,
               validationConducteur: undefined, // Sera détectée par la logique de statut
-              validationQHSE: undefined,
+              validationLivreur: undefined,
               validationChargeAffaire: undefined,
               sortieAppro: undefined,
               validationFinale: undefined,
@@ -430,24 +511,49 @@ export const useStore = create<AppState>()(
       },
 
       loadNotifications: async () => {
-        const { currentUser } = get()
-        if (!currentUser) return
+    const { currentUser } = get()
+    if (!currentUser) return
 
-        try {
-          const response = await fetch("/api/notifications", {
-            headers: {
-              "x-user-id": currentUser.id,
-            },
-          })
+    try {
+      const response = await fetch("/api/notifications", {
+        headers: {
+          "x-user-id": currentUser.id,
+        },
+      })
 
-          const result = await response.json()
-          if (result.success) {
-            set({ notifications: result.data })
-          }
-        } catch (error) {
-          console.error("Erreur lors du chargement des notifications:", error)
-        }
-      },
+      const result = await response.json()
+      if (result.success) {
+        set({ notifications: result.data })
+      }
+    } catch (error) {
+      console.error("Erreur lors du chargement des notifications:", error)
+    }
+  },
+
+  // Polling automatique des notifications (toutes les 30 secondes)
+  startNotificationPolling: () => {
+    const { currentUser, loadNotifications } = get()
+    if (!currentUser) return
+
+    // Charger immédiatement
+    loadNotifications()
+
+    // Puis toutes les 30 secondes
+    const intervalId = setInterval(() => {
+      const { currentUser } = get()
+      if (currentUser) {
+        loadNotifications()
+      } else {
+        clearInterval(intervalId)
+      }
+    }, 30000) // 30 secondes
+
+    return intervalId
+  },
+
+  stopNotificationPolling: (intervalId: NodeJS.Timeout) => {
+    clearInterval(intervalId)
+  },
 
       loadHistory: async (filters = {}) => {
         const { currentUser } = get()
@@ -885,17 +991,19 @@ export const useStore = create<AppState>()(
             "en_attente_validation_responsable_travaux",
             "en_attente_validation_charge_affaire",
             "en_attente_preparation_appro",
-            "en_attente_validation_logistique",
+            "en_attente_reception_livreur",
+            "en_attente_livraison",
             "en_attente_validation_finale_demandeur",
             "cloturee"
           ],
           "outillage": [
             "soumise",
-            "en_attente_validation_qhse",
+            "en_attente_validation_logistique",
             "en_attente_validation_responsable_travaux",
             "en_attente_validation_charge_affaire",
             "en_attente_preparation_appro",
-            "en_attente_validation_logistique",
+            "en_attente_reception_livreur",
+            "en_attente_livraison",
             "en_attente_validation_finale_demandeur",
             "cloturee"
           ]
@@ -906,11 +1014,11 @@ export const useStore = create<AppState>()(
       canUserValidateStep: (userRole: string, demandeType: string, status: DemandeStatus): boolean => {
         const roleToStatusMap = {
           "conducteur_travaux": "en_attente_validation_conducteur",
-          "responsable_qhse": "en_attente_validation_qhse",
+          "responsable_logistique": "en_attente_validation_logistique",
           "responsable_travaux": "en_attente_validation_responsable_travaux",
           "charge_affaire": "en_attente_validation_charge_affaire",
           "responsable_appro": "en_attente_preparation_appro",
-          "responsable_logistique": "en_attente_validation_logistique"
+          "responsable_livreur": "en_attente_validation_livreur"
         }
         
         const statusForRole = roleToStatusMap[userRole as keyof typeof roleToStatusMap]
@@ -998,8 +1106,8 @@ export const useStore = create<AppState>()(
             case "conducteur_travaux":
               updatedDemande.validationConducteur = validationSignature
               break
-            case "responsable_qhse":
-              updatedDemande.validationQHSE = validationSignature
+            case "responsable_logistique":
+              updatedDemande.validationLogistique = validationSignature
               break
             case "responsable_travaux":
               updatedDemande.validationResponsableTravaux = validationSignature
@@ -1007,8 +1115,8 @@ export const useStore = create<AppState>()(
             case "charge_affaire":
               updatedDemande.validationChargeAffaire = validationSignature
               break
-            case "responsable_logistique":
-              updatedDemande.validationLogistique = validationSignature
+            case "responsable_livreur":
+              updatedDemande.validationLivreur = validationSignature
               break
           }
           

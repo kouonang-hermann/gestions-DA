@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useStore } from "@/stores/useStore"
-import { Plus, Trash2, Save, Loader2 } from 'lucide-react'
+import { Plus, Trash2, Save, Loader2, Copy } from 'lucide-react'
 import type { DemandeType, ItemDemande } from "@/types"
 
 interface CreateDemandeModalProps {
@@ -28,6 +28,8 @@ interface ManualItem {
 export default function CreateDemandeModal({ isOpen, onClose, type = "materiel" }: CreateDemandeModalProps) {
   const { currentUser, projets, createDemande, loadProjets, isLoading } = useStore()
   
+  const DRAFT_KEY = `demande_draft_${type}_${currentUser?.id}`
+  
   const [formData, setFormData] = useState({
     projetId: "",
     type: type as DemandeType,
@@ -37,20 +39,54 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel" 
   })
   
   const [error, setError] = useState("")
+  const [hasDraft, setHasDraft] = useState(false)
 
+  // Charger le brouillon depuis localStorage au montage
   useEffect(() => {
     if (isOpen) {
       loadProjets()
-      setFormData({
-        projetId: "",
-        type: type,
-        items: [],
-        commentaires: "",
-        dateLivraisonSouhaitee: "",
-      })
+      
+      // Essayer de charger un brouillon existant
+      const savedDraft = localStorage.getItem(DRAFT_KEY)
+      if (savedDraft) {
+        try {
+          const draft = JSON.parse(savedDraft)
+          setFormData(draft)
+          setHasDraft(true)
+          console.log("📝 Brouillon restauré depuis localStorage")
+        } catch (e) {
+          console.error("Erreur lors de la restauration du brouillon:", e)
+          setFormData({
+            projetId: "",
+            type: type,
+            items: [],
+            commentaires: "",
+            dateLivraisonSouhaitee: "",
+          })
+          setHasDraft(false)
+        }
+      } else {
+        setFormData({
+          projetId: "",
+          type: type,
+          items: [],
+          commentaires: "",
+          dateLivraisonSouhaitee: "",
+        })
+        setHasDraft(false)
+      }
       setError("")
     }
-  }, [isOpen, type, loadProjets])
+  }, [isOpen, type, loadProjets, DRAFT_KEY])
+
+  // Sauvegarder automatiquement le brouillon à chaque modification
+  useEffect(() => {
+    if (isOpen && (formData.projetId || formData.items.length > 0 || formData.commentaires)) {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(formData))
+      setHasDraft(true)
+      console.log("💾 Brouillon sauvegardé automatiquement")
+    }
+  }, [formData, isOpen, DRAFT_KEY])
 
   const addNewItem = () => {
     const newItem: ManualItem = {
@@ -82,6 +118,21 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel" 
     setFormData(prev => ({
       ...prev,
       items: prev.items.filter(item => item.id !== itemId),
+    }))
+  }
+  
+  const duplicateItem = (itemId: string) => {
+    const itemToDuplicate = formData.items.find(item => item.id === itemId)
+    if (!itemToDuplicate) return
+    
+    const duplicatedItem: ManualItem = {
+      ...itemToDuplicate,
+      id: Date.now().toString(),
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      items: [...prev.items, duplicatedItem],
     }))
   }
 
@@ -139,7 +190,25 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel" 
     })
 
     if (success) {
+      // Supprimer le brouillon après création réussie
+      localStorage.removeItem(DRAFT_KEY)
+      console.log("✅ Brouillon supprimé après création réussie")
       onClose()
+    }
+  }
+
+  const clearDraft = () => {
+    if (confirm("Voulez-vous vraiment supprimer ce brouillon ?")) {
+      localStorage.removeItem(DRAFT_KEY)
+      setFormData({
+        projetId: "",
+        type: type,
+        items: [],
+        commentaires: "",
+        dateLivraisonSouhaitee: "",
+      })
+      setHasDraft(false)
+      console.log("🗑️ Brouillon supprimé")
     }
   }
 
@@ -157,8 +226,18 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel" 
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-[95vw] max-w-6xl max-h-[90vh] overflow-y-auto p-3 sm:p-6">
         <DialogHeader>
-          <DialogTitle className="text-base sm:text-lg">Nouvelle demande de {type === "materiel" ? "matériel" : "outillage"}</DialogTitle>
-          <DialogDescription className="text-xs sm:text-sm">Créez une nouvelle demande</DialogDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle className="text-base sm:text-lg">Nouvelle demande de {type === "materiel" ? "matériel" : "outillage"}</DialogTitle>
+              <DialogDescription className="text-xs sm:text-sm">Créez une nouvelle demande</DialogDescription>
+            </div>
+            {hasDraft && (
+              <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-md border border-blue-200">
+                <Save className="h-4 w-4" />
+                <span className="text-xs font-medium">Brouillon sauvegardé</span>
+              </div>
+            )}
+          </div>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -235,15 +314,28 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel" 
                     <div key={item.id} className="border rounded-lg p-4 bg-gray-50">
                       <div className="flex items-center justify-between mb-4">
                         <h4 className="font-medium text-gray-800">Article {index + 1}</h4>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => removeItem(item.id)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => duplicateItem(item.id)}
+                            className="text-blue-600 hover:text-blue-700"
+                            title="Dupliquer cet article"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => removeItem(item.id)}
+                            className="text-red-600 hover:text-red-700"
+                            title="Supprimer cet article"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -348,10 +440,23 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel" 
 
           {/* Actions */}
           <div className="flex justify-between items-center">
-            <Button type="button" onClick={addNewItem} className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="h-4 w-4 mr-2" />
-              Ajouter un article
-            </Button>
+            <div className="flex space-x-2">
+              <Button type="button" onClick={addNewItem} className="bg-blue-600 hover:bg-blue-700">
+                <Plus className="h-4 w-4 mr-2" />
+                Ajouter un article
+              </Button>
+              {(formData.projetId || formData.items.length > 0 || formData.commentaires) && (
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={clearDraft}
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Supprimer le brouillon
+                </Button>
+              )}
+            </div>
             <div className="flex space-x-4">
               <Button type="button" variant="outline" onClick={onClose}>
                 Annuler

@@ -34,20 +34,20 @@ export default function Dashboard() {
           return <ConducteurDashboard />
         case "responsable_travaux":
           return <ResponsableTravauxDashboard />
-        case "responsable_qhse":
+        case "responsable_logistique":
           return <QHSEDashboard />
         case "responsable_appro":
           return <ApproDashboard />
         case "charge_affaire":
           return <ChargeAffaireDashboard />
-        case "responsable_logistique":
+        case "responsable_livreur":
           return <ResponsableLogistiqueDashboard />
         default:
           return (
             <div className="p-6 text-center text-gray-500">
               Rôle non reconnu: {currentUser.role}
               <br />
-              <small className="text-gray-400">Rôles disponibles: superadmin, employe, conducteur_travaux, responsable_travaux, responsable_qhse, responsable_appro, charge_affaire, responsable_logistique</small>
+              <small className="text-gray-400">Rôles disponibles: superadmin, employe, conducteur_travaux, responsable_travaux, responsable_logistique, responsable_appro, charge_affaire, responsable_livreur</small>
             </div>
           )
       }

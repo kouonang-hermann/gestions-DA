@@ -8,9 +8,14 @@ export interface WhatsAppNotification {
 
 export class WhatsAppService {
   private static instance: WhatsAppService
-  private apiEndpoint = '/api/notifications/whatsapp'
+  private apiEndpoint: string
 
-  private constructor() {}
+  private constructor() {
+    // Utiliser une URL absolue pour les appels côté serveur
+    this.apiEndpoint = process.env.NEXT_PUBLIC_APP_URL 
+      ? `${process.env.NEXT_PUBLIC_APP_URL}/api/notifications/whatsapp`
+      : 'http://localhost:3000/api/notifications/whatsapp'
+  }
 
   public static getInstance(): WhatsAppService {
     if (!WhatsAppService.instance) {
@@ -54,6 +59,13 @@ export class WhatsAppService {
           to: this.formatPhoneNumber(notification.to)
         }),
       })
+
+      // Vérifier si la réponse est OK avant de parser le JSON
+      if (!response.ok) {
+        const text = await response.text()
+        console.error(`❌ [WHATSAPP] Erreur HTTP ${response.status}:`, text.substring(0, 200))
+        return false
+      }
 
       const result = await response.json()
       
@@ -216,6 +228,43 @@ _Système de Gestion des Demandes_`
       to: user.phone,
       message,
       type: 'status_update'
+    })
+  }
+
+  /**
+   * Notification d'assignation de livraison
+   */
+  async notifyLivreurAssigne(livreur: User, demande: Demande): Promise<boolean> {
+    if (!livreur.phone) {
+      console.log(`📱 [WhatsApp] Pas de numéro pour ${livreur.nom} - notification ignorée`)
+      return false
+    }
+
+    const message = `📦 *Nouvelle Livraison Assignée*
+
+Bonjour ${livreur.prenom},
+
+Vous avez été assigné pour effectuer la livraison :
+
+📋 *${demande.numero}*
+• Type : ${demande.type === 'materiel' ? 'Matériel' : 'Outillage'}
+• Projet : ${demande.projet?.nom || 'Non défini'}
+• Articles : ${demande.items?.length || 0}
+
+*Prochaines étapes :*
+1️⃣ Récupérer le matériel auprès du responsable appro
+2️⃣ Confirmer la réception dans le système
+3️⃣ Livrer au demandeur
+4️⃣ Confirmer la livraison dans le système
+
+👉 Connectez-vous pour gérer cette livraison.
+
+_Système de Gestion des Demandes_`
+
+    return this.sendWhatsApp({
+      to: livreur.phone,
+      message,
+      type: 'validation_request'
     })
   }
 

@@ -215,15 +215,32 @@ export default function ValidatedRequestsHistory({ isOpen, onClose }: ValidatedR
 
                       <div>
                         <h4 className="font-medium mb-2 text-sm">Articles demandés:</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                          {request.items?.map((item, index) => (
-                            <div key={index} className="flex justify-between items-center bg-gray-50 p-2 rounded text-sm">
-                              <span>{item.article?.nom || 'Article inconnu'}</span>
-                              <Badge variant="secondary">
-                                Qté: {item.quantiteValidee}
-                              </Badge>
-                            </div>
-                          ))}
+                        <div className="space-y-2">
+                          {request.items?.map((item, index) => {
+                            const quantiteValidee = item.quantiteValidee || item.quantiteDemandee
+                            const quantiteLivree = item.quantiteSortie || 0
+                            const quantiteRestante = Math.max(0, quantiteValidee - quantiteLivree)
+                            
+                            return (
+                              <div key={index} className="bg-gray-50 p-3 rounded text-sm border border-gray-200">
+                                <div className="flex justify-between items-start mb-2">
+                                  <span className="font-medium">{item.article?.nom || 'Article inconnu'}</span>
+                                  <span className="text-xs text-gray-500">{item.article?.reference || 'N/A'}</span>
+                                </div>
+                                <div className="flex gap-2 flex-wrap">
+                                  <Badge variant="secondary" className="text-xs">
+                                    Qté validée: {quantiteValidee}
+                                  </Badge>
+                                  <Badge className="text-xs bg-blue-100 text-blue-700 border-blue-200">
+                                    Qté livrée: {quantiteLivree}
+                                  </Badge>
+                                  <Badge className="text-xs bg-orange-100 text-orange-700 border-orange-200">
+                                    Qté restante: {quantiteRestante}
+                                  </Badge>
+                                </div>
+                              </div>
+                            )
+                          })}
                         </div>
                       </div>
 

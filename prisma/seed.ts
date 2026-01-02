@@ -69,7 +69,7 @@ async function main() {
         email: 'marie.durand@example.com',
         phone: '610000004',
         password: hashedPassword,
-        role: 'responsable_qhse',
+        role: 'responsable_logistique',
       },
     }),
     prisma.user.upsert({
@@ -154,7 +154,7 @@ async function main() {
         email: 'qhse@test.com',
         phone: '600000005',
         password: testPasswordHashes.qhse123,
-        role: 'responsable_qhse',
+        role: 'responsable_logistique',
       },
     }),
     prisma.user.upsert({

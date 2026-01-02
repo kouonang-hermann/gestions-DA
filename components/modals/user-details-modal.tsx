@@ -32,7 +32,7 @@ export default function UserDetailsModal({ isOpen, onClose, title, data, type }:
       case "soumise":
         return "bg-blue-500"
       case "en_attente_validation_conducteur":
-      case "en_attente_validation_qhse":
+      case "en_attente_validation_logistique":
       case "en_attente_validation_responsable_travaux":
       case "en_attente_validation_charge_affaire":
         return "bg-orange-500"
@@ -62,8 +62,8 @@ export default function UserDetailsModal({ isOpen, onClose, title, data, type }:
         return "Soumise"
       case "en_attente_validation_conducteur":
         return "En attente validation conducteur"
-      case "en_attente_validation_qhse":
-        return "En attente validation QHSE"
+      case "en_attente_validation_logistique":
+        return "En attente validation logistique"
       case "en_attente_validation_responsable_travaux":
         return "En attente validation responsable travaux"
       case "en_attente_validation_charge_affaire":
@@ -104,7 +104,7 @@ export default function UserDetailsModal({ isOpen, onClose, title, data, type }:
       case "enAttente":
         return item.status === "soumise"
       case "aPreparer":
-        return ["en_attente_validation_conducteur", "en_attente_validation_qhse"].includes(item.status)
+        return ["en_attente_validation_conducteur", "en_attente_validation_logistique"].includes(item.status)
       case "preparees":
         return item.status === "en_attente_preparation_appro"
       case "livrees":

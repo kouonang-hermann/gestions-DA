@@ -146,7 +146,7 @@ export default function NotificationIntegrationExample() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleStatusChangeWithUtility(demande.id, 'en_attente_validation_qhse')}
+                            onClick={() => handleStatusChangeWithUtility(demande.id, 'en_attente_validation_logistique')}
                             disabled={isUpdating === demande.id}
                           >
                             Valider → QHSE
@@ -162,7 +162,7 @@ export default function NotificationIntegrationExample() {
                         </>
                       )}
                       
-                      {demande.status === 'en_attente_validation_qhse' && (
+                      {demande.status === 'en_attente_validation_logistique' && (
                         <Button
                           size="sm"
                           variant="outline"

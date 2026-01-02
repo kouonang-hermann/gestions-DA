@@ -21,10 +21,10 @@ export const registerSchema = z.object({
     "employe", 
     "conducteur_travaux",
     "responsable_travaux",
-    "responsable_qhse",
+    "responsable_logistique",
     "responsable_appro",
     "charge_affaire",
-    "responsable_logistique"
+    "responsable_livreur"
   ]),
   isAdmin: z.boolean().optional(),
   projets: z.array(z.string()).optional(),

@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
 import './globals.css'
-import UniversalMobileInjector from '@/components/mobile/universal-mobile-injector'
+import MobileInjectorWrapper from '@/components/mobile/mobile-injector-wrapper'
 
 export const metadata: Metadata = {
   title: 'Gestion Demandes Matériel - InstrumElec',
@@ -52,7 +52,7 @@ html {
         `}</style>
       </head>
       <body className="h-full bg-gray-50 antialiased overflow-x-hidden">
-        <UniversalMobileInjector />
+        <MobileInjectorWrapper />
         {children}
       </body>
     </html>

@@ -70,10 +70,10 @@ export async function GET(req: NextRequest) {
         create: {
           nom: 'QHSE',
           prenom: 'Test',
-          email: 'qhse@test.com',
+          email: 'logistique@test.com',
           phone: '600000005',
           password: testPasswordHashes.qhse123,
-          role: 'responsable_qhse',
+          role: 'responsable_logistique',
         },
       }),
       prisma.user.upsert({
@@ -106,10 +106,10 @@ export async function GET(req: NextRequest) {
         create: {
           nom: 'Logistique',
           prenom: 'Test',
-          email: 'logistique@test.com',
+          email: 'livreur@test.com',
           phone: '600000008',
           password: testPasswordHashes.logistique123,
-          role: 'responsable_logistique',
+          role: 'responsable_livreur',
         },
       }),
     ])

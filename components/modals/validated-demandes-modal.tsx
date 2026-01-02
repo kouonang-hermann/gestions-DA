@@ -56,15 +56,15 @@ export default function ValidatedDemandesModal({
         )
         break
       
-      case "responsable_qhse":
-        // Demandes validées par le responsable QHSE
+      case "responsable_logistique":
+        // Demandes validées par le responsable Logistique
         filtered = demandes.filter(d => 
-          d.validationQHSE?.userId === currentUser.id ||
+          d.validationLogistique?.userId === currentUser.id ||
           (d.status !== "brouillon" && 
            d.status !== "soumise" && 
            d.status !== "en_attente_validation_conducteur" &&
-           d.status !== "en_attente_validation_qhse" &&
-           d.type === "outillage") // QHSE valide l'outillage
+           d.status !== "en_attente_validation_logistique" &&
+           d.type === "outillage") // Logistique valide l'outillage
         )
         break
       
@@ -75,7 +75,7 @@ export default function ValidatedDemandesModal({
           (d.status !== "brouillon" && 
            d.status !== "soumise" && 
            d.status !== "en_attente_validation_conducteur" &&
-           d.status !== "en_attente_validation_qhse" &&
+           d.status !== "en_attente_validation_logistique" &&
            d.status !== "en_attente_validation_responsable_travaux")
         )
         break
@@ -87,7 +87,7 @@ export default function ValidatedDemandesModal({
           (d.status !== "brouillon" && 
            d.status !== "soumise" && 
            d.status !== "en_attente_validation_conducteur" &&
-           d.status !== "en_attente_validation_qhse" &&
+           d.status !== "en_attente_validation_logistique" &&
            d.status !== "en_attente_validation_responsable_travaux" &&
            d.status !== "en_attente_validation_charge_affaire")
         )
@@ -100,25 +100,21 @@ export default function ValidatedDemandesModal({
           (d.status !== "brouillon" && 
            d.status !== "soumise" && 
            d.status !== "en_attente_validation_conducteur" &&
-           d.status !== "en_attente_validation_qhse" &&
+           d.status !== "en_attente_validation_logistique" &&
            d.status !== "en_attente_validation_responsable_travaux" &&
            d.status !== "en_attente_validation_charge_affaire" &&
            d.status !== "en_attente_preparation_appro")
         )
         break
       
-      case "responsable_logistique":
-        // Demandes validées par la logistique
+      case "responsable_livreur":
+        // Demandes validées par le livreur (celles qu'il a livrées)
         filtered = demandes.filter(d => 
-          d.validationLogistique?.userId === currentUser.id ||
-          (d.status !== "brouillon" && 
-           d.status !== "soumise" && 
-           d.status !== "en_attente_validation_conducteur" &&
-           d.status !== "en_attente_validation_qhse" &&
-           d.status !== "en_attente_validation_responsable_travaux" &&
-           d.status !== "en_attente_validation_charge_affaire" &&
-           d.status !== "en_attente_preparation_appro" &&
-           d.status !== "en_attente_validation_logistique")
+          d.livreurAssigneId === currentUser.id &&
+          (d.status === "en_attente_validation_finale_demandeur" ||
+           d.status === "confirmee_demandeur" ||
+           d.status === "cloturee" ||
+           d.status === "archivee")
         )
         break
       
@@ -146,11 +142,11 @@ export default function ValidatedDemandesModal({
       brouillon: { bg: "#f3f4f6", text: "#374151" },
       soumise: { bg: "#dbeafe", text: "#1e40af" },
       en_attente_validation_conducteur: { bg: "#fef3c7", text: "#92400e" },
-      en_attente_validation_qhse: { bg: "#fef3c7", text: "#92400e" },
+      en_attente_validation_logistique: { bg: "#fef3c7", text: "#92400e" },
       en_attente_validation_responsable_travaux: { bg: "#fef3c7", text: "#92400e" },
       en_attente_validation_charge_affaire: { bg: "#fef3c7", text: "#92400e" },
       en_attente_preparation_appro: { bg: "#f3e8ff", text: "#7c3aed" },
-      en_attente_validation_logistique: { bg: "#f3e8ff", text: "#7c3aed" },
+      en_attente_validation_livreur: { bg: "#f3e8ff", text: "#7c3aed" },
       en_attente_validation_finale_demandeur: { bg: "#dcfce7", text: "#166534" },
       confirmee_demandeur: { bg: "#dcfce7", text: "#166534" },
       cloturee: { bg: "#dcfce7", text: "#166534" },
@@ -165,11 +161,11 @@ export default function ValidatedDemandesModal({
       brouillon: "Brouillon",
       soumise: "Soumise",
       en_attente_validation_conducteur: "En attente validation conducteur",
-      en_attente_validation_qhse: "En attente validation QHSE",
+      en_attente_validation_logistique: "En attente validation Logistique",
       en_attente_validation_responsable_travaux: "En attente validation responsable travaux",
       en_attente_validation_charge_affaire: "En attente validation chargé d'affaire",
       en_attente_preparation_appro: "En attente préparation appro",
-      en_attente_validation_logistique: "En attente validation logistique",
+      en_attente_validation_livreur: "En attente validation livreur",
       en_attente_validation_finale_demandeur: "Prêt à clôturer",
       confirmee_demandeur: "Confirmée",
       cloturee: "Clôturée",
@@ -198,8 +194,8 @@ export default function ValidatedDemandesModal({
     switch (currentUser?.role) {
       case "conducteur_travaux":
         return "Demandes validées (Conducteur de travaux)"
-      case "responsable_qhse":
-        return "Demandes validées (Responsable QHSE)"
+      case "responsable_logistique":
+        return "Demandes validées (Responsable Logistique)"
       case "responsable_travaux":
         return "Demandes validées (Responsable travaux)"
       case "charge_affaire":
@@ -396,6 +392,7 @@ export default function ValidatedDemandesModal({
         demande={selectedDemande}
         canValidate={false}
         canRemoveItems={false}
+        showDeliveryColumns={true}
       />
     </>
   )

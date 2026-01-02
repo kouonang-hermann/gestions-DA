@@ -3,10 +3,10 @@ export type UserRole =
   | "employe"
   | "conducteur_travaux"
   | "responsable_travaux"
-  | "responsable_qhse"
+  | "responsable_logistique"
   | "responsable_appro"
   | "charge_affaire"
-  | "responsable_logistique"
+  | "responsable_livreur"
 
 export type DemandeType = "materiel" | "outillage"
 
@@ -14,11 +14,12 @@ export type DemandeStatus =
   | "brouillon"
   | "soumise"
   | "en_attente_validation_conducteur"
-  | "en_attente_validation_qhse"
+  | "en_attente_validation_logistique"
   | "en_attente_validation_responsable_travaux"
   | "en_attente_validation_charge_affaire"
   | "en_attente_preparation_appro"
-  | "en_attente_validation_logistique"
+  | "en_attente_reception_livreur"
+  | "en_attente_livraison"
   | "en_attente_validation_finale_demandeur"
   | "confirmee_demandeur"
   | "cloturee"
@@ -48,6 +49,7 @@ export interface Projet {
   utilisateurs: string[] // User IDs
   actif: boolean
   createdAt: Date
+  budget?: number // Budget alloué au projet
 }
 
 export interface Article {
@@ -71,10 +73,11 @@ export interface ItemDemande {
   quantiteSortie?: number
   quantiteRecue?: number
   commentaire?: string
+  prixUnitaire?: number // Prix unitaire saisi par le responsable appro
 }
 
 export interface Demande {
-  validationLogistique: any
+  validationLivreur: any
   validationResponsableTravaux: any
   id: string
   numero: string
@@ -91,15 +94,24 @@ export interface Demande {
   dateValidationFinale?: Date
   dateLivraisonSouhaitee?: Date
 
+  // Livraison
+  livreurAssigneId?: string
+  livreurAssigne?: User
+  dateReceptionLivreur?: Date
+  dateLivraison?: Date
+
   // Validations et signatures
   validationConducteur?: ValidationSignature
-  validationQHSE?: ValidationSignature
+  validationLogistique?: ValidationSignature
   sortieAppro?: SortieSignature
   validationChargeAffaire?: ValidationSignature
   validationFinale?: ValidationSignature
 
   commentaires?: string
   rejetMotif?: string
+  coutTotal?: number // Coût total de la demande (visible uniquement par superadmin)
+  budgetPrevisionnel?: number // Budget prévisionnel saisi par le chargé d'affaires
+  dateEngagement?: Date // Date d'engagement financier
 }
 
 export interface ValidationSignature {

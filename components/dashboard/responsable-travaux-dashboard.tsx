@@ -45,6 +45,7 @@ import MesDemandesACloturer from "@/components/demandes/mes-demandes-a-cloturer"
 import UniversalClosureModal from "@/components/modals/universal-closure-modal"
 import UserDetailsModal from "@/components/modals/user-details-modal"
 import ValidatedRequestsHistory from "@/components/dashboard/validated-requests-history"
+import LivraisonsAEffectuer from "@/components/dashboard/livraisons-a-effectuer"
 import { useAutoReload } from "@/hooks/useAutoReload"
 import type { Demande } from "@/types"
 
@@ -314,6 +315,9 @@ export default function ResponsableTravauxDashboard() {
               </Card>
             </div>
 
+            {/* Livraisons à effectuer */}
+            <LivraisonsAEffectuer />
+
             {/* Liste des demandes à valider */}
             <ValidationDemandesList type="materiel" title="Demandes de matériel à valider" />
             <ValidationDemandesList type="outillage" title="Demandes d'outillage à valider" />
@@ -485,6 +489,7 @@ export default function ResponsableTravauxDashboard() {
           // Données rechargées automatiquement par useDataLoader
         }}
         canValidate={selectedDemande?.status === "en_attente_validation_responsable_travaux"}
+        showDeliveryColumns={true}
       />
       <UniversalClosureModal
         isOpen={universalClosureModalOpen}

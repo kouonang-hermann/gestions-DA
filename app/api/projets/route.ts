@@ -76,8 +76,17 @@ export const GET = async (request: NextRequest) => {
       data: projets,
     })
   } catch (error) {
-    console.error("Erreur lors de la récupération des projets:", error)
-    return NextResponse.json({ success: false, error: "Erreur serveur" }, { status: 500 })
+    console.error("❌ [API PROJETS] Erreur détaillée:", error)
+    
+    // Retourner une erreur plus détaillée en développement
+    const errorMessage = error instanceof Error ? error.message : "Erreur serveur"
+    const isDev = process.env.NODE_ENV === 'development'
+    
+    return NextResponse.json({ 
+      success: false, 
+      error: isDev ? `Erreur serveur: ${errorMessage}` : "Erreur serveur",
+      details: isDev ? error : undefined
+    }, { status: 500 })
   }
 }
 

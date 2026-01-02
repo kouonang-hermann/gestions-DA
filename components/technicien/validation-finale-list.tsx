@@ -180,10 +180,10 @@ export default function ValidationFinaleList() {
           setSelectedDemande(null)
         }}
         demande={selectedDemande}
-        onValidate={handleModalClosure}
-        canValidate={true}
-        validationLabel="Clôturer la demande"
-        validationAction="cloturer"
+        canValidate={false}
+        canEditPrices={false}
+        canRemoveItems={false}
+        showDeliveryColumns={true}
       />
     </Card>
   )

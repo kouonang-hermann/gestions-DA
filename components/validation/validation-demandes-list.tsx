@@ -36,12 +36,12 @@ export default function ValidationDemandesList({ type, title }: ValidationDemand
         statusToFilter = "en_attente_validation_conducteur"
       } else if (currentUser.role === "responsable_travaux") {
         statusToFilter = "en_attente_validation_responsable_travaux"
-      } else if (currentUser.role === "responsable_qhse") {
-        statusToFilter = "en_attente_validation_qhse"
-      } else if (currentUser.role === "charge_affaire") {
-        statusToFilter = "en_attente_validation_charge_affaire"
       } else if (currentUser.role === "responsable_logistique") {
         statusToFilter = "en_attente_validation_logistique"
+      } else if (currentUser.role === "charge_affaire") {
+        statusToFilter = "en_attente_validation_charge_affaire"
+      } else if (currentUser.role === "responsable_livreur") {
+        statusToFilter = "en_attente_validation_livreur"
       }
       
       const filtered = demandes.filter(
@@ -235,6 +235,7 @@ export default function ValidationDemandesList({ type, title }: ValidationDemand
         canValidate={true}
         onItemRemoved={handleItemRemoved}
         canRemoveItems={canRemoveItems()}
+        showDeliveryColumns={true}
       />
     </Card>
   )

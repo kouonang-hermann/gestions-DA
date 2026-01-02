@@ -81,8 +81,8 @@ export class NotificationService {
         await this.notifyValidators(demande, users, ['conducteur_travaux'], requester)
         break
 
-      case 'en_attente_validation_qhse':
-        await this.notifyValidators(demande, users, ['responsable_qhse'], requester)
+      case 'en_attente_validation_logistique':
+        await this.notifyValidators(demande, users, ['responsable_logistique'], requester)
         break
 
       case 'en_attente_validation_responsable_travaux':
@@ -95,6 +95,14 @@ export class NotificationService {
 
       case 'en_attente_preparation_appro':
         await this.notifyValidators(demande, users, ['responsable_appro'], requester)
+        break
+
+      case 'en_attente_reception_livreur':
+        // Notification envoyée directement par l'API lors de l'assignation
+        break
+
+      case 'en_attente_livraison':
+        // Le livreur a confirmé la réception, pas besoin de notification supplémentaire
         break
 
       case 'en_attente_validation_logistique':
@@ -258,9 +266,9 @@ export class NotificationService {
         reminderRecipients = users.filter(u => u.role === 'conducteur_travaux' && (u.email || u.phone))
         actionLabel = 'Validation conducteur'
         break
-      case 'en_attente_validation_qhse':
-        reminderRecipients = users.filter(u => u.role === 'responsable_qhse' && (u.email || u.phone))
-        actionLabel = 'Validation QHSE'
+      case 'en_attente_validation_logistique':
+        reminderRecipients = users.filter(u => u.role === 'responsable_logistique' && (u.email || u.phone))
+        actionLabel = 'Validation Logistique'
         break
       case 'en_attente_validation_responsable_travaux':
         reminderRecipients = users.filter(u => u.role === 'responsable_travaux' && (u.email || u.phone))
@@ -299,6 +307,170 @@ export class NotificationService {
       if (channels.whatsapp && recipient.phone) {
         await whatsappService.notifyReminder(recipient, demande, actionLabel)
       }
+    }
+  }
+
+  /**
+   * Notifie le livreur assigné qu'il doit récupérer le matériel
+   */
+  async notifyLivreurAssigne(demandeId: string, livreurId: string, approId: string): Promise<void> {
+    try {
+      const channels = getNotificationChannels()
+      console.log(`📬 Notification livreur assigné pour demande ${demandeId}`)
+
+      // Récupérer les informations nécessaires depuis la base de données
+      const { prisma } = await import('@/lib/prisma')
+      
+      const demande = await prisma.demande.findUnique({
+        where: { id: demandeId },
+        include: {
+          projet: true,
+          technicien: true,
+          livreurAssigne: {
+            include: {
+              projets: {
+                include: {
+                  projet: true
+                }
+              }
+            }
+          }
+        }
+      })
+
+      if (!demande || !demande.livreurAssigne) {
+        console.error('❌ Demande ou livreur non trouvé')
+        return
+      }
+
+      // Transformer les données Prisma en type User
+      const livreur: any = {
+        ...demande.livreurAssigne,
+        projets: demande.livreurAssigne.projets.map(up => up.projet.id)
+      }
+
+      const titre = `📦 Nouvelle livraison assignée`
+      const message = `Vous avez été assigné pour livrer la demande ${demande.numero} du projet ${demande.projet?.nom}. Veuillez confirmer la réception du matériel.`
+
+      // Créer la notification dans la base de données
+      await prisma.notification.create({
+        data: {
+          userId: livreurId,
+          titre,
+          message,
+          demandeId,
+          lu: false
+        }
+      })
+
+      // Email
+      if (channels.email && livreur.email) {
+        await emailService.notifyLivreurAssigne(livreur, demande as any)
+      }
+
+      // WhatsApp
+      if (channels.whatsapp && livreur.phone) {
+        await whatsappService.notifyLivreurAssigne(livreur, demande as any)
+      }
+
+      console.log(`✅ Notification envoyée au livreur ${livreur.prenom} ${livreur.nom}`)
+    } catch (error) {
+      console.error('❌ Erreur lors de la notification du livreur:', error)
+    }
+  }
+
+  /**
+   * Notifie le changement de statut d'une demande
+   */
+  async notifyDemandeStatusChange(
+    demandeId: string,
+    userId: string,
+    oldStatus: DemandeStatus,
+    newStatus: DemandeStatus,
+    actionUserId: string
+  ): Promise<void> {
+    try {
+      const channels = getNotificationChannels()
+      console.log(`📬 Notification changement de statut: ${oldStatus} -> ${newStatus}`)
+
+      const { prisma } = await import('@/lib/prisma')
+      
+      const demande = await prisma.demande.findUnique({
+        where: { id: demandeId },
+        include: {
+          projet: true,
+          technicien: true,
+          items: true,
+          validationSignatures: true
+        }
+      })
+
+      const userData = await prisma.user.findUnique({
+        where: { id: userId },
+        include: {
+          projets: {
+            include: {
+              projet: true
+            }
+          }
+        }
+      })
+
+      if (!demande || !userData) {
+        console.error('❌ Demande ou utilisateur non trouvé')
+        return
+      }
+
+      // Transformer les données Prisma en type User
+      const user: any = {
+        ...userData,
+        projets: userData.projets.map(up => up.projet.id)
+      }
+
+      const statusLabels: Record<DemandeStatus, string> = {
+        brouillon: "Brouillon",
+        soumise: "Soumise",
+        en_attente_validation_conducteur: "En attente validation conducteur",
+        en_attente_validation_logistique: "En attente validation logistique",
+        en_attente_validation_responsable_travaux: "En attente validation responsable travaux",
+        en_attente_validation_charge_affaire: "En attente validation chargé d'affaire",
+        en_attente_preparation_appro: "En attente préparation appro",
+        en_attente_reception_livreur: "En attente réception livreur",
+        en_attente_livraison: "En attente livraison",
+        en_attente_validation_finale_demandeur: "En attente validation finale",
+        confirmee_demandeur: "Confirmée par le demandeur",
+        cloturee: "Clôturée",
+        rejetee: "Rejetée",
+        archivee: "Archivée"
+      }
+
+      const titre = `📋 Mise à jour de votre demande ${demande.numero}`
+      const message = `Votre demande est maintenant : ${statusLabels[newStatus]}`
+
+      // Créer la notification dans la base de données
+      await prisma.notification.create({
+        data: {
+          userId,
+          titre,
+          message,
+          demandeId,
+          lu: false
+        }
+      })
+
+      // Email
+      if (channels.email && user.email) {
+        await emailService.notifyStatusUpdate(user, demande as any, oldStatus, newStatus)
+      }
+
+      // WhatsApp
+      if (channels.whatsapp && user.phone) {
+        await whatsappService.notifyStatusUpdate(user, demande as any, oldStatus, newStatus)
+      }
+
+      console.log(`✅ Notification envoyée à ${user.prenom} ${user.nom}`)
+    } catch (error) {
+      console.error('❌ Erreur lors de la notification de changement de statut:', error)
     }
   }
 

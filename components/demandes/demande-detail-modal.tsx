@@ -14,18 +14,20 @@ interface DemandeDetailModalProps {
   onClose: () => void
   demandeId: string | null
   mode: "view" | "edit"
+  showDeliveryColumns?: boolean // Afficher les colonnes de quantités livrées/restantes
 }
 
 const statusColors: Record<DemandeStatus, string> = {
   brouillon: "bg-gray-500",
   soumise: "bg-blue-500",
   en_attente_validation_conducteur: "bg-yellow-500",
-  en_attente_validation_qhse: "bg-yellow-600",
+  en_attente_validation_logistique: "bg-yellow-600",
   en_attente_validation_responsable_travaux: "bg-yellow-400",
   en_attente_validation_charge_affaire: "bg-blue-600",
   en_attente_preparation_appro: "bg-orange-400",
-  en_attente_validation_logistique: "bg-indigo-400",
-  en_attente_validation_finale_demandeur: "bg-indigo-500",
+  en_attente_reception_livreur: "bg-indigo-400",
+  en_attente_livraison: "bg-indigo-500",
+  en_attente_validation_finale_demandeur: "bg-indigo-600",
   confirmee_demandeur: "bg-green-700",
   cloturee: "bg-green-800",
   rejetee: "bg-red-500",
@@ -36,11 +38,12 @@ const statusLabels: Record<DemandeStatus, string> = {
   brouillon: "Brouillon",
   soumise: "Soumise",
   en_attente_validation_conducteur: "En attente conducteur",
-  en_attente_validation_qhse: "En attente QHSE",
+  en_attente_validation_logistique: "En attente Logistique",
   en_attente_validation_responsable_travaux: "En attente responsable travaux",
   en_attente_validation_charge_affaire: "En attente chargé affaire",
   en_attente_preparation_appro: "En attente préparation appro",
-  en_attente_validation_logistique: "En attente logistique",
+  en_attente_reception_livreur: "En attente réception livreur",
+  en_attente_livraison: "En attente livraison",
   en_attente_validation_finale_demandeur: "En attente validation finale demandeur",
   confirmee_demandeur: "Confirmée demandeur",
   cloturee: "Clôturée",
@@ -48,7 +51,7 @@ const statusLabels: Record<DemandeStatus, string> = {
   archivee: "Archivée",
 }
 
-export default function DemandeDetailModal({ isOpen, onClose, demandeId, mode }: DemandeDetailModalProps) {
+export default function DemandeDetailModal({ isOpen, onClose, demandeId, mode, showDeliveryColumns = false }: DemandeDetailModalProps) {
   const { currentUser, articles, executeAction, token } = useStore()
   const [demande, setDemande] = useState<Demande | null>(null)
   const [loading, setLoading] = useState(false)
@@ -142,7 +145,7 @@ export default function DemandeDetailModal({ isOpen, onClose, demandeId, mode }:
 
       case "valider_outillage":
         return (
-          role === "responsable_qhse" &&
+          role === "responsable_logistique" &&
           status === "soumise" &&
           demande.type === "outillage" &&
           currentUser.projets.includes(demande.projetId)
@@ -152,7 +155,7 @@ export default function DemandeDetailModal({ isOpen, onClose, demandeId, mode }:
         return (
           status === "soumise" &&
           ((demande.type === "materiel" && role === "conducteur_travaux") ||
-            (demande.type === "outillage" && role === "responsable_qhse")) &&
+            (demande.type === "outillage" && role === "responsable_logistique")) &&
           currentUser.projets.includes(demande.projetId)
         )
 
@@ -278,6 +281,26 @@ export default function DemandeDetailModal({ isOpen, onClose, demandeId, mode }:
                     <p className="font-medium">{new Date(demande.dateValidationFinale).toLocaleString()}</p>
                   </div>
                 )}
+                {demande.livreurAssigne && (
+                  <div className="md:col-span-2">
+                    <p className="text-sm text-gray-600">Livreur assigné</p>
+                    <p className="font-medium text-indigo-600">
+                      {demande.livreurAssigne.prenom} {demande.livreurAssigne.nom}
+                    </p>
+                  </div>
+                )}
+                {demande.dateReceptionLivreur && (
+                  <div>
+                    <p className="text-sm text-gray-600">Réception par le livreur</p>
+                    <p className="font-medium text-green-600">{new Date(demande.dateReceptionLivreur).toLocaleString()}</p>
+                  </div>
+                )}
+                {demande.dateLivraison && (
+                  <div>
+                    <p className="text-sm text-gray-600">Date de livraison</p>
+                    <p className="font-medium text-green-600">{new Date(demande.dateLivraison).toLocaleString()}</p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -294,51 +317,88 @@ export default function DemandeDetailModal({ isOpen, onClose, demandeId, mode }:
               <div className="space-y-4">
                 {demande.items.map((item) => {
                   const article = getArticleById(item.articleId)
+                  const quantiteValidee = item.quantiteValidee || item.quantiteDemandee
+                  const quantiteSortie = item.quantiteSortie || 0
+                  const quantiteRestante = Math.max(0, quantiteValidee - quantiteSortie)
+                  
                   return (
-                    <div key={item.id} className="border rounded-lg p-4">
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div className="md:col-span-2">
-                          <h4 className="font-medium">{article?.nom || "Article inconnu"}</h4>
-                          <p className="text-sm text-gray-600">{article?.description}</p>
-                          <p className="text-sm text-blue-600">{article?.reference}</p>
-                          {item.commentaire && (
-                            <p className="text-sm text-blue-600 mt-1">
-                              <strong>Commentaire:</strong> {item.commentaire}
+                    <div key={item.id} className="border rounded-lg p-4 bg-white">
+                      <div className="space-y-3">
+                        {/* Nom de l'article */}
+                        <div>
+                          <h4 className="font-medium text-lg">{article?.nom || "Article inconnu"}</h4>
+                          {article?.description && (
+                            <p className="text-sm text-gray-600">{article.description}</p>
+                          )}
+                          {article?.reference && (
+                            <p className="text-sm text-blue-600">Réf: {article.reference}</p>
+                          )}
+                        </div>
+
+                        {/* Quantités en colonnes */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          <div>
+                            <p className="text-sm text-gray-600">Quantité demandée</p>
+                            <p className="font-semibold text-base">
+                              {item.quantiteDemandee}
                             </p>
-                          )}
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-600">Quantité demandée</p>
-                          <p className="font-medium">
-                            {item.quantiteDemandee} {article?.unite}
-                          </p>
-                        </div>
-                        <div>
+                          </div>
+                          
                           {item.quantiteValidee !== undefined && (
-                            <div className="mb-2">
+                            <div>
                               <p className="text-sm text-gray-600">Quantité validée</p>
-                              <p className="font-medium text-green-600">
-                                {item.quantiteValidee} {article?.unite}
+                              <p className="font-semibold text-base text-green-600">
+                                {item.quantiteValidee}
                               </p>
                             </div>
                           )}
-                          {item.quantiteSortie !== undefined && (
-                            <div className="mb-2">
+                          
+                          {showDeliveryColumns && item.quantiteSortie !== undefined && (
+                            <div>
                               <p className="text-sm text-gray-600">Quantité sortie</p>
-                              <p className="font-medium text-orange-600">
-                                {item.quantiteSortie} {article?.unite}
+                              <p className="font-semibold text-base text-orange-600">
+                                {item.quantiteSortie}
                               </p>
                             </div>
                           )}
+                          
                           {item.quantiteRecue !== undefined && (
                             <div>
                               <p className="text-sm text-gray-600">Quantité reçue</p>
-                              <p className="font-medium text-purple-600">
-                                {item.quantiteRecue} {article?.unite}
+                              <p className="font-semibold text-base text-purple-600">
+                                {item.quantiteRecue}
                               </p>
                             </div>
                           )}
                         </div>
+
+                        {/* Cartes de quantités livrées et restantes */}
+                        {showDeliveryColumns && (
+                          <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-200">
+                            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                              <p className="text-sm font-medium text-blue-700 mb-1">Quantité livrée</p>
+                              <p className="text-2xl font-bold text-blue-800">
+                                {quantiteSortie}
+                              </p>
+                            </div>
+                            <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                              <p className="text-sm font-medium text-orange-700 mb-1">Quantité restante</p>
+                              <p className="text-2xl font-bold text-orange-800">
+                                {quantiteRestante}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Commentaire */}
+                        {item.commentaire && (
+                          <div className="bg-blue-50 p-3 rounded-md border border-blue-200">
+                            <p className="text-sm">
+                              <strong className="text-blue-800">Commentaire:</strong>{" "}
+                              <span className="text-blue-700">{item.commentaire}</span>
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )
@@ -350,7 +410,7 @@ export default function DemandeDetailModal({ isOpen, onClose, demandeId, mode }:
           {/* Commentaires et signatures */}
           {(demande.commentaires || 
             demande.validationConducteur || 
-            demande.validationQHSE || 
+            demande.validationLogistique || 
             demande.sortieAppro || 
             demande.validationChargeAffaire || 
             demande.validationFinale ||
@@ -380,14 +440,14 @@ export default function DemandeDetailModal({ isOpen, onClose, demandeId, mode }:
                   </div>
                 )}
 
-                {demande.validationQHSE && (
+                {demande.validationLogistique && (
                   <div>
                     <p className="text-sm font-medium text-green-700">Validation QHSE:</p>
                     <p className="text-sm bg-green-50 p-3 rounded-md">
-                      {demande.validationQHSE.commentaire || "Validée sans commentaire"}
+                      {demande.validationLogistique.commentaire || "Validée sans commentaire"}
                       <br />
                       <span className="text-xs text-gray-500">
-                        {new Date(demande.validationQHSE.date).toLocaleString()}
+                        {new Date(demande.validationLogistique.date).toLocaleString()}
                       </span>
                     </p>
                   </div>

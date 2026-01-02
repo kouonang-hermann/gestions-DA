@@ -77,7 +77,7 @@ export default function QHSEDashboard() {
 
       setStats({
         total: demandesOutillage.length,
-        enAttente: demandesOutillage.filter((d) => d.status === "en_attente_validation_qhse").length,
+        enAttente: demandesOutillage.filter((d) => d.status === "en_attente_validation_logistique").length,
         enCours: demandes.filter((d) => 
           d.technicienId === currentUser.id && ![
             "brouillon", 
@@ -113,7 +113,7 @@ export default function QHSEDashboard() {
       case "total":
         return mesDemandes
       case "enAttente":
-        return demandesOutillage.filter((d) => d.status === "en_attente_validation_qhse")
+        return demandesOutillage.filter((d) => d.status === "en_attente_validation_logistique")
       case "enCours":
         return mesDemandes.filter((d) => ![
           "brouillon", "cloturee", "rejetee", "archivee"

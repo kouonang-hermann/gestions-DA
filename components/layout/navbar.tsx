@@ -1,9 +1,10 @@
 "use client"
 
-import { Bell, LogOut, Settings, Menu, X } from "lucide-react"
+import { Bell, LogOut, Settings, Menu, X, KeyRound } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,22 +23,39 @@ import {
 import { useStore } from "@/stores/useStore"
 import InstrumElecLogo from "@/components/ui/instrumelec-logo"
 import Link from "next/link"
+import ChangePasswordModal from "@/components/modals/change-password-modal"
 
-const roleLabels = {
+const roleLabels: Record<string, string> = {
   superadmin: "Super Administrateur",
   employe: "Employé",
   technicien: "Technicien",
   conducteur_travaux: "Conducteur de Travaux",
   responsable_travaux: "Responsable Travaux",
-  responsable_qhse: "Responsable QHSE",
+  responsable_logistique: "Responsable Logistique",
   responsable_appro: "Responsable Approvisionnements",
   charge_affaire: "Chargé d'Affaire",
-  responsable_logistique: "Responsable Logistique",
+  responsable_livreur: "Responsable Livreur",
 }
 
 export default function Navbar() {
-  const { currentUser, logout, notifications } = useStore()
+  const { currentUser, logout, notifications, startNotificationPolling, stopNotificationPolling } = useStore()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false)
+  const router = useRouter()
+
+  // Démarrer le polling des notifications au montage du composant
+  useEffect(() => {
+    if (currentUser) {
+      const intervalId = startNotificationPolling()
+      
+      // Nettoyer l'intervalle au démontage
+      return () => {
+        if (intervalId) {
+          stopNotificationPolling(intervalId)
+        }
+      }
+    }
+  }, [currentUser, startNotificationPolling, stopNotificationPolling])
 
   const unreadCount = notifications.filter((n) => !n.read).length
 
@@ -73,11 +91,16 @@ export default function Navbar() {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="relative hover:bg-gray-100">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="relative hover:bg-gray-100"
+                onClick={() => router.push('/notifications')}
+              >
                 <Bell className="h-4 w-4" />
                 {unreadCount > 0 && (
                   <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-red-500">
-                    {unreadCount}
+                    {unreadCount > 99 ? '99+' : unreadCount}
                   </Badge>
                 )}
               </Button>
@@ -125,6 +148,10 @@ export default function Navbar() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-gray-200" />
+              <DropdownMenuItem onClick={() => setChangePasswordModalOpen(true)} className="hover:bg-blue-50">
+                <KeyRound className="mr-2 h-4 w-4" />
+                Changer mot de passe
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={logout} className="text-red-600 hover:bg-red-50">
                 <LogOut className="mr-2 h-4 w-4" />
                 Déconnexion
@@ -195,6 +222,19 @@ export default function Navbar() {
                   </Button>
                 )}
 
+                {/* Change Password */}
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => {
+                    setChangePasswordModalOpen(true)
+                    setMobileMenuOpen(false)
+                  }}
+                >
+                  <KeyRound className="h-4 w-4 mr-2" />
+                  Changer mot de passe
+                </Button>
+
                 {/* Logout */}
                 <Button 
                   variant="outline" 
@@ -212,6 +252,12 @@ export default function Navbar() {
           </Sheet>
         </div>
       </div>
+
+      {/* Modal de changement de mot de passe */}
+      <ChangePasswordModal
+        isOpen={changePasswordModalOpen}
+        onClose={() => setChangePasswordModalOpen(false)}
+      />
     </nav>
   )
 }

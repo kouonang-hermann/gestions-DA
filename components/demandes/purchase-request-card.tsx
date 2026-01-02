@@ -32,7 +32,7 @@ export default function PurchaseRequestCard({
       case "soumise":
         return "bg-blue-100 text-blue-800"
       case "en_attente_validation_conducteur":
-      case "en_attente_validation_qhse":
+      case "en_attente_validation_logistique":
       case "en_attente_validation_responsable_travaux":
       case "en_attente_validation_charge_affaire":
       case "en_attente_preparation_appro":
@@ -56,11 +56,10 @@ export default function PurchaseRequestCard({
       "brouillon": "Brouillon",
       "soumise": "Soumise",
       "en_attente_validation_conducteur": "En attente validation conducteur",
-      "en_attente_validation_qhse": "En attente validation QHSE",
+      "en_attente_validation_logistique": "En attente validation logistique",
       "en_attente_validation_responsable_travaux": "En attente validation responsable travaux",
       "en_attente_validation_charge_affaire": "En attente validation chargé d'affaire",
       "en_attente_preparation_appro": "En attente préparation appro",
-      "en_attente_validation_logistique": "En attente validation logistique",
       "en_attente_validation_finale_demandeur": "En attente validation finale demandeur",
       "cloturee": "Clôturée",
       "rejetee": "Rejetée",
@@ -83,11 +82,11 @@ export default function PurchaseRequestCard({
       })
     }
 
-    if (demande.validationQHSE) {
+    if (demande.validationLogistique) {
       steps.push({
         step: "Validation QHSE",
-        validator: `${demande.validationQHSE.user?.prenom || ''} ${demande.validationQHSE.user?.nom || ''}`.trim(),
-        date: new Date(demande.validationQHSE.date).toLocaleDateString('fr-FR'),
+        validator: `${demande.validationLogistique.user?.prenom || ''} ${demande.validationLogistique.user?.nom || ''}`.trim(),
+        date: new Date(demande.validationLogistique.date).toLocaleDateString('fr-FR'),
         status: 'Validé'
       })
     }
@@ -203,24 +202,34 @@ export default function PurchaseRequestCard({
                 <th className="pb-2 px-3 py-2 border border-gray-200">Référence</th>
                 <th className="pb-2 px-3 py-2 border border-gray-200">Qté Demandée</th>
                 <th className="pb-2 px-3 py-2 border border-gray-200">Qté Validée</th>
+                <th className="pb-2 px-3 py-2 border border-gray-200 bg-blue-50">Qté Livrée</th>
+                <th className="pb-2 px-3 py-2 border border-gray-200 bg-orange-50">Qté Restante</th>
                 <th className="pb-2 px-3 py-2 border border-gray-200">Unité</th>
               </tr>
             </thead>
             <tbody>
               {demande.items.length === 0 ? (
                 <tr>
-                  <td className="py-4 px-3 border border-gray-200" colSpan={5}>Aucun article</td>
+                  <td className="py-4 px-3 border border-gray-200" colSpan={7}>Aucun article</td>
                 </tr>
               ) : (
-                demande.items.map((item, i) => (
-                  <tr key={i} className="border-t">
-                    <td className="py-2 px-3 border border-gray-200">{item.article?.nom || 'N/A'}</td>
-                    <td className="py-2 px-3 border border-gray-200">{item.article?.reference || 'N/A'}</td>
-                    <td className="py-2 px-3 border border-gray-200">{item.quantiteDemandee}</td>
-                    <td className="py-2 px-3 border border-gray-200">{item.quantiteValidee || item.quantiteDemandee}</td>
-                    <td className="py-2 px-3 border border-gray-200">{item.article?.unite || 'N/A'}</td>
-                  </tr>
-                ))
+                demande.items.map((item, i) => {
+                  const quantiteValidee = item.quantiteValidee || item.quantiteDemandee
+                  const quantiteLivree = item.quantiteSortie || 0
+                  const quantiteRestante = Math.max(0, quantiteValidee - quantiteLivree)
+                  
+                  return (
+                    <tr key={i} className="border-t">
+                      <td className="py-2 px-3 border border-gray-200">{item.article?.nom || 'N/A'}</td>
+                      <td className="py-2 px-3 border border-gray-200">{item.article?.reference || 'N/A'}</td>
+                      <td className="py-2 px-3 border border-gray-200">{item.quantiteDemandee}</td>
+                      <td className="py-2 px-3 border border-gray-200">{quantiteValidee}</td>
+                      <td className="py-2 px-3 border border-gray-200 bg-blue-50 font-medium text-blue-700">{quantiteLivree}</td>
+                      <td className="py-2 px-3 border border-gray-200 bg-orange-50 font-medium text-orange-700">{quantiteRestante}</td>
+                      <td className="py-2 px-3 border border-gray-200">{item.article?.unite || 'N/A'}</td>
+                    </tr>
+                  )
+                })
               )}
             </tbody>
           </table>

@@ -45,10 +45,10 @@ export default function CreateUserModal({ isOpen, onClose }: CreateUserModalProp
     { value: "employe", label: "Employé" },
     { value: "conducteur_travaux", label: "Conducteur de Travaux" },
     { value: "responsable_travaux", label: "Responsable des Travaux" },
-    { value: "responsable_qhse", label: "Responsable QHSE" },
     { value: "responsable_appro", label: "Responsable Approvisionnements" },
     { value: "charge_affaire", label: "Chargé d'Affaire" },
     { value: "responsable_logistique", label: "Responsable Logistique" },
+    { value: "responsable_livreur", label: "Responsable Livreur" },
   ]
 
   // Activer automatiquement isAdmin si le rôle est superadmin

@@ -34,8 +34,8 @@ const ROLES: { value: UserRole; label: string; description: string }[] = [
     
   },
   { 
-    value: "responsable_qhse", 
-    label: "Responsable QHSE", 
+    value: "responsable_logistique", 
+    label: "Responsable Logistique", 
     description: "Valide les demandes d'outillage" 
   },
   { 
@@ -49,8 +49,8 @@ const ROLES: { value: UserRole; label: string; description: string }[] = [
     description: "Prépare les sorties de matériel" 
   },
   { 
-    value: "responsable_logistique", 
-    label: "Responsable Logistique", 
+    value: "responsable_livreur", 
+    label: "Responsable Livreur", 
     description: "Validation finale avant demandeur" 
   },
 ]

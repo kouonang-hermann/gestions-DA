@@ -7,9 +7,17 @@
   --accent-red: #fc2d1f;
   --gray-light: #f8f9fa;
   --gray-medium: #6c757d;
+  --white: #ffffff;
+  --border-radius: 8px;
+  --shadow-light: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-medium: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 /* Mobile Layout - Visible uniquement sur mobile */
+.mobile-dashboard {
+  display: none;
+}
+
 @media (max-width: 768px) {
   .desktop-dashboard {
     display: none !important;
@@ -18,8 +26,10 @@
   .mobile-dashboard {
     display: flex !important;
     flex-direction: column;
-    height: 100vh;
+    min-height: 100vh;
+    height: auto;
     background-color: var(--gray-light);
+    overflow-x: hidden;
   }
 }
 
@@ -332,6 +342,143 @@
 .status-rejetee {
   background: #fecaca;
   color: #dc2626;
+}
+
+/* Tableau Actions Rapides */
+.mobile-actions-table-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 -16px;
+  padding: 0 16px;
+}
+
+.mobile-actions-table {
+  min-width: 100%;
+  border-collapse: collapse;
+}
+
+.mobile-actions-table-header {
+  display: flex;
+  background-color: #f3f4f6;
+  border-radius: 8px 8px 0 0;
+  padding: 12px 8px;
+  font-weight: 600;
+  font-size: 12px;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.mobile-actions-table-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+}
+
+.mobile-table-row {
+  display: flex;
+  align-items: center;
+  padding: 12px 8px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s;
+}
+
+.mobile-table-row-clickable {
+  cursor: pointer;
+}
+
+.mobile-table-row-clickable:active {
+  background-color: #f9fafb;
+  transform: scale(0.98);
+}
+
+.mobile-table-cell {
+  flex: 1;
+  font-size: 13px;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.mobile-table-cell:first-child {
+  flex: 1.5;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.mobile-action-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mobile-action-icon-small {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+/* Badges pour types */
+.mobile-type-badge {
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.mobile-type-materiel {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.mobile-type-outillage {
+  background-color: #f3e8ff;
+  color: #6b21a8;
+}
+
+.mobile-type-action {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.mobile-type-rapport {
+  background-color: #fed7aa;
+  color: #9a3412;
+}
+
+.mobile-type-projet {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+.mobile-type-paiement {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+/* Badges pour statuts */
+.mobile-status-badge {
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.mobile-status-active {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.mobile-status-future {
+  background-color: #fef3c7;
+  color: #92400e;
 }
 
 /* Animations */

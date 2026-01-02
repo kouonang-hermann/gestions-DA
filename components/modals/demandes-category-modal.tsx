@@ -60,11 +60,10 @@ export default function DemandesCategoryModal({
       brouillon: { bg: "#f3f4f6", text: "#374151" },
       soumise: { bg: "#dbeafe", text: "#1e40af" },
       en_attente_validation_conducteur: { bg: "#fef3c7", text: "#92400e" },
-      en_attente_validation_qhse: { bg: "#fef3c7", text: "#92400e" },
+      en_attente_validation_logistique: { bg: "#fef3c7", text: "#92400e" },
       en_attente_validation_responsable_travaux: { bg: "#fef3c7", text: "#92400e" },
       en_attente_validation_charge_affaire: { bg: "#fef3c7", text: "#92400e" },
       en_attente_preparation_appro: { bg: "#f3e8ff", text: "#7c3aed" },
-      en_attente_validation_logistique: { bg: "#f3e8ff", text: "#7c3aed" },
       en_attente_validation_finale_demandeur: { bg: "#dcfce7", text: "#166534" },
       confirmee_demandeur: { bg: "#dcfce7", text: "#166534" },
       cloturee: { bg: "#dcfce7", text: "#166534" },
@@ -79,11 +78,10 @@ export default function DemandesCategoryModal({
       brouillon: "Brouillon",
       soumise: "Soumise",
       en_attente_validation_conducteur: "En attente validation conducteur",
-      en_attente_validation_qhse: "En attente validation QHSE",
+      en_attente_validation_logistique: "En attente validation logistique",
       en_attente_validation_responsable_travaux: "En attente validation responsable travaux",
       en_attente_validation_charge_affaire: "En attente validation chargé d'affaire",
       en_attente_preparation_appro: "En attente préparation appro",
-      en_attente_validation_logistique: "En attente validation logistique",
       en_attente_validation_finale_demandeur: "Prêt à clôturer",
       confirmee_demandeur: "Confirmée",
       cloturee: "Clôturée",
@@ -366,6 +364,7 @@ export default function DemandesCategoryModal({
         demande={selectedDemande}
         canValidate={false}
         canRemoveItems={false}
+        showDeliveryColumns={true}
       />
 
       {/* Modal de confirmation de suppression */}

@@ -183,7 +183,7 @@ export default function ValidationPreparationList() {
         )}
       </CardContent>
 
-      {/* Modal de détails */}
+      {/* Modal détails avec possibilité de valider et saisir budget */}
       <DemandeDetailsModal
         isOpen={detailsModalOpen}
         onClose={() => {
@@ -193,6 +193,9 @@ export default function ValidationPreparationList() {
         demande={selectedDemande}
         onValidate={handleModalValidation}
         canValidate={true}
+        validationAction="valider"
+        validationLabel="Valider la préparation"
+        showDeliveryColumns={true}
       />
     </Card>
   )

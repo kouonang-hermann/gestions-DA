@@ -48,6 +48,7 @@ import CreateDemandeModal from "@/components/demandes/create-demande-modal"
 import { UserRequestsChart } from "@/components/charts/user-requests-chart"
 import UserDetailsModal from "@/components/modals/user-details-modal"
 import MesDemandesACloturer from "@/components/demandes/mes-demandes-a-cloturer"
+import MesLivraisonsSection from "@/components/dashboard/mes-livraisons-section"
 import ValidatedRequestsHistory from "@/components/dashboard/validated-requests-history"
 import ValidatedDemandesModal from "@/components/modals/validated-demandes-modal"
 import DemandesCategoryModal from "@/components/modals/demandes-category-modal"
@@ -87,15 +88,15 @@ export default function EmployeDashboard() {
           d.type === "materiel" && (
             d.status === "en_attente_validation_conducteur" ||
             d.status === "soumise" ||
-            ["en_attente_validation_qhse", "en_attente_validation_responsable_travaux", "en_attente_validation_charge_affaire", "en_attente_preparation_appro", "en_attente_validation_logistique", "en_attente_validation_finale_demandeur", "confirmee_demandeur", "cloturee", "archivee"].includes(d.status)
+            ["en_attente_validation_logistique", "en_attente_validation_responsable_travaux", "en_attente_validation_charge_affaire", "en_attente_preparation_appro", "en_attente_validation_livreur", "en_attente_validation_finale_demandeur", "confirmee_demandeur", "cloturee", "archivee"].includes(d.status)
           )
         )
       
-      case "responsable_qhse":
+      case "responsable_logistique":
         // Demandes outillage qu'il doit valider ou qu'il a validées
         return demandes.filter(d => 
           d.type === "outillage" && (
-            d.status === "en_attente_validation_qhse" ||
+            d.status === "en_attente_validation_logistique" ||
             ["en_attente_validation_responsable_travaux", "en_attente_validation_charge_affaire", "en_attente_preparation_appro", "en_attente_validation_logistique", "en_attente_validation_finale_demandeur", "confirmee_demandeur", "cloturee", "archivee"].includes(d.status)
           )
         )
@@ -139,14 +140,14 @@ export default function EmployeDashboard() {
     if (currentUser && demandes) {
       const demandesForRole = getDemandesForRole()
 
-      if (["conducteur_travaux", "responsable_qhse", "responsable_travaux", "charge_affaire", "responsable_appro", "responsable_logistique"].includes(currentUser.role)) {
+      if (["conducteur_travaux", "responsable_logistique", "responsable_travaux", "charge_affaire", "responsable_appro", "responsable_livreur"].includes(currentUser.role)) {
         // Pour les rôles de validation
         setStats({
           total: demandesForRole.length,
           enCours: demandesForRole.filter((d) => {
             const enAttenteStatuses = [
               "en_attente_validation_conducteur",
-              "en_attente_validation_qhse", 
+              "en_attente_validation_logistique", 
               "en_attente_validation_responsable_travaux",
               "en_attente_validation_charge_affaire",
               "en_attente_preparation_appro",
@@ -180,11 +181,11 @@ export default function EmployeDashboard() {
       brouillon: "bg-gray-500",
       soumise: "bg-blue-500",
       en_attente_validation_conducteur: "bg-orange-500",
-      en_attente_validation_qhse: "bg-orange-500", 
+      en_attente_validation_logistique: "bg-orange-500", 
       en_attente_validation_responsable_travaux: "bg-orange-500",
       en_attente_validation_charge_affaire: "bg-orange-500",
       en_attente_preparation_appro: "bg-purple-500",
-      en_attente_validation_logistique: "bg-purple-500",
+      en_attente_validation_livreur: "bg-purple-500",
       en_attente_validation_finale_demandeur: "bg-emerald-500", // Prêt à clôturer
       confirmee_demandeur: "bg-green-500",
       cloturee: "bg-green-600",
@@ -199,11 +200,11 @@ export default function EmployeDashboard() {
       brouillon: "Brouillon",
       soumise: "Soumise",
       en_attente_validation_conducteur: "En attente validation conducteur",
-      en_attente_validation_qhse: "En attente validation QHSE",
+      en_attente_validation_logistique: "En attente validation Logistique",
       en_attente_validation_responsable_travaux: "En attente validation responsable travaux",
       en_attente_validation_charge_affaire: "En attente validation chargé d'affaire",
       en_attente_preparation_appro: "En attente préparation appro",
-      en_attente_validation_logistique: "En attente validation logistique",
+      en_attente_validation_livreur: "En attente validation livreur",
       en_attente_validation_finale_demandeur: "Prêt à clôturer", // Le demandeur peut clôturer
       confirmee_demandeur: "Confirmée",
       cloturee: "Clôturée",
@@ -243,11 +244,11 @@ export default function EmployeDashboard() {
       case "total":
         return demandesToFilter
       case "enCours":
-        if (["conducteur_travaux", "responsable_qhse", "responsable_travaux", "charge_affaire", "responsable_appro", "responsable_logistique"].includes(currentUser?.role || "")) {
+        if (["conducteur_travaux", "responsable_logistique", "responsable_travaux", "charge_affaire", "responsable_appro", "responsable_livreur"].includes(currentUser?.role || "")) {
           // Pour les validateurs : demandes en attente de leur validation
           const enAttenteStatuses = [
             "en_attente_validation_conducteur",
-            "en_attente_validation_qhse", 
+            "en_attente_validation_logistique", 
             "en_attente_validation_responsable_travaux",
             "en_attente_validation_charge_affaire",
             "en_attente_preparation_appro",
@@ -264,7 +265,7 @@ export default function EmployeDashboard() {
           ].includes(d.status))
         }
       case "validees":
-        if (["conducteur_travaux", "responsable_qhse", "responsable_travaux", "charge_affaire", "responsable_appro", "responsable_logistique"].includes(currentUser?.role || "")) {
+        if (["conducteur_travaux", "responsable_logistique", "responsable_travaux", "charge_affaire", "responsable_appro", "responsable_livreur"].includes(currentUser?.role || "")) {
           // Pour les validateurs : demandes qu'ils ont validées (passées à l'étape suivante)
           return demandesToFilter.filter((d) => ["cloturee", "archivee", "confirmee_demandeur", "en_attente_validation_finale_demandeur"].includes(d.status))
         } else {
@@ -273,7 +274,7 @@ export default function EmployeDashboard() {
         }
       case "brouillons":
         // Seuls les employés ont des brouillons
-        if (["conducteur_travaux", "responsable_qhse", "responsable_travaux", "charge_affaire", "responsable_appro", "responsable_logistique"].includes(currentUser?.role || "")) {
+        if (["conducteur_travaux", "responsable_logistique", "responsable_travaux", "charge_affaire", "responsable_appro", "responsable_livreur"].includes(currentUser?.role || "")) {
           return [] // Les validateurs ne voient pas les brouillons
         } else {
           return demandesToFilter.filter((d) => d.status === "brouillon")
@@ -287,7 +288,7 @@ export default function EmployeDashboard() {
     // Pour les rôles de validation, afficher le modal spécialisé pour les demandes validées
     if (type === "validees" && currentUser && [
       "conducteur_travaux", 
-      "responsable_qhse", 
+      "responsable_logistique", 
       "responsable_travaux", 
       "charge_affaire", 
       "responsable_appro", 
@@ -372,11 +373,11 @@ export default function EmployeDashboard() {
       brouillon: { label: "Brouillon", class: "status-brouillon" },
       soumise: { label: "Soumise", class: "status-soumise" },
       en_attente_validation_conducteur: { label: "En cours", class: "status-en-cours" },
-      en_attente_validation_qhse: { label: "En cours", class: "status-en-cours" },
+      en_attente_validation_logistique: { label: "En cours", class: "status-en-cours" },
       en_attente_validation_responsable_travaux: { label: "En cours", class: "status-en-cours" },
       en_attente_validation_charge_affaire: { label: "En cours", class: "status-en-cours" },
       en_attente_preparation_appro: { label: "En cours", class: "status-en-cours" },
-      en_attente_validation_logistique: { label: "En cours", class: "status-en-cours" },
+      en_attente_validation_livreur: { label: "En cours", class: "status-en-cours" },
       en_attente_validation_finale_demandeur: { label: "Validée", class: "status-validee" },
       confirmee_demandeur: { label: "Validée", class: "status-validee" },
       cloturee: { label: "Validée", class: "status-validee" },
@@ -399,11 +400,11 @@ export default function EmployeDashboard() {
             <h1>Gestion Demandes</h1>
             <p>{currentUser?.role === "employe" ? "Employé" : 
                currentUser?.role === "conducteur_travaux" ? "Conducteur Travaux" :
-               currentUser?.role === "responsable_qhse" ? "Responsable QHSE" :
+               currentUser?.role === "responsable_logistique" ? "Responsable Logistique" :
                currentUser?.role === "responsable_travaux" ? "Responsable Travaux" :
                currentUser?.role === "charge_affaire" ? "Chargé d'Affaire" :
                currentUser?.role === "responsable_appro" ? "Responsable Appro" :
-               currentUser?.role === "responsable_logistique" ? "Responsable Logistique" :
+               currentUser?.role === "responsable_livreur" ? "Responsable Livreur" :
                "Utilisateur"}</p>
           </div>
         </div>
@@ -668,6 +669,9 @@ export default function EmployeDashboard() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Section des livraisons assignées */}
+            <MesLivraisonsSection />
 
             {/* Mes demandes à clôturer */}
             <MesDemandesACloturer />

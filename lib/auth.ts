@@ -157,19 +157,19 @@ export function hasPermission(user: any, action: string): boolean {
 
     case "read_users":
       // Permettre la lecture des utilisateurs pour les rôles qui en ont besoin pour le filtrage
-      return ["superadmin", "responsable_travaux", "charge_affaire", "responsable_logistique", "responsable_appro", "responsable_qhse", "conducteur_travaux"].includes(user.role) || user.isAdmin
+      return ["superadmin", "responsable_travaux", "charge_affaire", "responsable_livreur", "responsable_appro", "responsable_logistique", "conducteur_travaux"].includes(user.role) || user.isAdmin
 
     case "assign_admin":
       return user.role === "superadmin"
 
     case "create_demande":
-      return ["superadmin", "employe", "conducteur_travaux", "responsable_travaux", "responsable_qhse", "responsable_appro", "charge_affaire", "responsable_logistique"].includes(user.role)
+      return ["superadmin", "employe", "conducteur_travaux", "responsable_travaux", "responsable_logistique", "responsable_appro", "charge_affaire", "responsable_livreur"].includes(user.role)
 
     case "validate_materiel":
       return user.role === "conducteur_travaux" || user.role === "superadmin"
 
     case "validate_outillage":
-      return user.role === "responsable_qhse" || user.role === "superadmin"
+      return user.role === "responsable_logistique" || user.role === "superadmin"
 
     case "manage_sortie":
       return user.role === "responsable_appro" || user.role === "superadmin"

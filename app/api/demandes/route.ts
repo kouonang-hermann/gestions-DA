@@ -17,15 +17,17 @@ function getInitialStatus(type: "materiel" | "outillage", creatorRole: string): 
       { status: "en_attente_validation_responsable_travaux", role: "responsable_travaux" },
       { status: "en_attente_validation_charge_affaire", role: "charge_affaire" },
       { status: "en_attente_preparation_appro", role: "responsable_appro" },
-      { status: "en_attente_validation_logistique", role: "responsable_logistique" },
+      { status: "en_attente_reception_livreur", role: "responsable_livreur" },
+      { status: "en_attente_livraison", role: "responsable_livreur" },
       { status: "en_attente_validation_finale_demandeur", role: "employe" }
     ],
     outillage: [
-      { status: "en_attente_validation_qhse", role: "responsable_qhse" },
+      { status: "en_attente_validation_logistique", role: "responsable_logistique" },
       { status: "en_attente_validation_responsable_travaux", role: "responsable_travaux" },
       { status: "en_attente_validation_charge_affaire", role: "charge_affaire" },
       { status: "en_attente_preparation_appro", role: "responsable_appro" },
-      { status: "en_attente_validation_logistique", role: "responsable_logistique" },
+      { status: "en_attente_reception_livreur", role: "responsable_livreur" },
+      { status: "en_attente_livraison", role: "responsable_livreur" },
       { status: "en_attente_validation_finale_demandeur", role: "employe" }
     ]
   }
@@ -36,21 +38,21 @@ function getInitialStatus(type: "materiel" | "outillage", creatorRole: string): 
     // Conducteur peut valider l'étape "conducteur" uniquement
     "conducteur_travaux": ["en_attente_validation_conducteur"],
     
-    // Responsable QHSE peut valider l'étape "QHSE" uniquement
-    "responsable_qhse": ["en_attente_validation_qhse"],
+    // Responsable Logistique peut valider l'étape "Logistique" uniquement
+    "responsable_logistique": ["en_attente_validation_logistique"],
     
     // Responsable travaux peut valider "conducteur" ET "responsable travaux" pour matériel
-    // et "QHSE" ET "responsable travaux" pour outillage
+    // et "Logistique" ET "responsable travaux" pour outillage
     "responsable_travaux": [
       "en_attente_validation_conducteur",
-      "en_attente_validation_qhse", 
+      "en_attente_validation_logistique", 
       "en_attente_validation_responsable_travaux"
     ],
     
-    // Chargé affaires peut valider "conducteur", "QHSE", "responsable travaux" ET "chargé affaires"
+    // Chargé affaires peut valider "conducteur", "Logistique", "responsable travaux" ET "chargé affaires"
     "charge_affaire": [
       "en_attente_validation_conducteur",
-      "en_attente_validation_qhse",
+      "en_attente_validation_logistique",
       "en_attente_validation_responsable_travaux",
       "en_attente_validation_charge_affaire"
     ],
@@ -58,7 +60,7 @@ function getInitialStatus(type: "materiel" | "outillage", creatorRole: string): 
     // Superadmin a les mêmes privilèges que chargé affaires
     "superadmin": [
       "en_attente_validation_conducteur",
-      "en_attente_validation_qhse",
+      "en_attente_validation_logistique",
       "en_attente_validation_responsable_travaux",
       "en_attente_validation_charge_affaire"
     ]
@@ -93,17 +95,20 @@ function getNextStatus(currentStatus: string, userRole: string): string | null {
     "en_attente_validation_responsable_travaux": {
       "responsable_travaux": "en_attente_validation_charge_affaire"
     },
-    "en_attente_validation_qhse": {
-      "responsable_qhse": "en_attente_validation_responsable_travaux"
+    "en_attente_validation_logistique": {
+      "responsable_logistique": "en_attente_validation_responsable_travaux"
     },
     "en_attente_validation_charge_affaire": {
       "charge_affaire": "en_attente_preparation_appro"
     },
     "en_attente_preparation_appro": {
-      "responsable_appro": "en_attente_validation_logistique"
+      "responsable_appro": "en_attente_reception_livreur"
     },
-    "en_attente_validation_logistique": {
-      "responsable_logistique": "en_attente_validation_finale_demandeur"
+    "en_attente_reception_livreur": {
+      "responsable_livreur": "en_attente_livraison"
+    },
+    "en_attente_livraison": {
+      "responsable_livreur": "en_attente_validation_finale_demandeur"
     },
     "en_attente_validation_finale_demandeur": {
       "employe": "confirmee_demandeur"
@@ -160,15 +165,15 @@ export const GET = async (request: NextRequest) => {
         }
         break
 
-      case "responsable_qhse":
+      case "responsable_logistique":
         // Voit les demandes d'outillage des projets où il est assigné
-        const qhseProjets = await prisma.userProjet.findMany({
+        const logistiqueProjets = await prisma.userProjet.findMany({
           where: { userId: currentUser.id },
           select: { projetId: true }
         })
         whereClause = {
           type: "outillage",
-          projetId: { in: qhseProjets.map((up: any) => up.projetId) }
+          projetId: { in: logistiqueProjets.map((up: any) => up.projetId) }
         }
         break
 
@@ -185,7 +190,7 @@ export const GET = async (request: NextRequest) => {
 
       case "responsable_appro":
       case "charge_affaire":
-      case "responsable_logistique":
+      case "responsable_livreur":
         // Voient les demandes des projets où ils sont assignés
         const approProjets = await prisma.userProjet.findMany({
           where: { userId: currentUser.id },
@@ -233,9 +238,27 @@ export const GET = async (request: NextRequest) => {
 
     console.log(`📊 [API-DEMANDES] ${demandes.length} demande(s) trouvée(s) pour ${currentUser.role}`)
 
+    // Filtrer les données financières pour les non-superadmin
+    const filteredDemandes = demandes.map((demande: any) => {
+      if (currentUser.role === 'superadmin') {
+        // Le superadmin voit tout, y compris les prix
+        return demande
+      } else {
+        // Les autres utilisateurs ne voient PAS les prix
+        return {
+          ...demande,
+          coutTotal: undefined, // Masquer le coût total
+          items: demande.items.map((item: any) => ({
+            ...item,
+            prixUnitaire: undefined // Masquer le prix unitaire
+          }))
+        }
+      }
+    })
+
     return NextResponse.json({
       success: true,
-      data: demandes,
+      data: filteredDemandes,
     })
   } catch (error) {
     console.error("Erreur lors de la récupération des demandes:", error)
@@ -387,15 +410,15 @@ export const POST = async (request: NextRequest) => {
         { status: "en_attente_validation_responsable_travaux", role: "responsable_travaux", label: "Validation Responsable Travaux" },
         { status: "en_attente_validation_charge_affaire", role: "charge_affaire", label: "Validation Chargé Affaire" },
         { status: "en_attente_preparation_appro", role: "responsable_appro", label: "Préparation Appro" },
-        { status: "en_attente_validation_logistique", role: "responsable_logistique", label: "Validation Logistique" },
+        { status: "en_attente_validation_livreur", role: "responsable_livreur", label: "Validation Livreur" },
         { status: "en_attente_validation_finale_demandeur", role: "employe", label: "Validation Finale Demandeur" }
       ],
       outillage: [
-        { status: "en_attente_validation_qhse", role: "responsable_qhse", label: "Validation QHSE" },
+        { status: "en_attente_validation_logistique", role: "responsable_logistique", label: "Validation Logistique" },
         { status: "en_attente_validation_responsable_travaux", role: "responsable_travaux", label: "Validation Responsable Travaux" },
         { status: "en_attente_validation_charge_affaire", role: "charge_affaire", label: "Validation Chargé Affaire" },
         { status: "en_attente_preparation_appro", role: "responsable_appro", label: "Préparation Appro" },
-        { status: "en_attente_validation_logistique", role: "responsable_logistique", label: "Validation Logistique" },
+        { status: "en_attente_validation_livreur", role: "responsable_livreur", label: "Validation Livreur" },
         { status: "en_attente_validation_finale_demandeur", role: "employe", label: "Validation Finale Demandeur" }
       ]
     }
@@ -422,6 +445,31 @@ export const POST = async (request: NextRequest) => {
         break
       }
     }
+
+    // Envoyer une notification au premier validateur
+    const { notificationService } = await import('@/services/notificationService')
+    const users = await prisma.user.findMany({
+      include: {
+        projets: {
+          include: {
+            projet: true
+          }
+        }
+      }
+    })
+    
+    // Transformer les données pour le service de notification
+    const transformedUsers = users.map(u => ({
+      ...u,
+      projets: u.projets.map(up => up.projet.id)
+    }))
+    
+    await notificationService.handleStatusChange(
+      newDemande as any,
+      'soumise' as any,
+      initialStatus as any,
+      transformedUsers as any
+    )
 
     return NextResponse.json(
       {

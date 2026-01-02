@@ -41,6 +41,7 @@ import { UserRequestsChart } from "@/components/charts/user-requests-chart"
 import UserDetailsModal from "@/components/modals/user-details-modal"
 import MesDemandesACloturer from "@/components/demandes/mes-demandes-a-cloturer"
 import UniversalClosureModal from "@/components/modals/universal-closure-modal"
+import LivraisonsAEffectuer from "@/components/dashboard/livraisons-a-effectuer"
 import { useAutoReload } from "@/hooks/useAutoReload"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
@@ -302,6 +303,9 @@ export default function ApproDashboard() {
               </Card>
             </div>
 
+
+            {/* Livraisons à effectuer */}
+            <LivraisonsAEffectuer />
 
             {/* Liste des demandes à préparer */}
             <SortiePreparationList />

@@ -43,6 +43,7 @@ import ValidationDemandesList from "@/components/validation/validation-demandes-
 import UserDetailsModal from "@/components/modals/user-details-modal"
 import ValidatedRequestsHistory from "@/components/dashboard/validated-requests-history"
 import UniversalClosureModal from "@/components/modals/universal-closure-modal"
+import LivraisonsAEffectuer from "@/components/dashboard/livraisons-a-effectuer"
 import type { Demande } from "@/types"
 import { useAutoReload } from "@/hooks/useAutoReload"
 
@@ -330,6 +331,9 @@ export default function ConducteurDashboard() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Livraisons à effectuer */}
+            <LivraisonsAEffectuer />
 
             {/* Liste des demandes à valider */}
             <ValidationDemandesList type="materiel" title="Demandes de matériel à valider" />

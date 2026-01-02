@@ -9,9 +9,14 @@ export interface EmailNotification {
 
 export class EmailService {
   private static instance: EmailService
-  private apiEndpoint = '/api/notifications/email'
+  private apiEndpoint: string
 
-  private constructor() {}
+  private constructor() {
+    // Utiliser une URL absolue pour les appels côté serveur
+    this.apiEndpoint = process.env.NEXT_PUBLIC_APP_URL 
+      ? `${process.env.NEXT_PUBLIC_APP_URL}/api/notifications/email`
+      : 'http://localhost:3000/api/notifications/email'
+  }
 
   public static getInstance(): EmailService {
     if (!EmailService.instance) {
@@ -33,10 +38,17 @@ export class EmailService {
         body: JSON.stringify(notification),
       })
 
+      // Vérifier si la réponse est OK avant de parser le JSON
+      if (!response.ok) {
+        const text = await response.text()
+        console.error(`❌ [EMAIL] Erreur HTTP ${response.status}:`, text.substring(0, 200))
+        return false
+      }
+
       const result = await response.json()
       return result.success
     } catch (error) {
-      console.error('Erreur lors de l\'envoi de l\'email:', error)
+      console.error('❌ [EMAIL] Erreur lors de l\'envoi de l\'email:', error)
       return false
     }
   }
@@ -112,6 +124,30 @@ export class EmailService {
       subject,
       html,
       type: 'status_update'
+    })
+  }
+
+  /**
+   * Notification d'assignation de livraison
+   */
+  async notifyLivreurAssigne(livreur: User, demande: Demande): Promise<boolean> {
+    const subject = `📦 Nouvelle livraison assignée - ${demande.numero}`
+    
+    const html = this.generateLivreurAssigneTemplate({
+      livreurName: livreur.nom,
+      demandeNumber: demande.numero,
+      demandeType: demande.type === 'materiel' ? 'Matériel' : 'Outillage',
+      projectName: demande.projet?.nom || 'Projet non défini',
+      itemsCount: demande.items?.length || 0,
+      viewUrl: `${process.env.NEXT_PUBLIC_APP_URL}/demandes/${demande.id}`,
+      dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`
+    })
+
+    return this.sendEmail({
+      to: livreur.email,
+      subject,
+      html,
+      type: 'validation_request'
     })
   }
 
@@ -313,6 +349,80 @@ export class EmailService {
             <div style="text-align: center; margin: 30px 0;">
               <a href="${data.viewUrl}" class="button">👁️ Voir la demande</a>
               <a href="${data.dashboardUrl}" class="button" style="background-color: #6b7280;">📊 Tableau de bord</a>
+            </div>
+            
+            <p><em>Cette notification a été générée automatiquement par le système de gestion des demandes matériel.</em></p>
+          </div>
+          <div class="footer">
+            <p>© ${new Date().getFullYear()} Système de Gestion des Demandes Matériel</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
+  }
+
+  /**
+   * Template pour notification de livreur assigné
+   */
+  private generateLivreurAssigneTemplate(data: {
+    livreurName: string
+    demandeNumber: string
+    demandeType: string
+    projectName: string
+    itemsCount: number
+    viewUrl: string
+    dashboardUrl: string
+  }): string {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Livraison assignée</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background-color: #6366f1; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background-color: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
+          .button { display: inline-block; background-color: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 10px 5px; }
+          .button:hover { background-color: #4f46e5; }
+          .info-box { background-color: white; padding: 20px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #6366f1; }
+          .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>📦 Nouvelle Livraison Assignée</h1>
+          </div>
+          <div class="content">
+            <p>Bonjour <strong>${data.livreurName}</strong>,</p>
+            
+            <p>Vous avez été assigné pour effectuer la livraison de la demande suivante :</p>
+            
+            <div class="info-box">
+              <h3>📋 Détails de la demande</h3>
+              <ul>
+                <li><strong>Numéro :</strong> ${data.demandeNumber}</li>
+                <li><strong>Type :</strong> ${data.demandeType}</li>
+                <li><strong>Projet :</strong> ${data.projectName}</li>
+                <li><strong>Nombre d'articles :</strong> ${data.itemsCount}</li>
+              </ul>
+            </div>
+            
+            <p><strong>Prochaines étapes :</strong></p>
+            <ol>
+              <li>Récupérer le matériel auprès du responsable appro</li>
+              <li>Confirmer la réception du matériel dans le système</li>
+              <li>Livrer le matériel au demandeur</li>
+              <li>Confirmer la livraison dans le système</li>
+            </ol>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${data.viewUrl}" class="button">👁️ Voir la demande</a>
+              <a href="${data.dashboardUrl}" class="button" style="background-color: #6b7280;">📊 Mes livraisons</a>
             </div>
             
             <p><em>Cette notification a été générée automatiquement par le système de gestion des demandes matériel.</em></p>

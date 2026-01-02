@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { useStore } from "@/stores/useStore"
 import { CheckCircle, Package, Clock, Eye } from "lucide-react"
 import type { Demande } from "@/types"
-import DemandeDetailModal from "./demande-detail-modal"
+import DemandeDetailsModal from "@/components/modals/demande-details-modal"
 
 export default function MesDemandesACloturer() {
   const { currentUser, demandes, loadDemandes, executeAction, isLoading } = useStore()
@@ -223,15 +223,20 @@ export default function MesDemandesACloturer() {
       </Card>
 
       {/* Modal de détails */}
-      <DemandeDetailModal
-        isOpen={detailsModalOpen}
-        onClose={() => {
-          setDetailsModalOpen(false)
-          setSelectedDemandeId(null)
-        }}
-        demandeId={selectedDemandeId}
-        mode="view"
-      />
+      {selectedDemandeId && (
+        <DemandeDetailsModal
+          isOpen={detailsModalOpen}
+          onClose={() => {
+            setDetailsModalOpen(false)
+            setSelectedDemandeId(null)
+          }}
+          demande={demandesACloturer.find(d => d.id === selectedDemandeId) || null}
+          canValidate={false}
+          canEditPrices={false}
+          canRemoveItems={false}
+          showDeliveryColumns={true}
+        />
+      )}
     </>
   )
 }

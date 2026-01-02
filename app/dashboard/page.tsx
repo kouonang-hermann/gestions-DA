@@ -40,13 +40,13 @@ export default function DashboardPage() {
       return <ConducteurDashboard />
     case "responsable_travaux":
       return <ResponsableTravauxDashboard />
-    case "responsable_qhse":
+    case "responsable_logistique":
       return <QHSEDashboard />
     case "charge_affaire":
       return <ChargeAffaireDashboard />
     case "responsable_appro":
       return <ApproDashboard />
-    case "responsable_logistique":
+    case "responsable_livreur":
       return <ResponsableLogistiqueDashboard />
     case "employe":
     default:

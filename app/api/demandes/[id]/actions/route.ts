@@ -2,46 +2,49 @@ import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { withAuth } from "@/lib/middleware"
 import { notificationService } from "@/services/notificationService"
+import type { DemandeStatus } from "@/types"
 
 /**
  * Flows de validation par type de demande
  */
-const VALIDATION_FLOWS = {
+const VALIDATION_FLOWS: Record<string, DemandeStatus[]> = {
   "materiel": [
     "soumise",
     "en_attente_validation_conducteur",
     "en_attente_validation_responsable_travaux",
     "en_attente_validation_charge_affaire",
     "en_attente_preparation_appro",
-    "en_attente_validation_logistique",
+    "en_attente_reception_livreur",
+    "en_attente_livraison",
     "en_attente_validation_finale_demandeur",
     "cloturee"
   ],
   "outillage": [
     "soumise",
-    "en_attente_validation_qhse",
+    "en_attente_validation_logistique",
     "en_attente_validation_responsable_travaux",
     "en_attente_validation_charge_affaire",
     "en_attente_preparation_appro",
-    "en_attente_validation_logistique",
+    "en_attente_reception_livreur",
+    "en_attente_livraison",
     "en_attente_validation_finale_demandeur",
     "cloturee"
   ]
 }
 
-const ROLE_TO_STATUS = {
+const ROLE_TO_STATUS: Record<string, DemandeStatus> = {
   "conducteur_travaux": "en_attente_validation_conducteur",
-  "responsable_qhse": "en_attente_validation_qhse",
+  "responsable_logistique": "en_attente_validation_logistique",
   "responsable_travaux": "en_attente_validation_responsable_travaux",
   "charge_affaire": "en_attente_validation_charge_affaire",
   "responsable_appro": "en_attente_preparation_appro",
-  "responsable_logistique": "en_attente_validation_logistique"
+  "responsable_livreur": "en_attente_reception_livreur"
 }
 
 /**
  * Vérifie si un utilisateur peut auto-valider une étape
  */
-function canUserAutoValidateStep(demandeurRole: string, demandeType: string, status: string): boolean {
+function canUserAutoValidateStep(demandeurRole: string, demandeType: string, status: DemandeStatus): boolean {
   const statusForRole = ROLE_TO_STATUS[demandeurRole as keyof typeof ROLE_TO_STATUS]
   if (!statusForRole) return false
   
@@ -52,7 +55,7 @@ function canUserAutoValidateStep(demandeurRole: string, demandeType: string, sta
 /**
  * Détermine le prochain statut avec auto-validation intelligente
  */
-function getNextStatusWithAutoValidation(currentStatus: string, userRole: string, demandeType: string, demandeurRole: string, targetStatus?: string): string | null {
+function getNextStatusWithAutoValidation(currentStatus: DemandeStatus, userRole: string, demandeType: string, demandeurRole: string, targetStatus?: DemandeStatus): DemandeStatus | null {
   // Si un statut cible est fourni par le frontend, l'utiliser
   if (targetStatus) {
     console.log(`🎯 [API] Utilisation du statut cible fourni: ${targetStatus}`)
@@ -87,15 +90,15 @@ function getNextStatusWithAutoValidation(currentStatus: string, userRole: string
 /**
  * Détermine le prochain statut selon le statut actuel et le rôle (fonction legacy)
  */
-function getNextStatus(currentStatus: string, userRole: string, demandeType: string): string | null {
-  const transitions: Record<string, Record<string, string>> = {
+function getNextStatus(currentStatus: DemandeStatus, userRole: string, demandeType: string): DemandeStatus | null {
+  const transitions: Record<string, Record<string, DemandeStatus>> = {
     // Flow Matériel: Conducteur -> Responsable Travaux -> Chargé Affaire -> Appro -> Logistique -> Demandeur
     "en_attente_validation_conducteur": {
       "conducteur_travaux": "en_attente_validation_responsable_travaux"
     },
-    // Flow Outillage: QHSE -> Responsable Travaux -> Chargé Affaire -> Appro -> Logistique -> Demandeur  
-    "en_attente_validation_qhse": {
-      "responsable_qhse": "en_attente_validation_responsable_travaux"
+    // Flow Outillage: Logistique -> Responsable Travaux -> Chargé Affaire -> Appro -> Livreur -> Demandeur  
+    "en_attente_validation_logistique": {
+      "responsable_logistique": "en_attente_validation_responsable_travaux"
     },
     "en_attente_validation_responsable_travaux": {
       "responsable_travaux": "en_attente_validation_charge_affaire"
@@ -104,10 +107,29 @@ function getNextStatus(currentStatus: string, userRole: string, demandeType: str
       "charge_affaire": "en_attente_preparation_appro"
     },
     "en_attente_preparation_appro": {
-      "responsable_appro": "en_attente_validation_logistique"
+      "responsable_appro": "en_attente_reception_livreur"
     },
-    "en_attente_validation_logistique": {
-      "responsable_logistique": "en_attente_validation_finale_demandeur"
+    "en_attente_reception_livreur": {
+      "responsable_livreur": "en_attente_livraison",
+      "livreur": "en_attente_livraison",
+      "employe": "en_attente_livraison",
+      "conducteur_travaux": "en_attente_livraison",
+      "responsable_travaux": "en_attente_livraison",
+      "responsable_logistique": "en_attente_livraison",
+      "responsable_appro": "en_attente_livraison",
+      "charge_affaire": "en_attente_livraison",
+      "superadmin": "en_attente_livraison"
+    },
+    "en_attente_livraison": {
+      "responsable_livreur": "en_attente_validation_finale_demandeur",
+      "livreur": "en_attente_validation_finale_demandeur",
+      "employe": "en_attente_validation_finale_demandeur",
+      "conducteur_travaux": "en_attente_validation_finale_demandeur",
+      "responsable_travaux": "en_attente_validation_finale_demandeur",
+      "responsable_logistique": "en_attente_validation_finale_demandeur",
+      "responsable_appro": "en_attente_validation_finale_demandeur",
+      "charge_affaire": "en_attente_validation_finale_demandeur",
+      "superadmin": "en_attente_validation_finale_demandeur"
     },
     "en_attente_validation_finale_demandeur": {
       "employe": "cloturee"
@@ -123,7 +145,7 @@ function getNextStatus(currentStatus: string, userRole: string, demandeType: str
 export const POST = withAuth(async (request: NextRequest, currentUser: any, context: { params: Promise<{ id: string }> }) => {
   try {
     const params = await context.params
-    const { action, commentaire, quantitesSorties, quantites, itemsModifications, targetStatus } = await request.json()
+    const { action, commentaire, quantitesSorties, quantites, itemsModifications, targetStatus, livreurAssigneId } = await request.json()
 
     console.log(`🚀 [API] ${currentUser.nom} (${currentUser.role}) exécute "${action}" sur ${params.id}`)
     console.log(`📋 [API] Payload reçu:`, { action, commentaire, targetStatus })
@@ -162,7 +184,7 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
 
     const isOriginalRequester = demande.technicienId === currentUser.id
     const isSuperAdmin = currentUser.role === "superadmin"
-    const isTransversalValidator = ["responsable_appro", "responsable_logistique"].includes(currentUser.role)
+    const isTransversalValidator = ["responsable_appro", "responsable_livreur"].includes(currentUser.role)
     
     console.log(`🔐 [API] Vérifications d'accès:`)
     console.log(`  - User ID: ${currentUser.id}`)
@@ -214,8 +236,8 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
             return NextResponse.json({ success: false, error: "Seul le responsable des travaux peut valider à cette étape" }, { status: 403 })
           }
           
-          if (demande.status === "en_attente_validation_qhse" && currentUser.role !== "responsable_qhse") {
-            return NextResponse.json({ success: false, error: "Seul le responsable QHSE peut valider les demandes d'outillage" }, { status: 403 })
+          if (demande.status === "en_attente_validation_logistique" && currentUser.role !== "responsable_logistique") {
+            return NextResponse.json({ success: false, error: "Seul le responsable Logistique peut valider les demandes d'outillage" }, { status: 403 })
           }
           
           if (demande.status === "en_attente_validation_charge_affaire" && currentUser.role !== "charge_affaire") {
@@ -226,8 +248,8 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
             return NextResponse.json({ success: false, error: "Seul le responsable appro peut préparer la sortie" }, { status: 403 })
           }
           
-          if (demande.status === "en_attente_validation_logistique" && currentUser.role !== "responsable_logistique") {
-            return NextResponse.json({ success: false, error: "Seul le responsable logistique peut valider à cette étape" }, { status: 403 })
+          if ((demande.status === "en_attente_reception_livreur" || demande.status === "en_attente_livraison") && demande.livreurAssigneId !== currentUser.id) {
+            return NextResponse.json({ success: false, error: "Seul le livreur assigné peut confirmer la réception et la livraison" }, { status: 403 })
           }
           
           if (demande.status === "en_attente_validation_finale_demandeur" && demande.technicienId !== currentUser.id) {
@@ -340,6 +362,46 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         }
         break
 
+      case "valider_reception":
+        console.log(`📦 [VALIDER-RECEPTION] Vérifications:`)
+        console.log(`  - Status demande: ${demande.status}`)
+        console.log(`  - Livreur assigné: ${demande.livreurAssigneId}`)
+        console.log(`  - Utilisateur actuel: ${currentUser.id}`)
+        console.log(`  - Est le livreur: ${demande.livreurAssigneId === currentUser.id}`)
+        
+        // Première validation : le livreur reçoit le matériel à livrer
+        if (demande.status === "en_attente_reception_livreur" && demande.livreurAssigneId === currentUser.id) {
+          console.log(`✅ [VALIDER-RECEPTION] Réception du matériel validée`)
+          newStatus = "en_attente_livraison"
+        } else if (demande.status !== "en_attente_reception_livreur") {
+          console.log(`❌ [VALIDER-RECEPTION] Statut incorrect: ${demande.status}`)
+          return NextResponse.json({ success: false, error: "La demande n'est pas en attente de réception" }, { status: 403 })
+        } else {
+          console.log(`❌ [VALIDER-RECEPTION] Utilisateur non autorisé`)
+          return NextResponse.json({ success: false, error: "Seul le livreur assigné peut valider la réception" }, { status: 403 })
+        }
+        break
+
+      case "valider_livraison":
+        console.log(`🚚 [VALIDER-LIVRAISON] Vérifications:`)
+        console.log(`  - Status demande: ${demande.status}`)
+        console.log(`  - Livreur assigné: ${demande.livreurAssigneId}`)
+        console.log(`  - Utilisateur actuel: ${currentUser.id}`)
+        console.log(`  - Est le livreur: ${demande.livreurAssigneId === currentUser.id}`)
+        
+        // Deuxième validation : le livreur livre effectivement le matériel au demandeur
+        if (demande.status === "en_attente_livraison" && demande.livreurAssigneId === currentUser.id) {
+          console.log(`✅ [VALIDER-LIVRAISON] Livraison effective validée`)
+          newStatus = "en_attente_validation_finale_demandeur"
+        } else if (demande.status !== "en_attente_livraison") {
+          console.log(`❌ [VALIDER-LIVRAISON] Statut incorrect: ${demande.status}`)
+          return NextResponse.json({ success: false, error: "La demande n'est pas en attente de livraison" }, { status: 403 })
+        } else {
+          console.log(`❌ [VALIDER-LIVRAISON] Utilisateur non autorisé`)
+          return NextResponse.json({ success: false, error: "Seul le livreur assigné peut valider la livraison" }, { status: 403 })
+        }
+        break
+
       case "cloturer":
         console.log(`🔒 [API] Tentative de clôture:`)
         console.log(`  - Statut actuel: ${demande.status}`)
@@ -363,7 +425,7 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
       case "rejeter":
         if (demande.status === "en_attente_validation_conducteur" || 
             demande.status === ("en_attente_validation_responsable_travaux" as any) || 
-            demande.status === "en_attente_validation_qhse" ||
+            demande.status === "en_attente_validation_logistique" ||
             demande.status === "en_attente_validation_charge_affaire") {
           newStatus = "rejetee"
           updates.rejetMotif = commentaire
@@ -376,10 +438,33 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         console.log(`📦 [PREPARER-SORTIE] Vérifications:`)
         console.log(`  - Status demande: ${demande.status}`)
         console.log(`  - Role utilisateur: ${currentUser.role}`)
+        console.log(`  - Livreur assigné: ${livreurAssigneId}`)
         console.log(`  - Status attendu: en_attente_preparation_appro`)
         console.log(`  - Role attendu: responsable_appro`)
         
         if (demande.status === ("en_attente_preparation_appro" as any) && currentUser.role === "responsable_appro") {
+          // Vérifier que le livreur est assigné
+          if (!livreurAssigneId) {
+            console.log(`❌ [PREPARER-SORTIE] Aucun livreur assigné`)
+            return NextResponse.json({ 
+              success: false, 
+              error: "Vous devez choisir un livreur avant de valider la préparation" 
+            }, { status: 400 })
+          }
+
+          // Vérifier que le livreur existe
+          const livreur = await prisma.user.findUnique({
+            where: { id: livreurAssigneId }
+          })
+
+          if (!livreur) {
+            console.log(`❌ [PREPARER-SORTIE] Livreur ${livreurAssigneId} non trouvé`)
+            return NextResponse.json({ 
+              success: false, 
+              error: "Le livreur sélectionné n'existe pas" 
+            }, { status: 404 })
+          }
+
           const nextStatus = getNextStatus(demande.status, currentUser.role, demande.type)
           console.log(`  - Next status calculé: ${nextStatus}`)
           
@@ -389,8 +474,12 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
           }
           
           console.log(`✅ [PREPARER-SORTIE] Préparation de sortie validée, transition: ${demande.status} → ${nextStatus}`)
+          console.log(`✅ [PREPARER-SORTIE] Livreur assigné: ${livreur.prenom} ${livreur.nom} (${livreur.role})`)
           
           newStatus = nextStatus as any
+          
+          // Assigner le livreur
+          updates.livreurAssigneId = livreurAssigneId
           
           // Créer la sortie appro
           await prisma.sortieSignature.create({
@@ -405,6 +494,10 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
           })
           
           console.log(`✅ [PREPARER-SORTIE] Sortie signature créée`)
+
+          // Envoyer notification au livreur assigné
+          await notificationService.notifyLivreurAssigne(demande.id, livreurAssigneId, currentUser.id)
+          console.log(`✅ [PREPARER-SORTIE] Notification envoyée au livreur`)
         } else {
           console.log(`❌ [PREPARER-SORTIE] Conditions non remplies:`)
           console.log(`  - Status correct: ${demande.status === "en_attente_preparation_appro"}`)
@@ -412,6 +505,79 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
           return NextResponse.json({ 
             success: false, 
             error: `Action non autorisée. Status: ${demande.status}, Role: ${currentUser.role}` 
+          }, { status: 403 })
+        }
+        break
+
+      case "confirmer_reception_livreur":
+        console.log(`📦 [RECEPTION-LIVREUR] Vérifications:`)
+        console.log(`  - Status demande: ${demande.status}`)
+        console.log(`  - Role utilisateur: ${currentUser.role}`)
+        console.log(`  - Livreur assigné: ${demande.livreurAssigneId}`)
+        
+        if (demande.status === "en_attente_reception_livreur" && demande.livreurAssigneId === currentUser.id) {
+          const nextStatus = getNextStatus(demande.status, currentUser.role, demande.type)
+          console.log(`  - Next status calculé: ${nextStatus}`)
+          
+          if (!nextStatus) {
+            console.log(`❌ [RECEPTION-LIVREUR] Impossible de déterminer le prochain statut`)
+            return NextResponse.json({ success: false, error: "Impossible de déterminer le prochain statut de la demande" }, { status: 403 })
+          }
+          
+          console.log(`✅ [RECEPTION-LIVREUR] Réception confirmée, transition: ${demande.status} → ${nextStatus}`)
+          
+          newStatus = nextStatus as any
+          updates.dateReceptionLivreur = new Date()
+          
+          console.log(`✅ [RECEPTION-LIVREUR] Date de réception enregistrée`)
+        } else {
+          console.log(`❌ [RECEPTION-LIVREUR] Conditions non remplies:`)
+          console.log(`  - Status correct: ${demande.status === "en_attente_reception_livreur"}`)
+          console.log(`  - Livreur assigné correct: ${demande.livreurAssigneId === currentUser.id}`)
+          return NextResponse.json({ 
+            success: false, 
+            error: `Action non autorisée. Seul le livreur assigné peut confirmer la réception.` 
+          }, { status: 403 })
+        }
+        break
+
+      case "confirmer_livraison":
+        console.log(`🚚 [LIVRAISON] Vérifications:`)
+        console.log(`  - Status demande: ${demande.status}`)
+        console.log(`  - Role utilisateur: ${currentUser.role}`)
+        console.log(`  - Livreur assigné: ${demande.livreurAssigneId}`)
+        
+        if (demande.status === "en_attente_livraison" && demande.livreurAssigneId === currentUser.id) {
+          const nextStatus = getNextStatus(demande.status, currentUser.role, demande.type)
+          console.log(`  - Next status calculé: ${nextStatus}`)
+          
+          if (!nextStatus) {
+            console.log(`❌ [LIVRAISON] Impossible de déterminer le prochain statut`)
+            return NextResponse.json({ success: false, error: "Impossible de déterminer le prochain statut de la demande" }, { status: 403 })
+          }
+          
+          console.log(`✅ [LIVRAISON] Livraison confirmée, transition: ${demande.status} → ${nextStatus}`)
+          
+          newStatus = nextStatus as any
+          updates.dateLivraison = new Date()
+          
+          // Notifier le demandeur que la livraison est effectuée
+          await notificationService.notifyDemandeStatusChange(
+            demande.id,
+            demande.technicienId,
+            demande.status,
+            nextStatus,
+            currentUser.id
+          )
+          
+          console.log(`✅ [LIVRAISON] Date de livraison enregistrée et demandeur notifié`)
+        } else {
+          console.log(`❌ [LIVRAISON] Conditions non remplies:`)
+          console.log(`  - Status correct: ${demande.status === "en_attente_livraison"}`)
+          console.log(`  - Livreur assigné correct: ${demande.livreurAssigneId === currentUser.id}`)
+          return NextResponse.json({ 
+            success: false, 
+            error: `Action non autorisée. Seul le livreur assigné peut confirmer la livraison.` 
           }, { status: 403 })
         }
         break
@@ -529,10 +695,10 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
 function getValidationType(status: string, role: string): string {
   if (status === "en_attente_validation_conducteur") return "conducteur"
   if (status === "en_attente_validation_responsable_travaux") return "responsable_travaux"
-  if (status === "en_attente_validation_qhse") return "qhse"
+  if (status === "en_attente_validation_logistique") return "logistique"
   if (status === "en_attente_validation_charge_affaire") return "charge_affaire"
   if (status === "en_attente_preparation_appro") return "appro"
-  if (status === "en_attente_validation_logistique") return "logistique"
+  if (status === "en_attente_validation_livreur") return "livreur"
   return "finale"
 }
 

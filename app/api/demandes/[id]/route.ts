@@ -2,19 +2,20 @@ import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { withAuth } from "@/lib/middleware"
 import { updateDemandeStatusSchema } from "@/lib/validations"
+import type { DemandeStatus } from "@/types"
 
 /**
  * Détermine le prochain statut selon le statut actuel et le rôle
  */
-function getNextStatus(currentStatus: string, userRole: string): string | null {
-  const transitions: Record<string, Record<string, string>> = {
+function getNextStatus(currentStatus: string, userRole: string): DemandeStatus | null {
+  const transitions: Record<string, Record<string, DemandeStatus>> = {
     // Flow Matériel: Conducteur -> Responsable Travaux -> Chargé Affaire -> Appro -> Logistique -> Demandeur
     "en_attente_validation_conducteur": {
       "conducteur_travaux": "en_attente_validation_responsable_travaux"
     },
-    // Flow Outillage: QHSE -> Responsable Travaux -> Chargé Affaire -> Appro -> Logistique -> Demandeur  
-    "en_attente_validation_qhse": {
-      "responsable_qhse": "en_attente_validation_responsable_travaux"
+    // Flow Outillage: Logistique -> Responsable Travaux -> Chargé Affaire -> Appro -> Livreur -> Demandeur  
+    "en_attente_validation_logistique": {
+      "responsable_logistique": "en_attente_validation_responsable_travaux"
     },
     "en_attente_validation_responsable_travaux": {
       "responsable_travaux": "en_attente_validation_charge_affaire"
@@ -23,10 +24,15 @@ function getNextStatus(currentStatus: string, userRole: string): string | null {
       "charge_affaire": "en_attente_preparation_appro"
     },
     "en_attente_preparation_appro": {
-      "responsable_appro": "en_attente_validation_logistique"
+      "responsable_appro": "en_attente_reception_livreur"
     },
-    "en_attente_validation_logistique": {
-      "responsable_logistique": "en_attente_validation_finale_demandeur"
+    "en_attente_reception_livreur": {
+      "responsable_livreur": "en_attente_livraison",
+      "employe": "en_attente_livraison"
+    },
+    "en_attente_livraison": {
+      "responsable_livreur": "en_attente_validation_finale_demandeur",
+      "employe": "en_attente_validation_finale_demandeur"
     },
     "en_attente_validation_finale_demandeur": {
       "employe": "cloturee"
@@ -182,7 +188,7 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
         action: validatedData.status === "rejetee" ? 
           `Demande rejetée par ${currentUser.role}` : 
           `Demande validée par ${currentUser.role}`,
-        nouveauStatus: newStatus,
+        nouveauStatus: newStatus as DemandeStatus,
         commentaire: validatedData.commentaire,
         signature: `${currentUser.role}-validation-${Date.now()}`,
       }
@@ -222,11 +228,11 @@ async function canUserValidateStatus(status: string, user: any, projetId: string
   // Permissions selon le statut et le rôle
   const permissions: Record<string, string[]> = {
     "en_attente_validation_conducteur": ["conducteur_travaux"],
-    "en_attente_validation_qhse": ["responsable_qhse"],
+    "en_attente_validation_logistique": ["responsable_logistique"],
     "en_attente_validation_responsable_travaux": ["responsable_travaux"],
     "en_attente_validation_charge_affaire": ["charge_affaire"],
     "en_attente_preparation_appro": ["responsable_appro"],
-    "en_attente_validation_logistique": ["responsable_logistique"],
+    "en_attente_validation_livreur": ["responsable_livreur"],
     "en_attente_validation_finale_demandeur": ["employe"]
   }
 

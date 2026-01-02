@@ -47,6 +47,7 @@ import UniversalClosureModal from "@/components/modals/universal-closure-modal"
 import { useAutoReload } from "@/hooks/useAutoReload"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import DemandeDetailModal from "@/components/demandes/demande-detail-modal"
+import MesLivraisonsSection from "@/components/dashboard/mes-livraisons-section"
 
 export default function ResponsableLogistiqueDashboard() {
   const { currentUser, demandes, projets, isLoading } = useStore()
@@ -180,14 +181,14 @@ export default function ResponsableLogistiqueDashboard() {
         return <Badge variant="outline">Soumise</Badge>
       case "en_attente_validation_conducteur":
         return <Badge className="bg-yellow-100 text-yellow-800">En attente conducteur</Badge>
-      case "en_attente_validation_qhse":
-        return <Badge className="bg-yellow-100 text-yellow-800">En attente QHSE</Badge>
+      case "en_attente_validation_logistique":
+        return <Badge className="bg-yellow-100 text-yellow-800">En attente Logistique</Badge>
       case "en_attente_preparation_appro":
         return <Badge className="bg-yellow-100 text-yellow-800">En attente préparation appro</Badge>
       case "en_attente_validation_charge_affaire":
         return <Badge className="bg-yellow-100 text-yellow-800">En attente chargé affaire</Badge>
-      case "en_attente_validation_logistique":
-        return <Badge className="bg-orange-100 text-orange-800">À valider (Logistique)</Badge>
+      case "en_attente_validation_livreur":
+        return <Badge className="bg-orange-100 text-orange-800">À valider (Livreur)</Badge>
       case "en_attente_validation_finale_demandeur":
         return <Badge className="bg-purple-100 text-purple-800">En attente validation finale</Badge>
       case "confirmee_demandeur":
@@ -343,6 +344,9 @@ export default function ResponsableLogistiqueDashboard() {
 
             {/* Liste des demandes à valider */}
             <ValidationLogistiqueList />
+            
+            {/* Section des livraisons assignées */}
+            <MesLivraisonsSection />
             
             {/* Mes demandes à clôturer */}
             <MesDemandesACloturer />

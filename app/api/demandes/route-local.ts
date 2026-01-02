@@ -37,7 +37,8 @@ const localDemandes: Demande[] = [
     dateModification: new Date("2024-01-20"),
     commentaires: "Demande de matériel pour rénovation",
     validationLogistique: undefined,
-    validationResponsableTravaux: undefined
+    validationResponsableTravaux: undefined,
+    validationLivreur: undefined
   },
   {
     id: "demande-2", 
@@ -71,7 +72,8 @@ const localDemandes: Demande[] = [
     dateModification: new Date("2024-01-21"),
     commentaires: "Demande d'outillage spécialisé",
     validationLogistique: undefined,
-    validationResponsableTravaux: undefined
+    validationResponsableTravaux: undefined,
+    validationLivreur: undefined
   },
   {
     id: "demande-3",
@@ -104,7 +106,8 @@ const localDemandes: Demande[] = [
     dateModification: new Date("2024-02-10"),
     commentaires: "Matériel électrique urgent",
     validationLogistique: undefined,
-    validationResponsableTravaux: undefined
+    validationResponsableTravaux: undefined,
+    validationLivreur: undefined
   }
 ]
 
@@ -115,7 +118,7 @@ function getInitialStatus(type: "materiel" | "outillage"): DemandeStatus {
   if (type === "materiel") {
     return "en_attente_validation_conducteur"
   } else {
-    return "en_attente_validation_qhse"
+    return "en_attente_validation_logistique"
   }
 }
 
@@ -130,17 +133,22 @@ function getNextStatus(currentStatus: DemandeStatus, userRole: string): DemandeS
     "en_attente_validation_responsable_travaux": {
       "responsable_travaux": "en_attente_preparation_appro"
     },
-    "en_attente_validation_qhse": {
-      "responsable_qhse": "en_attente_validation_responsable_travaux"
+    "en_attente_validation_logistique": {
+      "responsable_logistique": "en_attente_validation_responsable_travaux"
     },
     "en_attente_preparation_appro": {
-      "responsable_appro": "en_attente_validation_charge_affaire"
+      "responsable_appro": "en_attente_reception_livreur"
     },
     "en_attente_validation_charge_affaire": {
-      "charge_affaire": "en_attente_validation_logistique"
+      "charge_affaire": "en_attente_preparation_appro"
     },
-    "en_attente_validation_logistique": {
-      "responsable_logistique": "en_attente_validation_finale_demandeur"
+    "en_attente_reception_livreur": {
+      "responsable_livreur": "en_attente_livraison",
+      "employe": "en_attente_livraison"
+    },
+    "en_attente_livraison": {
+      "responsable_livreur": "en_attente_validation_finale_demandeur",
+      "employe": "en_attente_validation_finale_demandeur"
     },
     "en_attente_validation_finale_demandeur": {
       "employe": "confirmee_demandeur"
@@ -203,7 +211,7 @@ export const GET = async (request: NextRequest) => {
         console.log(`[LOCAL API] Conducteur - ${filteredDemandes.length} demandes matériel`)
         break
 
-      case "responsable_qhse":
+      case "responsable_logistique":
         // Voit les demandes d'outillage des projets où il est assigné
         filteredDemandes = localDemandes.filter(demande =>
           demande.type === "outillage" && 
@@ -292,7 +300,8 @@ export const POST = async (request: NextRequest) => {
       dateModification: new Date(),
       commentaires: body.commentaires || "",
       validationLogistique: undefined,
-      validationResponsableTravaux: undefined
+      validationResponsableTravaux: undefined,
+      validationLivreur: undefined
     }
 
     localDemandes.push(newDemande)

@@ -212,6 +212,7 @@ export default function ValidationLogistiqueList() {
         canValidate={true}
         validationLabel="Marquer comme livré"
         validationAction="valider_sortie"
+        showDeliveryColumns={true}
       />
     </Card>
   )

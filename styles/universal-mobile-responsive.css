@@ -1,4 +1,104 @@
 /* RESPONSIVE UNIVERSEL POUR TOUTE L'APPLICATION */
+/* Support: iPhone (toutes gammes), iTel, Techno, Google Pixel, Pop, etc. */
+/* Modes: Portrait et Paysage */
+
+/* ========================================
+   BREAKPOINTS POUR TOUS LES TÉLÉPHONES
+======================================== */
+
+/* MODE PORTRAIT - Règles de base pour TOUS les téléphones */
+@media (max-width: 768px) and (orientation: portrait) {
+  html {
+    font-size: 15px;
+  }
+  
+  body {
+    overflow-x: hidden;
+    width: 100%;
+  }
+  
+  .min-h-screen {
+    padding: 8px;
+  }
+  
+  h1 {
+    font-size: 20px;
+    margin-bottom: 14px;
+  }
+  
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+/* Petits téléphones (iPhone SE, iTel, Pop) - Portrait */
+@media (max-width: 375px) and (orientation: portrait) {
+  html {
+    font-size: 14px;
+  }
+  
+  .min-h-screen {
+    padding: 6px;
+  }
+  
+  h1 {
+    font-size: 18px;
+    margin-bottom: 12px;
+  }
+  
+  .grid {
+    gap: 8px;
+  }
+}
+
+/* Grands téléphones (iPhone Pro Max, Pixel XL) - Portrait */
+@media (min-width: 431px) and (max-width: 768px) and (orientation: portrait) {
+  html {
+    font-size: 16px;
+  }
+  
+  .min-h-screen {
+    padding: 10px;
+  }
+  
+  h1 {
+    font-size: 22px;
+    margin-bottom: 16px;
+  }
+  
+  .grid {
+    gap: 14px;
+  }
+}
+
+/* MODE PAYSAGE - Tous les téléphones */
+@media (max-width: 926px) and (orientation: landscape) {
+  html {
+    font-size: 14px !important;
+  }
+  
+  .min-h-screen {
+    padding: 6px 12px !important;
+  }
+  
+  h1 {
+    font-size: 18px !important;
+    margin-bottom: 10px !important;
+  }
+  
+  /* Utiliser l'espace horizontal en paysage */
+  .grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+  
+  /* Modals plus larges en paysage */
+  [data-radix-dialog-content] {
+    width: 90vw !important;
+    max-height: 85vh !important;
+  }
+}
 
 /* ========================================
    DASHBOARDS RESPONSIVES
@@ -51,10 +151,13 @@
     max-width: 95vw !important;
     height: auto !important;
     max-height: 90vh !important;
-    margin: 0 !important;
+    margin: 0 auto !important;
     padding: 16px !important;
     border-radius: 12px !important;
     overflow-y: auto !important;
+    overflow-x: hidden !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
   }
   
   /* Headers des modals */
@@ -87,6 +190,8 @@
   input[type="email"],
   input[type="password"],
   input[type="number"],
+  input[type="tel"],
+  input[type="url"],
   textarea,
   select {
     width: 100% !important;
@@ -94,6 +199,8 @@
     font-size: 16px !important; /* Évite le zoom sur iOS */
     border-radius: 8px !important;
     border: 1px solid #d1d5db !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
   }
   
   /* Labels */
@@ -114,17 +221,46 @@
     width: 100% !important;
     padding: 12px !important;
     font-size: 16px !important;
+    min-height: 48px !important;
   }
   
-  /* Boutons avec gap */
+  /* Boutons avec gap - garder horizontal sur mobile pour petits gaps */
   .flex.gap-2 {
-    flex-direction: column !important;
+    flex-wrap: wrap !important;
     gap: 8px !important;
   }
   
   .flex.gap-4 {
-    flex-direction: column !important;
+    flex-wrap: wrap !important;
     gap: 12px !important;
+  }
+  
+  /* Scroll area dans les modals */
+  [data-radix-scroll-area-viewport] {
+    max-height: 60vh !important;
+  }
+}
+
+/* Modals en mode paysage */
+@media (max-width: 926px) and (orientation: landscape) {
+  [data-radix-dialog-content] {
+    max-height: 80vh !important;
+    padding: 12px !important;
+  }
+  
+  [data-radix-scroll-area-viewport] {
+    max-height: 50vh !important;
+  }
+  
+  /* Boutons côte à côte en paysage si espace suffisant */
+  .flex.justify-end {
+    flex-direction: row !important;
+    justify-content: flex-end !important;
+  }
+  
+  .flex.justify-end button {
+    width: auto !important;
+    min-width: 120px !important;
   }
 }
 
@@ -147,13 +283,9 @@
     grid-template-columns: 1fr !important;
   }
   
-  /* Flex items */
-  .flex-row {
+  /* Flex items - préserver le layout de base */
+  .mobile-stack {
     flex-direction: column !important;
-  }
-  
-  .items-center {
-    align-items: stretch !important;
   }
   
   /* Cards dans les formulaires */
@@ -163,19 +295,51 @@
   }
   
   /* Tables responsives */
-  .table-responsive {
+  .table-responsive,
+  .overflow-x-auto {
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100vw !important;
   }
   
   table {
-    min-width: 600px !important;
-    font-size: 14px !important;
+    min-width: 100% !important;
+    font-size: 13px !important;
+    width: max-content !important;
+    table-layout: auto !important;
   }
   
   th, td {
-    padding: 8px !important;
+    padding: 6px 8px !important;
     white-space: nowrap !important;
+    font-size: 13px !important;
+    min-width: 80px !important;
+  }
+  
+  th {
+    background-color: #f9fafb !important;
+    font-weight: 600 !important;
+  }
+  
+  /* Première colonne visible */
+  table th:first-child,
+  table td:first-child {
+    background-color: white !important;
+    font-weight: 500 !important;
+  }
+}
+
+/* Tables en mode paysage */
+@media (max-width: 926px) and (orientation: landscape) {
+  table {
+    font-size: 12px !important;
+  }
+  
+  th, td {
+    padding: 4px 6px !important;
+    font-size: 12px !important;
   }
 }
 
@@ -325,19 +489,32 @@
     z-index: 9999 !important;
   }
   
-  /* Corriger les overflows */
-  body {
+  /* Corriger les overflows - CRITIQUE pour portrait */
+  html, body {
     overflow-x: hidden !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    position: relative !important;
   }
   
-  /* Corriger les positions */
-  .absolute {
-    position: relative !important;
+  /* Container principal */
+  #__next,
+  main,
+  [role="main"] {
+    overflow-x: hidden !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+  }
+  
+  /* Divs et sections principales */
+  div, section, article, aside, nav, header, footer {
+    max-width: 100vw;
   }
   
   /* Corriger les widths */
   .w-full {
     width: 100% !important;
+    max-width: 100% !important;
   }
   
   .max-w-full {
@@ -347,10 +524,76 @@
   /* Corriger les heights */
   .h-screen {
     height: 100vh !important;
+    height: 100dvh !important; /* Dynamic viewport height pour mobile */
   }
   
   .min-h-screen {
     min-height: 100vh !important;
+    min-height: 100dvh !important;
+  }
+  
+  /* Empêcher les éléments de dépasser */
+  img, video, iframe, embed, object {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+  
+  /* Flex et Grid containers */
+  .flex, .grid {
+    max-width: 100% !important;
+  }
+}
+
+/* Corrections spécifiques MODE PORTRAIT */
+@media (max-width: 768px) and (orientation: portrait) {
+  
+  /* Viewport fixe pour éviter les débordements */
+  html {
+    width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+  
+  body {
+    width: 100vw !important;
+    overflow-x: hidden !important;
+    position: relative !important;
+  }
+  
+  /* Containers */
+  .container {
+    width: 100% !important;
+    max-width: 100vw !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+  
+  /* Grilles en 1 colonne stricte */
+  .grid-cols-2,
+  .grid-cols-3,
+  .grid-cols-4,
+  .sm\\:grid-cols-2,
+  .md\\:grid-cols-2,
+  .lg\\:grid-cols-3 {
+    grid-template-columns: 1fr !important;
+  }
+  
+  /* Flex en colonne */
+  .flex-row {
+    flex-direction: column !important;
+  }
+  
+  /* Espacements réduits */
+  .space-x-4 > * + * {
+    margin-left: 0 !important;
+    margin-top: 12px !important;
+  }
+  
+  .gap-4 {
+    gap: 12px !important;
+  }
+  
+  .gap-6 {
+    gap: 16px !important;
   }
 }
 
@@ -383,6 +626,121 @@
 }
 
 /* ========================================
+   CARDS ET COMPOSANTS UI
+======================================== */
+
+@media (max-width: 768px) {
+  
+  /* Cards générales */
+  [class*="card"],
+  .rounded-lg,
+  .border {
+    border-radius: 8px !important;
+    margin-bottom: 12px !important;
+  }
+  
+  /* Card headers */
+  [class*="CardHeader"],
+  .card-header {
+    padding: 12px !important;
+  }
+  
+  /* Card content */
+  [class*="CardContent"],
+  .card-content {
+    padding: 12px !important;
+  }
+  
+  /* Card titles */
+  [class*="CardTitle"],
+  .card-title {
+    font-size: 16px !important;
+    margin-bottom: 8px !important;
+  }
+  
+  /* Card descriptions */
+  [class*="CardDescription"],
+  .card-description {
+    font-size: 13px !important;
+    line-height: 1.4 !important;
+  }
+  
+  /* Flex containers dans les cards */
+  .flex.items-center {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  
+  .flex.justify-between {
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+  }
+}
+
+/* Cards en mode paysage */
+@media (max-width: 926px) and (orientation: landscape) {
+  [class*="card"] {
+    padding: 10px !important;
+  }
+  
+  .flex.justify-between {
+    flex-direction: row !important;
+    align-items: center !important;
+  }
+}
+
+/* ========================================
+   OPTIMISATIONS SPÉCIFIQUES PAR APPAREIL
+======================================== */
+
+/* Très petits téléphones (320px et moins) - Portrait uniquement */
+@media (max-width: 320px) and (orientation: portrait) {
+  html {
+    font-size: 13px;
+  }
+  
+  button {
+    font-size: 14px;
+    padding: 10px 8px;
+  }
+  
+  .grid {
+    gap: 6px;
+  }
+  
+  /* Réduire les marges pour gagner de l'espace */
+  .p-4 {
+    padding: 8px !important;
+  }
+  
+  .p-6 {
+    padding: 10px !important;
+  }
+}
+
+/* Téléphones Android budget (iTel, Techno, Pop) - Optimisations performance */
+@media (max-width: 768px) {
+  
+  /* Réduire les animations pour meilleures performances */
+  * {
+    animation-duration: 0.2s !important;
+    transition-duration: 0.15s !important;
+  }
+  
+  /* Optimiser les ombres */
+  .shadow-lg,
+  .shadow-xl {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  }
+  
+  /* Optimiser les bordures arrondies */
+  .rounded-xl,
+  .rounded-2xl {
+    border-radius: 12px !important;
+  }
+}
+
+/* ========================================
    SUPPORT DARK MODE MOBILE
 ======================================== */
 
@@ -399,5 +757,107 @@
     background-color: #374151 !important;
     color: #f9fafb !important;
     border-color: #4b5563 !important;
+  }
+  
+  th {
+    background-color: #374151 !important;
+    color: #f9fafb !important;
+  }
+  
+  table th:first-child,
+  table td:first-child {
+    background-color: #1f2937 !important;
+  }
+}
+
+/* ========================================
+   ACCESSIBILITÉ MOBILE
+======================================== */
+
+@media (max-width: 768px) {
+  
+  /* Augmenter les zones tactiles */
+  a, button, [role="button"], [role="link"] {
+    min-height: 44px !important;
+    min-width: 44px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  /* Focus visible pour navigation clavier */
+  *:focus-visible {
+    outline: 3px solid #3b82f6 !important;
+    outline-offset: 2px !important;
+  }
+  
+  /* Améliorer le contraste */
+  .text-gray-500 {
+    color: #6b7280 !important;
+  }
+  
+  .text-gray-400 {
+    color: #9ca3af !important;
+  }
+}
+
+/* ========================================
+   GESTION DES NOTCHES ET SAFE AREAS
+======================================== */
+
+@media (max-width: 768px) {
+  
+  /* Support iPhone X et supérieur */
+  @supports (padding: max(0px)) {
+    body {
+      padding-top: max(0px, env(safe-area-inset-top)) !important;
+      padding-bottom: max(0px, env(safe-area-inset-bottom)) !important;
+      padding-left: max(0px, env(safe-area-inset-left)) !important;
+      padding-right: max(0px, env(safe-area-inset-right)) !important;
+    }
+    
+    /* Headers fixes */
+    header,
+    .fixed-header {
+      padding-top: max(16px, env(safe-area-inset-top)) !important;
+    }
+    
+    /* Footers fixes */
+    footer,
+    .fixed-footer {
+      padding-bottom: max(16px, env(safe-area-inset-bottom)) !important;
+    }
+  }
+}
+
+/* ========================================
+   OPTIMISATIONS PERFORMANCE
+======================================== */
+
+@media (max-width: 768px) {
+  
+  /* Désactiver les animations si demandé */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+  
+  /* Optimiser le rendu des images */
+  img {
+    image-rendering: -webkit-optimize-contrast !important;
+    image-rendering: crisp-edges !important;
+  }
+  
+  /* Utiliser GPU pour les animations */
+  .animate-spin,
+  .animate-pulse,
+  [class*="animate-"] {
+    will-change: transform !important;
+    transform: translateZ(0) !important;
   }
 }

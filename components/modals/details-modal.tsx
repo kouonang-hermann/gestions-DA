@@ -52,7 +52,6 @@ export default function DetailsModal({
       brouillon: "bg-gray-500",
       soumise: "bg-blue-500",
       en_attente_validation_conducteur: "bg-yellow-500",
-      en_attente_validation_qhse: "bg-yellow-600",
       en_attente_validation_responsable_travaux: "bg-yellow-400",
       en_attente_validation_charge_affaire: "bg-blue-600",
       en_attente_preparation_appro: "bg-orange-400",

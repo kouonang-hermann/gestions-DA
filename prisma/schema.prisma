@@ -20,6 +20,7 @@ model User {
   updatedAt            DateTime              @updatedAt
   phone                String                @unique @db.VarChar(20)
   demandesCreees       Demande[]             @relation("DemandeCreateur")
+  demandesALivrer      Demande[]             @relation("DemandesALivrer")
   historyEntries       HistoryEntry[]
   notifications        Notification[]
   projetsCreated       Projet[]              @relation("ProjetCreateur")
@@ -40,6 +41,7 @@ model Projet {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   createdBy     String
+  budget        Float?         // Budget alloué au projet
   demandes      Demande[]
   notifications Notification[]
   createur      User           @relation("ProjetCreateur", fields: [createdBy], references: [id])
@@ -89,8 +91,15 @@ model Demande {
   dateLivraisonSouhaitee DateTime?
   commentaires           String?
   rejetMotif             String?
+  coutTotal              Float?                // Coût total de la demande (visible uniquement par superadmin)
+  budgetPrevisionnel     Float?                // Budget prévisionnel saisi par le chargé d'affaires
+  dateEngagement         DateTime?             // Date d'engagement financier (quand les prix sont validés)
+  livreurAssigneId       String?               // ID de la personne assignée pour livrer
+  dateReceptionLivreur   DateTime?             // Date de réception du matériel par le livreur
+  dateLivraison          DateTime?             // Date de livraison au demandeur
   projet                 Projet                @relation(fields: [projetId], references: [id])
   technicien             User                  @relation("DemandeCreateur", fields: [technicienId], references: [id])
+  livreurAssigne         User?                 @relation("DemandesALivrer", fields: [livreurAssigneId], references: [id])
   historyEntries         HistoryEntry[]
   items                  ItemDemande[]
   notifications          Notification[]
@@ -109,6 +118,7 @@ model ItemDemande {
   quantiteSortie   Int?
   quantiteRecue    Int?
   commentaire      String?
+  prixUnitaire     Float?  // Prix unitaire saisi par le responsable appro
   article          Article @relation(fields: [articleId], references: [id])
   demande          Demande @relation(fields: [demandeId], references: [id], onDelete: Cascade)
 
@@ -183,10 +193,10 @@ enum UserRole {
   employe
   conducteur_travaux
   responsable_travaux
-  responsable_qhse
+  responsable_logistique
   responsable_appro
   charge_affaire
-  responsable_logistique
+  responsable_livreur
 }
 
 enum DemandeType {
@@ -198,11 +208,12 @@ enum DemandeStatus {
   brouillon
   soumise
   en_attente_validation_conducteur
-  en_attente_validation_qhse
+  en_attente_validation_logistique
   en_attente_validation_responsable_travaux
   en_attente_validation_charge_affaire
   en_attente_preparation_appro
-  en_attente_validation_logistique
+  en_attente_reception_livreur
+  en_attente_livraison
   en_attente_validation_finale_demandeur
   confirmee_demandeur
   cloturee

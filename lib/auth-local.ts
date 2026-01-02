@@ -47,7 +47,7 @@ const localUsers: User[] = [
     prenom: "Marie",
     email: "marie.bernard@instrumelec.com",
     phone: "600000004",
-    role: "responsable_qhse",
+    role: "responsable_logistique",
     isAdmin: false,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -204,13 +204,13 @@ export function hasPermissionLocal(user: User, action: string): boolean {
       return user.role === "superadmin"
 
     case "create_demande":
-      return ["superadmin", "employe", "conducteur_travaux", "responsable_travaux", "responsable_qhse", "responsable_appro", "charge_affaire", "responsable_logistique"].includes(user.role)
+      return ["superadmin", "employe", "conducteur_travaux", "responsable_travaux", "responsable_appro", "charge_affaire", "responsable_logistique"].includes(user.role)
 
     case "validate_materiel":
       return user.role === "conducteur_travaux" || user.role === "superadmin"
 
     case "validate_outillage":
-      return user.role === "responsable_qhse" || user.role === "superadmin"
+      return user.role === "responsable_logistique" || user.role === "superadmin"
 
     case "manage_sortie":
       return user.role === "responsable_appro" || user.role === "superadmin"
