@@ -915,9 +915,8 @@ export default function DemandeDetailsModal({
           )}
 
           {/* Bouton confirmation réception livreur */}
-          {currentUser?.role === "livreur" && 
-           demande.status === "en_attente_reception_livreur" && 
-           demande.livreurAssigneId === currentUser.id && (
+          {demande.status === "en_attente_reception_livreur" && 
+           demande.livreurAssigneId === currentUser?.id && (
             <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <Package className="h-5 w-5 text-indigo-600" />

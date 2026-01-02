@@ -15,10 +15,21 @@ interface HistoryEntry {
 interface AppNotification {
   id: string
   title: string
+  titre: string
   message: string
   type: 'info' | 'success' | 'warning' | 'error'
   read: boolean
+  lu: boolean
   timestamp: Date
+  createdAt: Date
+  demande?: {
+    numero: string
+    id: string
+  }
+  projet?: {
+    nom: string
+    id: string
+  }
 }
 
 interface AppState {
