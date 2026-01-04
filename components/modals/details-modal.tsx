@@ -89,7 +89,16 @@ export default function DetailsModal({
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => onChangeUserRole?.(user)}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    console.log("🔘 Bouton Edit cliqué pour:", user.nom, user.prenom)
+                    if (onChangeUserRole) {
+                      console.log("✅ Fonction onChangeUserRole disponible, appel en cours...")
+                      onChangeUserRole(user)
+                    } else {
+                      console.error("❌ Fonction onChangeUserRole non disponible!")
+                    }
+                  }}
                   title="Modifier le rôle"
                 >
                   <Edit className="h-4 w-4" />

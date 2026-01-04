@@ -1,4 +1,5 @@
 -- Assigner tous les utilisateurs non-test a tous les projets
+-- Inclut les utilisateurs avec ou sans email
 
 INSERT INTO user_projets (id, "userId", "projetId")
 SELECT 
@@ -8,9 +9,7 @@ SELECT
 FROM users u
 CROSS JOIN projets p
 WHERE 
-  u.email NOT LIKE '%@test.com%'
-  AND u.email IS NOT NULL
-  AND u.email != ''
+  (u.email NOT LIKE '%@test.com%' OR u.email IS NULL OR u.email = '')
   AND NOT EXISTS (
     SELECT 1 
     FROM user_projets up 

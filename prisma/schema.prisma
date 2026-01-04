@@ -97,7 +97,7 @@ model Demande {
   livreurAssigneId       String?               // ID de la personne assignée pour livrer
   dateReceptionLivreur   DateTime?             // Date de réception du matériel par le livreur
   dateLivraison          DateTime?             // Date de livraison au demandeur
-  projet                 Projet                @relation(fields: [projetId], references: [id])
+  projet                 Projet                @relation(fields: [projetId], references: [id], onDelete: Cascade)
   technicien             User                  @relation("DemandeCreateur", fields: [technicienId], references: [id])
   livreurAssigne         User?                 @relation("DemandesALivrer", fields: [livreurAssigneId], references: [id])
   historyEntries         HistoryEntry[]
@@ -150,7 +150,7 @@ model SortieSignature {
   quantitesSorties       Json
   modifiable             Boolean  @default(true)
   dateModificationLimite DateTime
-  demande                Demande  @relation("SortieAppro", fields: [demandeId], references: [id])
+  demande                Demande  @relation("SortieAppro", fields: [demandeId], references: [id], onDelete: Cascade)
   user                   User     @relation("SortieAppro", fields: [userId], references: [id])
 
   @@map("sortie_signatures")
