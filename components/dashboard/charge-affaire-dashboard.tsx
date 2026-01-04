@@ -19,7 +19,9 @@ import {
   Search,
   Wrench,
   BarChart3,
-  TrendingUp
+  TrendingUp,
+  DollarSign,
+  Activity
 } from 'lucide-react'
 import {
   PieChart,
@@ -48,7 +50,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge"
 
 export default function ChargeAffaireDashboard() {
-  const { currentUser, demandes, isLoading } = useStore()
+  const { currentUser, demandes, projets, isLoading } = useStore()
   const { handleManualReload } = useAutoReload("CHARGE-AFFAIRE")
 
   const [stats, setStats] = useState({
@@ -68,6 +70,11 @@ export default function ChargeAffaireDashboard() {
   const [activeChart, setActiveChart] = useState<"material" | "tooling">("material")
   const [universalClosureModalOpen, setUniversalClosureModalOpen] = useState(false)
   const [validatedHistoryModalOpen, setValidatedHistoryModalOpen] = useState(false)
+  
+  // États pour les filtres financiers
+  const [financePeriode, setFinancePeriode] = useState<"all" | "month" | "quarter" | "year">("all")
+  const [financeType, setFinanceType] = useState<"all" | "materiel" | "outillage">("all")
+  const [financeStatut, setFinanceStatut] = useState<"all" | "chiffrees" | "non_chiffrees">("all")
 
   // Données chargées automatiquement par useDataLoader
 
@@ -281,6 +288,319 @@ export default function ChargeAffaireDashboard() {
             
             {/* Mes demandes à clôturer */}
             <MesDemandesACloturer />
+            
+            {/* Section Finance */}
+            <Card className="h-fit">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="h-5 w-5 text-green-600" />
+                  Finance
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Filtres financiers */}
+                <div className="flex flex-wrap gap-3 p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-gray-600 font-medium">Période:</label>
+                    <select 
+                      value={financePeriode} 
+                      onChange={(e) => setFinancePeriode(e.target.value as any)}
+                      className="text-xs border rounded px-2 py-1 bg-white"
+                    >
+                      <option value="all">Tout</option>
+                      <option value="month">Ce mois</option>
+                      <option value="quarter">Ce trimestre</option>
+                      <option value="year">Cette année</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-gray-600 font-medium">Type:</label>
+                    <select 
+                      value={financeType} 
+                      onChange={(e) => setFinanceType(e.target.value as any)}
+                      className="text-xs border rounded px-2 py-1 bg-white"
+                    >
+                      <option value="all">Tout</option>
+                      <option value="materiel">Matériel</option>
+                      <option value="outillage">Outillage</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-gray-600 font-medium">Statut:</label>
+                    <select 
+                      value={financeStatut} 
+                      onChange={(e) => setFinanceStatut(e.target.value as any)}
+                      className="text-xs border rounded px-2 py-1 bg-white"
+                    >
+                      <option value="all">Tout</option>
+                      <option value="chiffrees">Chiffrées</option>
+                      <option value="non_chiffrees">Non chiffrées</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Tableau des coûts par projet */}
+                {(() => {
+                  const now = new Date()
+                  const demandesFiltrees = demandes.filter(d => {
+                    if (financeType !== "all" && d.type !== financeType) return false
+                    if (financeStatut === "chiffrees" && (!d.coutTotal || d.coutTotal === 0)) return false
+                    if (financeStatut === "non_chiffrees" && d.coutTotal && d.coutTotal > 0) return false
+                    
+                    const dateRef = d.dateEngagement ? new Date(d.dateEngagement) : new Date(d.dateCreation)
+                    if (financePeriode === "month") {
+                      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+                      if (dateRef < startOfMonth) return false
+                    } else if (financePeriode === "quarter") {
+                      const quarterStart = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1)
+                      if (dateRef < quarterStart) return false
+                    } else if (financePeriode === "year") {
+                      const startOfYear = new Date(now.getFullYear(), 0, 1)
+                      if (dateRef < startOfYear) return false
+                    }
+                    
+                    return true
+                  })
+                  
+                  return (
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <h4 className="text-sm font-medium text-gray-700">Détail des coûts par projet</h4>
+                        <span className="text-xs text-gray-500">{demandesFiltrees.length} demande(s) filtrée(s)</span>
+                      </div>
+                      <div className="max-h-48 overflow-y-auto border rounded-lg">
+                        <table className="w-full text-sm">
+                          <thead className="bg-gray-100 sticky top-0">
+                            <tr>
+                              <th className="text-left p-2 font-medium text-gray-600">Projet</th>
+                              <th className="text-center p-2 font-medium text-gray-600">Demandes</th>
+                              <th className="text-center p-2 font-medium text-gray-600">Matériel</th>
+                              <th className="text-center p-2 font-medium text-gray-600">Outillage</th>
+                              <th className="text-right p-2 font-medium text-gray-600">Coût Total</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {projets.map(projet => {
+                              const projetDemandes = demandesFiltrees.filter(d => d.projetId === projet.id)
+                              const coutMateriel = projetDemandes.filter(d => d.type === 'materiel').reduce((sum, d) => sum + (d.coutTotal || 0), 0)
+                              const coutOutillage = projetDemandes.filter(d => d.type === 'outillage').reduce((sum, d) => sum + (d.coutTotal || 0), 0)
+                              const coutTotal = coutMateriel + coutOutillage
+                              
+                              if (projetDemandes.length === 0) return null
+                              
+                              return (
+                                <tr key={projet.id} className="border-t hover:bg-gray-50">
+                                  <td className="p-2">
+                                    <div className="flex items-center gap-2">
+                                      <FolderOpen className="h-4 w-4 text-gray-400" />
+                                      <span className="font-medium">{projet.nom}</span>
+                                    </div>
+                                  </td>
+                                  <td className="p-2 text-center">
+                                    <Badge variant="outline" className="text-xs">
+                                      {projetDemandes.length}
+                                    </Badge>
+                                  </td>
+                                  <td className="p-2 text-center text-blue-600">
+                                    {coutMateriel > 0 ? `${coutMateriel.toLocaleString('fr-FR')} €` : '-'}
+                                  </td>
+                                  <td className="p-2 text-center text-purple-600">
+                                    {coutOutillage > 0 ? `${coutOutillage.toLocaleString('fr-FR')} €` : '-'}
+                                  </td>
+                                  <td className="p-2 text-right font-bold text-green-700">
+                                    {coutTotal > 0 ? `${coutTotal.toLocaleString('fr-FR')} €` : '-'}
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                          <tfoot className="bg-green-50 font-bold">
+                            <tr>
+                              <td className="p-2">TOTAL</td>
+                              <td className="p-2 text-center">{demandesFiltrees.length}</td>
+                              <td className="p-2 text-center text-blue-700">
+                                {demandesFiltrees.filter(d => d.type === 'materiel').reduce((sum, d) => sum + (d.coutTotal || 0), 0).toLocaleString('fr-FR')} €
+                              </td>
+                              <td className="p-2 text-center text-purple-700">
+                                {demandesFiltrees.filter(d => d.type === 'outillage').reduce((sum, d) => sum + (d.coutTotal || 0), 0).toLocaleString('fr-FR')} €
+                              </td>
+                              <td className="p-2 text-right text-green-800">
+                                {demandesFiltrees.reduce((sum, d) => sum + (d.coutTotal || 0), 0).toLocaleString('fr-FR')} €
+                              </td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+                    </div>
+                  )
+                })()}
+
+                {/* Graphiques */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Répartition par type */}
+                  <div className="bg-white border rounded-lg p-4 shadow-sm">
+                    <h4 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                      <Package className="h-4 w-4 text-blue-600" />
+                      Répartition des coûts par type
+                    </h4>
+                    {(() => {
+                      const coutMateriel = demandes.filter(d => d.type === 'materiel').reduce((sum, d) => sum + (d.coutTotal || 0), 0)
+                      const coutOutillage = demandes.filter(d => d.type === 'outillage').reduce((sum, d) => sum + (d.coutTotal || 0), 0)
+                      const total = coutMateriel + coutOutillage
+                      const pctMateriel = total > 0 ? Math.round((coutMateriel / total) * 100) : 0
+                      const pctOutillage = total > 0 ? Math.round((coutOutillage / total) * 100) : 0
+                      
+                      return (
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-xs text-gray-600">
+                              <span>Matériel</span>
+                              <span className="font-bold text-blue-700">{pctMateriel}%</span>
+                            </div>
+                            <div className="h-6 bg-gray-200 rounded-full overflow-hidden">
+                              <div 
+                                className="h-full rounded-full flex items-center justify-end pr-2 text-white text-xs font-bold transition-all duration-500"
+                                style={{ width: `${Math.max(pctMateriel, 5)}%`, backgroundColor: '#015fc4' }}
+                              >
+                                {coutMateriel > 0 && `${coutMateriel.toLocaleString('fr-FR')} €`}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-xs text-gray-600">
+                              <span>Outillage</span>
+                              <span className="font-bold text-cyan-700">{pctOutillage}%</span>
+                            </div>
+                            <div className="h-6 bg-gray-200 rounded-full overflow-hidden">
+                              <div 
+                                className="h-full rounded-full flex items-center justify-end pr-2 text-gray-800 text-xs font-bold transition-all duration-500"
+                                style={{ width: `${Math.max(pctOutillage, 5)}%`, backgroundColor: '#b8d1df' }}
+                              >
+                                {coutOutillage > 0 && `${coutOutillage.toLocaleString('fr-FR')} €`}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="pt-2 border-t flex justify-between items-center">
+                            <span className="text-sm font-medium text-gray-700">Total</span>
+                            <span className="text-lg font-bold text-green-700">{total.toLocaleString('fr-FR')} €</span>
+                          </div>
+                        </div>
+                      )
+                    })()}
+                  </div>
+
+                  {/* Top 5 projets */}
+                  <div className="bg-white border rounded-lg p-4 shadow-sm">
+                    <h4 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                      <FolderOpen className="h-4 w-4 text-green-600" />
+                      Top 5 projets par coût
+                    </h4>
+                    {(() => {
+                      const topProjets = projets
+                        .map(p => ({
+                          id: p.id,
+                          name: p.nom,
+                          cout: demandes.filter(d => d.projetId === p.id).reduce((sum, d) => sum + (d.coutTotal || 0), 0),
+                          nbDemandes: demandes.filter(d => d.projetId === p.id).length
+                        }))
+                        .sort((a, b) => b.cout - a.cout)
+                        .slice(0, 5)
+                      
+                      const maxCout = Math.max(...topProjets.map(p => p.cout), 1)
+                      
+                      return (
+                        <div className="space-y-3">
+                          {topProjets.length === 0 ? (
+                            <p className="text-center text-gray-500 py-4">Aucun projet avec des coûts</p>
+                          ) : (
+                            topProjets.map((projet, index) => (
+                              <div key={projet.id} className="space-y-1">
+                                <div className="flex justify-between items-center text-xs">
+                                  <span className="flex items-center gap-2">
+                                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold ${
+                                      index === 0 ? 'bg-yellow-500' : 
+                                      index === 1 ? 'bg-gray-400' : 
+                                      index === 2 ? 'bg-orange-400' : 'bg-gray-300'
+                                    }`}>
+                                      {index + 1}
+                                    </span>
+                                    <span className="font-medium text-gray-700 truncate max-w-[120px]" title={projet.name}>
+                                      {projet.name}
+                                    </span>
+                                  </span>
+                                  <span className="text-gray-500">
+                                    {projet.nbDemandes} demande{projet.nbDemandes > 1 ? 's' : ''}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <div className="flex-1 h-4 bg-gray-100 rounded overflow-hidden">
+                                    <div 
+                                      className="h-full rounded transition-all duration-500"
+                                      style={{ 
+                                        width: `${(projet.cout / maxCout) * 100}%`, 
+                                        backgroundColor: index === 0 ? '#22c55e' : index === 1 ? '#4ade80' : '#86efac'
+                                      }}
+                                    />
+                                  </div>
+                                  <span className="text-xs font-bold text-green-700 min-w-[80px] text-right">
+                                    {projet.cout.toLocaleString('fr-FR')} €
+                                  </span>
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      )
+                    })()}
+                  </div>
+                </div>
+
+                {/* Indicateurs de Performance */}
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 border rounded-lg p-4">
+                  <h4 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                    <Activity className="h-4 w-4 text-purple-600" />
+                    Indicateurs de Performance
+                  </h4>
+                  {(() => {
+                    const demandesChiffrees = demandes.filter(d => d.coutTotal && d.coutTotal > 0)
+                    const tauxApprobation = demandes.length > 0 ? Math.round((demandesChiffrees.length / demandes.length) * 100) : 0
+                    const coutMoyenMateriel = demandesChiffrees.filter(d => d.type === 'materiel').length > 0
+                      ? Math.round(demandesChiffrees.filter(d => d.type === 'materiel').reduce((sum, d) => sum + (d.coutTotal || 0), 0) / demandesChiffrees.filter(d => d.type === 'materiel').length)
+                      : 0
+                    const coutMoyenOutillage = demandesChiffrees.filter(d => d.type === 'outillage').length > 0
+                      ? Math.round(demandesChiffrees.filter(d => d.type === 'outillage').reduce((sum, d) => sum + (d.coutTotal || 0), 0) / demandesChiffrees.filter(d => d.type === 'outillage').length)
+                      : 0
+                    
+                    return (
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-blue-700">2</div>
+                          <div className="text-xs text-gray-600">jours</div>
+                          <div className="text-xs font-medium text-gray-700 mt-1">Délai Moyen</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-green-700">{tauxApprobation}%</div>
+                          <div className="text-xs text-gray-600">{demandesChiffrees.length}/{demandes.length}</div>
+                          <div className="text-xs font-medium text-gray-700 mt-1">Taux Approbation</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-purple-700">{coutMoyenMateriel.toLocaleString('fr-FR')} €</div>
+                          <div className="text-xs text-gray-600">par demande</div>
+                          <div className="text-xs font-medium text-gray-700 mt-1">Coût Moy. Matériel</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-cyan-700">{coutMoyenOutillage.toLocaleString('fr-FR')} €</div>
+                          <div className="text-xs text-gray-600">par demande</div>
+                          <div className="text-xs font-medium text-gray-700 mt-1">Coût Moy. Outillage</div>
+                        </div>
+                      </div>
+                    )
+                  })()}
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Colonne de droite (fine) - 1/4 de la largeur */}

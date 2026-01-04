@@ -55,6 +55,8 @@ import SharedDemandesSection from "@/components/dashboard/shared-demandes-sectio
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { VisuallyHidden } from "@/components/ui/visually-hidden"
 import FinancialDashboard from "@/components/admin/financial-dashboard"
+import ChangeUserRoleModal from "@/components/admin/change-user-role-modal"
+import type { User as UserType } from "@/types"
 
 export default function SuperAdminDashboard() {
   const { currentUser, users, projets, demandes, isLoading, loadUsers, loadProjets, loadDemandes } = useStore()
@@ -91,6 +93,10 @@ export default function SuperAdminDashboard() {
   
   // Modale gestion des rôles admin
   const [adminRolesModalOpen, setAdminRolesModalOpen] = useState(false)
+  
+  // Modale changement de rôle utilisateur
+  const [changeRoleModalOpen, setChangeRoleModalOpen] = useState(false)
+  const [selectedUserForRoleChange, setSelectedUserForRoleChange] = useState<UserType | null>(null)
 
   // États pour les filtres financiers
   const [financePeriode, setFinancePeriode] = useState<"all" | "month" | "quarter" | "year">("all")
@@ -291,6 +297,16 @@ export default function SuperAdminDashboard() {
 
   const handleRemoveUserFromProject = () => {
     // TO DO: Implementer la logique pour supprimer un utilisateur d'un projet
+  }
+
+  const handleChangeUserRole = (user: UserType) => {
+    setSelectedUserForRoleChange(user)
+    setChangeRoleModalOpen(true)
+  }
+
+  const handleRoleChanged = () => {
+    loadUsers()
+    setDetailsModalOpen(false)
   }
 
   if (isLoading) {
@@ -1172,6 +1188,13 @@ export default function SuperAdminDashboard() {
         title={detailsModalTitle}
         data={detailsModalData}
         onRemoveUserFromProject={handleRemoveUserFromProject}
+        onChangeUserRole={handleChangeUserRole}
+      />
+      <ChangeUserRoleModal
+        isOpen={changeRoleModalOpen}
+        onClose={() => setChangeRoleModalOpen(false)}
+        user={selectedUserForRoleChange}
+        onRoleChanged={handleRoleChanged}
       />
       <ValidatedRequestsHistory
         isOpen={validatedHistoryModalOpen}

@@ -596,6 +596,49 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         }
         break
 
+      case "superadmin_validation":
+        console.log(`👑 [SUPERADMIN-VALIDATION] Validation super admin:`)
+        console.log(`  - Utilisateur: ${currentUser.nom} (${currentUser.role})`)
+        console.log(`  - Statut actuel: ${demande.status}`)
+        console.log(`  - Statut cible: ${targetStatus}`)
+        
+        if (currentUser.role !== "superadmin") {
+          console.log(`❌ [SUPERADMIN-VALIDATION] Accès refusé - rôle insuffisant`)
+          return NextResponse.json({ 
+            success: false, 
+            error: "Seul le super admin peut utiliser cette action" 
+          }, { status: 403 })
+        }
+
+        if (!targetStatus) {
+          console.log(`❌ [SUPERADMIN-VALIDATION] Statut cible manquant`)
+          return NextResponse.json({ 
+            success: false, 
+            error: "Le statut cible est requis pour la validation super admin" 
+          }, { status: 400 })
+        }
+
+        console.log(`✅ [SUPERADMIN-VALIDATION] Validation autorisée, transition: ${demande.status} → ${targetStatus}`)
+        
+        newStatus = targetStatus as any
+        
+        // Notifier les validateurs concernés si demandé
+        if (action === "superadmin_validation") {
+          console.log(`📧 [SUPERADMIN-VALIDATION] Envoi des notifications aux validateurs`)
+          
+          // Notifier l'ancien validateur que le super admin a pris le relais
+          await notificationService.notifyDemandeStatusChange(
+            demande.id,
+            demande.technicienId,
+            demande.status,
+            targetStatus,
+            currentUser.id
+          )
+          
+          console.log(`✅ [SUPERADMIN-VALIDATION] Notifications envoyées`)
+        }
+        break
+
       default:
         return NextResponse.json({ success: false, error: "Action non reconnue" }, { status: 400 })
     }

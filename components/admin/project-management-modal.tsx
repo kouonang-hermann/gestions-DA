@@ -236,6 +236,54 @@ export default function ProjectManagementModal({ isOpen, onClose }: ProjectManag
                     </Button>
                   </div>
 
+                  {/* Formulaire d'ajout d'utilisateur */}
+                  {showAddUser && (
+                    <Card className="border-2 border-blue-200 bg-blue-50">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-base">
+                          <UserPlus className="h-5 w-5" />
+                          Ajouter un utilisateur au projet
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div>
+                          <label className="text-sm font-medium text-gray-700">Utilisateur</label>
+                          <Select value={selectedUser} onValueChange={setSelectedUser}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Sélectionner un utilisateur" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availableUsers.map((user) => (
+                                <SelectItem key={user.id} value={user.id}>
+                                  {user.nom} ({user.email})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <Button 
+                            onClick={handleAddUserToProject}
+                            disabled={!selectedUser}
+                            style={{ backgroundColor: '#015fc4' }}
+                            className="text-white"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Ajouter au projet
+                          </Button>
+                          <Button variant="outline" onClick={() => {
+                            setShowAddUser(false)
+                            setSelectedUser("")
+                            setSelectedRole("")
+                          }}>
+                            Annuler
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
                   <div className="space-y-2 overflow-y-auto max-h-[50vh]">
                     {getProjectUsers(selectedProject.id).map((user) => (
                       <Card key={user.id}>
