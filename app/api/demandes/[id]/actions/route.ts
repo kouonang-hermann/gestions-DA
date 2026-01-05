@@ -437,6 +437,35 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         }
         break
 
+      case "annuler":
+        // Le demandeur peut annuler sa propre demande tant qu'elle n'a pas été validée
+        if (demande.technicienId !== currentUser.id && currentUser.role !== "superadmin") {
+          return NextResponse.json({ 
+            success: false, 
+            error: "Seul le demandeur original peut annuler sa demande" 
+          }, { status: 403 })
+        }
+        
+        // Vérifier que la demande n'a pas encore été validée (statuts autorisés pour annulation)
+        const annulableStatuses = [
+          "brouillon",
+          "soumise",
+          "en_attente_validation_conducteur",
+          "en_attente_validation_logistique"
+        ]
+        
+        if (!annulableStatuses.includes(demande.status)) {
+          return NextResponse.json({ 
+            success: false, 
+            error: "Cette demande ne peut plus être annulée car elle a déjà été validée par un niveau supérieur" 
+          }, { status: 403 })
+        }
+        
+        newStatus = "archivee"
+        updates.commentaire = commentaire || "Demande annulée par le demandeur"
+        console.log(`🗑️ [API] Demande ${demande.numero} annulée par ${currentUser.nom}`)
+        break
+
       case "rejeter":
         if (demande.status === "en_attente_validation_conducteur" || 
             demande.status === ("en_attente_validation_responsable_travaux" as any) || 

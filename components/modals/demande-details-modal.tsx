@@ -18,7 +18,7 @@ interface DemandeDetailsModalProps {
   isOpen: boolean
   onClose: () => void
   demande: Demande | null
-  onValidate?: (action: "valider" | "rejeter" | "valider_sortie" | "cloturer", quantites?: { [itemId: string]: number }, commentaire?: string) => void
+  onValidate?: (action: "valider" | "rejeter" | "annuler" | "valider_sortie" | "cloturer", quantites?: { [itemId: string]: number }, commentaire?: string) => void
   canValidate?: boolean
   onItemRemoved?: () => void
   canRemoveItems?: boolean
@@ -383,7 +383,7 @@ export default function DemandeDetailsModal({
     return new Intl.NumberFormat('fr-FR').format(price) + " FCFA"
   }
 
-  const handleAction = async (action: "valider" | "rejeter" | "valider_sortie" | "cloturer") => {
+  const handleAction = async (action: "valider" | "rejeter" | "annuler" | "valider_sortie" | "cloturer") => {
     if (!onValidate) return
     
     // Si validation avec modifications, commentaire obligatoire
@@ -909,6 +909,35 @@ export default function DemandeDetailsModal({
                     <XCircle className="h-4 w-4 mr-2" />
                   )}
                   Rejeter
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Bouton d'annulation pour le demandeur */}
+          {currentUser?.id === demande.technicienId && 
+           ["brouillon", "soumise", "en_attente_validation_conducteur", "en_attente_validation_logistique"].includes(demande.status) && (
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-orange-600" />
+                <span className="font-semibold text-orange-800">Annuler cette demande</span>
+              </div>
+              <p className="text-sm text-gray-600">
+                Vous pouvez annuler cette demande tant qu'elle n'a pas été validée par un niveau supérieur.
+              </p>
+              <div className="flex justify-center">
+                <Button
+                  onClick={() => handleAction("annuler")}
+                  disabled={actionLoading !== null}
+                  variant="destructive"
+                  className="px-6"
+                >
+                  {actionLoading === "annuler" ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  ) : (
+                    <XCircle className="h-4 w-4 mr-2" />
+                  )}
+                  Annuler la demande
                 </Button>
               </div>
             </div>
