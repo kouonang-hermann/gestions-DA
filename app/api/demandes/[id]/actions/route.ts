@@ -478,6 +478,31 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         }
         break
 
+      case "renvoyer":
+        // Permettre au demandeur de renvoyer une demande rejetée après modification
+        if (demande.status !== "rejetee") {
+          return NextResponse.json({ success: false, error: "Seules les demandes rejetées peuvent être renvoyées" }, { status: 403 })
+        }
+        
+        if (demande.technicienId !== currentUser.id && currentUser.role !== "superadmin") {
+          return NextResponse.json({ success: false, error: "Seul le demandeur original peut renvoyer sa demande" }, { status: 403 })
+        }
+        
+        // Remettre la demande au début du workflow selon son type
+        if (demande.type === "materiel") {
+          newStatus = "en_attente_validation_conducteur"
+        } else if (demande.type === "outillage") {
+          newStatus = "en_attente_validation_logistique"
+        } else {
+          newStatus = "soumise"
+        }
+        
+        // Effacer le motif de rejet
+        updates.rejetMotif = null
+        
+        console.log(`🔄 [API] Demande ${demande.numero} renvoyée par ${currentUser.nom} - nouveau statut: ${newStatus}`)
+        break
+
       case "preparer_sortie":
         console.log(`📦 [PREPARER-SORTIE] Vérifications:`)
         console.log(`  - Status demande: ${demande.status}`)

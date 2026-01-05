@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Eye, Edit, Trash2, CheckCircle } from "lucide-react"
 import { useStore } from "@/stores/useStore"
 import DemandeDetailModal from "@/components/demandes/demande-detail-modal"
+import CreateDemandeModal from "@/components/demandes/create-demande-modal"
 
 interface UserDetailsModalProps {
   isOpen: boolean
@@ -24,6 +25,8 @@ export default function UserDetailsModal({ isOpen, onClose, title, data, type }:
   const [showCommentaire, setShowCommentaire] = useState<{ [key: string]: boolean }>({})
   const [selectedDemande, setSelectedDemande] = useState<any>(null)
   const [demandeDetailsOpen, setDemandeDetailsOpen] = useState(false)
+  const [editDemandeOpen, setEditDemandeOpen] = useState(false)
+  const [demandeToEdit, setDemandeToEdit] = useState<any>(null)
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -143,6 +146,38 @@ export default function UserDetailsModal({ isOpen, onClose, title, data, type }:
     }
   }
 
+  const handleRenvoyer = async (demandeId: string) => {
+    setClotureLoading(demandeId)
+    try {
+      const success = await executeAction(demandeId, "renvoyer", {})
+      
+      if (success) {
+        alert("Demande renvoyée avec succès ! Elle est maintenant en attente de validation.")
+        await loadDemandes()
+        onClose()
+      } else {
+        alert("Erreur lors du renvoi de la demande")
+      }
+    } catch (error) {
+      console.error("Erreur lors du renvoi:", error)
+      alert("Erreur lors du renvoi de la demande")
+    } finally {
+      setClotureLoading(null)
+    }
+  }
+
+  const handleModifier = (demande: any) => {
+    // Pour les demandes rejetées, ouvrir la modale de création en mode édition
+    if (demande.status === "rejetee") {
+      setDemandeToEdit(demande)
+      setEditDemandeOpen(true)
+    } else {
+      // Pour les autres, ouvrir la modale de détails
+      setSelectedDemande(demande)
+      setDemandeDetailsOpen(true)
+    }
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] overflow-y-auto p-3 sm:p-6">
@@ -185,6 +220,42 @@ export default function UserDetailsModal({ isOpen, onClose, title, data, type }:
                       <p className="text-sm text-green-600">
                         <strong>Livraison souhaitée:</strong> {new Date(item.dateLivraisonSouhaitee).toLocaleDateString()}
                       </p>
+                    )}
+                    {item.rejetMotif && (
+                      <p className="text-sm text-red-600 bg-red-50 p-2 rounded mt-2">
+                        <strong>Motif du rejet:</strong> {item.rejetMotif}
+                      </p>
+                    )}
+                    
+                    {/* NOUVEAU: Section pour renvoyer une demande rejetée */}
+                    {item.status === "rejetee" && (
+                      <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded">
+                        <p className="text-sm text-red-800 font-medium mb-2">
+                          ❌ Demande rejetée - Vous pouvez la modifier et la renvoyer
+                        </p>
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => handleModifier(item)}
+                            variant="outline"
+                            size="sm"
+                            className="text-blue-600 hover:text-blue-700 border-blue-300 text-xs"
+                          >
+                            <Edit className="h-3 w-3 mr-1" />
+                            Modifier
+                          </Button>
+                          <Button
+                            onClick={() => handleRenvoyer(item.id)}
+                            disabled={clotureLoading === item.id}
+                            className="bg-blue-600 hover:bg-blue-700 text-white text-xs"
+                            size="sm"
+                          >
+                            {clotureLoading === item.id ? (
+                              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
+                            ) : null}
+                            Renvoyer la demande
+                          </Button>
+                        </div>
+                      </div>
                     )}
                     
                     {/* NOUVEAU: Section de clôture pour les demandes prêtes */}
@@ -304,8 +375,8 @@ export default function UserDetailsModal({ isOpen, onClose, title, data, type }:
           </Button>
         </div>
       </DialogContent>
-
-      {/* Modale de détails de la demande */}
+      
+      {/* Modale de modification de la demande */}
       {selectedDemande && (
         <DemandeDetailModal
           isOpen={demandeDetailsOpen}
@@ -315,6 +386,20 @@ export default function UserDetailsModal({ isOpen, onClose, title, data, type }:
           }}
           demandeId={selectedDemande.id}
           mode="view"
+        />
+      )}
+      
+      {/* Modale d'édition pour les demandes rejetées */}
+      {demandeToEdit && (
+        <CreateDemandeModal
+          isOpen={editDemandeOpen}
+          onClose={() => {
+            setEditDemandeOpen(false)
+            setDemandeToEdit(null)
+            onClose() // Fermer aussi la modale parente
+          }}
+          type={demandeToEdit.type}
+          existingDemande={demandeToEdit}
         />
       )}
     </Dialog>

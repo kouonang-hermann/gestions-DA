@@ -13,6 +13,7 @@ interface CreateDemandeModalProps {
   isOpen: boolean
   onClose: () => void
   type?: DemandeType
+  existingDemande?: any // Demande existante à modifier (pour les demandes rejetées)
 }
 
 interface ManualItem {
@@ -25,10 +26,11 @@ interface ManualItem {
   commentaire: string
 }
 
-export default function CreateDemandeModal({ isOpen, onClose, type = "materiel" }: CreateDemandeModalProps) {
-  const { currentUser, projets, createDemande, loadProjets, isLoading } = useStore()
+export default function CreateDemandeModal({ isOpen, onClose, type = "materiel", existingDemande }: CreateDemandeModalProps) {
+  const { currentUser, projets, createDemande, loadProjets, isLoading, executeAction, loadDemandes } = useStore()
   
   const DRAFT_KEY = `demande_draft_${type}_${currentUser?.id}`
+  const isEditMode = !!existingDemande
   
   const [formData, setFormData] = useState({
     projetId: "",
@@ -45,6 +47,32 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel" 
   useEffect(() => {
     if (isOpen) {
       loadProjets()
+      
+      // Si on modifie une demande existante, charger ses données
+      if (existingDemande) {
+        const items = existingDemande.items?.map((item: any) => ({
+          id: item.id,
+          nom: item.article?.nom || "",
+          description: item.article?.description || "",
+          reference: item.article?.reference || "",
+          unite: item.article?.unite || "pièce",
+          quantiteDemandee: item.quantiteDemandee || 1,
+          commentaire: item.commentaire || "",
+        })) || []
+        
+        setFormData({
+          projetId: existingDemande.projetId || "",
+          type: existingDemande.type || type,
+          items: items,
+          commentaires: existingDemande.commentaires || "",
+          dateLivraisonSouhaitee: existingDemande.dateLivraisonSouhaitee 
+            ? new Date(existingDemande.dateLivraisonSouhaitee).toISOString().split('T')[0] 
+            : "",
+        })
+        setHasDraft(false)
+        console.log("📝 Demande existante chargée pour modification")
+        return
+      }
       
       // Essayer de charger un brouillon existant
       const savedDraft = localStorage.getItem(DRAFT_KEY)
@@ -167,6 +195,55 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel" 
       }
     }
 
+    // Si on est en mode édition (demande rejetée), mettre à jour et renvoyer
+    if (isEditMode && existingDemande) {
+      try {
+        // 1. Mettre à jour les données de la demande
+        const response = await fetch(`/api/demandes/${existingDemande.id}/update-items`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            projetId: formData.projetId,
+            commentaires: formData.commentaires,
+            dateLivraisonSouhaitee: formData.dateLivraisonSouhaitee,
+            items: formData.items.map(item => ({
+              articleId: `manual-${item.id}`,
+              quantiteDemandee: item.quantiteDemandee,
+              commentaire: item.commentaire || undefined,
+              article: {
+                nom: item.nom,
+                description: item.description,
+                reference: item.reference,
+                unite: item.unite,
+                type: formData.type,
+              }
+            }))
+          })
+        })
+
+        if (!response.ok) {
+          setError("Erreur lors de la mise à jour de la demande")
+          return
+        }
+
+        // 2. Renvoyer la demande
+        const renvoyerSuccess = await executeAction(existingDemande.id, "renvoyer", {})
+        
+        if (renvoyerSuccess) {
+          await loadDemandes()
+          alert("✅ Demande modifiée et renvoyée avec succès !")
+          onClose()
+        } else {
+          setError("Erreur lors du renvoi de la demande")
+        }
+      } catch (error) {
+        console.error("Erreur:", error)
+        setError("Erreur lors de la modification de la demande")
+      }
+      return
+    }
+
+    // Mode création normale
     // Convertir les items manuels en format attendu par l'API
     const items = formData.items.map(item => ({
       articleId: `manual-${item.id}`,
@@ -228,8 +305,12 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel" 
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div>
-              <DialogTitle className="text-base sm:text-lg">Nouvelle demande de {type === "materiel" ? "matériel" : "outillage"}</DialogTitle>
-              <DialogDescription className="text-xs sm:text-sm">Créez une nouvelle demande</DialogDescription>
+              <DialogTitle className="text-base sm:text-lg">
+                {isEditMode ? "Modifier la demande rejetée" : `Nouvelle demande de ${type === "materiel" ? "matériel" : "outillage"}`}
+              </DialogTitle>
+              <DialogDescription className="text-xs sm:text-sm">
+                {isEditMode ? "Modifiez votre demande et renvoyez-la pour validation" : "Créez une nouvelle demande"}
+              </DialogDescription>
             </div>
             {hasDraft && (
               <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-md border border-blue-200">
@@ -468,7 +549,7 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel" 
               >
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 <Save className="h-4 w-4 mr-2" />
-                Créer la demande
+                {isEditMode ? "Modifier et renvoyer" : "Créer la demande"}
               </Button>
             </div>
           </div>
