@@ -373,8 +373,8 @@ async function testScenariosAvances() {
       where: { id: demande2.id },
       data: { 
         status: 'en_attente_preparation_appro', // Court-circuite les validations intermédiaires
-        budgetPrevisionnel: 45 * article.prixUnitaire,
-        coutTotal: 45 * article.prixUnitaire,
+        budgetPrevisionnel: 45 * (article.prixUnitaire || 0),
+        coutTotal: 45 * (article.prixUnitaire || 0),
         dateEngagement: new Date()
       }
     })
