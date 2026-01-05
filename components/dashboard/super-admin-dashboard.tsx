@@ -304,9 +304,12 @@ export default function SuperAdminDashboard() {
     setChangeRoleModalOpen(true)
   }
 
-  const handleRoleChanged = () => {
-    loadUsers()
+  const handleRoleChanged = async () => {
+    console.log("🔄 Rechargement des utilisateurs après changement de rôle...")
+    await loadUsers()
+    console.log("✅ Utilisateurs rechargés")
     setDetailsModalOpen(false)
+    setChangeRoleModalOpen(false)
   }
 
   if (isLoading) {

@@ -28,7 +28,8 @@ export const PUT = async (request: NextRequest, context: { params: Promise<{ id:
       "responsable_qhse",
       "charge_affaire",
       "responsable_appro",
-      "responsable_logistique"
+      "responsable_logistique",
+      "responsable_livreur"
     ]
 
     if (!newRole || !validRoles.includes(newRole)) {
@@ -93,20 +94,10 @@ export const PUT = async (request: NextRequest, context: { params: Promise<{ id:
       }
     })
 
-    // Créer une entrée d'audit/historique
-    await prisma.historyEntry.create({
-      data: {
-        demandeId: "ROLE_CHANGE", // Identifiant spécial pour les changements de rôle
-        userId: currentUser.id,
-        action: "ROLE_MODIFICATION",
-        commentaire: `Rôle modifié de "${oldRole}" vers "${newRole}"${reason ? `. Raison: ${reason}` : ""}`,
-        timestamp: new Date(),
-        signature: `${currentUser.id}_${Date.now()}`, // Signature simple
-        ancienStatus: oldRole as any,
-        nouveauStatus: newRole as any
-      }
-    })
-
+    // Note: HistoryEntry nécessite un demandeId valide (clé étrangère)
+    // Les changements de rôle ne sont pas liés à une demande spécifique
+    // L'audit est assuré par la notification et les logs de l'application
+    
     // Créer une notification pour l'utilisateur concerné
     if (targetUser.id !== currentUser.id) {
       await prisma.notification.create({

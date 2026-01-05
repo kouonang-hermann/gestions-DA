@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { AlertTriangle, UserCog, History } from "lucide-react"
 import type { User, UserRole } from "@/types"
+import { useStore } from "@/stores/useStore"
 
 interface ChangeUserRoleModalProps {
   isOpen: boolean
@@ -61,6 +62,7 @@ export default function ChangeUserRoleModal({
   user, 
   onRoleChanged 
 }: ChangeUserRoleModalProps) {
+  const token = useStore((state) => state.token)
   const [newRole, setNewRole] = useState<UserRole | "">("")
   const [reason, setReason] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -69,13 +71,16 @@ export default function ChangeUserRoleModal({
   const handleRoleChange = async () => {
     if (!user || !newRole) return
 
+    console.log("🔄 Changement de rôle - Token disponible:", !!token)
+    console.log("🔄 Token value:", token ? `${token.substring(0, 20)}...` : "null")
+
     setIsLoading(true)
     try {
       const response = await fetch(`/api/users/${user.id}/role`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("token")}`,
+          "Authorization": `Bearer ${token}`,
         },
         body: JSON.stringify({
           newRole,
@@ -155,15 +160,19 @@ export default function ChangeUserRoleModal({
                 Nouveau rôle
               </label>
               <Select value={newRole} onValueChange={(value) => setNewRole(value as UserRole)}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full bg-white">
                   <SelectValue placeholder="Sélectionner un nouveau rôle" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-[300px] overflow-y-auto z-50 bg-white border border-gray-200 shadow-lg">
                   {ROLES.filter(role => role.value !== user.role).map((role) => (
-                    <SelectItem key={role.value} value={role.value}>
-                      <div>
-                        <div className="font-medium">{role.label}</div>
-                        <div className="text-xs text-gray-500">{role.description}</div>
+                    <SelectItem 
+                      key={role.value} 
+                      value={role.value}
+                      className="cursor-pointer hover:bg-gray-100 focus:bg-gray-100 bg-white"
+                    >
+                      <div className="py-2">
+                        <div className="font-medium text-gray-900">{role.label}</div>
+                        <div className="text-xs text-gray-500 mt-1">{role.description}</div>
                       </div>
                     </SelectItem>
                   ))}
