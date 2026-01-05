@@ -112,7 +112,7 @@ async function checkUser() {
     console.log(`📁 Projets assignés: ${user.projets.length}`)
     if (user.projets.length > 0) {
       user.projets.forEach(up => {
-        console.log(`   - ${up.projet.nom} (rôle: ${up.role})`)
+        console.log(`   - ${up.projet.nom}`)
       })
     } else {
       console.log('   ⚠️  Aucun projet assigné')

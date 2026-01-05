@@ -114,18 +114,21 @@ export default function ValidationDemandesList({ type, title }: ValidationDemand
     setDetailsModalOpen(true)
   }
 
-  const handleModalValidation = async (action: "valider" | "rejeter" | "valider_sortie" | "cloturer", quantites?: { [itemId: string]: number }, commentaire?: string) => {
+  const handleModalValidation = async (action: "valider" | "rejeter" | "annuler" | "valider_sortie" | "cloturer", quantites?: { [itemId: string]: number }, commentaire?: string) => {
     if (!selectedDemande) return
     
     setActionLoading(selectedDemande.id)
     
     try {
       // Pour ce composant, on traite "valider_sortie" et "cloturer" comme "valider"
+      // L'action "annuler" n'est pas applicable ici (réservée au demandeur)
       const normalizedAction = (action === "valider_sortie" || action === "cloturer") ? "valider" : action
 
-      await executeAction(selectedDemande.id, normalizedAction, { quantites, commentaire })
-      setDetailsModalOpen(false)
-      setSelectedDemande(null)
+      if (normalizedAction !== "annuler") {
+        await executeAction(selectedDemande.id, normalizedAction, { quantites, commentaire })
+        setDetailsModalOpen(false)
+        setSelectedDemande(null)
+      }
     } catch (error) {
       console.error("Erreur lors de la validation:", error)
     } finally {

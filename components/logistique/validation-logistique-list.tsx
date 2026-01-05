@@ -80,12 +80,18 @@ export default function ValidationLogistiqueList() {
     setDetailsModalOpen(true)
   }
 
-  const handleModalValidation = async (action: "valider" | "valider_sortie" | "rejeter" | "cloturer", quantites?: { [itemId: string]: number }, commentaire?: string) => {
+  const handleModalValidation = async (action: "valider" | "annuler" | "valider_sortie" | "rejeter" | "cloturer", quantites?: { [itemId: string]: number }, commentaire?: string) => {
     if (selectedDemande) {
       setActionLoading(selectedDemande.id)
 
       try {
         const payload: any = { commentaire: commentaire || "" }
+        
+        // L'action "annuler" n'est pas applicable ici (réservée au demandeur)
+        if (action === "annuler") {
+          setActionLoading(null)
+          return
+        }
         
         const apiAction = action === "valider_sortie" ? "valider_sortie" : action === "rejeter" ? "rejeter" : action === "cloturer" ? "cloturer" : "valider_sortie"
         const success = await executeAction(selectedDemande.id, apiAction, payload)
