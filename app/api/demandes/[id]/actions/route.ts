@@ -71,19 +71,26 @@ function getNextStatusWithAutoValidation(currentStatus: DemandeStatus, userRole:
   let nextIndex = currentIndex + 1
   let nextStatus = flow[nextIndex]
 
+  console.log(`🔄 [API] Calcul du prochain statut depuis ${currentStatus} → ${nextStatus}`)
+  console.log(`🔄 [API] Demandeur original: ${demandeurRole}, Valideur actuel: ${userRole}`)
+
   // Vérifier les auto-validations successives
+  // IMPORTANT: On vérifie si le demandeur ORIGINAL peut auto-valider les étapes suivantes
+  // Cela permet de sauter les étapes où le demandeur a déjà le rôle de valideur
   while (nextIndex < flow.length - 1) {
     const canAutoValidate = canUserAutoValidateStep(demandeurRole, demandeType, nextStatus)
     
     if (canAutoValidate) {
-      console.log(`🔄 [API AUTO-VALIDATION] ${demandeurRole} peut auto-valider l'étape: ${nextStatus}`)
+      console.log(`🔄 [API AUTO-VALIDATION] ${demandeurRole} peut auto-valider l'étape: ${nextStatus}, passage à l'étape suivante`)
       nextIndex++
       nextStatus = flow[nextIndex]
     } else {
+      console.log(`✋ [API] ${demandeurRole} ne peut pas auto-valider ${nextStatus}, arrêt ici`)
       break
     }
   }
 
+  console.log(`✅ [API] Prochain statut déterminé: ${nextStatus}`)
   return nextStatus
 }
 
@@ -210,6 +217,14 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
     // Vérifier les permissions et exécuter l'action
     switch (action) {
       case "valider":
+        console.log(`🔍 [API VALIDATION] Début de la validation:`)
+        console.log(`  - Demande: ${demande.numero}`)
+        console.log(`  - Statut actuel: ${demande.status}`)
+        console.log(`  - Type: ${demande.type}`)
+        console.log(`  - Valideur: ${currentUser.nom} (${currentUser.role})`)
+        console.log(`  - Demandeur original: ${demande.technicien?.nom} (${demande.technicien?.role})`)
+        console.log(`  - Target status fourni: ${targetStatus || 'aucun'}`)
+        
         // Utiliser la nouvelle logique d'auto-validation intelligente
         const nextStatus = getNextStatusWithAutoValidation(
           demande.status, 
@@ -220,13 +235,15 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         )
         
         if (!nextStatus) {
+          console.log(`❌ [API VALIDATION] Aucun prochain statut trouvé`)
           return NextResponse.json({ success: false, error: "Action non autorisée pour ce rôle et statut" }, { status: 403 })
         }
         
-        console.log(`🔄 [API] Transition: ${demande.status} → ${nextStatus} (demandeur: ${demande.technicien?.role})`)
+        console.log(`🔄 [API VALIDATION] Transition calculée: ${demande.status} → ${nextStatus}`)
         
         // Vérifications de permissions (seulement si pas d'auto-validation)
-        if (!targetStatus) {
+        // IMPORTANT: Le superadmin peut valider à n'importe quelle étape
+        if (!targetStatus && currentUser.role !== "superadmin") {
           // Vérifications spécifiques par type de demande
           if (demande.status === "en_attente_validation_conducteur" && currentUser.role !== "conducteur_travaux") {
             return NextResponse.json({ success: false, error: "Seul le conducteur de travaux peut valider les demandes de matériel" }, { status: 403 })
@@ -255,6 +272,11 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
           if (demande.status === "en_attente_validation_finale_demandeur" && demande.technicienId !== currentUser.id) {
             return NextResponse.json({ success: false, error: "Seul le demandeur peut valider finalement sa demande" }, { status: 403 })
           }
+        }
+        
+        // Log spécial si c'est un superadmin qui valide
+        if (currentUser.role === "superadmin") {
+          console.log(`👑 [API VALIDATION] Validation par SUPERADMIN - bypass des vérifications de rôle`)
         }
         
         newStatus = nextStatus as any
@@ -736,6 +758,12 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
     }
 
     // Mettre à jour la demande
+    console.log(`💾 [API] Mise à jour de la demande dans la base de données:`)
+    console.log(`  - ID: ${params.id}`)
+    console.log(`  - Ancien statut: ${demande.status}`)
+    console.log(`  - Nouveau statut: ${newStatus}`)
+    console.log(`  - Updates supplémentaires:`, updates)
+    
     const updatedDemande = await prisma.demande.update({
       where: { id: params.id },
       data: {
@@ -755,6 +783,8 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         sortieAppro: true
       }
     })
+    
+    console.log(`✅ [API] Demande mise à jour avec succès, statut final: ${updatedDemande.status}`)
 
     // Créer une entrée d'historique
     await prisma.historyEntry.create({
