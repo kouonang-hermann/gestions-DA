@@ -280,9 +280,26 @@ export default function SuperAdminDashboard() {
     }
   }
 
-  // Fonction pour obtenir les demandes en cours de l'utilisateur
+  // Fonction pour obtenir les demandes en cours
+  // Pour super admin : TOUTES les demandes en attente
+  // Pour autres utilisateurs : leurs propres demandes en cours
   const getMesDemandesEnCours = () => {
     if (!currentUser) return []
+    
+    // Super admin voit TOUTES les demandes en attente (pas seulement les siennes)
+    if (currentUser.role === 'superadmin') {
+      return demandes.filter(
+        (demande) =>
+          ![
+            "brouillon", 
+            "cloturee", 
+            "rejetee", 
+            "archivee"
+          ].includes(demande.status)
+      )
+    }
+    
+    // Autres utilisateurs voient uniquement leurs propres demandes
     return demandes.filter(
       (demande) =>
         demande.technicienId === currentUser.id &&
