@@ -42,14 +42,27 @@ export default function ValidationDemandesList({ type, title }: ValidationDemand
         statusToFilter = "en_attente_validation_charge_affaire"
       } else if (currentUser.role === "responsable_livreur") {
         statusToFilter = "en_attente_validation_livreur"
+      } else if (currentUser.role === "superadmin") {
+        // Super admin peut valider n'importe quelle demande en attente
+        statusToFilter = "all_pending"
       }
       
-      const filtered = demandes.filter(
-        (d) => d.type === type && 
-               d.status === statusToFilter &&
-               // Filtrer par projet si l'utilisateur a des projets assignés
-               (!currentUser.projets || currentUser.projets.length === 0 || currentUser.projets.includes(d.projetId))
-      )
+      const filtered = currentUser.role === "superadmin"
+        ? demandes.filter(
+            (d) => d.type === type && 
+                   ![
+                     "brouillon", 
+                     "cloturee", 
+                     "rejetee", 
+                     "archivee"
+                   ].includes(d.status)
+          )
+        : demandes.filter(
+            (d) => d.type === type && 
+                   d.status === statusToFilter &&
+                   // Filtrer par projet si l'utilisateur a des projets assignés
+                   (!currentUser.projets || currentUser.projets.length === 0 || currentUser.projets.includes(d.projetId))
+          )
       
       console.log(`🔍 [VALIDATION-${type.toUpperCase()}] Filtrage pour ${currentUser.role}:`)
       console.log(`  - Status recherché: ${statusToFilter}`)

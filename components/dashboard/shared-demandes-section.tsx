@@ -18,17 +18,28 @@ export default function SharedDemandesSection({ onCardClick, hideClotureSection 
 
   useEffect(() => {
     if (currentUser && demandes) {
-      // Filtrer les demandes en cours pour l'utilisateur actuel (CORRIGÉ)
-      const mesDemandesEnCours = demandes.filter(
-        (demande) =>
-          demande.technicienId === currentUser.id &&
-          ![
-            "brouillon", 
-            "cloturee", 
-            "rejetee", 
-            "archivee"
-          ].includes(demande.status)
-      )
+      // Super admin voit TOUTES les demandes en attente
+      // Autres utilisateurs voient uniquement leurs demandes
+      const mesDemandesEnCours = currentUser.role === 'superadmin'
+        ? demandes.filter(
+            (demande) =>
+              ![
+                "brouillon", 
+                "cloturee", 
+                "rejetee", 
+                "archivee"
+              ].includes(demande.status)
+          )
+        : demandes.filter(
+            (demande) =>
+              demande.technicienId === currentUser.id &&
+              ![
+                "brouillon", 
+                "cloturee", 
+                "rejetee", 
+                "archivee"
+              ].includes(demande.status)
+          )
       setDemandesEnCours(mesDemandesEnCours)
     }
   }, [currentUser, demandes])

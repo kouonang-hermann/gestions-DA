@@ -52,6 +52,7 @@ import DetailsModal from "@/components/modals/details-modal"
 import ValidatedRequestsHistory from "@/components/dashboard/validated-requests-history"
 import ManageAdminRoles from "../admin/manage-admin-roles"
 import SharedDemandesSection from "@/components/dashboard/shared-demandes-section"
+import ValidationDemandesList from "@/components/validation/validation-demandes-list"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { VisuallyHidden } from "@/components/ui/visually-hidden"
 import FinancialDashboard from "@/components/admin/financial-dashboard"
@@ -564,6 +565,10 @@ export default function SuperAdminDashboard() {
               {/* Composant partagé pour les demandes en cours (sans clôture pour super admin) */}
               <SharedDemandesSection onCardClick={handleCardClick} hideClotureSection={true} />
             </div>
+
+            {/* Sections de validation pour le super admin */}
+            <ValidationDemandesList type="materiel" title="Demandes de matériel à valider" />
+            <ValidationDemandesList type="outillage" title="Demandes d'outillage à valider" />
 
             {/* Section Finance - Version enrichie */}
             <Card className="h-fit">
