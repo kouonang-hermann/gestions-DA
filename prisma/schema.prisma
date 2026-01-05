@@ -27,6 +27,7 @@ model User {
   sortiesAppro         SortieSignature[]     @relation("SortieAppro")
   projets              UserProjet[]
   validationSignatures ValidationSignature[]
+  livraisonsEffectuees Livraison[]           @relation("LivraisonsEffectuees")
 
   @@map("users")
 }
@@ -105,22 +106,24 @@ model Demande {
   notifications          Notification[]
   sortieAppro            SortieSignature?      @relation("SortieAppro")
   validationSignatures   ValidationSignature[]
+  livraisons             Livraison[]
 
   @@map("demandes")
 }
 
 model ItemDemande {
-  id               String  @id @default(cuid())
+  id               String          @id @default(cuid())
   demandeId        String
   articleId        String
   quantiteDemandee Int
   quantiteValidee  Int?
-  quantiteSortie   Int?
-  quantiteRecue    Int?
+  quantiteSortie   Int?            // DEPRECATED - Gardé pour compatibilité
+  quantiteRecue    Int?            // DEPRECATED - Gardé pour compatibilité
   commentaire      String?
-  prixUnitaire     Float?  // Prix unitaire saisi par le responsable appro
-  article          Article @relation(fields: [articleId], references: [id])
-  demande          Demande @relation(fields: [demandeId], references: [id], onDelete: Cascade)
+  prixUnitaire     Float?          // Prix unitaire saisi par le responsable appro
+  article          Article         @relation(fields: [articleId], references: [id])
+  demande          Demande         @relation(fields: [demandeId], references: [id], onDelete: Cascade)
+  livraisons       ItemLivraison[]
 
   @@map("item_demandes")
 }
@@ -219,4 +222,38 @@ enum DemandeStatus {
   cloturee
   rejetee
   archivee
+}
+
+model Livraison {
+  id            String          @id @default(cuid())
+  demandeId     String
+  livreurId     String
+  dateCreation  DateTime        @default(now())
+  dateLivraison DateTime?
+  commentaire   String?
+  statut        LivraisonStatut @default(en_preparation)
+  demande       Demande         @relation(fields: [demandeId], references: [id], onDelete: Cascade)
+  livreur       User            @relation("LivraisonsEffectuees", fields: [livreurId], references: [id])
+  items         ItemLivraison[]
+
+  @@map("livraisons")
+}
+
+model ItemLivraison {
+  id             String      @id @default(cuid())
+  livraisonId    String
+  itemDemandeId  String
+  quantiteLivree Int
+  livraison      Livraison   @relation(fields: [livraisonId], references: [id], onDelete: Cascade)
+  itemDemande    ItemDemande @relation(fields: [itemDemandeId], references: [id], onDelete: Cascade)
+
+  @@map("item_livraisons")
+}
+
+enum LivraisonStatut {
+  en_preparation
+  prete
+  en_cours
+  livree
+  annulee
 }

@@ -412,6 +412,21 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         // Action spécifique pour le demandeur - clôturer la demande après livraison
         if (demande.status === "en_attente_validation_finale_demandeur" && demande.technicienId === currentUser.id) {
           console.log(`✅ [API] Clôture autorisée`)
+          
+          // Marquer toutes les livraisons comme livrées
+          await prisma.livraison.updateMany({
+            where: { 
+              demandeId: demande.id,
+              statut: { in: ["prete", "en_cours"] }
+            },
+            data: { 
+              statut: "livree",
+              dateLivraison: new Date()
+            }
+          })
+          
+          console.log(`✅ [API] Toutes les livraisons marquées comme livrées`)
+          
           newStatus = "cloturee"
         } else if (demande.status !== "en_attente_validation_finale_demandeur") {
           console.log(`❌ [API] Statut incorrect pour clôture: ${demande.status}`)
@@ -481,7 +496,7 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
           // Assigner le livreur
           updates.livreurAssigneId = livreurAssigneId
           
-          // Créer la sortie appro
+          // Créer la sortie appro (ancien système - compatibilité)
           await prisma.sortieSignature.create({
             data: {
               userId: currentUser.id,
@@ -494,6 +509,29 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
           })
           
           console.log(`✅ [PREPARER-SORTIE] Sortie signature créée`)
+
+          // NOUVEAU : Créer automatiquement une livraison complète (système de livraisons multiples)
+          // Cela permet la compatibilité avec l'ancien système tout en supportant le nouveau
+          const items = await prisma.itemDemande.findMany({
+            where: { demandeId: demande.id }
+          })
+          
+          await prisma.livraison.create({
+            data: {
+              demandeId: demande.id,
+              livreurId: livreurAssigneId,
+              commentaire: commentaire || "Livraison complète créée automatiquement",
+              statut: "prete",
+              items: {
+                create: items.map(item => ({
+                  itemDemandeId: item.id,
+                  quantiteLivree: item.quantiteValidee || item.quantiteDemandee
+                }))
+              }
+            }
+          })
+          
+          console.log(`✅ [PREPARER-SORTIE] Livraison complète créée automatiquement`)
 
           // Envoyer notification au livreur assigné
           await notificationService.notifyLivreurAssigne(demande.id, livreurAssigneId, currentUser.id)

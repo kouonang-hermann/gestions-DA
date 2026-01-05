@@ -1,0 +1,85 @@
+/**
+ * Script pour créer l'utilisateur 697619722
+ */
+
+import { PrismaClient } from '@prisma/client'
+import * as bcrypt from 'bcryptjs'
+
+const prisma = new PrismaClient()
+
+async function createUser() {
+  console.log('\n👤 Création de l\'utilisateur 697619722...\n')
+
+  try {
+    // Vérifier si l'utilisateur existe déjà
+    const existingUser = await prisma.user.findUnique({
+      where: { phone: '+237697619722' }
+    })
+
+    if (existingUser) {
+      console.log('⚠️  L\'utilisateur existe déjà!\n')
+      console.log('🔧 Réinitialisation du mot de passe...\n')
+
+      const newPassword = 'Temp123!'
+      const hashedPassword = await bcrypt.hash(newPassword, 10)
+
+      await prisma.user.update({
+        where: { id: existingUser.id },
+        data: { password: hashedPassword }
+      })
+
+      console.log('✅ Mot de passe réinitialisé avec succès!')
+      console.log(`   Nouveau mot de passe: ${newPassword}`)
+      console.log(`   Utilisateur: ${existingUser.prenom} ${existingUser.nom}`)
+      console.log(`   Téléphone: ${existingUser.phone}\n`)
+      
+      return
+    }
+
+    // Créer le nouveau mot de passe
+    const password = 'Temp123!'
+    const hashedPassword = await bcrypt.hash(password, 10)
+
+    // Créer l'utilisateur
+    const newUser = await prisma.user.create({
+      data: {
+        nom: 'Utilisateur',
+        prenom: 'Nouveau',
+        phone: '+237697619722',
+        password: hashedPassword,
+        role: 'employe',
+        isAdmin: false
+      }
+    })
+
+    console.log('✅ Utilisateur créé avec succès!\n')
+    console.log('📋 Informations du compte:')
+    console.log(`   ID: ${newUser.id}`)
+    console.log(`   Nom: ${newUser.prenom} ${newUser.nom}`)
+    console.log(`   Téléphone: ${newUser.phone}`)
+    console.log(`   Mot de passe: ${password}`)
+    console.log(`   Rôle: ${newUser.role}`)
+    console.log()
+    console.log('⚠️  IMPORTANT:')
+    console.log('   - L\'utilisateur doit changer ce mot de passe après la première connexion')
+    console.log('   - Téléphone de connexion: 697619722 (sans indicatif)')
+    console.log('   - Ou avec indicatif: +237697619722')
+    console.log()
+
+  } catch (error) {
+    console.error('\n❌ ERREUR:', error)
+    throw error
+  } finally {
+    await prisma.$disconnect()
+  }
+}
+
+createUser()
+  .then(() => {
+    console.log('✅ Script terminé avec succès')
+    process.exit(0)
+  })
+  .catch((error) => {
+    console.error('❌ Script terminé avec erreur:', error)
+    process.exit(1)
+  })
