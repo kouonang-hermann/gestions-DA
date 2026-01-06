@@ -109,6 +109,8 @@ export interface Demande {
 
   commentaires?: string
   rejetMotif?: string
+  nombreRejets: number // Compteur de rejets pour traçabilité
+  statusPrecedent?: DemandeStatus // Statut avant le rejet (pour retour arrière)
   coutTotal?: number // Coût total de la demande (visible uniquement par superadmin)
   budgetPrevisionnel?: number // Budget prévisionnel saisi par le chargé d'affaires
   dateEngagement?: Date // Date d'engagement financier

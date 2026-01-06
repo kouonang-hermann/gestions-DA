@@ -196,10 +196,14 @@ export const DELETE = async (request: NextRequest, context: { params: Promise<{ 
     })
 
   } catch (error) {
-    console.error("Erreur lors du retrait de l'utilisateur du projet:", error)
+    console.error("❌ [API] Erreur lors du retrait de l'utilisateur du projet:", error)
+    console.error("❌ [API] Stack trace:", error instanceof Error ? error.stack : "N/A")
+    console.error("❌ [API] Message:", error instanceof Error ? error.message : String(error))
+    
     return NextResponse.json({ 
       success: false, 
-      error: "Erreur serveur lors du retrait de l'utilisateur du projet" 
+      error: error instanceof Error ? error.message : "Erreur serveur lors du retrait de l'utilisateur du projet",
+      details: process.env.NODE_ENV === 'development' ? String(error) : undefined
     }, { status: 500 })
   }
 }

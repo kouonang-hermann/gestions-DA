@@ -38,7 +38,9 @@ const localDemandes: Demande[] = [
     commentaires: "Demande de matériel pour rénovation",
     validationLogistique: undefined,
     validationResponsableTravaux: undefined,
-    validationLivreur: undefined
+    validationLivreur: undefined,
+    nombreRejets: 0,
+    statusPrecedent: undefined
   },
   {
     id: "demande-2", 
@@ -73,7 +75,9 @@ const localDemandes: Demande[] = [
     commentaires: "Demande d'outillage spécialisé",
     validationLogistique: undefined,
     validationResponsableTravaux: undefined,
-    validationLivreur: undefined
+    validationLivreur: undefined,
+    nombreRejets: 0,
+    statusPrecedent: undefined
   },
   {
     id: "demande-3",
@@ -107,7 +111,9 @@ const localDemandes: Demande[] = [
     commentaires: "Matériel électrique urgent",
     validationLogistique: undefined,
     validationResponsableTravaux: undefined,
-    validationLivreur: undefined
+    validationLivreur: undefined,
+    nombreRejets: 0,
+    statusPrecedent: undefined
   }
 ]
 
@@ -301,7 +307,9 @@ export const POST = async (request: NextRequest) => {
       commentaires: body.commentaires || "",
       validationLogistique: undefined,
       validationResponsableTravaux: undefined,
-      validationLivreur: undefined
+      validationLivreur: undefined,
+      nombreRejets: 0,
+      statusPrecedent: undefined
     }
 
     localDemandes.push(newDemande)

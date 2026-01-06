@@ -32,8 +32,8 @@ function getInitialStatus(type: "materiel" | "outillage", creatorRole: string): 
     ]
   }
 
-  // Mapping des rôles qui peuvent sauter leur propre étape UNIQUEMENT
-  // Chaque rôle liste UNIQUEMENT l'étape qu'il peut valider (donc qu'il doit sauter quand il crée)
+  // Mapping des rôles qui peuvent sauter plusieurs étapes
+  // Chaque rôle liste les étapes qu'il peut valider (donc qu'il doit sauter quand il crée)
   const skipRules: Record<string, string[]> = {
     // Conducteur peut valider l'étape "conducteur" uniquement
     "conducteur_travaux": ["en_attente_validation_conducteur"],
@@ -41,21 +41,29 @@ function getInitialStatus(type: "materiel" | "outillage", creatorRole: string): 
     // Responsable Logistique peut valider l'étape "Logistique" uniquement
     "responsable_logistique": ["en_attente_validation_logistique"],
     
-    // Responsable travaux peut valider UNIQUEMENT l'étape "responsable travaux"
-    // Il ne peut PAS sauter les étapes précédentes (conducteur, logistique)
+    // Responsable travaux peut valider "conducteur" ET "responsable travaux" pour matériel
+    // et "Logistique" ET "responsable travaux" pour outillage
     "responsable_travaux": [
+      "en_attente_validation_conducteur",
+      "en_attente_validation_logistique", 
       "en_attente_validation_responsable_travaux"
     ],
     
-    // Chargé affaires peut valider UNIQUEMENT l'étape "chargé affaires"
-    // Il ne peut PAS sauter les étapes précédentes
+    // Chargé affaires peut valider "conducteur", "Logistique", "responsable travaux" ET "chargé affaires"
     "charge_affaire": [
+      "en_attente_validation_conducteur",
+      "en_attente_validation_logistique",
+      "en_attente_validation_responsable_travaux",
       "en_attente_validation_charge_affaire"
     ],
     
-    // Superadmin ne saute AUCUNE étape (pas d'auto-validation)
-    // Ses demandes suivent le flow normal complet
-    "superadmin": []
+    // Superadmin a les mêmes privilèges que chargé affaires
+    "superadmin": [
+      "en_attente_validation_conducteur",
+      "en_attente_validation_logistique",
+      "en_attente_validation_responsable_travaux",
+      "en_attente_validation_charge_affaire"
+    ]
   }
 
   const flow = flows[type]

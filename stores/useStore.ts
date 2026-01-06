@@ -388,7 +388,7 @@ export const useStore = create<AppState>()(
           // Fallback vers des demandes de test pour le debug
           console.log("🔄 [STORE] Fallback vers demandes de test pour debug")
           
-          const testDemandes = [
+          const testDemandes: Demande[] = [
             // Demande 1 : À valider par le conducteur
             {
               id: "demande-test-a-valider",
@@ -409,7 +409,9 @@ export const useStore = create<AppState>()(
               validationLivreur: undefined,
               validationFinale: undefined,
               projet: undefined,
-              technicien: undefined
+              technicien: undefined,
+              nombreRejets: 0,
+              statusPrecedent: undefined
             },
             // Demande 2 : Déjà validée par le conducteur (statut avancé)
             {
@@ -431,7 +433,9 @@ export const useStore = create<AppState>()(
               sortieAppro: undefined,
               validationFinale: undefined,
               projet: undefined,
-              technicien: undefined
+              technicien: undefined,
+              nombreRejets: 0,
+              statusPrecedent: undefined
             },
             // Demande 3 : Demande personnelle du conducteur en cours
             {
@@ -453,7 +457,9 @@ export const useStore = create<AppState>()(
               validationLivreur: undefined,
               validationFinale: undefined,
               projet: undefined,
-              technicien: undefined
+              technicien: undefined,
+              nombreRejets: 0,
+              statusPrecedent: undefined
             },
             // Demande 4 : Demande clôturée (validée complètement)
             {
@@ -475,7 +481,9 @@ export const useStore = create<AppState>()(
               sortieAppro: undefined,
               validationFinale: undefined,
               projet: undefined,
-              technicien: undefined
+              technicien: undefined,
+              nombreRejets: 0,
+              statusPrecedent: undefined
             }
           ]
 
@@ -884,6 +892,8 @@ export const useStore = create<AppState>()(
         try {
           const token = get().token
           
+          console.log(`🔄 [STORE] Retrait utilisateur ${userId} du projet ${projectId}`)
+          
           const response = await fetch(`/api/projets/${projectId}/remove-user`, {
             method: "DELETE",
             headers: {
@@ -893,7 +903,10 @@ export const useStore = create<AppState>()(
             body: JSON.stringify({ userId }),
           })
 
+          console.log(`📡 [STORE] Réponse HTTP status: ${response.status}`)
+          
           const result = await response.json()
+          console.log(`📦 [STORE] Résultat API:`, result)
 
           if (result.success) {
             // Mettre à jour localement après succès API
@@ -906,14 +919,20 @@ export const useStore = create<AppState>()(
               isLoading: false,
             }))
             
-            console.log(`✅ [API] Utilisateur ${userId} retiré du projet ${projectId}`)
+            console.log(`✅ [STORE] Utilisateur ${userId} retiré du projet ${projectId}`)
             return true
           } else {
+            console.error(`❌ [STORE] Échec API:`, result.error)
+            console.error(`❌ [STORE] Détails:`, result.details)
             throw new Error(result.error || "Erreur lors de la suppression")
           }
         } catch (error) {
-          console.error("Erreur suppression utilisateur du projet:", error)
-          set({ error: "Erreur lors de la suppression de l'utilisateur du projet", isLoading: false })
+          console.error("❌ [STORE] Erreur suppression utilisateur du projet:", error)
+          console.error("❌ [STORE] Type d'erreur:", error instanceof Error ? error.constructor.name : typeof error)
+          console.error("❌ [STORE] Message:", error instanceof Error ? error.message : String(error))
+          
+          const errorMessage = error instanceof Error ? error.message : "Erreur lors de la suppression de l'utilisateur du projet"
+          set({ error: errorMessage, isLoading: false })
           return false
         }
       },

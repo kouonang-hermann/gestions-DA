@@ -92,6 +92,8 @@ model Demande {
   dateLivraisonSouhaitee DateTime?
   commentaires           String?
   rejetMotif             String?
+  nombreRejets           Int                   @default(0) // Compteur de rejets pour traçabilité
+  statusPrecedent        DemandeStatus?        // Statut avant le rejet (pour retour arrière)
   coutTotal              Float?                // Coût total de la demande (visible uniquement par superadmin)
   budgetPrevisionnel     Float?                // Budget prévisionnel saisi par le chargé d'affaires
   dateEngagement         DateTime?             // Date d'engagement financier (quand les prix sont validés)

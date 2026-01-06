@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { withAuth } from "@/lib/middleware"
 import { updateDemandeStatusSchema } from "@/lib/validations"
 import type { DemandeStatus } from "@/types"
+import { getPreviousStatus, getPreviousValidatorRole, generateRejectionNotificationMessage, hasReachedMaxRejections } from "@/lib/workflow-utils"
 
 /**
  * Détermine le prochain statut selon le statut actuel et le rôle
@@ -111,6 +112,7 @@ export const GET = withAuth(async (request: NextRequest, currentUser: any, conte
 
 /**
  * PUT /api/demandes/[id] - Met à jour le statut d'une demande (validation/rejet)
+ * NOUVEAU : En cas de rejet, la demande retourne au statut précédent pour modification
  */
 export const PUT = withAuth(async (request: NextRequest, currentUser: any, context: { params: Promise<{ id: string }> }) => {
   try {
@@ -138,22 +140,94 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
     }
 
     let newStatus = validatedData.status
+    let updateData: any = {
+      dateModification: new Date(),
+    }
 
-    // Si c'est une validation (pas un rejet), déterminer le prochain statut automatiquement
-    if (validatedData.status !== "rejetee") {
+    // NOUVEAU WORKFLOW DE REJET
+    if (validatedData.status === "rejetee") {
+      console.log(`🔄 [REJET] Demande ${demande.numero} rejetée par ${currentUser.role}`)
+      
+      // Vérifier si le nombre maximum de rejets est atteint
+      if (hasReachedMaxRejections(demande.nombreRejets || 0)) {
+        return NextResponse.json({ 
+          success: false, 
+          error: `Cette demande a atteint le nombre maximum de rejets (${demande.nombreRejets}). Veuillez créer une nouvelle demande.` 
+        }, { status: 400 })
+      }
+
+      // Déterminer le statut précédent
+      const previousStatus = getPreviousStatus(demande.status as DemandeStatus, demande.type)
+      
+      if (!previousStatus) {
+        return NextResponse.json({ 
+          success: false, 
+          error: "Impossible de rejeter cette demande à ce stade du workflow" 
+        }, { status: 400 })
+      }
+
+      console.log(`↩️ [REJET] Retour au statut précédent: ${previousStatus}`)
+
+      // Mettre à jour avec retour au statut précédent
+      newStatus = previousStatus
+      updateData = {
+        status: previousStatus as any,
+        statusPrecedent: demande.status as any, // Sauvegarder le statut actuel
+        nombreRejets: (demande.nombreRejets || 0) + 1, // Incrémenter le compteur
+        rejetMotif: validatedData.commentaire || "Aucun motif spécifié",
+        dateModification: new Date(),
+      }
+
+      // Déterminer qui notifier (valideur précédent)
+      const previousValidatorRole = getPreviousValidatorRole(demande.status as DemandeStatus, demande.type)
+      
+      if (previousValidatorRole) {
+        console.log(`📧 [REJET] Notification au valideur précédent: ${previousValidatorRole}`)
+        
+        // Trouver les utilisateurs avec ce rôle assignés au projet
+        const usersToNotify = await prisma.user.findMany({
+          where: {
+            role: previousValidatorRole,
+            projets: {
+              some: {
+                projetId: demande.projetId
+              }
+            }
+          }
+        })
+
+        // Créer les notifications
+        const notificationMessage = generateRejectionNotificationMessage(
+          demande.numero,
+          currentUser.role,
+          validatedData.commentaire || "Aucun motif spécifié"
+        )
+
+        for (const user of usersToNotify) {
+          await prisma.notification.create({
+            data: {
+              userId: user.id,
+              titre: `Demande ${demande.numero} rejetée`,
+              message: notificationMessage,
+              demandeId: demande.id,
+              projetId: demande.projetId
+            }
+          })
+        }
+      }
+    } else {
+      // VALIDATION NORMALE - Déterminer le prochain statut
       const nextStatus = getNextStatus(demande.status, currentUser.role)
       if (nextStatus) {
         newStatus = nextStatus as any
       }
+      updateData.status = newStatus as any
     }
 
     // Mettre à jour la demande
     const updatedDemande = await prisma.demande.update({
       where: { id: params.id },
-      data: {
-        status: newStatus as any,
-        dateModification: new Date(),
-      },
+      data: updateData,
       include: {
         projet: {
           select: { id: true, nom: true }
@@ -186,13 +260,16 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
         demandeId: params.id,
         userId: currentUser.id,
         action: validatedData.status === "rejetee" ? 
-          `Demande rejetée par ${currentUser.role}` : 
+          `Demande rejetée par ${currentUser.role} - Retour à ${newStatus}` : 
           `Demande validée par ${currentUser.role}`,
+        ancienStatus: demande.status as DemandeStatus,
         nouveauStatus: newStatus as DemandeStatus,
         commentaire: validatedData.commentaire,
         signature: `${currentUser.role}-validation-${Date.now()}`,
       }
     })
+
+    console.log(`✅ [WORKFLOW] Demande ${demande.numero} mise à jour: ${demande.status} → ${newStatus}`)
 
     return NextResponse.json({
       success: true,
