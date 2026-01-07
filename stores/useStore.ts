@@ -530,13 +530,13 @@ export const useStore = create<AppState>()(
       },
 
       loadNotifications: async () => {
-    const { currentUser } = get()
-    if (!currentUser) return
+    const { currentUser, token } = get()
+    if (!currentUser || !token) return
 
     try {
       const response = await fetch("/api/notifications", {
         headers: {
-          "x-user-id": currentUser.id,
+          "Authorization": `Bearer ${token}`,
         },
       })
 
