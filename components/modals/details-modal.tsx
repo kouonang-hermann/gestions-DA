@@ -131,7 +131,7 @@ export default function DetailsModal({
                         {projet.utilisateurs.length} utilisateur{projet.utilisateurs.length > 1 ? "s" : ""}
                       </span>
                       <span className="text-xs text-gray-500">
-                        Début: {new Date(projet.dateDebut).toLocaleDateString()}
+                        Début: {projet.dateDebut ? new Date(projet.dateDebut).toLocaleDateString() : '—'}
                       </span>
                     </div>
                   </div>
@@ -191,7 +191,7 @@ export default function DetailsModal({
                     </div>
                     <p className="text-sm text-gray-600 mt-1">
                       {demande.items.length} article{demande.items.length > 1 ? "s" : ""} • 
-                      Créée le {new Date(demande.dateCreation).toLocaleDateString()}
+                      Créée le {demande.dateCreation ? new Date(demande.dateCreation).toLocaleDateString() : '—'}
                     </p>
                     {demande.commentaires && (
                       <p className="text-xs text-gray-500 mt-1 truncate">

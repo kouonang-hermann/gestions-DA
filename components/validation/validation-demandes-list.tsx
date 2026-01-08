@@ -186,7 +186,7 @@ export default function ValidationDemandesList({ type, title }: ValidationDemand
                     </div>
                     <p className="text-xs sm:text-sm text-gray-600 mb-2">
                       {demande.items.length} article{demande.items.length > 1 ? "s" : ""} • Créée le{" "}
-                      {new Date(demande.dateCreation).toLocaleDateString()}
+                      {demande.dateCreation ? new Date(demande.dateCreation).toLocaleDateString() : "—"}
                     </p>
                     {demande.commentaires && (
                       <p className="text-xs sm:text-sm text-blue-600 bg-blue-50 p-2 rounded truncate">

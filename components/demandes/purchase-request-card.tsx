@@ -77,7 +77,7 @@ export default function PurchaseRequestCard({
       steps.push({
         step: "Validation Conducteur",
         validator: `${demande.validationConducteur.user?.prenom || ''} ${demande.validationConducteur.user?.nom || ''}`.trim(),
-        date: new Date(demande.validationConducteur.date).toLocaleDateString('fr-FR'),
+        date: demande.validationConducteur.date ? new Date(demande.validationConducteur.date).toLocaleDateString('fr-FR') : '—',
         status: 'Validé'
       })
     }
@@ -86,7 +86,7 @@ export default function PurchaseRequestCard({
       steps.push({
         step: "Validation QHSE",
         validator: `${demande.validationLogistique.user?.prenom || ''} ${demande.validationLogistique.user?.nom || ''}`.trim(),
-        date: new Date(demande.validationLogistique.date).toLocaleDateString('fr-FR'),
+        date: demande.validationLogistique.date ? new Date(demande.validationLogistique.date).toLocaleDateString('fr-FR') : '—',
         status: 'Validé'
       })
     }
@@ -95,7 +95,7 @@ export default function PurchaseRequestCard({
       steps.push({
         step: "Validation Chargé Affaire",
         validator: `${demande.validationChargeAffaire.user?.prenom || ''} ${demande.validationChargeAffaire.user?.nom || ''}`.trim(),
-        date: new Date(demande.validationChargeAffaire.date).toLocaleDateString('fr-FR'),
+        date: demande.validationChargeAffaire.date ? new Date(demande.validationChargeAffaire.date).toLocaleDateString('fr-FR') : '—',
         status: 'Validé'
       })
     }
@@ -104,7 +104,7 @@ export default function PurchaseRequestCard({
       steps.push({
         step: "Préparation Sortie",
         validator: `${demande.sortieAppro.user?.prenom || ''} ${demande.sortieAppro.user?.nom || ''}`.trim(),
-        date: new Date(demande.sortieAppro.date).toLocaleDateString('fr-FR'),
+        date: demande.sortieAppro.date ? new Date(demande.sortieAppro.date).toLocaleDateString('fr-FR') : '—',
         status: 'Préparé'
       })
     }
@@ -113,7 +113,7 @@ export default function PurchaseRequestCard({
       steps.push({
         step: "Validation Finale",
         validator: `${demande.validationFinale.user?.prenom || ''} ${demande.validationFinale.user?.nom || ''}`.trim(),
-        date: new Date(demande.validationFinale.date).toLocaleDateString('fr-FR'),
+        date: demande.validationFinale.date ? new Date(demande.validationFinale.date).toLocaleDateString('fr-FR') : '—',
         status: 'Validé'
       })
     }
@@ -178,7 +178,7 @@ export default function PurchaseRequestCard({
         <div className="space-y-2">
           <div className="text-xs text-gray-500">Date d'émission</div>
           <div className="font-medium">
-            {new Date(demande.dateCreation).toLocaleDateString('fr-FR')}
+            {demande.dateCreation ? new Date(demande.dateCreation).toLocaleDateString('fr-FR') : '—'}
           </div>
         </div>
         <div className="space-y-2">

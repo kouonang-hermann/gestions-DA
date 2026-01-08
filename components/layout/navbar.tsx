@@ -115,7 +115,7 @@ export default function Navbar() {
                   <DropdownMenuItem key={notification.id} className="flex flex-col items-start p-4 hover:bg-gray-50">
                     <div className="font-medium text-gray-800">{notification.title}</div>
                     <div className="text-sm text-gray-600">{notification.message}</div>
-                    <div className="text-xs text-gray-400 mt-1">{notification.timestamp.toLocaleString()}</div>
+                    <div className="text-xs text-gray-400 mt-1">{notification.timestamp ? new Date(notification.timestamp).toLocaleString() : "—"}</div>
                   </DropdownMenuItem>
                 ))
               )}

@@ -205,7 +205,7 @@ export default function MesLivraisonsSection() {
                           {demande.dateReceptionLivreur && (
                             <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
                               <CheckCircle className="w-3 h-3" />
-                              Matériel réceptionné le {new Date(demande.dateReceptionLivreur).toLocaleDateString()}
+                              Matériel réceptionné le {demande.dateReceptionLivreur ? new Date(demande.dateReceptionLivreur).toLocaleDateString() : "—"}
                             </p>
                           )}
                         </div>

@@ -53,6 +53,10 @@ interface AppState {
   // Cache pour éviter les appels multiples
   lastDemandesLoad: number
   isLoadingDemandes: boolean
+  
+  // Hydratation - pour résoudre le problème de mismatch SSR/Client
+  _hasHydrated: boolean
+  setHasHydrated: (state: boolean) => void
 
   // Actions
   login: (phone: string, password: string) => Promise<boolean>
@@ -114,6 +118,10 @@ export const useStore = create<AppState>()(
       error: null,
       lastDemandesLoad: 0,
       isLoadingDemandes: false,
+      
+      // État d'hydratation
+      _hasHydrated: false,
+      setHasHydrated: (state: boolean) => set({ _hasHydrated: state }),
 
       login: async (identifier: string, password: string) => {
         set({ isLoading: true, error: null })
@@ -530,13 +538,13 @@ export const useStore = create<AppState>()(
       },
 
       loadNotifications: async () => {
-    const { currentUser, token } = get()
-    if (!currentUser || !token) return
+    const { currentUser } = get()
+    if (!currentUser) return
 
     try {
       const response = await fetch("/api/notifications", {
         headers: {
-          "Authorization": `Bearer ${token}`,
+          "x-user-id": currentUser.id,
         },
       })
 
@@ -1231,6 +1239,13 @@ export const useStore = create<AppState>()(
         isAuthenticated: state.isAuthenticated,
         token: state.token,
       }),
+      onRehydrateStorage: () => (state) => {
+        // Callback appelé quand l'hydratation depuis localStorage est terminée
+        console.log("🔄 [STORE] Hydratation terminée depuis localStorage")
+        if (state) {
+          state.setHasHydrated(true)
+        }
+      },
     },
   ),
 )

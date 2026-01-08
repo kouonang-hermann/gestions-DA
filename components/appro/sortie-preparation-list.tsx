@@ -396,9 +396,9 @@ export default function SortiePreparationList() {
                     </div>
                     <p className="text-sm text-gray-600 mb-2">
                       {demande.items.length} article{demande.items.length > 1 ? "s" : ""} • Validée le{" "}
-                      {demande.validationConducteur
+                      {demande.validationConducteur?.date
                         ? new Date(demande.validationConducteur.date).toLocaleDateString()
-                        : demande.validationLogistique
+                        : demande.validationLogistique?.date
                           ? new Date(demande.validationLogistique.date).toLocaleDateString()
                           : "N/A"}
                     </p>

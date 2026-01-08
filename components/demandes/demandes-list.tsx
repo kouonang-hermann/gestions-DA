@@ -204,8 +204,8 @@ export default function DemandesList() {
 
                 <div className="flex justify-between items-center">
                   <div className="text-sm text-gray-600">
-                    Créée le {new Date(demande.dateCreation).toLocaleDateString()} • 
-                    Modifiée le {new Date(demande.dateModification).toLocaleDateString()}
+                    Créée le {demande.dateCreation ? new Date(demande.dateCreation).toLocaleDateString() : '—'} • 
+                    Modifiée le {demande.dateModification ? new Date(demande.dateModification).toLocaleDateString() : '—'}
                   </div>
                   <div className="flex gap-2">
                     {canEdit(demande) && (

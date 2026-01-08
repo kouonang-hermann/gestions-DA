@@ -523,7 +523,7 @@ export default function DemandeDetailsModal({
             <div className="grid grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm">
               <div>
                 <span className="font-medium text-gray-600">Date de création:</span>
-                <p>{new Date(demande.dateCreation).toLocaleDateString('fr-FR')}</p>
+                <p>{demande.dateCreation ? new Date(demande.dateCreation).toLocaleDateString('fr-FR') : '—'}</p>
               </div>
               
               <div>
@@ -539,7 +539,7 @@ export default function DemandeDetailsModal({
               {demande.dateLivraisonSouhaitee && (
                 <div>
                   <span className="font-medium text-gray-600">Date souhaitée:</span>
-                  <p>{new Date(demande.dateLivraisonSouhaitee).toLocaleDateString('fr-FR')}</p>
+                  <p>{demande.dateLivraisonSouhaitee ? new Date(demande.dateLivraisonSouhaitee).toLocaleDateString('fr-FR') : '—'}</p>
                 </div>
               )}
             </div>

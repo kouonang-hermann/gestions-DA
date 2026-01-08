@@ -263,22 +263,22 @@ export default function DemandeDetailModal({ isOpen, onClose, demandeId, mode, s
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Date de création</p>
-                  <p className="font-medium">{new Date(demande.dateCreation).toLocaleString()}</p>
+                  <p className="font-medium">{demande.dateCreation ? new Date(demande.dateCreation).toLocaleString() : "—"}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Dernière modification</p>
-                  <p className="font-medium">{new Date(demande.dateModification).toLocaleString()}</p>
+                  <p className="font-medium">{demande.dateModification ? new Date(demande.dateModification).toLocaleString() : "—"}</p>
                 </div>
                 {demande.dateSortie && (
                   <div>
                     <p className="text-sm text-gray-600">Date de sortie</p>
-                    <p className="font-medium">{new Date(demande.dateSortie).toLocaleString()}</p>
+                    <p className="font-medium">{demande.dateSortie ? new Date(demande.dateSortie).toLocaleString() : "—"}</p>
                   </div>
                 )}
                 {demande.dateValidationFinale && (
                   <div>
                     <p className="text-sm text-gray-600">Date validation finale</p>
-                    <p className="font-medium">{new Date(demande.dateValidationFinale).toLocaleString()}</p>
+                    <p className="font-medium">{demande.dateValidationFinale ? new Date(demande.dateValidationFinale).toLocaleString() : "—"}</p>
                   </div>
                 )}
                 {demande.livreurAssigne && (
@@ -292,13 +292,13 @@ export default function DemandeDetailModal({ isOpen, onClose, demandeId, mode, s
                 {demande.dateReceptionLivreur && (
                   <div>
                     <p className="text-sm text-gray-600">Réception par le livreur</p>
-                    <p className="font-medium text-green-600">{new Date(demande.dateReceptionLivreur).toLocaleString()}</p>
+                    <p className="font-medium text-green-600">{demande.dateReceptionLivreur ? new Date(demande.dateReceptionLivreur).toLocaleString() : "—"}</p>
                   </div>
                 )}
                 {demande.dateLivraison && (
                   <div>
                     <p className="text-sm text-gray-600">Date de livraison</p>
-                    <p className="font-medium text-green-600">{new Date(demande.dateLivraison).toLocaleString()}</p>
+                    <p className="font-medium text-green-600">{demande.dateLivraison ? new Date(demande.dateLivraison).toLocaleString() : "—"}</p>
                   </div>
                 )}
               </div>
@@ -434,7 +434,7 @@ export default function DemandeDetailModal({ isOpen, onClose, demandeId, mode, s
                       {demande.validationConducteur.commentaire || "Validée sans commentaire"} 
                       <br />
                       <span className="text-xs text-gray-500">
-                        {new Date(demande.validationConducteur.date).toLocaleString()}
+                        {demande.validationConducteur.date ? new Date(demande.validationConducteur.date).toLocaleString() : "—"}
                       </span>
                     </p>
                   </div>
@@ -447,7 +447,7 @@ export default function DemandeDetailModal({ isOpen, onClose, demandeId, mode, s
                       {demande.validationLogistique.commentaire || "Validée sans commentaire"}
                       <br />
                       <span className="text-xs text-gray-500">
-                        {new Date(demande.validationLogistique.date).toLocaleString()}
+                        {demande.validationLogistique.date ? new Date(demande.validationLogistique.date).toLocaleString() : "—"}
                       </span>
                     </p>
                   </div>
@@ -460,7 +460,7 @@ export default function DemandeDetailModal({ isOpen, onClose, demandeId, mode, s
                       {demande.sortieAppro.commentaire || "Préparée sans commentaire"}
                       <br />
                       <span className="text-xs text-gray-500">
-                        {new Date(demande.sortieAppro.date).toLocaleString()}
+                        {demande.sortieAppro.date ? new Date(demande.sortieAppro.date).toLocaleString() : "—"}
                         {demande.sortieAppro.modifiable && (
                           <span className="ml-2 text-orange-600">(Modifiable)</span>
                         )}
@@ -476,7 +476,7 @@ export default function DemandeDetailModal({ isOpen, onClose, demandeId, mode, s
                       {demande.validationChargeAffaire.commentaire || "Validée sans commentaire"}
                       <br />
                       <span className="text-xs text-gray-500">
-                        {new Date(demande.validationChargeAffaire.date).toLocaleString()}
+                        {demande.validationChargeAffaire.date ? new Date(demande.validationChargeAffaire.date).toLocaleString() : "—"}
                       </span>
                     </p>
                   </div>
@@ -489,7 +489,7 @@ export default function DemandeDetailModal({ isOpen, onClose, demandeId, mode, s
                       {demande.validationFinale.commentaire || "Réception confirmée sans commentaire"}
                       <br />
                       <span className="text-xs text-gray-500">
-                        {new Date(demande.validationFinale.date).toLocaleString()}
+                        {demande.validationFinale.date ? new Date(demande.validationFinale.date).toLocaleString() : "—"}
                       </span>
                     </p>
                   </div>

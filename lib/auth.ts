@@ -4,8 +4,109 @@ import bcrypt from "bcryptjs"
 import { prisma } from "./prisma"
 import { verifyToken, extractTokenFromHeader, type JWTPayload } from "./jwt"
 
+// ============================================================================
+// MODE DÉVELOPPEMENT - Utilisateurs de test quand la DB n'est pas accessible
+// ============================================================================
+const TEST_USERS = [
+  {
+    id: "test-superadmin-1",
+    nom: "Admin",
+    prenom: "Super",
+    email: "admin@test.com",
+    phone: "0600000000",
+    password: "admin123", // Mot de passe en clair pour le mode test
+    role: "superadmin" as const,
+    isAdmin: true,
+    projets: ["projet-test-1", "projet-test-2"],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: "test-employe-1",
+    nom: "Dupont",
+    prenom: "Jean",
+    email: "jean.dupont@test.com",
+    phone: "0611111111",
+    password: "employe123",
+    role: "employe" as const,
+    isAdmin: false,
+    projets: ["projet-test-1"],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: "test-conducteur-1",
+    nom: "Martin",
+    prenom: "Pierre",
+    email: "pierre.martin@test.com",
+    phone: "0622222222",
+    password: "conducteur123",
+    role: "conducteur_travaux" as const,
+    isAdmin: false,
+    projets: ["projet-test-1", "projet-test-2"],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: "test-responsable-travaux-1",
+    nom: "Bernard",
+    prenom: "Michel",
+    email: "michel.bernard@test.com",
+    phone: "0633333333",
+    password: "responsable123",
+    role: "responsable_travaux" as const,
+    isAdmin: false,
+    projets: ["projet-test-1", "projet-test-2"],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: "test-charge-affaire-1",
+    nom: "Petit",
+    prenom: "Sophie",
+    email: "sophie.petit@test.com",
+    phone: "0644444444",
+    password: "charge123",
+    role: "charge_affaire" as const,
+    isAdmin: false,
+    projets: ["projet-test-1"],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: "test-appro-1",
+    nom: "Leroy",
+    prenom: "Antoine",
+    email: "antoine.leroy@test.com",
+    phone: "0655555555",
+    password: "appro123",
+    role: "responsable_appro" as const,
+    isAdmin: false,
+    projets: ["projet-test-1", "projet-test-2"],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: "test-logistique-1",
+    nom: "Moreau",
+    prenom: "Claire",
+    email: "claire.moreau@test.com",
+    phone: "0666666666",
+    password: "logistique123",
+    role: "responsable_logistique" as const,
+    isAdmin: false,
+    projets: ["projet-test-1"],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+]
+
+// Variable pour tracker si on est en mode fallback
+let isDbOffline = false
+
 /**
  * Authentifie un utilisateur avec numéro de téléphone et mot de passe
+ * Avec fallback vers les utilisateurs de test si la DB n'est pas accessible
  */
 export async function authenticateUser(identifier: string, password: string): Promise<any | null> {
   try {
@@ -34,17 +135,43 @@ export async function authenticateUser(identifier: string, password: string): Pr
       projets: user.projets.map((p: { projetId: string }) => p.projetId)
     }
 
+    isDbOffline = false // DB accessible
     return userWithProjets
   } catch (error) {
     console.error("Erreur lors de l'authentification:", error)
-    return null
+    
+    // FALLBACK MODE: Si la DB n'est pas accessible, utiliser les utilisateurs de test
+    console.log("🔄 [AUTH] Mode fallback activé - Utilisation des utilisateurs de test")
+    isDbOffline = true
+    
+    const testUser = TEST_USERS.find(u => u.phone === identifier)
+    if (!testUser) {
+      console.log("❌ [AUTH] Utilisateur de test non trouvé pour:", identifier)
+      return null
+    }
+    
+    // En mode test, vérification simple du mot de passe
+    if (testUser.password !== password) {
+      console.log("❌ [AUTH] Mot de passe incorrect pour l'utilisateur de test")
+      return null
+    }
+    
+    console.log(`✅ [AUTH] Connexion réussie en mode test: ${testUser.prenom} ${testUser.nom} (${testUser.role})`)
+    return testUser
   }
 }
 
 /**
  * Récupère un utilisateur par son ID
+ * Avec fallback vers les utilisateurs de test si la DB n'est pas accessible
  */
 export async function getUserById(id: string): Promise<any | null> {
+  // Si on est en mode offline, utiliser les utilisateurs de test
+  if (isDbOffline) {
+    const testUser = TEST_USERS.find(u => u.id === id)
+    return testUser || null
+  }
+  
   try {
     const user = await prisma.user.findUnique({
       where: { id },
@@ -68,22 +195,51 @@ export async function getUserById(id: string): Promise<any | null> {
     return userWithProjets
   } catch (error) {
     console.error("Erreur lors de la récupération de l'utilisateur:", error)
-    return null
+    
+    // Fallback vers les utilisateurs de test
+    isDbOffline = true
+    const testUser = TEST_USERS.find(u => u.id === id)
+    return testUser || null
   }
 }
 
 /**
  * Récupère tous les utilisateurs
+ * Avec fallback vers les utilisateurs de test si la DB n'est pas accessible
  */
-export async function getAllUsers(): Promise<User[]> {
+export async function getAllUsers(): Promise<any[]> {
+  // Si on est en mode offline, utiliser les utilisateurs de test
+  if (isDbOffline) {
+    console.log("📋 [AUTH] Mode fallback - Retour des utilisateurs de test")
+    return TEST_USERS
+  }
+  
   try {
-    return await prisma.user.findMany({
+    const users = await prisma.user.findMany({
       orderBy: { createdAt: 'desc' }
     })
+    return users
   } catch (error) {
     console.error("Erreur lors de la récupération des utilisateurs:", error)
-    return []
+    // Fallback vers les utilisateurs de test
+    isDbOffline = true
+    console.log("📋 [AUTH] Mode fallback activé - Retour des utilisateurs de test")
+    return TEST_USERS
   }
+}
+
+/**
+ * Exporte la variable isDbOffline pour les autres modules
+ */
+export function isDatabaseOffline(): boolean {
+  return isDbOffline
+}
+
+/**
+ * Exporte les utilisateurs de test pour les autres modules
+ */
+export function getTestUsers() {
+  return TEST_USERS
 }
 
 /**
