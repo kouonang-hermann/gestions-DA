@@ -15,10 +15,10 @@ async function main() {
     employe123: await bcrypt.hash('employe123', 12),
     responsable123: await bcrypt.hash('responsable123', 12),
     conducteur123: await bcrypt.hash('conducteur123', 12),
-    qhse123: await bcrypt.hash('qhse123', 12),
+    logistique123: await bcrypt.hash('logistique123', 12),
     appro123: await bcrypt.hash('appro123', 12),
     charge123: await bcrypt.hash('charge123', 12),
-    logistique123: await bcrypt.hash('logistique123', 12),
+    livreur123: await bcrypt.hash('livreur123', 12),
   }
 
   // Créer les utilisateurs (incluant ceux pour les tests)
@@ -96,7 +96,9 @@ async function main() {
         role: 'charge_affaire',
       },
     }),
-    // Utilisateurs de test (correspondant au script test-validation-flow.js)
+    // Utilisateurs de test pour le flow de validation complet
+    // FLOW MATÉRIEL: Employé → Conducteur → Resp. Travaux → Chargé Affaire → Appro → Livreur → Demandeur
+    // FLOW OUTILLAGE: Employé → Logistique → Resp. Travaux → Chargé Affaire → Logistique (finale) → Livreur → Demandeur
     prisma.user.upsert({
       where: { email: 'admin@test.com' },
       update: {},
@@ -122,18 +124,6 @@ async function main() {
       },
     }),
     prisma.user.upsert({
-      where: { email: 'responsable-travaux@test.com' },
-      update: {},
-      create: {
-        nom: 'Responsable Travaux',
-        prenom: 'Test',
-        email: 'responsable-travaux@test.com',
-        phone: '600000004',
-        password: testPasswordHashes.responsable123,
-        role: 'responsable_travaux' as any,
-      },
-    }),
-    prisma.user.upsert({
       where: { email: 'conducteur@test.com' },
       update: {},
       create: {
@@ -146,14 +136,26 @@ async function main() {
       },
     }),
     prisma.user.upsert({
-      where: { email: 'qhse@test.com' },
+      where: { email: 'responsable-travaux@test.com' },
       update: {},
       create: {
-        nom: 'QHSE',
+        nom: 'Responsable Travaux',
         prenom: 'Test',
-        email: 'qhse@test.com',
+        email: 'responsable-travaux@test.com',
+        phone: '600000004',
+        password: testPasswordHashes.responsable123,
+        role: 'responsable_travaux' as any,
+      },
+    }),
+    prisma.user.upsert({
+      where: { email: 'logistique@test.com' },
+      update: {},
+      create: {
+        nom: 'Logistique',
+        prenom: 'Test',
+        email: 'logistique@test.com',
         phone: '600000005',
-        password: testPasswordHashes.qhse123,
+        password: testPasswordHashes.logistique123,
         role: 'responsable_logistique',
       },
     }),
@@ -173,7 +175,7 @@ async function main() {
       where: { email: 'charge@test.com' },
       update: {},
       create: {
-        nom: 'Charge',
+        nom: 'Chargé Affaire',
         prenom: 'Test',
         email: 'charge@test.com',
         phone: '600000007',
@@ -182,15 +184,15 @@ async function main() {
       },
     }),
     prisma.user.upsert({
-      where: { email: 'logistique@test.com' },
+      where: { email: 'livreur@test.com' },
       update: {},
       create: {
-        nom: 'Logistique',
+        nom: 'Livreur',
         prenom: 'Test',
-        email: 'logistique@test.com',
-        phone: '600000008',
-        password: testPasswordHashes.logistique123,
-        role: 'responsable_logistique',
+        email: 'livreur@test.com',
+        phone: '600000009',
+        password: testPasswordHashes.livreur123,
+        role: 'responsable_livreur',
       },
     }),
   ])
@@ -214,9 +216,11 @@ async function main() {
 
   console.log('✅ Projet créé')
 
-  // Assigner tous les utilisateurs (sauf le superadmin créateur) au projet
+  // Assigner UNIQUEMENT les utilisateurs test au projet test (indices 6-13 = utilisateurs @test.com)
+  // Les utilisateurs de production (indices 0-5) ne sont PAS assignés au projet test
+  const testUsers = users.slice(6) // Utilisateurs test uniquement
   await Promise.all(
-    users.slice(1).map((user) =>
+    testUsers.map((user) =>
       prisma.userProjet.upsert({
         where: {
           userId_projetId: {
@@ -233,7 +237,7 @@ async function main() {
     )
   )
 
-  console.log('✅ Utilisateurs assignés au projet')
+  console.log(`✅ ${testUsers.length} utilisateurs test assignés au projet`)
 
   // Créer des articles de test
   const articles = await Promise.all([

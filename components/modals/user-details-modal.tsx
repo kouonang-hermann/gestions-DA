@@ -19,7 +19,37 @@ interface UserDetailsModalProps {
 }
 
 export default function UserDetailsModal({ isOpen, onClose, title, data, type }: UserDetailsModalProps) {
-  const { executeAction, loadDemandes } = useStore()
+  const { executeAction, loadDemandes, projets, users } = useStore()
+  
+  // Fonctions helper pour résoudre les noms à partir des IDs
+  // Utilise les relations embarquées en priorité, puis le store, puis tronque l'ID
+  const getProjetNom = (item: any) => {
+    // 1. Utiliser la relation embarquée si disponible
+    if (item.projet?.nom) return item.projet.nom
+    // 2. Chercher dans le store
+    if (item.projetId) {
+      const projet = projets.find(p => p.id === item.projetId)
+      if (projet?.nom) return projet.nom
+      // 3. Tronquer l'ID
+      return item.projetId.length > 15 ? `${item.projetId.substring(0, 8)}...` : item.projetId
+    }
+    return "Non spécifié"
+  }
+  
+  const getDemandeurNom = (item: any) => {
+    // 1. Utiliser la relation embarquée si disponible
+    if (item.technicien?.prenom && item.technicien?.nom) {
+      return `${item.technicien.prenom} ${item.technicien.nom}`
+    }
+    // 2. Chercher dans le store
+    if (item.technicienId) {
+      const user = users.find(u => u.id === item.technicienId)
+      if (user) return `${user.prenom} ${user.nom}`
+      // 3. Tronquer l'ID
+      return item.technicienId.length > 15 ? `${item.technicienId.substring(0, 8)}...` : item.technicienId
+    }
+    return "Non spécifié"
+  }
   const [clotureLoading, setClotureLoading] = useState<string | null>(null)
   const [commentaires, setCommentaires] = useState<{ [key: string]: string }>({})
   const [showCommentaire, setShowCommentaire] = useState<{ [key: string]: boolean }>({})
@@ -180,12 +210,12 @@ export default function UserDetailsModal({ isOpen, onClose, title, data, type }:
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] overflow-y-auto p-3 sm:p-6">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="text-base sm:text-lg">{title} ({filteredData.length})</DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4">
+        <div className="space-y-5 overflow-y-auto" style={{maxHeight: 'calc(85vh - 120px)'}}>
           {filteredData.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <p>Aucun élément trouvé</p>
@@ -194,26 +224,42 @@ export default function UserDetailsModal({ isOpen, onClose, title, data, type }:
             filteredData.map((item) => (
               <div
                 key={item.id}
-                className="bg-white p-3 sm:p-4 rounded-lg border border-gray-200 hover:shadow-sm transition-shadow"
+                className="bg-white p-4 rounded-lg border-2 border-gray-300 hover:border-blue-400 hover:shadow-lg transition-all"
+                style={{overflow: 'hidden', maxWidth: '100%'}}
               >
-                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 mb-2">
-                      <h3 className="font-medium text-gray-800 text-sm sm:text-base">{item.numero}</h3>
-                      <Badge className={`${getStatusColor(item.status)} text-white text-xs truncate max-w-[120px] sm:max-w-none`}>
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4" style={{maxWidth: '100%'}}>
+                  <div className="flex-1" style={{minWidth: 0, maxWidth: '100%', overflow: 'hidden'}}>
+                    {/* En-tête avec numéro et badges */}
+                    <div className="flex flex-wrap items-center gap-2 mb-3">
+                      <h3 className="font-semibold text-gray-900 text-base">{item.numero}</h3>
+                      <Badge className={`${getStatusColor(item.status)} text-white text-xs`}>
                         {getStatusLabel(item.status)}
                       </Badge>
                       <Badge variant="outline" className="text-xs">
                         {item.type === "materiel" ? "Matériel" : "Outillage"}
                       </Badge>
                     </div>
-                    <p className="text-sm text-gray-600 mb-2">
-                      {item.items?.length || 0} article{(item.items?.length || 0) > 1 ? "s" : ""} • Créée le{" "}
-                      {new Date(item.dateCreation).toLocaleDateString()}
-                    </p>
+                    
+                    {/* Informations principales */}
+                    <table className="text-sm mb-3" style={{width: '100%', tableLayout: 'fixed'}}>
+                      <tbody>
+                        <tr>
+                          <td className="font-medium text-gray-500 pr-3 py-1 whitespace-nowrap align-top" style={{width: '96px'}}>Projet:</td>
+                          <td className="text-gray-900 py-1" style={{wordBreak: 'break-all', overflow: 'hidden'}}>{getProjetNom(item)}</td>
+                        </tr>
+                        <tr>
+                          <td className="font-medium text-gray-500 pr-3 py-1 whitespace-nowrap align-top" style={{width: '96px'}}>Demandeur:</td>
+                          <td className="text-gray-900 py-1" style={{wordBreak: 'break-all', overflow: 'hidden'}}>{getDemandeurNom(item)}</td>
+                        </tr>
+                        <tr>
+                          <td className="font-medium text-gray-500 pr-3 py-1 whitespace-nowrap align-top" style={{width: '96px'}}>Date:</td>
+                          <td className="text-gray-900 py-1">{new Date(item.dateCreation).toLocaleDateString()}</td>
+                        </tr>
+                      </tbody>
+                    </table>
                     {item.commentaires && (
-                      <p className="text-sm text-blue-600 bg-blue-50 p-2 rounded">
-                        <strong>Commentaire:</strong> {item.commentaires}
+                      <p className="text-sm text-blue-600 bg-blue-50 p-2 rounded break-words">
+                        <strong>Commentaires:</strong> {item.commentaires}
                       </p>
                     )}
                     {item.dateLivraisonSouhaitee && (
@@ -222,7 +268,7 @@ export default function UserDetailsModal({ isOpen, onClose, title, data, type }:
                       </p>
                     )}
                     {item.rejetMotif && (
-                      <p className="text-sm text-red-600 bg-red-50 p-2 rounded mt-2">
+                      <p className="text-sm text-red-600 bg-red-50 p-2 rounded mt-2 break-words">
                         <strong>Motif du rejet:</strong> {item.rejetMotif}
                       </p>
                     )}

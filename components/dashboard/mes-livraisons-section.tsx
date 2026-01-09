@@ -245,9 +245,8 @@ export default function MesLivraisonsSection() {
         <DemandeDetailsModal
           isOpen={!!selectedDemandeId}
           onClose={() => setSelectedDemandeId(null)}
-          demande={demandes.find(d => d.id === selectedDemandeId) || null}
-          showDeliveryColumns={true}
-          canEditPrices={false}
+          demandeId={selectedDemandeId}
+          mode="view"
         />
       )}
     </>

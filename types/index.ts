@@ -18,6 +18,8 @@ export type DemandeStatus =
   | "en_attente_validation_responsable_travaux"
   | "en_attente_validation_charge_affaire"
   | "en_attente_preparation_appro"
+  | "en_attente_preparation_logistique"
+  | "en_attente_validation_logistique_finale"
   | "en_attente_reception_livreur"
   | "en_attente_livraison"
   | "en_attente_validation_finale_demandeur"

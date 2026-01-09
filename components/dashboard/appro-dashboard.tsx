@@ -49,8 +49,31 @@ import DemandeDetailModal from "@/components/demandes/demande-detail-modal"
 import { Eye } from 'lucide-react'
 
 export default function ApproDashboard() {
-  const { currentUser, demandes, isLoading } = useStore()
+  const { currentUser, demandes, projets, users, isLoading } = useStore()
   const { handleManualReload } = useAutoReload("APPRO")
+
+  // Fonctions helper pour résoudre les noms
+  const getProjetNom = (demande: any) => {
+    if (demande.projet?.nom) return demande.projet.nom
+    if (demande.projetId) {
+      const projet = projets.find(p => p.id === demande.projetId)
+      if (projet?.nom) return projet.nom
+      return demande.projetId.length > 15 ? `${demande.projetId.substring(0, 8)}...` : demande.projetId
+    }
+    return "Non spécifié"
+  }
+
+  const getDemandeurNom = (demande: any) => {
+    if (demande.technicien?.prenom && demande.technicien?.nom) {
+      return `${demande.technicien.prenom} ${demande.technicien.nom}`
+    }
+    if (demande.technicienId) {
+      const user = users.find(u => u.id === demande.technicienId)
+      if (user) return `${user.prenom} ${user.nom}`
+      return demande.technicienId.length > 15 ? `${demande.technicienId.substring(0, 8)}...` : demande.technicienId
+    }
+    return "Non spécifié"
+  }
 
   const [stats, setStats] = useState({
     total: 0,
@@ -83,8 +106,8 @@ export default function ApproDashboard() {
       // 1. MES DEMANDES CRÉÉES (en tant que demandeur)
       const mesDemandesCreees = demandesFiltered.filter((d) => d.technicienId === currentUser.id)
 
-      // 2. DEMANDES À TRAITER (en tant qu'Appro dans le flow)
-      const demandesATraiter = demandesFiltered.filter((d) => d.status === "en_attente_preparation_appro")
+      // 2. DEMANDES À TRAITER (en tant qu'Appro dans le flow - MATÉRIEL UNIQUEMENT)
+      const demandesATraiter = demandesFiltered.filter((d) => d.type === "materiel" && d.status === "en_attente_preparation_appro")
       
       // 3. DEMANDES PRÉPARÉES (préparées par moi, en attente logistique)
       const demandesPreparees = demandesFiltered.filter((d) => d.status === "en_attente_validation_logistique")
@@ -101,14 +124,6 @@ export default function ApproDashboard() {
         "rejetee", 
         "archivee"
       ].includes(d.status))
-
-      console.log(`🔍 [APPRO-DASHBOARD] Statistiques pour ${currentUser.nom} (${currentUser.role}):`)
-      console.log(`  - Projets utilisateur: [${currentUser.projets?.join(', ') || 'aucun'}]`)
-      console.log(`  - Total demandes émises par moi: ${mesDemandesCreees.length}`)
-      console.log(`  - Demandes à préparer (flow Appro): ${demandesATraiter.length}`)
-      console.log(`  - Mes demandes en cours: ${mesDemandesEnCours.length}`)
-      console.log(`  - Demandes préparées (en attente logistique): ${demandesPreparees.length}`)
-      console.log(`  - Demandes en attente de livraison: ${demandesEnAttenteLivraison.length}`)
 
       setStats({
         total: mesDemandesCreees.length, // MES demandes créées
@@ -142,8 +157,8 @@ export default function ApproDashboard() {
         return demandesFiltered.filter((d) => d.technicienId === currentUser.id)
       
       case "aPreparer":
-        // Demandes à préparer (en tant qu'Appro)
-        return demandesFiltered.filter((d) => d.status === "en_attente_preparation_appro")
+        // Demandes à préparer (en tant qu'Appro - MATÉRIEL UNIQUEMENT)
+        return demandesFiltered.filter((d) => d.type === "materiel" && d.status === "en_attente_preparation_appro")
       
       case "enCours":
         // MES demandes en cours (comme employé)
@@ -465,12 +480,12 @@ export default function ApproDashboard() {
       />
       {/* Modale de détails des demandes */}
       <Dialog open={detailsModalOpen} onOpenChange={setDetailsModalOpen}>
-        <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] overflow-y-auto p-3 sm:p-6">
+        <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="text-lg sm:text-xl">{detailsModalTitle}</DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-3 sm:space-y-4">
+          <div className="space-y-3 sm:space-y-4 overflow-y-auto" style={{maxHeight: 'calc(85vh - 120px)'}}>
             {getDemandesByType(detailsModalType).length === 0 ? (
               <div className="text-center py-6 sm:py-8 text-gray-500">
                 <Package className="mx-auto h-10 w-10 sm:h-12 sm:w-12 mb-3 sm:mb-4 opacity-50" />
@@ -508,14 +523,28 @@ export default function ApproDashboard() {
                           </Badge>
                         </div>
                         
-                        <div className="text-xs sm:text-sm text-gray-600 space-y-1">
-                          <p><strong>Projet:</strong> {demande.projetId}</p>
-                          <p><strong>Demandeur:</strong> {demande.technicienId}</p>
-                          <p><strong>Date:</strong> {new Date(demande.dateCreation).toLocaleDateString('fr-FR')}</p>
-                          {demande.commentaires && (
-                            <p className="truncate"><strong>Commentaires:</strong> {demande.commentaires}</p>
-                          )}
-                        </div>
+                        <table className="text-xs sm:text-sm text-gray-600 w-full">
+                          <tbody>
+                            <tr>
+                              <td className="font-semibold pr-2 py-0.5 whitespace-nowrap align-top w-24">Projet:</td>
+                              <td className="py-0.5 break-all">{getProjetNom(demande)}</td>
+                            </tr>
+                            <tr>
+                              <td className="font-semibold pr-2 py-0.5 whitespace-nowrap align-top w-24">Demandeur:</td>
+                              <td className="py-0.5 break-all">{getDemandeurNom(demande)}</td>
+                            </tr>
+                            <tr>
+                              <td className="font-semibold pr-2 py-0.5 whitespace-nowrap align-top w-24">Date:</td>
+                              <td className="py-0.5">{new Date(demande.dateCreation).toLocaleDateString('fr-FR')}</td>
+                            </tr>
+                            {demande.commentaires && (
+                              <tr>
+                                <td className="font-semibold pr-2 py-0.5 whitespace-nowrap align-top w-24">Commentaires:</td>
+                                <td className="py-0.5 break-all">{demande.commentaires}</td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
                       </div>
                       
                       <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2">

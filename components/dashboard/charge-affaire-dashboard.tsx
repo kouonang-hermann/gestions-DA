@@ -50,8 +50,31 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge"
 
 export default function ChargeAffaireDashboard() {
-  const { currentUser, demandes, projets, isLoading } = useStore()
+  const { currentUser, demandes, projets, users, isLoading } = useStore()
   const { handleManualReload } = useAutoReload("CHARGE-AFFAIRE")
+
+  // Fonctions helper pour résoudre les noms
+  const getProjetNom = (demande: any) => {
+    if (demande.projet?.nom) return demande.projet.nom
+    if (demande.projetId) {
+      const projet = projets.find(p => p.id === demande.projetId)
+      if (projet?.nom) return projet.nom
+      return demande.projetId.length > 15 ? `${demande.projetId.substring(0, 8)}...` : demande.projetId
+    }
+    return "Non spécifié"
+  }
+
+  const getDemandeurNom = (demande: any) => {
+    if (demande.technicien?.prenom && demande.technicien?.nom) {
+      return `${demande.technicien.prenom} ${demande.technicien.nom}`
+    }
+    if (demande.technicienId) {
+      const user = users.find(u => u.id === demande.technicienId)
+      if (user) return `${user.prenom} ${user.nom}`
+      return demande.technicienId.length > 15 ? `${demande.technicienId.substring(0, 8)}...` : demande.technicienId
+    }
+    return "Non spécifié"
+  }
 
   const [stats, setStats] = useState({
     total: 0,
@@ -84,6 +107,23 @@ export default function ChargeAffaireDashboard() {
       // Le chargé d'affaires voit toutes les demandes, pas seulement les siennes
       const mesDemandesCA = demandes
 
+      // HISTORIQUE COMPLET : Inclure toutes les demandes validées, même terminées ou rejetées
+      const demandesValidees = mesDemandesCA.filter((d) => 
+        d.status === "en_attente_preparation_appro" || 
+        d.status === "en_attente_validation_logistique" || 
+        d.status === "en_attente_validation_finale_demandeur" ||
+        d.status === "confirmee_demandeur" ||
+        d.status === "cloturee" ||
+        d.status === "rejetee" // AJOUT : Inclure les demandes rejetées après validation
+      )
+
+      console.log(`📊 [CHARGE-AFFAIRE-DASHBOARD] Statistiques validations pour ${currentUser.nom}:`, {
+        totalValidees: demandesValidees.length,
+        enCours: demandesValidees.filter(d => !["cloturee", "rejetee", "confirmee_demandeur"].includes(d.status)).length,
+        terminees: demandesValidees.filter(d => ["cloturee", "confirmee_demandeur"].includes(d.status)).length,
+        rejetees: demandesValidees.filter(d => d.status === "rejetee").length
+      })
+
       setStats({
         total: mesDemandesCA.length,
         aValider: mesDemandesCA.filter((d) => d.status === "en_attente_validation_charge_affaire").length,
@@ -95,13 +135,7 @@ export default function ChargeAffaireDashboard() {
             "archivee"
           ].includes(d.status)
         ).length,
-        // CORRECTION: Inclure tous les statuts après validation du chargé d'affaires
-        validees: mesDemandesCA.filter((d) => 
-          d.status === "en_attente_preparation_appro" || 
-          d.status === "en_attente_validation_logistique" || 
-          d.status === "en_attente_validation_finale_demandeur" ||
-          d.status === "cloturee"
-        ).length,
+        validees: demandesValidees.length,
         rejetees: mesDemandesCA.filter((d) => d.status === "rejetee").length,
       })
     }
@@ -125,11 +159,14 @@ export default function ChargeAffaireDashboard() {
           "archivee"
         ].includes(d.status))
       case "validees":
+        // HISTORIQUE COMPLET : Toutes les demandes validées par le chargé d'affaire
         return demandes.filter((d) => 
           d.status === "en_attente_preparation_appro" || 
           d.status === "en_attente_validation_logistique" || 
           d.status === "en_attente_validation_finale_demandeur" ||
-          d.status === "cloturee"
+          d.status === "confirmee_demandeur" ||
+          d.status === "cloturee" ||
+          d.status === "rejetee" // Inclure historique complet
         )
       case "rejetees":
         return demandes.filter((d) => d.status === "rejetee")
@@ -754,12 +791,12 @@ export default function ChargeAffaireDashboard() {
       />
       {/* Modale personnalisée pour les détails des demandes */}
       <Dialog open={detailsModalOpen} onOpenChange={setDetailsModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-4xl max-h-[80vh] p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>{detailsModalTitle}</DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-4">
+          <div className="space-y-4 overflow-y-auto" style={{maxHeight: 'calc(80vh - 120px)'}}>
             {getFilteredDemandes(detailsModalType).length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <Package className="mx-auto h-12 w-12 mb-4 opacity-50" />
@@ -795,13 +832,28 @@ export default function ChargeAffaireDashboard() {
                           </Badge>
                         </div>
                         
-                        <div className="text-sm text-gray-600 space-y-1">
-                          <p><strong>Projet:</strong> {demande.projetId}</p>
-                          <p><strong>Date de création:</strong> {new Date(demande.dateCreation).toLocaleDateString('fr-FR')}</p>
-                          {demande.commentaires && (
-                            <p><strong>Commentaires:</strong> {demande.commentaires}</p>
-                          )}
-                        </div>
+                        <table className="text-sm text-gray-600 w-full">
+                          <tbody>
+                            <tr>
+                              <td className="font-semibold pr-2 py-0.5 whitespace-nowrap align-top w-24">Projet:</td>
+                              <td className="py-0.5 break-all">{getProjetNom(demande)}</td>
+                            </tr>
+                            <tr>
+                              <td className="font-semibold pr-2 py-0.5 whitespace-nowrap align-top w-24">Demandeur:</td>
+                              <td className="py-0.5 break-all">{getDemandeurNom(demande)}</td>
+                            </tr>
+                            <tr>
+                              <td className="font-semibold pr-2 py-0.5 whitespace-nowrap align-top w-24">Date:</td>
+                              <td className="py-0.5">{new Date(demande.dateCreation).toLocaleDateString('fr-FR')}</td>
+                            </tr>
+                            {demande.commentaires && (
+                              <tr>
+                                <td className="font-semibold pr-2 py-0.5 whitespace-nowrap align-top w-24">Commentaires:</td>
+                                <td className="py-0.5 break-all">{demande.commentaires}</td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
                       </div>
                       
                       <div className="flex flex-col items-end gap-2">
@@ -814,7 +866,6 @@ export default function ChargeAffaireDashboard() {
                             className="bg-green-500 hover:bg-green-600 text-white"
                             onClick={() => {
                               // Ici on peut ajouter la logique de clôture
-                              console.log('Clôturer la demande:', demande.id)
                             }}
                           >
                             Clôturer

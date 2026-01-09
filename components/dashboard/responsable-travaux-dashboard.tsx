@@ -83,9 +83,25 @@ export default function ResponsableTravauxDashboard() {
         (!currentUser.projets || currentUser.projets.length === 0 || currentUser.projets.includes(d.projetId))
       )
 
-      console.log(`🔍 [RESPONSABLE-TRAVAUX-DASHBOARD] Filtrage pour ${currentUser.role}:`)
-      console.log(`  - Projets utilisateur: [${currentUser.projets?.join(', ') || 'aucun'}]`)
-      console.log(`  - Demandes dans projets: ${demandesAValider.length}/${demandes.length}`)
+      // HISTORIQUE COMPLET : Inclure toutes les demandes validées, même terminées ou rejetées
+      const demandesValidees = demandesAValider.filter((d) => 
+        [
+          "en_attente_validation_charge_affaire", 
+          "en_attente_preparation_appro",
+          "en_attente_validation_logistique",
+          "en_attente_validation_finale_demandeur",
+          "confirmee_demandeur",
+          "cloturee",
+          "rejetee" // AJOUT : Inclure les demandes rejetées après validation
+        ].includes(d.status)
+      )
+
+      console.log(`📊 [RESPONSABLE-TRAVAUX-DASHBOARD] Statistiques validations pour ${currentUser.nom}:`, {
+        totalValidees: demandesValidees.length,
+        enCours: demandesValidees.filter(d => !["cloturee", "rejetee", "confirmee_demandeur"].includes(d.status)).length,
+        terminees: demandesValidees.filter(d => ["cloturee", "confirmee_demandeur"].includes(d.status)).length,
+        rejetees: demandesValidees.filter(d => d.status === "rejetee").length
+      })
 
       setStats({
         total: demandesAValider.length,
@@ -98,19 +114,9 @@ export default function ResponsableTravauxDashboard() {
             "archivee"
           ].includes(d.status)
         ).length,
-        validees: demandesAValider.filter((d) => 
-          [
-            "en_attente_validation_charge_affaire", 
-            "en_attente_preparation_appro",
-            "en_attente_validation_logistique",
-            "en_attente_validation_finale_demandeur",
-            "cloturee"
-          ].includes(d.status)
-        ).length,
+        validees: demandesValidees.length,
         rejetees: demandesAValider.filter((d) => d.status === "rejetee").length,
       })
-
-      console.log(`  - En attente: ${demandesAValider.filter((d) => d.status === "en_attente_validation_responsable_travaux").length}`)
     }
   }, [currentUser?.id, demandes])
 
@@ -139,13 +145,16 @@ export default function ResponsableTravauxDashboard() {
           "brouillon", "cloturee", "rejetee", "archivee"
         ].includes(d.status))
       case "validees":
+        // HISTORIQUE COMPLET : Toutes les demandes validées par le responsable travaux
         return demandesFiltered.filter((d) => 
           [
             "en_attente_validation_charge_affaire", 
             "en_attente_preparation_appro",
             "en_attente_validation_logistique",
             "en_attente_validation_finale_demandeur",
-            "cloturee"
+            "confirmee_demandeur",
+            "cloturee",
+            "rejetee" // Inclure historique complet
           ].includes(d.status)
         )
       case "rejetees":
@@ -481,15 +490,8 @@ export default function ResponsableTravauxDashboard() {
           setDetailsModalOpen(false)
           setSelectedDemande(null)
         }}
-        demande={selectedDemande}
-        onValidate={async (action, quantites) => {
-          // La validation sera gérée par le composant ValidationDemandesList
-          setDetailsModalOpen(false)
-          setSelectedDemande(null)
-          // Données rechargées automatiquement par useDataLoader
-        }}
-        canValidate={selectedDemande?.status === "en_attente_validation_responsable_travaux"}
-        showDeliveryColumns={true}
+        demandeId={selectedDemande?.id || null}
+        mode="view"
       />
       <UniversalClosureModal
         isOpen={universalClosureModalOpen}

@@ -435,6 +435,8 @@ export class NotificationService {
         en_attente_validation_responsable_travaux: "En attente validation responsable travaux",
         en_attente_validation_charge_affaire: "En attente validation chargé d'affaire",
         en_attente_preparation_appro: "En attente préparation appro",
+        en_attente_preparation_logistique: "En attente préparation logistique",
+        en_attente_validation_logistique_finale: "En attente validation logistique finale",
         en_attente_reception_livreur: "En attente réception livreur",
         en_attente_livraison: "En attente livraison",
         en_attente_validation_finale_demandeur: "En attente validation finale",

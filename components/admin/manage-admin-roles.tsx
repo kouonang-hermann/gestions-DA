@@ -49,7 +49,6 @@ export default function ManageAdminRoles() {
       if (response.ok) {
         // Ne pas recharger immédiatement, laisser l'état optimiste
         // La synchronisation se fera au prochain rechargement naturel
-        console.log("Mise à jour réussie")
       } else {
         // En cas d'erreur, restaurer l'état précédent
         setLocalUsers(users)

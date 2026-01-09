@@ -87,14 +87,9 @@ export default function ProjectManagementModal({ isOpen, onClose }: ProjectManag
 
   const handleRemoveUserFromProject = async (userId: string) => {
     if (selectedProject && confirm("Êtes-vous sûr de vouloir supprimer cet utilisateur du projet ?")) {
-      console.log(`🔄 [COMPONENT] Tentative de retrait utilisateur ${userId} du projet ${selectedProject.id}`)
-      
       const success = await removeUserFromProject(userId, selectedProject.id)
       
-      console.log(`📊 [COMPONENT] Résultat du retrait: ${success ? 'Succès' : 'Échec'}`)
-      
       if (success) {
-        console.log(`✅ [COMPONENT] Rechargement des utilisateurs après retrait réussi`)
         // Recharger les données pour refléter les changements
         loadUsers()
       } else {

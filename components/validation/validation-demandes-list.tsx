@@ -64,14 +64,6 @@ export default function ValidationDemandesList({ type, title }: ValidationDemand
                    (!currentUser.projets || currentUser.projets.length === 0 || currentUser.projets.includes(d.projetId))
           )
       
-      console.log(`🔍 [VALIDATION-${type.toUpperCase()}] Filtrage pour ${currentUser.role}:`)
-      console.log(`  - Status recherché: ${statusToFilter}`)
-      console.log(`  - Projets utilisateur: [${currentUser.projets?.join(', ') || 'aucun'}]`)
-      console.log(`  - Demandes trouvées: ${filtered.length}/${demandes.length}`)
-      if (filtered.length > 0) {
-        console.log(`  - IDs demandes: [${filtered.map(d => d.numero).join(', ')}]`)
-      }
-      
       setDemandesAValider(filtered)
     }
   }, [currentUser, demandes, type])
@@ -246,12 +238,8 @@ export default function ValidationDemandesList({ type, title }: ValidationDemand
           setDetailsModalOpen(false)
           setSelectedDemande(null)
         }}
-        demande={selectedDemande}
-        onValidate={handleModalValidation}
-        canValidate={true}
-        onItemRemoved={handleItemRemoved}
-        canRemoveItems={canRemoveItems()}
-        showDeliveryColumns={true}
+        demandeId={selectedDemande?.id || null}
+        mode="view"
       />
     </Card>
   )

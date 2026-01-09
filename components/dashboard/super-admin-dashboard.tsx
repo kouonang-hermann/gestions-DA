@@ -62,6 +62,29 @@ import type { User as UserType } from "@/types"
 export default function SuperAdminDashboard() {
   const { currentUser, users, projets, demandes, isLoading, loadUsers, loadProjets, loadDemandes } = useStore()
 
+  // Fonctions helper pour résoudre les noms
+  const getProjetNom = (demande: any) => {
+    if (demande.projet?.nom) return demande.projet.nom
+    if (demande.projetId) {
+      const projet = projets.find(p => p.id === demande.projetId)
+      if (projet?.nom) return projet.nom
+      return demande.projetId.length > 15 ? `${demande.projetId.substring(0, 8)}...` : demande.projetId
+    }
+    return "Non spécifié"
+  }
+
+  const getDemandeurNom = (demande: any) => {
+    if (demande.technicien?.prenom && demande.technicien?.nom) {
+      return `${demande.technicien.prenom} ${demande.technicien.nom}`
+    }
+    if (demande.technicienId) {
+      const user = users.find(u => u.id === demande.technicienId)
+      if (user) return `${user.prenom} ${user.nom}`
+      return demande.technicienId.length > 15 ? `${demande.technicienId.substring(0, 8)}...` : demande.technicienId
+    }
+    return "Non spécifié"
+  }
+
   // Hook pour détecter mobile
   const [isMobile, setIsMobile] = useState(false)
   const [activeTab, setActiveTab] = useState("accueil")
@@ -125,13 +148,11 @@ export default function SuperAdminDashboard() {
   // Chargement automatique des données au montage du composant
   useEffect(() => {
     const loadAllData = async () => {
-      console.log("🔄 [SUPER-ADMIN] Chargement initial des données...")
       await Promise.all([
         loadUsers(),
         loadProjets(),
         loadDemandes()
       ])
-      console.log("✅ [SUPER-ADMIN] Données chargées avec succès")
     }
     
     if (currentUser) {
@@ -276,8 +297,6 @@ export default function SuperAdminDashboard() {
   const handleCardClick = (type: string, title: string) => {
     if (type === "enCours") {
       setEnCoursModalOpen(true)
-    } else {
-      console.log(`Clic sur carte ${type}: ${title}`)
     }
   }
 
@@ -323,9 +342,7 @@ export default function SuperAdminDashboard() {
   }
 
   const handleRoleChanged = async () => {
-    console.log("🔄 Rechargement des utilisateurs après changement de rôle...")
     await loadUsers()
-    console.log("✅ Utilisateurs rechargés")
     setDetailsModalOpen(false)
     setChangeRoleModalOpen(false)
   }
@@ -436,7 +453,6 @@ export default function SuperAdminDashboard() {
                 className="mobile-action-button mobile-action-danger"
                 onClick={() => {
                   // Action pour DA-Paiement
-                  console.log("DA-Paiement clicked")
                 }}
               >
                 <CreditCard className="mobile-action-icon" />
@@ -1238,14 +1254,14 @@ export default function SuperAdminDashboard() {
 
       {/* Modale Gestion des Rôles Admin */}
       <Dialog open={adminRolesModalOpen} onOpenChange={setAdminRolesModalOpen}>
-        <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto p-3 sm:p-6">
+        <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Settings className="h-5 w-5 text-purple-600" />
               Gestion des Rôles Administrateur
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 overflow-y-auto" style={{maxHeight: 'calc(90vh - 120px)'}}>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
@@ -1331,12 +1347,12 @@ export default function SuperAdminDashboard() {
 
       {/* Modale personnalisée pour les demandes en cours */}
       <Dialog open={enCoursModalOpen} onOpenChange={setEnCoursModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-4xl max-h-[80vh] p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>Mes demandes en cours</DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-4">
+          <div className="space-y-4 overflow-y-auto" style={{maxHeight: 'calc(80vh - 120px)'}}>
             {getMesDemandesEnCours().length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <Package className="mx-auto h-12 w-12 mb-4 opacity-50" />
@@ -1372,13 +1388,28 @@ export default function SuperAdminDashboard() {
                           </Badge>
                         </div>
                         
-                        <div className="text-sm text-gray-600 space-y-1">
-                          <p><strong>Projet:</strong> {demande.projetId}</p>
-                          <p><strong>Date de création:</strong> {new Date(demande.dateCreation).toLocaleDateString('fr-FR')}</p>
-                          {demande.commentaires && (
-                            <p><strong>Commentaires:</strong> {demande.commentaires}</p>
-                          )}
-                        </div>
+                        <table className="text-sm text-gray-600 w-full">
+                          <tbody>
+                            <tr>
+                              <td className="font-semibold pr-2 py-0.5 whitespace-nowrap align-top w-24">Projet:</td>
+                              <td className="py-0.5 break-all">{getProjetNom(demande)}</td>
+                            </tr>
+                            <tr>
+                              <td className="font-semibold pr-2 py-0.5 whitespace-nowrap align-top w-24">Demandeur:</td>
+                              <td className="py-0.5 break-all">{getDemandeurNom(demande)}</td>
+                            </tr>
+                            <tr>
+                              <td className="font-semibold pr-2 py-0.5 whitespace-nowrap align-top w-24">Date:</td>
+                              <td className="py-0.5">{new Date(demande.dateCreation).toLocaleDateString('fr-FR')}</td>
+                            </tr>
+                            {demande.commentaires && (
+                              <tr>
+                                <td className="font-semibold pr-2 py-0.5 whitespace-nowrap align-top w-24">Commentaires:</td>
+                                <td className="py-0.5 break-all">{demande.commentaires}</td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
                       </div>
                       
                       <div className="flex flex-col items-end gap-2">
@@ -1391,7 +1422,6 @@ export default function SuperAdminDashboard() {
                             className="bg-green-500 hover:bg-green-600 text-white"
                             onClick={() => {
                               // Logique de clôture
-                              console.log('Clôturer la demande:', demande.id)
                             }}
                           >
                             Clôturer

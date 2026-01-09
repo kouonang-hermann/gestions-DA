@@ -519,7 +519,7 @@
   }
 }
 
-/* Masquer sur desktop */
+/* Masquer sur desktop - CORRIGÉ pour éviter l'affichage mobile sur PC */
 @media (min-width: 769px) {
   .mobile-dashboard,
   .mobile-bottom-nav {
@@ -531,8 +531,20 @@
   }
 }
 
-/* Masquer desktop sur mobile */
-@media (max-width: 768px) {
+/* NOUVEAU: Forcer desktop sur PC même avec petite résolution */
+@media (pointer: fine) {
+  .mobile-dashboard,
+  .mobile-bottom-nav {
+    display: none !important;
+  }
+  
+  .desktop-dashboard {
+    display: block !important;
+  }
+}
+
+/* Masquer desktop sur mobile - UNIQUEMENT sur vrais mobiles tactiles */
+@media (pointer: coarse) and (max-width: 768px) {
   .desktop-dashboard {
     display: none !important;
   }
@@ -540,8 +552,8 @@
 
 /* RESPONSIVE UNIVERSEL POUR TOUS LES DASHBOARDS */
 
-/* Masquer les interfaces desktop sur mobile pour TOUS les dashboards */
-@media (max-width: 768px) {
+/* Masquer les interfaces desktop sur mobile - UNIQUEMENT sur vrais mobiles */
+@media (pointer: coarse) and (max-width: 768px) {
   /* Masquer tous les contenus desktop */
   .min-h-screen.bg-gray-50:not(.mobile-dashboard),
   .dashboard-fullscreen:not(.mobile-dashboard) {
@@ -559,8 +571,8 @@
   }
 }
 
-/* Interface mobile universelle pour tous les rôles */
-@media (max-width: 768px) {
+/* Interface mobile universelle pour tous les rôles - UNIQUEMENT sur vrais mobiles */
+@media (pointer: coarse) and (max-width: 768px) {
   /* Créer une interface mobile générique pour tous les dashboards */
   .universal-mobile-dashboard {
     display: flex !important;

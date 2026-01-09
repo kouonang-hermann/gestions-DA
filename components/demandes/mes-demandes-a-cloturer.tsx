@@ -230,11 +230,8 @@ export default function MesDemandesACloturer() {
             setDetailsModalOpen(false)
             setSelectedDemandeId(null)
           }}
-          demande={demandesACloturer.find(d => d.id === selectedDemandeId) || null}
-          canValidate={false}
-          canEditPrices={false}
-          canRemoveItems={false}
-          showDeliveryColumns={true}
+          demandeId={selectedDemandeId}
+          mode="view"
         />
       )}
     </>

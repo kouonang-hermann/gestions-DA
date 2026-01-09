@@ -14,38 +14,29 @@ export function useAutoReload(dashboardName: string) {
   useEffect(() => {
     const reloadAllData = async () => {
       if (currentUser && currentUser.id && currentUser.nom) {
-        console.log(`🔄 [${dashboardName}] Rechargement automatique des données pour ${currentUser.nom} (${currentUser.role})`)
-        
         try {
           // Recharger les données essentielles d'abord
-          console.log(`🔄 [${dashboardName}] Chargement des demandes...`)
           await loadDemandes()
           
           // Charger les utilisateurs (ignorer l'erreur si pas autorisé - normal pour les employés)
-          console.log(`🔄 [${dashboardName}] Chargement des utilisateurs...`)
           try {
             await loadUsers()
           } catch (error) {
-            console.warn(`⚠️ [${dashboardName}] Chargement utilisateurs non autorisé (normal pour certains rôles)`)
+            // Ignorer l'erreur - normal pour les employés
           }
           
-          // Attendre un peu plus avant de charger les projets pour s'assurer que l'auth est stable
+          // Attendre un peu plus avant de charger les projets
           await new Promise(resolve => setTimeout(resolve, 200))
           
           // Charger les projets en dernier et ignorer les erreurs d'authentification
-          console.log(`🔄 [${dashboardName}] Chargement des projets...`)
           try {
             await loadProjets()
           } catch (error) {
-            console.warn(`⚠️ [${dashboardName}] Erreur lors du chargement des projets (ignorée)`)
+            // Ignorer l'erreur d'authentification temporaire
           }
-          
-          console.log(`✅ [${dashboardName}] Rechargement terminé`)
         } catch (error) {
           console.error(`❌ [${dashboardName}] Erreur lors du rechargement:`, error)
         }
-      } else {
-        console.log(`⏳ [${dashboardName}] En attente de l'authentification complète...`)
       }
     }
 
@@ -56,8 +47,6 @@ export function useAutoReload(dashboardName: string) {
 
   // Fonction de rechargement manuel
   const handleManualReload = async () => {
-    console.log(`🔄 [${dashboardName}] Rechargement manuel déclenché`)
-    
     try {
       // Recharger les demandes (essentiel)
       await loadDemandes()
@@ -66,17 +55,15 @@ export function useAutoReload(dashboardName: string) {
       try {
         await loadUsers()
       } catch (error) {
-        console.warn(`⚠️ [${dashboardName}] Chargement utilisateurs non autorisé`)
+        // Ignorer l'erreur
       }
       
       // Recharger les projets (ignorer si erreur)
       try {
         await loadProjets()
       } catch (error) {
-        console.warn(`⚠️ [${dashboardName}] Erreur chargement projets`)
+        // Ignorer l'erreur
       }
-      
-      console.log(`✅ [${dashboardName}] Rechargement manuel terminé avec succès`)
     } catch (error) {
       console.error(`❌ [${dashboardName}] Erreur lors du rechargement manuel:`, error)
     }

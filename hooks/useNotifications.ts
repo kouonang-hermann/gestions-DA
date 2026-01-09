@@ -33,7 +33,6 @@ export const useNotifications = (): UseNotificationsReturn => {
   ) => {
     try {
       await notificationService.handleStatusChange(demande, oldStatus, newStatus, users)
-      console.log(`Notifications envoyées pour le changement de statut: ${oldStatus} -> ${newStatus}`)
     } catch (error) {
       console.error('Erreur lors de l\'envoi des notifications:', error)
     }
@@ -47,7 +46,6 @@ export const useNotifications = (): UseNotificationsReturn => {
     try {
       const { emailService } = await import('@/services/emailService')
       await emailService.notifyValidationRequest(validator, demande, requester)
-      console.log(`Notification de validation envoyée à ${validator.email}`)
     } catch (error) {
       console.error('Erreur lors de l\'envoi de la notification de validation:', error)
     }
@@ -60,7 +58,6 @@ export const useNotifications = (): UseNotificationsReturn => {
     try {
       const { emailService } = await import('@/services/emailService')
       await emailService.notifyClosureRequest(requester, demande)
-      console.log(`Notification de clôture envoyée à ${requester.email}`)
     } catch (error) {
       console.error('Erreur lors de l\'envoi de la notification de clôture:', error)
     }
@@ -103,7 +100,6 @@ export const triggerStatusChangeNotifications = async (
 export const sendAutomaticReminders = async (users: User[], demandes: Demande[]) => {
   try {
     await notificationService.sendReminders(users, demandes)
-    console.log('Rappels automatiques envoyés')
   } catch (error) {
     console.error('Erreur lors de l\'envoi des rappels:', error)
   }
@@ -115,6 +111,4 @@ export const sendAutomaticReminders = async (users: User[], demandes: Demande[])
 export const setupNotificationTriggers = (users: User[], demandes: Demande[]) => {
   // Démarrer le planificateur de rappels (toutes les heures)
   notificationService.startReminderScheduler(users, demandes)
-  
-  console.log('Système de notifications configuré et démarré')
 }

@@ -1,0 +1,554 @@
+/* ========================================
+   CORRECTIONS AFFICHAGE ÉCRANS PC
+   Résout les problèmes d'affichage sur desktop
+======================================== */
+
+/* ========================================
+   1. CORRECTION OVERFLOW HORIZONTAL
+======================================== */
+
+/* Empêcher le scroll horizontal sur desktop */
+@media (min-width: 769px) {
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+    position: relative;
+  }
+  
+  #__next,
+  main,
+  [role="main"] {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+  
+  /* Tous les containers principaux */
+  .container,
+  .min-h-screen,
+  section,
+  article {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+}
+
+/* ========================================
+   2. CORRECTION MODALS DESKTOP
+======================================== */
+
+@media (min-width: 769px) {
+  
+  /* Modals - largeurs adaptatives au lieu de fixes */
+  [data-radix-dialog-content] {
+    max-width: min(90vw, 1200px) !important;
+    width: auto !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+  
+  /* Petits modals */
+  [data-radix-dialog-content].max-w-sm,
+  [data-radix-dialog-content].max-w-md {
+    max-width: min(90vw, 500px) !important;
+  }
+  
+  /* Modals moyens */
+  [data-radix-dialog-content].max-w-lg,
+  [data-radix-dialog-content].max-w-xl {
+    max-width: min(90vw, 800px) !important;
+  }
+  
+  /* Grands modals */
+  [data-radix-dialog-content].max-w-2xl,
+  [data-radix-dialog-content].max-w-3xl {
+    max-width: min(90vw, 1000px) !important;
+  }
+  
+  /* Très grands modals */
+  [data-radix-dialog-content].max-w-4xl,
+  [data-radix-dialog-content].max-w-5xl,
+  [data-radix-dialog-content].max-w-6xl {
+    max-width: min(95vw, 1400px) !important;
+  }
+  
+  /* Contenu des modals */
+  [data-radix-dialog-content] > * {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+}
+
+/* ========================================
+   3. CORRECTION TABLES DESKTOP
+======================================== */
+
+@media (min-width: 769px) {
+  
+  /* Tables responsives sur desktop */
+  .overflow-x-auto,
+  .table-responsive {
+    overflow-x: auto;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Tables dans les modals */
+  [data-radix-dialog-content] table {
+    max-width: 100%;
+    table-layout: auto;
+  }
+  
+  /* Cellules de table */
+  th, td {
+    white-space: normal;
+    word-wrap: break-word;
+    max-width: 300px;
+  }
+  
+  /* Première colonne sticky optionnelle */
+  .sticky-first-col th:first-child,
+  .sticky-first-col td:first-child {
+    position: sticky;
+    left: 0;
+    background-color: white;
+    z-index: 10;
+  }
+}
+
+/* ========================================
+   4. CORRECTION GRIDS DESKTOP
+======================================== */
+
+@media (min-width: 769px) {
+  
+  /* Grids - s'assurer qu'elles ne débordent pas */
+  .grid {
+    max-width: 100%;
+    overflow: visible;
+  }
+  
+  /* Grids dans les containers */
+  .container .grid,
+  .min-h-screen .grid {
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  /* Gap raisonnable sur desktop */
+  .grid {
+    gap: clamp(1rem, 2vw, 2rem);
+  }
+}
+
+/* ========================================
+   5. CORRECTION IMAGES ET MEDIA
+======================================== */
+
+@media (min-width: 769px) {
+  
+  /* Images responsives */
+  img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
+  
+  /* Vidéos et iframes */
+  video,
+  iframe,
+  embed,
+  object {
+    max-width: 100%;
+    height: auto;
+  }
+  
+  /* SVG */
+  svg {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* ========================================
+   6. CORRECTION FLEX CONTAINERS
+======================================== */
+
+@media (min-width: 769px) {
+  
+  /* Flex containers - éviter les débordements */
+  .flex {
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+  
+  /* Flex items */
+  .flex > * {
+    min-width: 0;
+    flex-shrink: 1;
+  }
+  
+  /* Flex avec gap */
+  .flex.gap-2,
+  .flex.gap-4,
+  .flex.gap-6 {
+    flex-wrap: wrap;
+  }
+}
+
+/* ========================================
+   7. CORRECTION CARDS DESKTOP
+======================================== */
+
+@media (min-width: 769px) {
+  
+  /* Cards - largeur maximale */
+  .card,
+  [class*="Card"] {
+    max-width: 100%;
+    overflow: hidden;
+  }
+  
+  /* Card content */
+  .card-content,
+  [class*="CardContent"] {
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+  
+  /* Card avec scroll interne si nécessaire */
+  .card-scrollable {
+    overflow-y: auto;
+    max-height: 600px;
+  }
+}
+
+/* ========================================
+   8. CORRECTION DASHBOARDS DESKTOP
+======================================== */
+
+@media (min-width: 769px) {
+  
+  /* Container principal dashboard */
+  .min-h-screen {
+    padding: 1.5rem;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+  
+  /* Grilles dashboard - responsive */
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    max-width: 100%;
+  }
+  
+  /* Stats cards */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+}
+
+/* ========================================
+   9. CORRECTION FORMULAIRES DESKTOP
+======================================== */
+
+@media (min-width: 769px) {
+  
+  /* Inputs - largeur maximale */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  textarea,
+  select {
+    max-width: 100%;
+    width: 100%;
+  }
+  
+  /* Form groups */
+  .form-group,
+  .space-y-4,
+  .space-y-6 {
+    max-width: 100%;
+  }
+  
+  /* Labels */
+  label {
+    max-width: 100%;
+    word-wrap: break-word;
+  }
+}
+
+/* ========================================
+   10. CORRECTION SCROLL BARS DESKTOP
+======================================== */
+
+@media (min-width: 769px) {
+  
+  /* Scrollbar personnalisée - plus visible sur desktop */
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 6px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 6px;
+    border: 2px solid #f1f1f1;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+  
+  /* Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #888 #f1f1f1;
+  }
+}
+
+/* ========================================
+   11. CORRECTION Z-INDEX DESKTOP
+======================================== */
+
+@media (min-width: 769px) {
+  
+  /* Hiérarchie z-index correcte */
+  .fixed {
+    z-index: 1000;
+  }
+  
+  [data-radix-dialog-overlay] {
+    z-index: 9998;
+  }
+  
+  [data-radix-dialog-content] {
+    z-index: 9999;
+  }
+  
+  [data-radix-dropdown-content],
+  [data-radix-popover-content] {
+    z-index: 10000;
+  }
+  
+  [data-radix-tooltip-content] {
+    z-index: 10001;
+  }
+}
+
+/* ========================================
+   12. CORRECTION RESPONSIVE BREAKPOINTS
+======================================== */
+
+/* Écrans moyens (tablettes en paysage, petits laptops) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  
+  .min-h-screen {
+    padding: 1rem;
+  }
+  
+  [data-radix-dialog-content] {
+    max-width: 85vw !important;
+    padding: 1.5rem !important;
+  }
+  
+  .grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  }
+}
+
+/* Écrans larges (laptops standards) */
+@media (min-width: 1025px) and (max-width: 1440px) {
+  
+  .min-h-screen {
+    padding: 2rem;
+  }
+  
+  [data-radix-dialog-content] {
+    max-width: 80vw !important;
+  }
+  
+  .container {
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+}
+
+/* Très grands écrans (desktop HD et plus) */
+@media (min-width: 1441px) {
+  
+  .min-h-screen {
+    padding: 2.5rem;
+  }
+  
+  [data-radix-dialog-content] {
+    max-width: 75vw !important;
+  }
+  
+  .container {
+    max-width: 1536px;
+    margin: 0 auto;
+  }
+}
+
+/* ========================================
+   13. CORRECTION TEXTE DESKTOP
+======================================== */
+
+@media (min-width: 769px) {
+  
+  /* Taille de texte confortable sur desktop */
+  body {
+    font-size: 16px;
+    line-height: 1.6;
+  }
+  
+  h1 {
+    font-size: clamp(1.75rem, 3vw, 2.5rem);
+    line-height: 1.2;
+  }
+  
+  h2 {
+    font-size: clamp(1.5rem, 2.5vw, 2rem);
+    line-height: 1.3;
+  }
+  
+  h3 {
+    font-size: clamp(1.25rem, 2vw, 1.75rem);
+    line-height: 1.4;
+  }
+  
+  /* Texte long - largeur maximale pour lisibilité */
+  .prose,
+  .text-content {
+    max-width: 65ch;
+  }
+}
+
+/* ========================================
+   14. CORRECTION PERFORMANCE DESKTOP
+======================================== */
+
+@media (min-width: 769px) {
+  
+  /* Utiliser GPU pour animations fluides */
+  .animate-spin,
+  .animate-pulse,
+  [class*="animate-"] {
+    will-change: transform;
+    transform: translateZ(0);
+  }
+  
+  /* Optimiser le rendu */
+  img,
+  video {
+    image-rendering: -webkit-optimize-contrast;
+  }
+  
+  /* Smooth scroll */
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* ========================================
+   15. CORRECTION ACCESSIBILITÉ DESKTOP
+======================================== */
+
+@media (min-width: 769px) {
+  
+  /* Focus visible pour navigation clavier */
+  *:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+  
+  /* Zones cliquables confortables */
+  button,
+  a,
+  [role="button"] {
+    min-height: 36px;
+    min-width: 36px;
+  }
+  
+  /* Contraste amélioré */
+  .text-gray-400 {
+    color: #6b7280;
+  }
+  
+  .text-gray-500 {
+    color: #4b5563;
+  }
+}
+
+/* ========================================
+   16. CORRECTIONS SPÉCIFIQUES COMPOSANTS
+======================================== */
+
+@media (min-width: 769px) {
+  
+  /* Dropdown menus */
+  [data-radix-dropdown-content] {
+    max-width: 400px;
+    max-height: 500px;
+    overflow-y: auto;
+  }
+  
+  /* Popovers */
+  [data-radix-popover-content] {
+    max-width: 500px;
+    max-height: 600px;
+    overflow-y: auto;
+  }
+  
+  /* Tooltips */
+  [data-radix-tooltip-content] {
+    max-width: 300px;
+    word-wrap: break-word;
+  }
+  
+  /* Select menus */
+  [data-radix-select-content] {
+    max-height: 400px;
+    overflow-y: auto;
+  }
+}
+
+/* ========================================
+   17. CORRECTION PRINT STYLES
+======================================== */
+
+@media print {
+  
+  /* Optimiser pour impression */
+  html, body {
+    overflow: visible !important;
+  }
+  
+  [data-radix-dialog-overlay] {
+    display: none !important;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+  
+  /* Éviter les coupures de page */
+  .card,
+  table,
+  .grid > * {
+    page-break-inside: avoid;
+  }
+}

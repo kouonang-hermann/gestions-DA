@@ -4,28 +4,24 @@ import { useEffect, useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Download, Loader2 } from "lucide-react"
 import type { Demande } from "@/types"
 import { useStore } from "@/stores/useStore"
-import { generatePurchaseRequestPDF } from "@/lib/pdf-generator"
 
-interface DemandeDetailModalProps {
+interface DemandeDetailsModalProps {
   isOpen: boolean
   onClose: () => void
   demandeId: string | null
-  mode: "view" | "edit"
-  showDeliveryColumns?: boolean
+  mode: "view"
 }
 
-export default function DemandeDetailModal({ 
+export default function DemandeDetailsModal({ 
   isOpen, 
   onClose, 
   demandeId,
   mode
-}: DemandeDetailModalProps) {
+}: DemandeDetailsModalProps) {
   const { demandes } = useStore()
   const [demande, setDemande] = useState<Demande | null>(null)
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
 
   useEffect(() => {
     if (demandeId && demandes.length > 0) {
@@ -91,23 +87,6 @@ export default function DemandeDetailModal({
 
   const allComments = getAllComments()
 
-  // Fonction pour télécharger le PDF
-  const handleDownloadPDF = async () => {
-    setIsGeneratingPDF(true)
-    try {
-      await generatePurchaseRequestPDF(demande)
-    } catch (error) {
-      console.error('Erreur lors de la génération du PDF:', error)
-      alert('Erreur lors de la génération du PDF. Veuillez réessayer.')
-    } finally {
-      setIsGeneratingPDF(false)
-    }
-  }
-
-  // Vérifier si la demande est validée (peut être téléchargée)
-  // Toutes les demandes peuvent être téléchargées sauf les brouillons
-  const canDownload = demande && demande.status !== "brouillon"
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-[95vw] max-w-6xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
@@ -118,7 +97,7 @@ export default function DemandeDetailModal({
           </DialogTitle>
         </DialogHeader>
 
-        <div id="demande-details-content" className="space-y-4 mt-4">
+        <div className="space-y-4 mt-4">
           {/* Section informations générales */}
           <div className="bg-gray-50 p-4 rounded border border-gray-300">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
@@ -240,27 +219,8 @@ export default function DemandeDetailModal({
             </div>
           </div>
 
-          {/* Boutons d'action */}
-          <div className="flex justify-center gap-3 pt-4">
-            {canDownload && (
-              <Button 
-                onClick={handleDownloadPDF}
-                disabled={isGeneratingPDF}
-                className="px-6 py-2 bg-[#015fc4] hover:bg-[#014a9a] text-white rounded flex items-center gap-2"
-              >
-                {isGeneratingPDF ? (
-                  <>
-                    <Loader2 className="animate-spin" size={16} />
-                    Génération...
-                  </>
-                ) : (
-                  <>
-                    <Download size={16} />
-                    Télécharger PDF
-                  </>
-                )}
-              </Button>
-            )}
+          {/* Bouton Fermer */}
+          <div className="flex justify-center pt-4">
             <Button 
               onClick={onClose}
               className="px-8 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded"

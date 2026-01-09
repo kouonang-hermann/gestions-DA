@@ -42,29 +42,55 @@ import CreateDemandeModal from "@/components/demandes/create-demande-modal"
 import { UserRequestsChart } from "@/components/charts/user-requests-chart"
 import UserDetailsModal from "@/components/modals/user-details-modal"
 import ValidationLogistiqueList from "@/components/logistique/validation-logistique-list"
+import PreparationOutillageList from "@/components/logistique/preparation-outillage-list"
+import PreparationLogistiqueList from "@/components/logistique/preparation-logistique-list"
 import MesDemandesACloturer from "@/components/demandes/mes-demandes-a-cloturer"
 import UniversalClosureModal from "@/components/modals/universal-closure-modal"
 import { useAutoReload } from "@/hooks/useAutoReload"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import DemandeDetailModal from "@/components/demandes/demande-detail-modal"
+import DemandeDetailsModal from "@/components/modals/demande-details-modal"
 import MesLivraisonsSection from "@/components/dashboard/mes-livraisons-section"
 
 export default function ResponsableLogistiqueDashboard() {
-  const { currentUser, demandes, projets, isLoading } = useStore()
+  const { currentUser, demandes, projets, users, isLoading } = useStore()
   const { handleManualReload } = useAutoReload("RESPONSABLE-LOGISTIQUE")
+
+  // Fonctions helper pour résoudre les noms
+  const getProjetNom = (demande: any) => {
+    if (demande.projet?.nom) return demande.projet.nom
+    if (demande.projetId) {
+      const projet = projets.find(p => p.id === demande.projetId)
+      if (projet?.nom) return projet.nom
+      return demande.projetId.length > 15 ? `${demande.projetId.substring(0, 8)}...` : demande.projetId
+    }
+    return "Non spécifié"
+  }
+
+  const getDemandeurNom = (demande: any) => {
+    if (demande.technicien?.prenom && demande.technicien?.nom) {
+      return `${demande.technicien.prenom} ${demande.technicien.nom}`
+    }
+    if (demande.technicienId) {
+      const user = users.find(u => u.id === demande.technicienId)
+      if (user) return `${user.prenom} ${user.nom}`
+      return demande.technicienId.length > 15 ? `${demande.technicienId.substring(0, 8)}...` : demande.technicienId
+    }
+    return "Non spécifié"
+  }
 
   const [stats, setStats] = useState({
     total: 0,
     aValider: 0,
-    enCours: 0,
+    aPreparer: 0,
+    enCoursLivraison: 0,
     validees: 0,
-    livrees: 0,
+    mesDemandesEnCours: 0,
   })
 
   const [createDemandeModalOpen, setCreateDemandeModalOpen] = useState(false)
   const [demandeType, setDemandeType] = useState<"materiel" | "outillage">("materiel")
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
-  const [detailsModalType, setDetailsModalType] = useState<"total" | "aValider" | "enCours" | "validees" | "livrees">("total")
+  const [detailsModalType, setDetailsModalType] = useState<"total" | "aValider" | "aPreparer" | "enCoursLivraison" | "validees" | "mesDemandesEnCours">("total")
   const [detailsModalTitle, setDetailsModalTitle] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
   const [activeChart, setActiveChart] = useState<"material" | "tooling">("material")
@@ -87,18 +113,58 @@ export default function ResponsableLogistiqueDashboard() {
       // 1. MES DEMANDES CRÉÉES (en tant que demandeur)
       const mesDemandesCreees = mesDemandesLogistique.filter((d) => d.technicienId === currentUser.id)
 
-      // 2. DEMANDES À VALIDER (en tant que Logistique dans le flow)
-      const demandesAValider = mesDemandesLogistique.filter((d) => d.status === "en_attente_validation_logistique")
+      // 2. DEMANDES À VALIDER (1ère validation logistique - outillage)
+      const demandesAValider = mesDemandesLogistique.filter((d) => 
+        d.type === "outillage" && d.status === "en_attente_validation_logistique"
+      )
       
-      // 3. DEMANDES EN COURS (validées par logistique, en attente demandeur)
-      const demandesEnCours = mesDemandesLogistique.filter((d) => d.status === "en_attente_validation_finale_demandeur")
+      // 3. DEMANDES À PRÉPARER (préparation logistique - outillage après validation chargé affaire)
+      const demandesAPreparer = mesDemandesLogistique.filter((d) => 
+        d.type === "outillage" && d.status === "en_attente_preparation_logistique"
+      )
       
-      // 4. DEMANDES VALIDÉES (confirmées ou clôturées)
+      // 4. DEMANDES EN COURS DE LIVRAISON (réception + livraison)
+      const demandesEnCoursLivraison = mesDemandesLogistique.filter((d) => 
+        d.type === "outillage" && (
+          d.status === "en_attente_reception_livreur" || 
+          d.status === "en_attente_livraison"
+        )
+      )
+      
+      // 5. DEMANDES VALIDÉES (toutes les demandes outillage validées par le responsable logistique)
+      // Inclut : validation initiale + préparation + livraison + terminées
       const demandesValidees = mesDemandesLogistique.filter((d) => 
-        d.status === "confirmee_demandeur" || d.status === "cloturee"
+        d.type === "outillage" && (
+          d.status === "en_attente_preparation_logistique" ||
+          d.status === "en_attente_reception_livreur" ||
+          d.status === "en_attente_livraison" ||
+          d.status === "en_attente_validation_finale_demandeur" ||
+          d.status === "confirmee_demandeur" || 
+          d.status === "cloturee"
+        )
       )
 
-      // 5. MES DEMANDES EN COURS (comme employé)
+      console.log(`📊 [RESPONSABLE-LOGISTIQUE-DASHBOARD] Statistiques pour ${currentUser.nom}:`, {
+        totalDemandes: mesDemandesLogistique.length,
+        mesDemandesCreees: mesDemandesCreees.length,
+        aValider: demandesAValider.length,
+        aPreparer: demandesAPreparer.length,
+        enCoursLivraison: demandesEnCoursLivraison.length,
+        validees: demandesValidees.length
+      })
+      
+      console.log(`🔍 [DEBUG] Mes demandes créées:`, {
+        total: mesDemandesCreees.length,
+        demandes: mesDemandesCreees.map(d => ({
+          numero: d.numero,
+          type: d.type,
+          status: d.status,
+          technicienId: d.technicienId,
+          currentUserId: currentUser.id
+        }))
+      })
+
+      // 6. MES DEMANDES EN COURS (comme employé)
       const mesDemandesEnCoursEmploye = mesDemandesCreees.filter((d) => ![
         "brouillon", 
         "cloturee", 
@@ -106,32 +172,25 @@ export default function ResponsableLogistiqueDashboard() {
         "archivee"
       ].includes(d.status))
 
-      console.log(`🔍 [LOGISTIQUE-DASHBOARD] Statistiques pour ${currentUser.nom} (${currentUser.role}):`)
-      console.log(`  - Projets utilisateur: [${currentUser.projets?.join(', ') || 'aucun'}]`)
-      console.log(`  - Total demandes émises par moi: ${mesDemandesCreees.length}`)
-      console.log(`  - Demandes à valider (flow Logistique): ${demandesAValider.length}`)
-      console.log(`  - Demandes en cours (en attente demandeur): ${demandesEnCours.length}`)
-      console.log(`  - Demandes validées (terminées): ${demandesValidees.length}`)
-      console.log(`  - Mes demandes en cours: ${mesDemandesEnCoursEmploye.length}`)
-
       setStats({
         total: mesDemandesCreees.length, // MES demandes créées
-        aValider: demandesAValider.length, // Demandes que JE dois valider
-        enCours: demandesEnCours.length, // En attente validation finale demandeur
-        validees: demandesValidees.length, // Confirmées ou clôturées
-        livrees: mesDemandesEnCoursEmploye.length, // MES demandes en cours (comme employé)
+        aValider: demandesAValider.length, // Demandes outillage à valider (1ère validation)
+        aPreparer: demandesAPreparer.length, // Demandes outillage à préparer
+        enCoursLivraison: demandesEnCoursLivraison.length, // En cours de livraison
+        validees: demandesValidees.length, // Terminées
+        mesDemandesEnCours: mesDemandesEnCoursEmploye.length, // MES demandes en cours (comme employé)
       })
     }
   }, [demandes, currentUser])
 
-  const handleCardClick = (type: "total" | "aValider" | "enCours" | "validees" | "livrees", title: string) => {
+  const handleCardClick = (type: "total" | "aValider" | "aPreparer" | "enCoursLivraison" | "validees" | "mesDemandesEnCours", title: string) => {
     setDetailsModalType(type)
     setDetailsModalTitle(title)
     setDetailsModalOpen(true)
   }
 
   // Fonction pour obtenir les demandes selon le type de carte
-  const getDemandesByType = (type: "total" | "aValider" | "enCours" | "validees" | "livrees") => {
+  const getDemandesByType = (type: "total" | "aValider" | "aPreparer" | "enCoursLivraison" | "validees" | "mesDemandesEnCours") => {
     if (!currentUser) return []
 
     const demandesFiltered = demandes.filter((d) => 
@@ -141,23 +200,53 @@ export default function ResponsableLogistiqueDashboard() {
     switch (type) {
       case "total":
         // MES demandes créées (en tant que demandeur)
-        return demandesFiltered.filter((d) => d.technicienId === currentUser.id)
+        const mesDemandesTotal = demandesFiltered.filter((d) => d.technicienId === currentUser.id)
+        console.log(`🔍 [MODAL-TOTAL] Demandes affichées dans la modale:`, {
+          total: mesDemandesTotal.length,
+          demandes: mesDemandesTotal.map(d => ({
+            numero: d.numero,
+            type: d.type,
+            status: d.status
+          }))
+        })
+        return mesDemandesTotal
       
       case "aValider":
-        // Demandes à valider (en tant que Logistique)
-        return demandesFiltered.filter((d) => d.status === "en_attente_validation_logistique")
-      
-      case "enCours":
-        // Demandes en cours (en attente validation finale demandeur)
-        return demandesFiltered.filter((d) => d.status === "en_attente_validation_finale_demandeur")
-      
-      case "validees":
-        // Demandes validées (confirmées ou clôturées)
+        // Demandes à valider (1ère validation logistique - outillage)
         return demandesFiltered.filter((d) => 
-          d.status === "confirmee_demandeur" || d.status === "cloturee"
+          d.type === "outillage" && d.status === "en_attente_validation_logistique"
         )
       
-      case "livrees":
+      case "aPreparer":
+        // Demandes à préparer (préparation logistique - outillage)
+        return demandesFiltered.filter((d) => 
+          d.type === "outillage" && d.status === "en_attente_preparation_logistique"
+        )
+      
+      case "enCoursLivraison":
+        // Demandes en cours de livraison (réception + livraison)
+        return demandesFiltered.filter((d) => 
+          d.type === "outillage" && (
+            d.status === "en_attente_reception_livreur" || 
+            d.status === "en_attente_livraison"
+          )
+        )
+      
+      case "validees":
+        // Demandes outillage validées par le responsable logistique
+        // Inclut : validation initiale + préparation + livraison + terminées
+        return demandesFiltered.filter((d) => 
+          d.type === "outillage" && (
+            d.status === "en_attente_preparation_logistique" ||
+            d.status === "en_attente_reception_livreur" ||
+            d.status === "en_attente_livraison" ||
+            d.status === "en_attente_validation_finale_demandeur" ||
+            d.status === "confirmee_demandeur" || 
+            d.status === "cloturee"
+          )
+        )
+      
+      case "mesDemandesEnCours":
         // MES demandes en cours (comme employé)
         return demandesFiltered.filter((d) => 
           d.technicienId === currentUser.id && ![
@@ -183,6 +272,10 @@ export default function ResponsableLogistiqueDashboard() {
         return <Badge className="bg-yellow-100 text-yellow-800">En attente conducteur</Badge>
       case "en_attente_validation_logistique":
         return <Badge className="bg-yellow-100 text-yellow-800">En attente Logistique</Badge>
+      case "en_attente_preparation_logistique":
+        return <Badge className="bg-purple-100 text-purple-800">À préparer (Logistique)</Badge>
+      case "en_attente_validation_logistique_finale":
+        return <Badge className="bg-orange-100 text-orange-800">Validation finale logistique</Badge>
       case "en_attente_preparation_appro":
         return <Badge className="bg-yellow-100 text-yellow-800">En attente préparation appro</Badge>
       case "en_attente_validation_charge_affaire":
@@ -284,8 +377,8 @@ export default function ResponsableLogistiqueDashboard() {
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-3 sm:gap-4">
           {/* Colonne de gauche (large) - 3/4 de la largeur */}
           <div className="xl:col-span-3 space-y-3 sm:space-y-4 order-2 xl:order-1">
-            {/* Vue d'ensemble - Cards statistiques (5 cartes sur 1 ligne) */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
+            {/* Vue d'ensemble - Cards statistiques (6 cartes sur 1 ligne) */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 md:gap-4">
               <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#015fc4' }} onClick={() => handleCardClick("total", "Mes demandes émises")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Total demandes</CardTitle>
@@ -304,18 +397,29 @@ export default function ResponsableLogistiqueDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold" style={{ color: '#f97316' }}>{stats.aValider}</div>
-                  <p className="text-xs text-muted-foreground">À valider par moi</p>
+                  <p className="text-xs text-muted-foreground">1ère validation</p>
                 </CardContent>
               </Card>
 
-              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#3b82f6' }} onClick={() => handleCardClick("enCours", "Demandes en cours")}>
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#ea580c' }} onClick={() => handleCardClick("aPreparer", "Demandes à préparer")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">En cours</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">À préparer</CardTitle>
+                  <Wrench className="h-4 w-4" style={{ color: '#ea580c' }} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" style={{ color: '#ea580c' }}>{stats.aPreparer}</div>
+                  <p className="text-xs text-muted-foreground">Validation finale</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#3b82f6' }} onClick={() => handleCardClick("enCoursLivraison", "En cours de livraison")}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">En livraison</CardTitle>
                   <Truck className="h-4 w-4" style={{ color: '#3b82f6' }} />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold" style={{ color: '#3b82f6' }}>{stats.enCours}</div>
-                  <p className="text-xs text-muted-foreground">En attente demandeur</p>
+                  <div className="text-2xl font-bold" style={{ color: '#3b82f6' }}>{stats.enCoursLivraison}</div>
+                  <p className="text-xs text-muted-foreground">En cours de livraison</p>
                 </CardContent>
               </Card>
 
@@ -326,17 +430,17 @@ export default function ResponsableLogistiqueDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold" style={{ color: '#8b5cf6' }}>{stats.validees}</div>
-                  <p className="text-xs text-muted-foreground">Terminées</p>
+                  <p className="text-xs text-muted-foreground">Validées par moi</p>
                 </CardContent>
               </Card>
 
-              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#22c55e' }} onClick={() => handleCardClick("livrees", "Mes demandes en cours")}>
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#22c55e' }} onClick={() => handleCardClick("mesDemandesEnCours", "Mes demandes en cours")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Mes demandes</CardTitle>
                   <FileText className="h-4 w-4" style={{ color: '#22c55e' }} />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold" style={{ color: '#22c55e' }}>{stats.livrees}</div>
+                  <div className="text-2xl font-bold" style={{ color: '#22c55e' }}>{stats.mesDemandesEnCours}</div>
                   <p className="text-xs text-muted-foreground">En cours</p>
                 </CardContent>
               </Card>
@@ -344,6 +448,9 @@ export default function ResponsableLogistiqueDashboard() {
 
             {/* Liste des demandes à valider */}
             <ValidationLogistiqueList />
+            
+            {/* Liste des demandes d'outillage à préparer */}
+            <PreparationLogistiqueList />
             
             {/* Section des livraisons assignées */}
             <MesLivraisonsSection />
@@ -503,12 +610,12 @@ export default function ResponsableLogistiqueDashboard() {
       />
       {/* Modale de détails des demandes */}
       <Dialog open={detailsModalOpen} onOpenChange={setDetailsModalOpen}>
-        <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] overflow-y-auto p-3 sm:p-6">
+        <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="text-lg sm:text-xl">{detailsModalTitle}</DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-3 sm:space-y-4">
+          <div className="space-y-3 sm:space-y-4 overflow-y-auto" style={{maxHeight: 'calc(85vh - 120px)'}}>
             {getDemandesByType(detailsModalType).length === 0 ? (
               <div className="text-center py-6 sm:py-8 text-gray-500">
                 <Package className="mx-auto h-10 w-10 sm:h-12 sm:w-12 mb-3 sm:mb-4 opacity-50" />
@@ -536,6 +643,8 @@ export default function ResponsableLogistiqueDashboard() {
                               demande.status === "en_attente_validation_logistique" ? "bg-orange-100 text-orange-800" :
                               demande.status === "en_attente_validation_finale_demandeur" ? "bg-blue-100 text-blue-800" :
                               demande.status === "confirmee_demandeur" || demande.status === "cloturee" ? "bg-green-100 text-green-800" :
+                              demande.status === "en_attente_reception_livreur" || demande.status === "en_attente_livraison" ? "bg-blue-100 text-blue-800" :
+                              demande.status === "rejetee" ? "bg-red-100 text-red-800" :
                               "bg-gray-100 text-gray-800"
                             }`}
                           >
@@ -543,18 +652,35 @@ export default function ResponsableLogistiqueDashboard() {
                              demande.status === "en_attente_validation_finale_demandeur" ? "En attente demandeur" :
                              demande.status === "confirmee_demandeur" ? "Confirmée" :
                              demande.status === "cloturee" ? "Clôturée" :
+                             demande.status === "en_attente_reception_livreur" ? "En attente réception" :
+                             demande.status === "en_attente_livraison" ? "En livraison" :
+                             demande.status === "rejetee" ? "Rejetée" :
                              demande.status}
                           </Badge>
                         </div>
                         
-                        <div className="text-xs sm:text-sm text-gray-600 space-y-1">
-                          <p><strong>Projet:</strong> {demande.projetId}</p>
-                          <p><strong>Demandeur:</strong> {demande.technicienId}</p>
-                          <p><strong>Date:</strong> {new Date(demande.dateCreation).toLocaleDateString('fr-FR')}</p>
-                          {demande.commentaires && (
-                            <p className="truncate"><strong>Commentaires:</strong> {demande.commentaires}</p>
-                          )}
-                        </div>
+                        <table className="text-xs sm:text-sm text-gray-600 w-full">
+                          <tbody>
+                            <tr>
+                              <td className="font-semibold pr-2 py-0.5 whitespace-nowrap align-top w-24">Projet:</td>
+                              <td className="py-0.5 break-all">{getProjetNom(demande)}</td>
+                            </tr>
+                            <tr>
+                              <td className="font-semibold pr-2 py-0.5 whitespace-nowrap align-top w-24">Demandeur:</td>
+                              <td className="py-0.5 break-all">{getDemandeurNom(demande)}</td>
+                            </tr>
+                            <tr>
+                              <td className="font-semibold pr-2 py-0.5 whitespace-nowrap align-top w-24">Date:</td>
+                              <td className="py-0.5">{new Date(demande.dateCreation).toLocaleDateString('fr-FR')}</td>
+                            </tr>
+                            {demande.commentaires && (
+                              <tr>
+                                <td className="font-semibold pr-2 py-0.5 whitespace-nowrap align-top w-24">Commentaires:</td>
+                                <td className="py-0.5 break-all">{demande.commentaires}</td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
                       </div>
                       
                       <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2">
@@ -589,7 +715,7 @@ export default function ResponsableLogistiqueDashboard() {
         isOpen={universalClosureModalOpen}
         onClose={() => setUniversalClosureModalOpen(false)}
       />
-      <DemandeDetailModal
+      <DemandeDetailsModal
         isOpen={demandeDetailOpen}
         onClose={() => {
           setDemandeDetailOpen(false)

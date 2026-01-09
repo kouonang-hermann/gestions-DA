@@ -75,6 +75,25 @@ export default function QHSEDashboard() {
         (d) => d.type === "outillage" && currentUser.projets.includes(d.projetId)
       )
 
+      // HISTORIQUE COMPLET : Inclure toutes les demandes validées, même terminées ou rejetées
+      const demandesValidees = demandesOutillage.filter((d) => [
+        "en_attente_validation_responsable_travaux",
+        "en_attente_validation_charge_affaire", 
+        "en_attente_preparation_appro",
+        "en_attente_validation_logistique",
+        "en_attente_validation_finale_demandeur",
+        "confirmee_demandeur",
+        "cloturee",
+        "rejetee" // AJOUT : Inclure les demandes rejetées après validation
+      ].includes(d.status))
+
+      console.log(`📊 [QHSE-DASHBOARD] Statistiques validations pour ${currentUser.nom}:`, {
+        totalValidees: demandesValidees.length,
+        enCours: demandesValidees.filter(d => !["cloturee", "rejetee", "confirmee_demandeur"].includes(d.status)).length,
+        terminees: demandesValidees.filter(d => ["cloturee", "confirmee_demandeur"].includes(d.status)).length,
+        rejetees: demandesValidees.filter(d => d.status === "rejetee").length
+      })
+
       setStats({
         total: demandesOutillage.length,
         enAttente: demandesOutillage.filter((d) => d.status === "en_attente_validation_logistique").length,
@@ -86,14 +105,7 @@ export default function QHSEDashboard() {
             "archivee"
           ].includes(d.status)
         ).length,
-        validees: demandesOutillage.filter((d) => [
-          "en_attente_validation_responsable_travaux",
-          "en_attente_validation_charge_affaire", 
-          "en_attente_preparation_appro",
-          "en_attente_validation_logistique",
-          "en_attente_validation_finale_demandeur",
-          "cloturee"
-        ].includes(d.status)).length,
+        validees: demandesValidees.length,
         rejetees: demandesOutillage.filter((d) => d.status === "rejetee").length,
       })
     }
@@ -119,13 +131,16 @@ export default function QHSEDashboard() {
           "brouillon", "cloturee", "rejetee", "archivee"
         ].includes(d.status))
       case "validees":
+        // HISTORIQUE COMPLET : Toutes les demandes validées par le QHSE
         return demandesOutillage.filter((d) => [
           "en_attente_validation_responsable_travaux",
           "en_attente_validation_charge_affaire", 
           "en_attente_preparation_appro",
           "en_attente_validation_logistique",
           "en_attente_validation_finale_demandeur",
-          "cloturee"
+          "confirmee_demandeur",
+          "cloturee",
+          "rejetee" // Inclure historique complet
         ].includes(d.status))
       case "rejetees":
         return mesDemandes.filter((d) => d.status === "rejetee")

@@ -5,7 +5,6 @@ import SuperAdminDashboard from "./super-admin-dashboard"
 import EmployeDashboard from "./employe-dashboard"
 import ConducteurDashboard from "./conducteur-dashboard"
 import ResponsableTravauxDashboard from "./responsable-travaux-dashboard"
-import QHSEDashboard from "./qhse-dashboard"
 import ApproDashboard from "./appro-dashboard"
 import ChargeAffaireDashboard from "./charge-affaire-dashboard"
 import ResponsableLogistiqueDashboard from "./responsable-logistique-dashboard"
@@ -35,13 +34,11 @@ export default function Dashboard() {
         case "responsable_travaux":
           return <ResponsableTravauxDashboard />
         case "responsable_logistique":
-          return <QHSEDashboard />
+          return <ResponsableLogistiqueDashboard />
         case "responsable_appro":
           return <ApproDashboard />
         case "charge_affaire":
           return <ChargeAffaireDashboard />
-        case "responsable_livreur":
-          return <ResponsableLogistiqueDashboard />
         default:
           return (
             <div className="p-6 text-center text-gray-500">

@@ -71,9 +71,6 @@ export default function ChangeUserRoleModal({
   const handleRoleChange = async () => {
     if (!user || !newRole) return
 
-    console.log("🔄 Changement de rôle - Token disponible:", !!token)
-    console.log("🔄 Token value:", token ? `${token.substring(0, 20)}...` : "null")
-
     setIsLoading(true)
     try {
       const response = await fetch(`/api/users/${user.id}/role`, {

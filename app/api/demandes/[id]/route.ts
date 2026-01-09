@@ -139,7 +139,7 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
       return NextResponse.json({ success: false, error: "Vous n'avez pas les permissions pour cette action" }, { status: 403 })
     }
 
-    let newStatus = validatedData.status
+    let newStatus: DemandeStatus | string = validatedData.status
     let updateData: any = {
       dateModification: new Date(),
     }

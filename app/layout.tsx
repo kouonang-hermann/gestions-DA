@@ -3,6 +3,7 @@ import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
 import './globals.css'
 import MobileInjectorWrapper from '@/components/mobile/mobile-injector-wrapper'
+import LayoutWrapper from '@/components/layout/layout-wrapper'
 
 export const metadata: Metadata = {
   title: 'Gestion Demandes Matériel - InstrumElec',
@@ -53,7 +54,7 @@ html {
       </head>
       <body className="h-full bg-gray-50 antialiased overflow-x-hidden">
         <MobileInjectorWrapper />
-        {children}
+        <LayoutWrapper>{children}</LayoutWrapper>
       </body>
     </html>
   )

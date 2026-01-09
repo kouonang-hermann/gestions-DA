@@ -31,12 +31,14 @@
 INSTRUMELEC est une application de gestion des demandes de matériel et outillage conçue spécifiquement pour les projets de construction électrique. Elle permet de :
 
 - ✅ **Créer et suivre** des demandes de matériel et outillage
-- ✅ **Valider hiérarchiquement** via un workflow multi-niveaux (7 étapes)
-- ✅ **Auto-valider intelligemment** si le demandeur est aussi valideur
-- ✅ **Gérer les stocks** et préparer les sorties
+- ✅ **Valider hiérarchiquement** via un workflow multi-niveaux (10 étapes)
+- ✅ **Workflows différenciés** : Matériel (Conducteur) vs Outillage (QHSE)
+- ✅ **Gérer les stocks** et préparer les sorties (Appro pour matériel, Logistique pour outillage)
 - ✅ **Notifier en temps réel** tous les acteurs du workflow
 - ✅ **Filtrer par projet** pour une visibilité ciblée
-- ✅ **Clôturer** les demandes après livraison
+- ✅ **Clôturer** les demandes après confirmation de livraison
+- ✅ **Tableau de bord financier** pour le suivi budgétaire (Super Admin)
+- ✅ **Gestion des utilisateurs** avec attribution de rôles et projets
 
 ### Pourquoi cette application ?
 
@@ -196,16 +198,18 @@ Ouvre une interface web sur **http://localhost:5555**
 
 ### Comptes de test
 
+**📄 Documentation complète** : Voir [UTILISATEURS_TEST.md](./UTILISATEURS_TEST.md) pour tous les détails
+
 | Rôle | Téléphone | Mot de passe |
 |------|-----------|---------------|
 | 🔑 **Super Admin** | `600000001` | `admin123` |
 | 👤 **Employé** | `600000002` | `employe123` |
 | 👷 **Conducteur Travaux** | `600000003` | `conducteur123` |
 | 👨‍💼 **Responsable Travaux** | `600000004` | `responsable123` |
-| 🛡️ **QHSE** | `600000005` | `qhse123` |
+| 🛡️ **Logistique** | `600000005` | `logistique123` |
 | 📦 **Appro** | `600000006` | `appro123` |
 | 💼 **Chargé Affaire** | `600000007` | `charge123` |
-| 🚚 **Logistique** | `600000008` | `logistique123` |
+| 🚚 **Livreur** | `600000009` | `livreur123` |
 
 ### Format du numéro de téléphone
 
@@ -231,18 +235,19 @@ Ouvre une interface web sur **http://localhost:5555**
 
 ## Architecture
 
-### Rôles et Permissions (8 rôles)
+### Rôles et Permissions (9 rôles)
 
 | Rôle | Permissions |
 |------|-------------|
-| **superadmin** | Accès complet, gestion utilisateurs et projets |
-| **employe** | Création de demandes, validation finale |
-| **conducteur_travaux** | Validation des demandes de matériel |
-| **responsable_travaux** | Validation hiérarchique des demandes |
-| **responsable_qhse** | Validation des demandes d'outillage |
-| **responsable_appro** | Préparation des sorties de stock |
-| **charge_affaire** | Validation budgétaire |
-| **responsable_logistique** | Validation de livraison |
+| **superadmin** | Accès complet, gestion utilisateurs/projets, tableau de bord financier |
+| **employe** | Création de demandes, clôture de ses propres demandes |
+| **conducteur_travaux** | Validation des demandes de **matériel uniquement** (1ère validation) |
+| **responsable_qhse** | Validation des demandes d'**outillage uniquement** (1ère validation) |
+| **responsable_travaux** | Validation matériel ET outillage (2ème validation) |
+| **charge_affaire** | Validation budgétaire matériel ET outillage (3ème validation) |
+| **responsable_appro** | Préparation des sorties de **matériel uniquement** |
+| **responsable_logistique** | Préparation des sorties d'**outillage uniquement** |
+| **responsable_livreur** | Réception et livraison des demandes |
 
 ## 🔄 Workflow de l'Application
 
@@ -252,11 +257,11 @@ L'application gère **2 types de demandes** avec des workflows différents :
 - 🔧 **MATÉRIEL** : Équipements électriques, câbles, etc.
 - 🛠️ **OUTILLAGE** : Outils, équipements de sécurité, etc.
 
-Chaque type suit un **workflow de validation en 7 étapes** avec des valideurs spécifiques.
+Chaque type suit un **workflow de validation en 10 étapes** avec des valideurs spécifiques selon le type de demande.
 
 ---
 
-### 🔧 Workflow MATÉRIEL (7 étapes)
+### 🔧 Workflow MATÉRIEL (10 étapes)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -316,11 +321,19 @@ Chaque type suit un **workflow de validation en 7 étapes** avec des valideurs s
 └─────────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│  ÉTAPE 7 : CLÔTURE FINALE (Employé - Demandeur)                 │
+│  ÉTAPE 7 : CONFIRMATION RÉCEPTION (Employé - Demandeur)         │
 │  ────────────────────────────────────────────────────────────   │
 │  Statut : en_attente_validation_finale_demandeur                │
-│  Action : Clôturer (confirmation réception)                     │
-│  Statut final : confirmee_demandeur                             │
+│  Action : Confirmer réception                                   │
+│  Statut : confirmee_demandeur                                   │
+└─────────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  ÉTAPE 8 : CLÔTURE FINALE (Employé - Demandeur)                 │
+│  ────────────────────────────────────────────────────────────   │
+│  Statut : confirmee_demandeur                                   │
+│  Action : Clôturer la demande                                   │
+│  Statut final : cloturee                                        │
 └─────────────────────────────────────────────────────────────────┘
                             ↓
                     ✅ DEMANDE TERMINÉE
@@ -330,40 +343,93 @@ Chaque type suit un **workflow de validation en 7 étapes** avec des valideurs s
 
 ---
 
-### 🛠️ Workflow OUTILLAGE (7 étapes)
+### 🛠️ Workflow OUTILLAGE (10 étapes)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │  ÉTAPE 1 : CRÉATION (Employé)                                   │
 │  ────────────────────────────────────────────────────────────   │
 │  Action : Créer demande + Soumettre                             │
-│  Statut : brouillon → soumise                                   │
-│  Notification → Responsable Logistique ⚠️ (PAS Conducteur)      │
+│  Statut : brouillon → soumise → en_attente_validation_qhse      │
+│  Notification → Responsable QHSE (PAS Conducteur)               │
 └─────────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│  ÉTAPE 2 : VALIDATION LOGISTIQUE (Responsable Logistique)       │
+│  ÉTAPE 2 : VALIDATION QHSE (Responsable QHSE)                   │
 │  ────────────────────────────────────────────────────────────   │
-│  Statut : en_attente_validation_logistique                      │
+│  Statut : en_attente_validation_qhse                            │
 │  Action : Valider ou Rejeter (vérification sécurité)            │
 │  Notification → Responsable des Travaux                         │
-│  ⚠️ DIFFÉRENCE : Logistique valide en premier pour outillage    │
+│  ⚠️ QHSE valide en premier pour outillage                       │
 └─────────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│  ÉTAPES 3-7 : IDENTIQUES AU WORKFLOW MATÉRIEL                   │
+│  ÉTAPE 3 : VALIDATION RESP. TRAVAUX (Responsable Travaux)       │
 │  ────────────────────────────────────────────────────────────   │
-│  3. Responsable Travaux                                         │
-│  4. Chargé Affaire (budget)                                     │
-│  5. Responsable Appro (stock)                                   │
-│  6. Responsable Livreur (réception + livraison)                 │
-│  7. Employé (clôture)                                           │
+│  Statut : en_attente_validation_responsable_travaux             │
+│  Action : Valider ou Rejeter                                    │
+│  Notification → Chargé d'Affaire                                │
+└─────────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  ÉTAPE 4 : VALIDATION BUDGET (Chargé d'Affaire)                 │
+│  ────────────────────────────────────────────────────────────   │
+│  Statut : en_attente_validation_charge_affaire                  │
+│  Action : Valider ou Rejeter (vérification budget)              │
+│  Notification → Responsable Logistique (PAS Appro!)             │
+└─────────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  ÉTAPE 5 : PRÉPARATION LOGISTIQUE (Responsable Logistique)      │
+│  ────────────────────────────────────────────────────────────   │
+│  Statut : en_attente_preparation_logistique                     │
+│  Action : Préparer sortie                                       │
+│  - Valider les quantités à sortir                               │
+│  - Ajuster quantités si nécessaire                              │
+│  Notification → Responsable Livreur                             │
+│  ⚠️ Logistique prépare au lieu de l'Appro pour outillage        │
+└─────────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  ÉTAPE 6A : RÉCEPTION LIVREUR (Responsable Livreur)             │
+│  ────────────────────────────────────────────────────────────   │
+│  Statut : en_attente_reception_livreur                          │
+│  Action : Valider réception du matériel                         │
+│  Notification → Livreur (étape livraison)                       │
+└─────────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  ÉTAPE 6B : LIVRAISON (Responsable Livreur)                     │
+│  ────────────────────────────────────────────────────────────   │
+│  Statut : en_attente_livraison                                  │
+│  Action : Valider livraison au demandeur                        │
+│  Notification → Employé (Demandeur)                             │
+└─────────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  ÉTAPE 7 : CONFIRMATION RÉCEPTION (Employé - Demandeur)         │
+│  ────────────────────────────────────────────────────────────   │
+│  Statut : en_attente_validation_finale_demandeur                │
+│  Action : Confirmer réception                                   │
+│  Statut : confirmee_demandeur                                   │
+└─────────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  ÉTAPE 8 : CLÔTURE FINALE (Employé - Demandeur)                 │
+│  ────────────────────────────────────────────────────────────   │
+│  Statut : confirmee_demandeur                                   │
+│  Action : Clôturer la demande                                   │
+│  Statut final : cloturee                                        │
 └─────────────────────────────────────────────────────────────────┘
                             ↓
                     ✅ DEMANDE TERMINÉE
 ```
 
-**⚠️ DIFFÉRENCE CLÉ** : Pour l'outillage, la première validation est faite par le **Responsable Logistique** au lieu du Conducteur de Travaux.
+**⚠️ DIFFÉRENCES CLÉS avec le flow Matériel** :
+1. **QHSE au lieu de Conducteur** : Responsable QHSE valide en premier pour outillage (sécurité)
+2. **Logistique au lieu d'Appro** : Responsable Logistique prépare les sorties d'outillage
+3. **Appro exclu** : Le Responsable Appro ne voit que les demandes de matériel
+4. **Nouveau statut** : `en_attente_validation_qhse` et `en_attente_preparation_logistique`
 
 ---
 
@@ -390,8 +456,8 @@ Création → ⏭️ SAUTE Conducteur → ⏭️ SAUTE Resp. Travaux → Chargé
 
 **Cas 3 : Responsable Logistique crée une demande outillage**
 ```
-Création → ⏭️ SAUTE Logistique → Resp. Travaux → ...
-✅ Étape Logistique sautée automatiquement
+Création → ⏭️ SAUTE Logistique 1ère → Resp. Travaux → ... → ⏭️ SAUTE Préparation Logistique → Livreur
+✅ 2 étapes Logistique sautées automatiquement (validation + préparation)
 ```
 
 #### Règles d'auto-validation
@@ -399,7 +465,7 @@ Création → ⏭️ SAUTE Logistique → Resp. Travaux → ...
 | Demandeur | Type | Étapes sautées | Statut initial |
 |-----------|------|----------------|----------------|
 | Conducteur Travaux | Matériel | 1 (Conducteur) | `en_attente_validation_responsable_travaux` |
-| Responsable Logistique | Outillage | 1 (Logistique) | `en_attente_validation_responsable_travaux` |
+| Responsable Logistique | Outillage | 2 (Logistique 1ère + Préparation) | `en_attente_validation_responsable_travaux` |
 | Responsable Travaux | Matériel | 2 (Conducteur + Resp. Travaux) | `en_attente_validation_charge_affaire` |
 | Chargé Affaire | Matériel | 3 (Conducteur + Resp. Travaux + Chargé) | `en_attente_preparation_appro` |
 | Responsable Appro | Matériel | 4 (toutes validations) | `en_attente_reception_livreur` |
@@ -467,12 +533,13 @@ Notification → Valideur précédent
 ### 📊 Tableau Comparatif des Workflows
 
 | Critère | Matériel | Outillage |
-|---------|----------|-----------||
-| **Première validation** | Conducteur de Travaux | **Responsable Logistique** ⚠️ |
-| **Notification initiale** | → Conducteur | → **Logistique** ⚠️ |
-| **Nombre d'étapes** | 7 étapes | 7 étapes |
-| **Étapes 3-7** | Identiques | Identiques |
-| **Auto-validation** | ✅ Supportée | ✅ Supportée |
+|---------|----------|-----------|
+| **Première validation** | Conducteur de Travaux | Responsable Logistique |
+| **Notification initiale** | → Conducteur | → Logistique |
+| **Nombre d'étapes** | 7 étapes | 8 étapes |
+| **Préparation** | Responsable Appro | Responsable Logistique |
+| **Rôles Logistique** | 0 | 2 (1ère validation + préparation) |
+| **Auto-validation** | ✅ Supportée | ✅ Supportée (double pour Logistique) |
 | **Rejet possible** | ✅ À chaque étape | ✅ À chaque étape |
 | **Clôture** | Demandeur uniquement | Demandeur uniquement |
 | **Durée moyenne** | 3 jours | 3 jours |
@@ -483,13 +550,16 @@ Notification → Valideur précédent
 |--------|-------------|
 | `brouillon` | En cours de création |
 | `soumise` | Soumise pour validation |
-| `en_attente_validation_conducteur` | Attente validation conducteur |
-| `en_attente_validation_qhse` | Attente validation QHSE |
+| `en_attente_validation_conducteur` | Attente validation conducteur (matériel) |
+| `en_attente_validation_logistique` | Attente validation logistique (1ère - outillage) |
 | `en_attente_validation_responsable_travaux` | Attente validation resp. travaux |
 | `en_attente_validation_charge_affaire` | Attente validation chargé affaire |
-| `en_attente_preparation_appro` | Attente préparation appro |
-| `en_attente_validation_logistique` | Attente validation logistique |
+| `en_attente_preparation_appro` | Attente préparation appro (matériel uniquement) |
+| `en_attente_preparation_logistique` | Préparation logistique (outillage uniquement) |
+| `en_attente_reception_livreur` | Attente réception par le livreur |
+| `en_attente_livraison` | Attente livraison au demandeur |
 | `en_attente_validation_finale_demandeur` | Attente confirmation demandeur |
+| `confirmee_demandeur` | Confirmée par le demandeur |
 | `cloturee` | Terminée |
 | `rejetee` | Rejetée |
 
@@ -641,6 +711,10 @@ L'application utilise une palette cohérente :
 - ✅ **Carte "En cours"** corrigée (demandes du demandeur uniquement)
 - ✅ **Modale de clôture** avec boutons d'action
 - ✅ **Sélection utilisateurs** dans création projet (checkboxes)
+- ✅ **NOUVEAU FLOW OUTILLAGE** : Double validation Logistique
+- ✅ **Nouveau statut** : `en_attente_validation_logistique_finale`
+- ✅ **Appro filtré** : Ne voit plus les demandes d'outillage
+- ✅ **Composant PreparationOutillageList** pour Responsable Logistique
 
 ### 🎨 Améliorations UI/UX
 - ✅ **Login 100% responsive** pour tous les mobiles
@@ -680,6 +754,17 @@ L'application utilise une palette cohérente :
 
 ---
 
-**Version** : 3.0 - Production Ready  
-**Dernière mise à jour** : Janvier 2025  
+---
+
+## 📚 Documentation Complémentaire
+
+- 📄 **[UTILISATEURS_TEST.md](./UTILISATEURS_TEST.md)** - Comptes de test et guide de test du nouveau flow
+- 🚀 **[README-DEPLOYMENT.md](./README-DEPLOYMENT.md)** - Guide de déploiement
+- 📧 **[README-NOTIFICATIONS.md](./README-NOTIFICATIONS.md)** - Configuration des notifications
+- 🌲 **[README-ARBORESCENCE.md](./README-ARBORESCENCE.md)** - Structure du projet
+
+---
+
+**Version** : 4.0 - Nouveau Flow Outillage  
+**Dernière mise à jour** : Janvier 2026  
 **Développé par** : InstrumElec Team

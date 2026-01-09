@@ -25,7 +25,7 @@ function getInitialStatus(type: "materiel" | "outillage", creatorRole: string): 
       { status: "en_attente_validation_logistique", role: "responsable_logistique" },
       { status: "en_attente_validation_responsable_travaux", role: "responsable_travaux" },
       { status: "en_attente_validation_charge_affaire", role: "charge_affaire" },
-      { status: "en_attente_preparation_appro", role: "responsable_appro" },
+      { status: "en_attente_preparation_logistique", role: "responsable_logistique" },
       { status: "en_attente_reception_livreur", role: "responsable_livreur" },
       { status: "en_attente_livraison", role: "responsable_livreur" },
       { status: "en_attente_validation_finale_demandeur", role: "employe" }
@@ -38,8 +38,11 @@ function getInitialStatus(type: "materiel" | "outillage", creatorRole: string): 
     // Conducteur peut valider l'étape "conducteur" uniquement
     "conducteur_travaux": ["en_attente_validation_conducteur"],
     
-    // Responsable Logistique peut valider l'étape "Logistique" uniquement
-    "responsable_logistique": ["en_attente_validation_logistique"],
+    // Responsable Logistique peut valider l'étape "Logistique" (1ère validation) ET "Préparation Logistique"
+    "responsable_logistique": [
+      "en_attente_validation_logistique",
+      "en_attente_preparation_logistique"
+    ],
     
     // Responsable travaux peut valider UNIQUEMENT l'étape "responsable travaux"
     // Il ne peut PAS sauter les étapes précédentes (conducteur, logistique)
@@ -79,7 +82,7 @@ function getInitialStatus(type: "materiel" | "outillage", creatorRole: string): 
 /**
  * Détermine le prochain statut selon le statut actuel et le rôle
  */
-function getNextStatus(currentStatus: string, userRole: string): string | null {
+function getNextStatus(currentStatus: string, userRole: string, demandeType?: string): string | null {
   const transitions: Record<string, Record<string, string>> = {
     "en_attente_validation_conducteur": {
       "conducteur_travaux": "en_attente_validation_responsable_travaux"
@@ -96,6 +99,9 @@ function getNextStatus(currentStatus: string, userRole: string): string | null {
     "en_attente_preparation_appro": {
       "responsable_appro": "en_attente_reception_livreur"
     },
+    "en_attente_preparation_logistique": {
+      "responsable_logistique": "en_attente_reception_livreur"
+    },
     "en_attente_reception_livreur": {
       "responsable_livreur": "en_attente_livraison"
     },
@@ -105,6 +111,11 @@ function getNextStatus(currentStatus: string, userRole: string): string | null {
     "en_attente_validation_finale_demandeur": {
       "employe": "confirmee_demandeur"
     }
+  }
+
+  // Cas spécial : Chargé d'affaire valide différemment selon le type de demande
+  if (currentStatus === "en_attente_validation_charge_affaire" && userRole === "charge_affaire") {
+    return demandeType === "outillage" ? "en_attente_preparation_logistique" : "en_attente_preparation_appro"
   }
 
   return transitions[currentStatus]?.[userRole] || null
@@ -409,8 +420,9 @@ export const POST = async (request: NextRequest) => {
         { status: "en_attente_validation_logistique", role: "responsable_logistique", label: "Validation Logistique" },
         { status: "en_attente_validation_responsable_travaux", role: "responsable_travaux", label: "Validation Responsable Travaux" },
         { status: "en_attente_validation_charge_affaire", role: "charge_affaire", label: "Validation Chargé Affaire" },
-        { status: "en_attente_preparation_appro", role: "responsable_appro", label: "Préparation Appro" },
-        { status: "en_attente_validation_livreur", role: "responsable_livreur", label: "Validation Livreur" },
+        { status: "en_attente_preparation_logistique", role: "responsable_logistique", label: "Préparation Logistique" },
+        { status: "en_attente_reception_livreur", role: "responsable_livreur", label: "Réception Livreur" },
+        { status: "en_attente_livraison", role: "responsable_livreur", label: "Livraison" },
         { status: "en_attente_validation_finale_demandeur", role: "employe", label: "Validation Finale Demandeur" }
       ]
     }

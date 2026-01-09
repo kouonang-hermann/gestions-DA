@@ -1,0 +1,719 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { X } from "lucide-react"
+import type { Demande } from "@/types"
+import { useStore } from "@/stores/useStore"
+
+interface DemandeDetailsModalProps {
+  isOpen: boolean
+  onClose: () => void
+  demandeId: string | null
+  mode: "view" // Mode lecture seule
+}
+
+export default function DemandeDetailsModal({ 
+  isOpen, 
+  onClose, 
+  demande, 
+  onValidate,
+  canValidate = false,
+  onItemRemoved,
+  canRemoveItems = false,
+  validationAction = "valider",
+  validationLabel = "Valider",
+  canEditPrices = false,
+  onPricesUpdated,
+  showDeliveryColumns = false
+}: DemandeDetailsModalProps) {
+  const { token, currentUser } = useStore()
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [quantitesValidees, setQuantitesValidees] = useState<{ [itemId: string]: number }>({})
+  const [quantitesOriginales, setQuantitesOriginales] = useState<{ [itemId: string]: number }>({})
+  const [commentaire, setCommentaire] = useState("")
+  const [showCommentaireError, setShowCommentaireError] = useState(false)
+  const [removeItemModalOpen, setRemoveItemModalOpen] = useState(false)
+  const [itemToRemove, setItemToRemove] = useState<any>(null)
+  const [removeItemLoading, setRemoveItemLoading] = useState(false)
+  
+  // États pour la gestion des prix (responsable appro)
+  const [prixUnitaires, setPrixUnitaires] = useState<{ [itemId: string]: string }>({})
+  const [pricesLoading, setPricesLoading] = useState(false)
+  const [pricesSuccess, setPricesSuccess] = useState(false)
+  const [pricesError, setPricesError] = useState("")
+  
+  // États pour la gestion des quantités livrées (responsable appro)
+  const [quantitesLivrees, setQuantitesLivrees] = useState<{ [itemId: string]: string }>({})
+  const [deliveryLoading, setDeliveryLoading] = useState(false)
+  const [deliverySuccess, setDeliverySuccess] = useState(false)
+  const [deliveryError, setDeliveryError] = useState("")
+  
+  // États pour la gestion du budget prévisionnel (chargé d'affaires)
+  const [budgetPrevisionnel, setBudgetPrevisionnel] = useState<string>("")
+  const [budgetLoading, setBudgetLoading] = useState(false)
+  const [budgetSuccess, setBudgetSuccess] = useState(false)
+  const [budgetError, setBudgetError] = useState("")
+
+  // États pour l'édition des articles (conducteur, responsable travaux, chargé affaires, QHSE)
+  const [editingArticle, setEditingArticle] = useState<{ itemId: string, field: 'nom' | 'reference' } | null>(null)
+  const [articleEdits, setArticleEdits] = useState<{ [itemId: string]: { nom?: string, reference?: string } }>({})
+  const [articleUpdateLoading, setArticleUpdateLoading] = useState(false)
+  
+  // États pour l'édition des dates
+  const [editingDate, setEditingDate] = useState<{ field: 'date1' | 'date2' } | null>(null)
+  const [dateEdits, setDateEdits] = useState<{ date1?: string, date2?: string }>({})
+  const [dateUpdateLoading, setDateUpdateLoading] = useState(false)
+
+  // Initialiser les quantités validées avec les quantités demandées
+  useEffect(() => {
+    if (demande) {
+      const initialQuantites: { [itemId: string]: number } = {}
+      const originalesQuantites: { [itemId: string]: number } = {}
+      const initialPrix: { [itemId: string]: string } = {}
+      
+      const initialLivrees: { [itemId: string]: string } = {}
+      
+      const initialArticleEdits: { [itemId: string]: { nom?: string, reference?: string } } = {}
+      
+      demande.items.forEach(item => {
+        const quantite = item.quantiteValidee || item.quantiteDemandee
+        initialQuantites[item.id] = quantite
+        originalesQuantites[item.id] = quantite
+        initialPrix[item.id] = item.prixUnitaire?.toString() || ""
+        initialLivrees[item.id] = item.quantiteSortie?.toString() || ""
+        initialArticleEdits[item.id] = {
+          nom: item.article?.nom || "",
+          reference: item.article?.reference || ""
+        }
+      })
+      
+      // Initialiser les dates
+      setDateEdits({
+        date1: demande.dateCreation ? new Date(demande.dateCreation).toISOString().split('T')[0] : '',
+        date2: demande.dateLivraisonSouhaitee ? new Date(demande.dateLivraisonSouhaitee).toISOString().split('T')[0] : ''
+      })
+      setQuantitesValidees(initialQuantites)
+      setQuantitesOriginales(originalesQuantites)
+      setPrixUnitaires(initialPrix)
+      setQuantitesLivrees(initialLivrees)
+      setArticleEdits(initialArticleEdits)
+      setCommentaire("")
+      setShowCommentaireError(false)
+      setPricesSuccess(false)
+      setPricesError("")
+      setDeliverySuccess(false)
+      setDeliveryError("")
+    }
+  }, [demande])
+
+  if (!demande) return null
+
+  const handleQuantiteChange = (itemId: string, value: string) => {
+    const numValue = parseInt(value) || 0
+    setQuantitesValidees(prev => ({
+      ...prev,
+      [itemId]: numValue
+    }))
+    // Réinitialiser l'erreur de commentaire quand l'utilisateur modifie
+    setShowCommentaireError(false)
+  }
+
+  // Vérifier si des modifications ont été apportées
+  const hasModifications = () => {
+    return Object.keys(quantitesValidees).some(itemId => 
+      quantitesValidees[itemId] !== quantitesOriginales[itemId]
+    )
+  }
+
+  // Gestion des prix unitaires
+  const handlePrixChange = (itemId: string, value: string) => {
+    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+      setPrixUnitaires(prev => ({
+        ...prev,
+        [itemId]: value
+      }))
+      setPricesError("")
+      setPricesSuccess(false)
+    }
+  }
+
+  // Gestion des quantités livrées
+  const handleQuantiteLivreeChange = (itemId: string, value: string) => {
+    if (value === "" || /^\d+$/.test(value)) {
+      setQuantitesLivrees(prev => ({
+        ...prev,
+        [itemId]: value
+      }))
+      setDeliveryError("")
+      setDeliverySuccess(false)
+    }
+  }
+
+  // Calculer la quantité restante pour un article
+  const calculateQuantiteRestante = (item: any) => {
+    const quantiteValidee = item.quantiteValidee || item.quantiteDemandee
+    const quantiteLivree = parseInt(quantitesLivrees[item.id] || "0") || 0
+    return Math.max(0, quantiteValidee - quantiteLivree)
+  }
+
+  // Enregistrer les quantités livrées
+  const handleSaveDelivery = async () => {
+    setDeliveryLoading(true)
+    setDeliveryError("")
+
+    try {
+      const itemsData = demande.items.map(item => ({
+        itemId: item.id,
+        quantiteSortie: parseInt(quantitesLivrees[item.id] || "0") || 0
+      }))
+
+      const response = await fetch(`/api/demandes/${demande.id}/update-delivery`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({ items: itemsData }),
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        setDeliverySuccess(true)
+        onPricesUpdated?.()
+      } else {
+        setDeliveryError(result.error || "Erreur lors de l'enregistrement")
+      }
+    } catch (err) {
+      console.error("Erreur:", err)
+      setDeliveryError("Erreur de connexion")
+    } finally {
+      setDeliveryLoading(false)
+    }
+  }
+
+  // Gérer l'édition des articles
+  const handleArticleEdit = (itemId: string, field: 'nom' | 'reference', value: string) => {
+    setArticleEdits(prev => ({
+      ...prev,
+      [itemId]: {
+        ...prev[itemId],
+        [field]: value
+      }
+    }))
+  }
+
+  // Sauvegarder la modification d'un article
+  const handleSaveArticleEdit = async (itemId: string, articleId: string) => {
+    setArticleUpdateLoading(true)
+    
+    try {
+      const edits = articleEdits[itemId]
+      if (!edits) return
+
+      const response = await fetch(`/api/articles/${articleId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          nom: edits.nom,
+          reference: edits.reference
+        }),
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        setEditingArticle(null)
+        onPricesUpdated?.() // Recharger les données
+      }
+    } catch (err) {
+      console.error("Erreur:", err)
+    } finally {
+      setArticleUpdateLoading(false)
+    }
+  }
+  
+  // Gérer l'édition des dates
+  const handleDateEdit = (field: 'date1' | 'date2', value: string) => {
+    setDateEdits(prev => ({
+      ...prev,
+      [field]: value
+    }))
+  }
+  
+  // Sauvegarder la modification d'une date
+  const handleSaveDateEdit = async (field: 'date1' | 'date2') => {
+    setDateUpdateLoading(true)
+    
+    try {
+      const dateValue = dateEdits[field]
+      if (!dateValue) return
+      
+      const fieldMap = {
+        'date1': 'dateCreation',
+        'date2': 'dateLivraisonSouhaitee'
+      }
+
+      const response = await fetch(`/api/demandes/${demande.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          [fieldMap[field]]: new Date(dateValue).toISOString()
+        }),
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        setEditingDate(null)
+        onPricesUpdated?.() // Recharger les données
+      }
+    } catch (err) {
+      console.error("Erreur:", err)
+    } finally {
+      setDateUpdateLoading(false)
+    }
+  }
+
+  // Vérifier si l'utilisateur peut éditer les articles et dates
+  const canEditArticles = () => {
+    if (!currentUser || !demande) return false
+    
+    const allowedRoles = ["conducteur_travaux", "responsable_logistique", "responsable_travaux", "charge_affaire"]
+    if (!allowedRoles.includes(currentUser.role)) return false
+    
+    // Vérifier si l'utilisateur est à son étape de validation
+    const roleToStatusMap: Record<string, string> = {
+      "conducteur_travaux": "en_attente_validation_conducteur",
+      "responsable_logistique": "en_attente_validation_logistique",
+      "responsable_travaux": "en_attente_validation_responsable_travaux",
+      "charge_affaire": "en_attente_validation_charge_affaire"
+    }
+    
+    return demande.status === roleToStatusMap[currentUser.role]
+  }
+
+  // Calculer le coût total
+  const calculateCoutTotal = () => {
+    let total = 0
+    demande.items.forEach(item => {
+      const prix = parseFloat(prixUnitaires[item.id] || "0")
+      const quantite = item.quantiteValidee || item.quantiteDemandee
+      if (!isNaN(prix) && prix > 0) {
+        total += prix * quantite
+      }
+    })
+    return total
+  }
+
+  // Vérifier si tous les prix sont renseignés
+  const allPricesFilled = () => {
+    return demande.items.every(item => {
+      const prix = parseFloat(prixUnitaires[item.id] || "0")
+      return !isNaN(prix) && prix > 0
+    })
+  }
+
+  // Enregistrer les prix
+  const handleSavePrices = async () => {
+    if (!allPricesFilled()) {
+      setPricesError("Veuillez renseigner tous les prix")
+      return
+    }
+
+    setPricesLoading(true)
+    setPricesError("")
+
+    try {
+      const itemsData = demande.items.map(item => ({
+        itemId: item.id,
+        prixUnitaire: parseFloat(prixUnitaires[item.id])
+      }))
+
+      const response = await fetch(`/api/demandes/${demande.id}/update-prices`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({ items: itemsData }),
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        setPricesSuccess(true)
+        onPricesUpdated?.()
+      } else {
+        setPricesError(result.error || "Erreur lors de l'enregistrement")
+      }
+    } catch (err) {
+      console.error("Erreur:", err)
+      setPricesError("Erreur de connexion")
+    } finally {
+      setPricesLoading(false)
+    }
+  }
+
+  // Formater le prix
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('fr-FR').format(price) + " FCFA"
+  }
+
+  const handleAction = async (action: "valider" | "rejeter" | "annuler" | "valider_sortie" | "cloturer") => {
+    if (!onValidate) return
+    
+    // Si validation avec modifications, commentaire obligatoire
+    if (action === "valider" && hasModifications() && !commentaire.trim()) {
+      setShowCommentaireError(true)
+      return
+    }
+    
+    setActionLoading(action)
+    try {
+      await onValidate(
+        action, 
+        action === "valider" ? quantitesValidees : undefined,
+        commentaire.trim() || undefined
+      )
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "brouillon":
+        return "bg-gray-100 text-gray-800"
+      case "soumise":
+        return "bg-blue-100 text-blue-800"
+      case "en_attente_validation_conducteur":
+      case "en_attente_validation_logistique":
+      case "en_attente_validation_responsable_travaux":
+      case "en_attente_validation_charge_affaire":
+      case "en_attente_preparation_appro":
+      case "en_attente_validation_logistique":
+      case "en_attente_validation_finale_demandeur":
+        return "bg-orange-100 text-orange-800"
+      case "confirmee_demandeur":
+      case "cloturee":
+        return "bg-green-100 text-green-800"
+      case "rejetee":
+        return "bg-red-100 text-red-800"
+      case "archivee":
+        return "bg-gray-100 text-gray-800"
+      default:
+        return "bg-gray-100 text-gray-800"
+    }
+  }
+
+  const formatStatus = (status: string) => {
+    const statusMap: { [key: string]: string } = {
+      "brouillon": "Brouillon",
+      "soumise": "Soumise",
+      "en_attente_validation_conducteur": "En attente validation conducteur",
+      "en_attente_validation_logistique": "En attente validation logistique",
+      "en_attente_validation_responsable_travaux": "En attente validation responsable travaux",
+      "en_attente_validation_charge_affaire": "En attente validation chargé d'affaire",
+      "en_attente_preparation_appro": "En attente préparation appro",
+      "en_attente_validation_finale_demandeur": "En attente validation finale demandeur",
+      "confirmee_demandeur": "Confirmée par le demandeur",
+      "cloturee": "Clôturée",
+      "rejetee": "Rejetée",
+      "archivee": "Archivée"
+    }
+    return statusMap[status] || status
+  }
+
+  // Fonction pour ouvrir le modal de suppression d'article
+  const handleRemoveItem = (item: any) => {
+    setItemToRemove(item)
+    setRemoveItemModalOpen(true)
+  }
+
+  // Fonction pour confirmer la suppression d'article
+  const handleConfirmRemoveItem = async (justification: string) => {
+    if (!itemToRemove || !demande) return
+
+    setRemoveItemLoading(true)
+    try {
+      const response = await fetch(`/api/demandes/${demande.id}/remove-item`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          itemId: itemToRemove.id,
+          justification
+        }),
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        alert(result.message)
+        onItemRemoved?.()
+        setRemoveItemModalOpen(false)
+        setItemToRemove(null)
+      } else {
+        alert(`Erreur: ${result.error}`)
+      }
+    } catch (error) {
+      console.error("Erreur lors de la suppression de l'article:", error)
+      alert("Erreur lors de la suppression de l'article")
+    } finally {
+      setRemoveItemLoading(false)
+    }
+  }
+
+  // Vérifier si un article peut être supprimé
+  const canRemoveItem = (item: any) => {
+    if (!canRemoveItems || !demande) return false
+    
+    // Vérifier qu'il reste plus d'un article
+    if (demande.items.length <= 1) return false
+    
+    // Vérifier le statut de la demande
+    const allowedStatuses = [
+      "en_attente_validation_conducteur",
+      "en_attente_validation_responsable_travaux", 
+      "en_attente_validation_charge_affaire"
+    ]
+    
+    return allowedStatuses.includes(demande.status)
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="w-[95vw] max-w-5xl max-h-[95vh] overflow-y-auto p-2 sm:p-6">
+        <DialogHeader>
+          <DialogTitle className="text-sm sm:text-xl font-bold text-center bg-gray-800 text-white py-2 sm:py-3 px-2 sm:px-4 rounded mb-4">
+            <span className="hidden sm:inline">Demande {demande.type === "materiel" ? "Matériel" : "Outillage"} de {demande.technicien ? `${demande.technicien.prenom} ${demande.technicien.nom}` : 'N/A'}</span>
+            <span className="sm:hidden">DA-{demande.numero}</span>
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          {/* Informations générales - Format compact */}
+          <div className="bg-gray-50 p-2 sm:p-4 rounded border">
+            <div className="grid grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm">
+              <div>
+                <span className="font-medium text-gray-600">Date de création:</span>
+                <p>{demande.dateCreation ? new Date(demande.dateCreation).toLocaleDateString('fr-FR') : '—'}</p>
+              </div>
+              
+              <div>
+                <span className="font-medium text-gray-600">Client:</span>
+                <p>{demande.technicien ? `${demande.technicien.prenom} ${demande.technicien.nom}` : 'N/A'}</p>
+              </div>
+
+              <div>
+                <span className="font-medium text-gray-600">Projet:</span>
+                <p>{demande.projet?.nom || 'N/A'}</p>
+              </div>
+
+              {demande.dateLivraisonSouhaitee && (
+                <div>
+                  <span className="font-medium text-gray-600">Date souhaitée:</span>
+                  <p>{demande.dateLivraisonSouhaitee ? new Date(demande.dateLivraisonSouhaitee).toLocaleDateString('fr-FR') : '—'}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Tableau des articles - Format simple en lecture seule */}
+          <div className="border rounded overflow-x-auto">
+            <Table className="min-w-[600px]">
+              <TableHeader>
+                <TableRow className="bg-white border-b-2 border-gray-300">
+                  <TableHead className="font-bold text-center border border-gray-300 py-3">Référence</TableHead>
+                  <TableHead className="font-bold text-center border border-gray-300 py-3">Désignation</TableHead>
+                  <TableHead className="font-bold text-center border border-gray-300 py-3">Unité</TableHead>
+                  <TableHead className="font-bold text-center border border-gray-300 py-3">Qté demandée</TableHead>
+                  {/* Qté validée - visible après validation conducteur */}
+                  {!["brouillon", "soumise", "en_attente_validation_conducteur"].includes(demande.status) && (
+                    <TableHead className="font-bold text-center border border-gray-300 py-3">Qté validée</TableHead>
+                  )}
+                  {/* Qté livrée - visible à partir de la validation logistique */}
+                  {!["brouillon", "soumise", "en_attente_validation_conducteur", "en_attente_validation_responsable_travaux", "en_attente_validation_charge_affaire"].includes(demande.status) && (
+                    <TableHead className="font-bold text-center border border-gray-300 py-3 bg-blue-50" style={{color: '#3b82f6'}}>Qté livrée</TableHead>
+                  )}
+                  {/* Qté restante - visible avec Qté livrée */}
+                  {!["brouillon", "soumise", "en_attente_validation_conducteur", "en_attente_validation_responsable_travaux", "en_attente_validation_charge_affaire"].includes(demande.status) && (
+                    <TableHead className="font-bold text-center border border-gray-300 py-3 bg-orange-50" style={{color: '#f97316'}}>Qté restante</TableHead>
+                  )}
+                  <TableHead className="font-bold text-center border border-gray-300 py-3">Date 1</TableHead>
+                  <TableHead className="font-bold text-center border border-gray-300 py-3">Date 2</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {demande.items.map((item, index) => (
+                  <TableRow key={index} className="border-b hover:bg-gray-50">
+                    <TableCell className="text-center border border-gray-300 p-3">
+                      {item.article?.reference || '----'}
+                    </TableCell>
+                    <TableCell className="text-center border border-gray-300 p-3">
+                      {item.article?.nom || 'Article inconnu'}
+                    </TableCell>
+                    <TableCell className="text-center border border-gray-300 p-3">
+                      {item.article?.unite || 'pièce'}
+                    </TableCell>
+                    <TableCell className="text-center border border-gray-300 p-3">
+                      {canValidate ? (
+                        <Input
+                          type="number"
+                          min="0"
+                          max={item.quantiteDemandee}
+                          value={quantitesValidees[item.id] || item.quantiteDemandee}
+                          onChange={(e) => handleQuantiteChange(item.id, e.target.value)}
+                          className="w-20 h-9 text-center mx-auto border-2 border-blue-400 rounded"
+                        />
+                      ) : (
+                        <span className="font-medium">{item.quantiteDemandee}</span>
+                      )}
+                    </TableCell>
+                    {/* Qté validée - visible après validation conducteur */}
+                    {!["brouillon", "soumise", "en_attente_validation_conducteur"].includes(demande.status) && (
+                      <TableCell className="text-center border border-gray-300 p-3">
+                        <span className="font-medium">{item.quantiteValidee || item.quantiteDemandee}</span>
+                      </TableCell>
+                    )}
+                    {/* Qté livrée - visible à partir de la validation logistique */}
+                    {!["brouillon", "soumise", "en_attente_validation_conducteur", "en_attente_validation_responsable_travaux", "en_attente_validation_charge_affaire"].includes(demande.status) && (
+                      <TableCell className="text-center border border-gray-300 p-3 bg-blue-50">
+                        <span className="font-medium" style={{color: '#3b82f6'}}>{item.quantiteSortie || item.quantiteRecue || 0}</span>
+                      </TableCell>
+                    )}
+                    {/* Qté restante - visible avec Qté livrée */}
+                    {!["brouillon", "soumise", "en_attente_validation_conducteur", "en_attente_validation_responsable_travaux", "en_attente_validation_charge_affaire"].includes(demande.status) && (
+                      <TableCell className="text-center border border-gray-300 p-3 bg-orange-50">
+                        <span className="font-semibold" style={{color: '#f97316'}}>
+                          {(() => {
+                            const qteValidee = item.quantiteValidee || item.quantiteDemandee
+                            const qteLivree = item.quantiteSortie || item.quantiteRecue || 0
+                            return Math.max(0, qteValidee - qteLivree)
+                          })()}
+                        </span>
+                      </TableCell>
+                    )}
+                    <TableCell className="text-center border border-gray-300 p-3">
+                      {demande.dateCreation ? new Date(demande.dateCreation).toLocaleDateString('fr-FR') : '-'}
+                    </TableCell>
+                    <TableCell className="text-center border border-gray-300 p-3">
+                      {demande.dateLivraisonSouhaitee ? new Date(demande.dateLivraisonSouhaitee).toLocaleDateString('fr-FR') : '-'}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+
+          {/* Champ commentaire */}
+          {!["cloturee", "archivee", "rejetee"].includes(demande.status) && (
+            <div className="space-y-2 pt-4">
+              <label className="block text-sm font-semibold text-gray-700">
+                Commentaire
+              </label>
+              <Textarea
+                value={commentaire}
+                onChange={(e) => {
+                  setCommentaire(e.target.value)
+                  setShowCommentaireError(false)
+                }}
+                placeholder="Commentaire optionnel..."
+                className="min-h-[100px] resize-none border border-gray-300 rounded p-3"
+              />
+              {showCommentaireError && (
+                <div className="flex items-center mt-2 text-red-600 text-sm">
+                  <AlertCircle className="h-4 w-4 mr-1" />
+                  Un commentaire est obligatoire lorsque vous modifiez les quantités
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Boutons d'action */}
+          <div className="flex flex-col items-center gap-3 pt-4">
+            {/* Boutons Valider et Rejeter */}
+            {canValidate && (
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => handleAction(validationAction)}
+                  disabled={actionLoading !== null}
+                  className="bg-green-600 hover:bg-green-700 text-white px-8 py-2 rounded flex items-center gap-2"
+                >
+                  {actionLoading === validationAction ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  ) : (
+                    <CheckCircle className="h-5 w-5" />
+                  )}
+                  Valider
+                </Button>
+                
+                <Button
+                  onClick={() => handleAction("rejeter")}
+                  disabled={actionLoading !== null}
+                  className="bg-red-600 hover:bg-red-700 text-white px-8 py-2 rounded flex items-center gap-2"
+                >
+                  {actionLoading === "rejeter" ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  ) : (
+                    <XCircle className="h-5 w-5" />
+                  )}
+                  Rejeter
+                </Button>
+              </div>
+            )}
+
+            {/* Bouton Annuler pour le demandeur - visible uniquement si aucune validation */}
+            {currentUser?.id === demande.technicienId && 
+             ["brouillon", "soumise"].includes(demande.status) && (
+              <Button
+                onClick={() => handleAction("annuler")}
+                disabled={actionLoading !== null}
+                className="bg-red-600 hover:bg-red-700 text-white px-8 py-2 rounded flex items-center gap-2"
+              >
+                {actionLoading === "annuler" ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                ) : (
+                  <XCircle className="h-5 w-5" />
+                )}
+                Annuler la demande
+              </Button>
+            )}
+
+            {/* Bouton Fermer */}
+            <Button 
+              variant="outline" 
+              onClick={onClose}
+              className="px-8 py-2 border-2 border-gray-400 rounded hover:bg-gray-100"
+            >
+              Fermer
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+      {removeItemModalOpen && (
+        <RemoveItemConfirmationModal
+          isOpen={removeItemModalOpen}
+          onClose={() => setRemoveItemModalOpen(false)}
+          item={itemToRemove}
+          demandeNumero={demande?.numero || ""}
+          onConfirm={handleConfirmRemoveItem}
+          isLoading={removeItemLoading}
+        />
+      )}
+    </Dialog>
+  )
+}

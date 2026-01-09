@@ -85,14 +85,15 @@ export default function ConducteurDashboard() {
       )
       
       // Demandes que j'ai validées en tant que conducteur (demandes matériel dans mes projets)
+      // HISTORIQUE COMPLET : Inclut toutes les demandes validées, même terminées ou rejetées
       const demandesValideesConducteur = demandes.filter((d) => 
         d.type === "materiel" && 
         currentUser.projets.includes(d.projetId) &&
         d.technicienId !== currentUser.id && // Pas mes propres demandes
         (
-          // Méthode 1 : Si signature de validation existe (futur)
+          // Méthode 1 : Si signature de validation existe (traçabilité exacte)
           d.validationConducteur?.userId === currentUser.id ||
-          // Méthode 2 : Basé sur les statuts (temporaire pour données actuelles)
+          // Méthode 2 : Basé sur les statuts (toutes demandes ayant passé l'étape conducteur)
           (
             !d.validationConducteur && // Pas encore de signature système
             [
@@ -101,11 +102,19 @@ export default function ConducteurDashboard() {
               "en_attente_preparation_appro",
               "en_attente_validation_logistique",
               "en_attente_validation_finale_demandeur",
-              "cloturee"
+              "confirmee_demandeur",
+              "cloturee",
+              "rejetee" // AJOUT : Inclure les demandes rejetées après validation
             ].includes(d.status)
           )
         )
       )
+
+      console.log(`📊 [CONDUCTEUR-DASHBOARD] Statistiques validations pour ${currentUser.nom}:`, {
+        totalValidees: demandesValideesConducteur.length,
+        avecSignature: demandesValideesConducteur.filter(d => d.validationConducteur?.userId === currentUser.id).length,
+        parStatut: demandesValideesConducteur.filter(d => !d.validationConducteur).length
+      })
 
       setStats({
         total: mesDemandesConducteur.length,
@@ -151,25 +160,25 @@ export default function ConducteurDashboard() {
           "brouillon", "cloturee", "rejetee", "archivee"
         ].includes(d.status))
       case "validees":
-        // Demandes que j'ai validées en tant que conducteur (besoin des projets)
+        // Demandes que j'ai validées en tant que conducteur (HISTORIQUE COMPLET)
         if (!currentUser.projets) return []
         return demandes.filter((d) => 
           d.type === "materiel" && 
           currentUser.projets.includes(d.projetId) &&
-          d.technicienId !== currentUser.id && // Pas mes propres demandes
+          d.technicienId !== currentUser.id &&
           (
-            // Méthode 1 : Si signature de validation existe (futur)
             d.validationConducteur?.userId === currentUser.id ||
-            // Méthode 2 : Basé sur les statuts (temporaire pour données actuelles)
             (
-              !d.validationConducteur && // Pas encore de signature système
+              !d.validationConducteur &&
               [
                 "en_attente_validation_responsable_travaux",
                 "en_attente_validation_charge_affaire", 
                 "en_attente_preparation_appro",
                 "en_attente_validation_logistique",
                 "en_attente_validation_finale_demandeur",
-                "cloturee"
+                "confirmee_demandeur",
+                "cloturee",
+                "rejetee" // Inclure historique complet
               ].includes(d.status)
             )
           )

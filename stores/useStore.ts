@@ -189,21 +189,11 @@ export const useStore = create<AppState>()(
               projets: user.projets ? user.projets.map((p: any) => p.projet.id) : []
             }))
             
-            console.log("🔧 [STORE] Transformation des projets utilisateurs:")
-            transformedUsers.forEach((user: any) => {
-              if (user.projets && user.projets.length > 0) {
-                console.log(`  - ${user.nom}: projets = [${user.projets.join(', ')}]`)
-              }
-            })
-            
             set({ users: transformedUsers })
           } else {
             // Si l'erreur est "Accès non autorisé", c'est normal pour certains rôles (employé)
             if (result.error === "Accès non autorisé") {
-              console.log("⚠️ [STORE] Chargement utilisateurs non autorisé pour ce rôle (normal)")
-              
               // Ajouter des utilisateurs de test pour le développement
-              console.log("🔄 [STORE] Ajout des utilisateurs de test pour le développement")
               const testUsers = [
                 {
                   id: "user-superadmin-1",
@@ -288,13 +278,10 @@ export const useStore = create<AppState>()(
       loadProjets: async () => {
         const { token, currentUser } = get()
         if (!token || !currentUser) {
-          console.log("⏳ [STORE] Token ou utilisateur manquant pour charger les projets")
           return
         }
 
         try {
-          console.log(`🔄 [STORE] Chargement des projets pour ${currentUser.nom} (${currentUser.role})`)
-          
           const response = await fetch("/api/projets", {
             headers: {
               "Authorization": `Bearer ${token}`,
@@ -303,12 +290,10 @@ export const useStore = create<AppState>()(
 
           const result = await response.json()
           if (result.success) {
-            console.log(`✅ [STORE] Projets chargés: ${result.data.length}`)
             set({ projets: result.data })
           } else {
             // Si l'erreur est liée à l'authentification, ne pas la traiter comme une erreur critique
             if (result.error === "Utilisateur non trouvé" || result.error === "Token invalide") {
-              console.log("⚠️ [STORE] Problème d'authentification temporaire, rechargement des projets ignoré")
               return
             }
             
@@ -335,26 +320,20 @@ export const useStore = create<AppState>()(
         
         // Vérifier si un chargement est déjà en cours
         if (isLoadingDemandes) {
-          console.log("⏳ [STORE] Chargement des demandes déjà en cours, abandon")
           return
         }
         
         // Éviter les appels trop fréquents (moins de 2 secondes)
         const now = Date.now()
         if (now - lastDemandesLoad < 2000) {
-          console.log("⚡ [STORE] Chargement récent, utilisation du cache")
           return
         }
         
-        console.log("🔄 [STORE] loadDemandes appelé - Connexion à l'API")
-        
         if (!currentUser) {
-          console.log("⚠️ [STORE] Aucun utilisateur connecté, abandon du chargement des demandes")
           return
         }
 
         if (!token) {
-          console.log("⚠️ [STORE] Aucun token d'authentification, abandon du chargement des demandes")
           return
         }
 
@@ -386,7 +365,6 @@ export const useStore = create<AppState>()(
               isLoadingDemandes: false,
               lastDemandesLoad: Date.now()
             })
-            console.log(`✅ [STORE] ${data.data?.length || 0} demandes chargées depuis l'API`)
           } else {
             throw new Error(data.error || 'Erreur lors du chargement des demandes')
           }
@@ -394,7 +372,6 @@ export const useStore = create<AppState>()(
           console.error("❌ [STORE] Erreur lors du chargement des demandes:", error)
           
           // Fallback vers des demandes de test pour le debug
-          console.log("🔄 [STORE] Fallback vers demandes de test pour debug")
           
           const testDemandes: Demande[] = [
             // Demande 1 : À valider par le conducteur
@@ -713,8 +690,6 @@ export const useStore = create<AppState>()(
         const { currentUser, token, demandes } = get()
         if (!currentUser || !token) return false
 
-        console.log(`[EXECUTE-ACTION] ${currentUser.nom} (${currentUser.role}) exécute "${action}" sur ${demandeId}`)
-
         // Trouver la demande concernée
         const demande = demandes.find(d => d.id === demandeId)
         if (!demande) {
@@ -722,13 +697,10 @@ export const useStore = create<AppState>()(
           return false
         }
 
-        console.log(`[EXECUTE-ACTION] Demande ${demande.numero}: statut=${demande.status}, demandeur=${demande.technicienId}`)
-
         // Calculer le prochain statut avec auto-validation
         let targetStatus = null
         if (action === "valider") {
           targetStatus = get().getNextStatusWithAutoValidation(demande, demande.status, action)
-          console.log(`[AUTO-VALIDATION] Statut cible calculé: ${demande.status} → ${targetStatus}`)
         }
 
         try {
@@ -737,8 +709,6 @@ export const useStore = create<AppState>()(
             targetStatus, // Envoyer le statut cible au backend
             ...data
           }
-
-          console.log("📤 [EXECUTE-ACTION] Payload:", JSON.stringify(payload, null, 2))
 
           const response = await fetch(`/api/demandes/${demandeId}/actions`, {
             method: "POST",
@@ -749,10 +719,7 @@ export const useStore = create<AppState>()(
             body: JSON.stringify(payload),
           })
 
-          console.log("📥 [EXECUTE-ACTION] Response status:", response.status)
-
           const result = await response.json()
-          console.log("📥 [EXECUTE-ACTION] Response:", JSON.stringify(result, null, 2))
 
           if (result.success) {
             // Mettre à jour la demande dans le store
@@ -883,7 +850,6 @@ export const useStore = create<AppState>()(
               isLoading: false,
             }))
             
-            console.log(`✅ [API] Utilisateur ${userId} ajouté au projet ${projectId}`)
             return true
           } else {
             throw new Error(result.error || "Erreur lors de l'ajout")
@@ -900,8 +866,6 @@ export const useStore = create<AppState>()(
         try {
           const token = get().token
           
-          console.log(`🔄 [STORE] Retrait utilisateur ${userId} du projet ${projectId}`)
-          
           const response = await fetch(`/api/projets/${projectId}/remove-user`, {
             method: "DELETE",
             headers: {
@@ -911,23 +875,19 @@ export const useStore = create<AppState>()(
             body: JSON.stringify({ userId }),
           })
 
-          console.log(`📡 [STORE] Réponse HTTP status: ${response.status}`)
-          
           const result = await response.json()
-          console.log(`📦 [STORE] Résultat API:`, result)
 
           if (result.success) {
             // Mettre à jour localement après succès API
             set((state) => ({
               users: state.users.map((user) =>
                 user.id === userId
-                  ? { ...user, projets: (user.projets || []).filter(id => id !== projectId) }
+                  ? { ...user, projets: (user.projets || []).filter((id) => id !== projectId) }
                   : user
               ),
               isLoading: false,
             }))
             
-            console.log(`✅ [STORE] Utilisateur ${userId} retiré du projet ${projectId}`)
             return true
           } else {
             console.error(`❌ [STORE] Échec API:`, result.error)
@@ -970,7 +930,6 @@ export const useStore = create<AppState>()(
               isLoading: false,
             }))
             
-            console.log(`✅ [API] Rôle de l'utilisateur ${userId} mis à jour vers ${newRole}`)
             return true
           } else {
             throw new Error(result.error || "Erreur lors de la mise à jour du rôle")
@@ -1007,7 +966,6 @@ export const useStore = create<AppState>()(
               isLoading: false,
             }))
             
-            console.log(`✅ [API] Projet ${projectId} mis à jour:`, projectData)
             return true
           } else {
             throw new Error(result.error || "Erreur lors de la mise à jour du projet")
@@ -1086,7 +1044,6 @@ export const useStore = create<AppState>()(
           )
           
           if (canAutoValidate) {
-            console.log(`🔄 [AUTO-VALIDATION] ${demande.technicien?.nom} peut auto-valider l'étape: ${nextStatus}`)
             nextIndex++
             nextStatus = flow[nextIndex]
           } else {
@@ -1170,9 +1127,6 @@ export const useStore = create<AppState>()(
           // const historyEntry = { ... }
           // get().addHistoryEntry(historyEntry)
           
-          console.log(`✅ [VALIDATION] Demande ${demande.numero} validée par ${currentUser.prenom} ${currentUser.nom}`)
-          console.log(`📊 [VALIDATION] Statut: ${demande.status} → ${nextStatus}`)
-          
           return true
           
         } catch (error) {
@@ -1196,7 +1150,6 @@ export const useStore = create<AppState>()(
           )
           
           if (!replacementUser) {
-            console.warn(`⚠️ [STORE] Aucun utilisateur de remplacement trouvé pour le rôle: ${deletedUserRole}`)
             return false
           }
           
@@ -1204,7 +1157,6 @@ export const useStore = create<AppState>()(
           const orphanedDemandes = demandes.filter(d => d.technicienId === deletedUserId)
           
           if (orphanedDemandes.length > 0) {
-            console.log(`🔄 [STORE] Transfert de ${orphanedDemandes.length} demandes orphelines vers ${replacementUser.nom}`)
             
             // Mettre à jour les demandes localement
             set((state) => ({

@@ -32,6 +32,7 @@ interface ValidationStep {
 export default function ValidatedRequestsHistory({ isOpen, onClose }: ValidatedRequestsHistoryProps) {
   const [validatedRequests, setValidatedRequests] = useState<DemandeWithHistory[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [selectedRequest, setSelectedRequest] = useState<DemandeWithHistory | null>(null)
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
 
@@ -48,31 +49,28 @@ export default function ValidatedRequestsHistory({ isOpen, onClose }: ValidatedR
       
       // Check localStorage as fallback
       const localToken = localStorage.getItem('token')
-      console.log('LocalStorage token:', localToken ? 'exists' : 'null')
       
       const finalToken = token || localToken
       
       if (!finalToken) {
-        console.error('No token found in store or localStorage')
+        setError('Non authentifié')
         setIsLoading(false)
         return
       }
       
       const response = await fetch('/api/demandes/validated-history', {
+        method: 'GET',
         headers: {
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${finalToken}`,
-          'Content-Type': 'application/json'
         },
       })
-      
-      console.log('Response status:', response.status)
-      console.log('Response ok:', response.ok)
       
       if (response.ok) {
         const data = await response.json()
         setValidatedRequests(data.data || [])
       } else {
-        console.error('Erreur lors du chargement de l\'historique:', response.statusText)
+        setError(`Erreur lors du chargement de l'historique: ${response.statusText}`)
       }
     } catch (error) {
       console.error('Erreur lors du chargement de l\'historique:', error)

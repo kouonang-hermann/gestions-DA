@@ -104,8 +104,11 @@
    DASHBOARDS RESPONSIVES
 ======================================== */
 
-/* Tous les dashboards deviennent responsives sur mobile */
-@media (max-width: 768px) {
+/* IMPORTANT: Ces styles s'appliquent UNIQUEMENT aux vrais mobiles tactiles */
+/* Les PC avec souris gardent l'interface desktop même à faible résolution */
+
+/* Tous les dashboards deviennent responsives sur mobile tactile */
+@media (pointer: coarse) and (max-width: 768px) {
   
   /* Container principal des dashboards */
   .min-h-screen {
@@ -136,6 +139,19 @@
   .lg\\:col-span-4,
   .sm\\:col-span-2 {
     grid-column: span 1 !important;
+  }
+}
+
+/* PC à petite résolution - garder desktop mais adapter */
+@media (pointer: fine) and (max-width: 768px) {
+  .min-h-screen {
+    padding: 12px !important;
+  }
+  
+  /* Grilles adaptées mais pas en une colonne */
+  .grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
   }
 }
 

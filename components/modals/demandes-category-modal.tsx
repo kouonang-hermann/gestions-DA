@@ -361,10 +361,8 @@ export default function DemandesCategoryModal({
           setDemandeDetailsOpen(false)
           setSelectedDemande(null)
         }}
-        demande={selectedDemande}
-        canValidate={false}
-        canRemoveItems={false}
-        showDeliveryColumns={true}
+        demandeId={selectedDemande?.id || null}
+        mode="view"
       />
 
       {/* Modal de confirmation de suppression */}

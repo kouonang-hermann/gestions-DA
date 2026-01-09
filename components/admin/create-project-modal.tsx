@@ -28,7 +28,6 @@ export default function CreateProjectModal({ isOpen, onClose }: CreateProjectMod
 
   useEffect(() => {
     if (isOpen) {
-      console.log('🚀 Modal ouvert, chargement des utilisateurs...')
       loadUsers()
       // Réinitialiser le formulaire et pré-sélectionner tous les utilisateurs non-superadmin
       setFormData({
@@ -45,9 +44,7 @@ export default function CreateProjectModal({ isOpen, onClose }: CreateProjectMod
   useEffect(() => {
     // Pré-sélectionner tous les utilisateurs non-superadmin quand ils sont chargés
     if (users.length > 0 && isOpen) {
-      console.log('👥 Utilisateurs chargés:', users.length, 'utilisateurs')
       const nonSuperAdminUsers = users.filter(user => user.role !== "superadmin").map(user => user.id)
-      console.log('🔧 Utilisateurs non-superadmin:', nonSuperAdminUsers)
       setFormData(prev => ({
         ...prev,
         utilisateurs: nonSuperAdminUsers
@@ -92,14 +89,12 @@ export default function CreateProjectModal({ isOpen, onClose }: CreateProjectMod
   }
 
   const toggleUser = (userId: string) => {
-    console.log('🔄 Toggle user:', userId, 'Current selection:', formData.utilisateurs)
     setFormData((prev) => {
       const isCurrentlySelected = prev.utilisateurs.includes(userId)
       const newSelection = isCurrentlySelected
         ? prev.utilisateurs.filter((id) => id !== userId)
         : [...prev.utilisateurs, userId]
       
-      console.log('✅ New selection:', newSelection)
       return {
         ...prev,
         utilisateurs: newSelection,
@@ -329,27 +324,25 @@ export default function CreateProjectModal({ isOpen, onClose }: CreateProjectMod
                 </div>
                 
                 {/* Actions rapides */}
-                <div className="mt-3 flex flex-col sm:flex-row gap-2">
+                <div className="flex flex-wrap gap-2 mt-3">
                   <button
                     type="button"
                     onClick={() => {
                       const allUserIds = getAllNonSuperAdminUsers().map(user => user.id)
-                      console.log('🔄 Sélectionner tout:', allUserIds)
                       setFormData(prev => ({ ...prev, utilisateurs: allUserIds }))
                     }}
                     className="px-3 py-2 text-xs sm:text-sm bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition-colors flex-1 sm:flex-none"
                   >
-                    ✓ Sélectionner tout ({getAllNonSuperAdminUsers().length})
+                    Sélectionner tout ({getAllNonSuperAdminUsers().length})
                   </button>
                   <button
                     type="button"
                     onClick={() => {
-                      console.log('🔄 Désélectionner tout')
                       setFormData(prev => ({ ...prev, utilisateurs: [] }))
                     }}
                     className="px-3 py-2 text-xs sm:text-sm bg-gray-100 text-gray-800 rounded hover:bg-gray-200 transition-colors flex-1 sm:flex-none"
                   >
-                    ✗ Désélectionner tout
+                    Désélectionner tout
                   </button>
                 </div>
               </div>

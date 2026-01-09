@@ -34,8 +34,6 @@ export default function NotificationIntegrationExample() {
 
       // 2. Déclencher les notifications automatiques
       await notifyStatusChange(updatedDemande, oldStatus, newStatus, users)
-
-      console.log(`✅ Statut mis à jour et notifications envoyées pour ${demande.numero}`)
     } catch (error) {
       console.error('Erreur lors de la mise à jour:', error)
     } finally {
@@ -59,8 +57,6 @@ export default function NotificationIntegrationExample() {
 
       // 2. Utiliser la fonction utilitaire pour les notifications
       await triggerStatusChangeNotifications(demandeId, oldStatus, newStatus, users, demandes)
-
-      console.log(`✅ Statut mis à jour avec fonction utilitaire pour ${demande.numero}`)
     } catch (error) {
       console.error('Erreur lors de la mise à jour:', error)
     } finally {

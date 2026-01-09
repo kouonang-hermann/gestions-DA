@@ -31,15 +31,6 @@ export default function ValidationFinaleList() {
                (!currentUser.projets || currentUser.projets.length === 0 || currentUser.projets.includes(d.projetId))
       )
       
-      console.log(`🔍 [VALIDATION-FINALE] Filtrage pour ${currentUser.role}:`)
-      console.log(`  - Status recherché: en_attente_validation_finale_demandeur`)
-      console.log(`  - Projets utilisateur: [${currentUser.projets?.join(', ') || 'aucun'}]`)
-      console.log(`  - Demandes trouvées: ${filtered.length}/${demandes.length}`)
-      console.log(`  - Filtrage par demandeur: ${currentUser.id}`)
-      if (filtered.length > 0) {
-        console.log(`  - IDs demandes: [${filtered.map(d => d.numero).join(', ')}]`)
-      }
-      
       setDemandesAValider(filtered)
     }
   }, [currentUser, demandes])
@@ -179,11 +170,8 @@ export default function ValidationFinaleList() {
           setDetailsModalOpen(false)
           setSelectedDemande(null)
         }}
-        demande={selectedDemande}
-        canValidate={false}
-        canEditPrices={false}
-        canRemoveItems={false}
-        showDeliveryColumns={true}
+        demandeId={selectedDemande?.id || null}
+        mode="view"
       />
     </Card>
   )

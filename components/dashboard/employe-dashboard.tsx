@@ -526,7 +526,7 @@ export default function EmployeDashboard() {
                 <div 
                   className="mobile-table-row mobile-table-row-clickable"
                   onClick={() => {
-                    console.log("Rapport - À implémenter")
+                    // Rapport - À implémenter
                   }}
                 >
                   <div className="mobile-table-cell">
@@ -546,7 +546,7 @@ export default function EmployeDashboard() {
                 <div 
                   className="mobile-table-row mobile-table-row-clickable"
                   onClick={() => {
-                    console.log("Nouveau Projet - À implémenter")
+                    // Nouveau Projet - À implémenter
                   }}
                 >
                   <div className="mobile-table-cell">
@@ -566,7 +566,7 @@ export default function EmployeDashboard() {
                 <div 
                   className="mobile-table-row mobile-table-row-clickable"
                   onClick={() => {
-                    console.log("DA-Paiement - À implémenter")
+                    // DA-Paiement - À implémenter
                   }}
                 >
                   <div className="mobile-table-cell">

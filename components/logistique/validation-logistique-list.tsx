@@ -31,14 +31,6 @@ export default function ValidationLogistiqueList() {
                (!currentUser.projets || currentUser.projets.length === 0 || currentUser.projets.includes(d.projetId))
       )
       
-      console.log(`🔍 [LOGISTIQUE] Filtrage pour ${currentUser.role}:`)
-      console.log(`  - Status recherché: en_attente_validation_logistique`)
-      console.log(`  - Projets utilisateur: [${currentUser.projets?.join(', ') || 'aucun'}]`)
-      console.log(`  - Demandes trouvées: ${filtered.length}/${demandes.length}`)
-      if (filtered.length > 0) {
-        console.log(`  - IDs demandes: [${filtered.map(d => d.numero).join(', ')}]`)
-      }
-      
       setDemandesAValider(filtered)
     }
   }, [currentUser, demandes])
@@ -213,12 +205,8 @@ export default function ValidationLogistiqueList() {
           setDetailsModalOpen(false)
           setSelectedDemande(null)
         }}
-        demande={selectedDemande}
-        onValidate={handleModalValidation}
-        canValidate={true}
-        validationLabel="Marquer comme livré"
-        validationAction="valider_sortie"
-        showDeliveryColumns={true}
+        demandeId={selectedDemande?.id || null}
+        mode="view"
       />
     </Card>
   )

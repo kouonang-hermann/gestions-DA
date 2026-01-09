@@ -1,0 +1,87 @@
+import { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcryptjs'
+
+const prisma = new PrismaClient()
+
+async function main() {
+  console.log('🔍 Vérification de l\'utilisateur avec le numéro 699425611...\n')
+
+  // Rechercher l'utilisateur par numéro de téléphone
+  const existingUser = await prisma.user.findFirst({
+    where: {
+      phone: '699425611'
+    }
+  })
+
+  if (existingUser) {
+    console.log('✅ Utilisateur trouvé :')
+    console.log(`   Nom: ${existingUser.nom}`)
+    console.log(`   Prénom: ${existingUser.prenom}`)
+    console.log(`   Email: ${existingUser.email}`)
+    console.log(`   Téléphone: ${existingUser.phone}`)
+    console.log(`   Rôle: ${existingUser.role}`)
+    console.log(`   ID: ${existingUser.id}`)
+  } else {
+    console.log('❌ Aucun utilisateur trouvé avec le numéro 699425611\n')
+    
+    // Rechercher si un utilisateur avec le nom "Ndandoalfred" existe
+    console.log('🔍 Recherche d\'utilisateurs avec le nom "Ndando" ou "Alfred"...\n')
+    
+    const usersWithName = await prisma.user.findMany({
+      where: {
+        OR: [
+          { nom: { contains: 'Ndando', mode: 'insensitive' } },
+          { nom: { contains: 'Alfred', mode: 'insensitive' } },
+          { prenom: { contains: 'Ndando', mode: 'insensitive' } },
+          { prenom: { contains: 'Alfred', mode: 'insensitive' } },
+        ]
+      }
+    })
+
+    if (usersWithName.length > 0) {
+      console.log(`✅ ${usersWithName.length} utilisateur(s) trouvé(s) :`)
+      usersWithName.forEach(user => {
+        console.log(`   - ${user.prenom} ${user.nom} (${user.phone}) - ${user.role}`)
+      })
+    } else {
+      console.log('❌ Aucun utilisateur trouvé avec ce nom\n')
+      
+      console.log('💡 Création de l\'utilisateur M. Ndandoalfred...\n')
+      
+      // Hash du mot de passe "Secure01"
+      const hashedPassword = await bcrypt.hash('Secure01', 12)
+      
+      // Créer l'utilisateur
+      const newUser = await prisma.user.create({
+        data: {
+          nom: 'NDANDO',
+          prenom: 'Alfred',
+          email: 'alfred.ndando@instrumelec.com',
+          phone: '699425611',
+          password: hashedPassword,
+          role: 'responsable_logistique', // À ajuster selon le rôle réel
+        }
+      })
+      
+      console.log('✅ Utilisateur créé avec succès :')
+      console.log(`   Nom: ${newUser.nom}`)
+      console.log(`   Prénom: ${newUser.prenom}`)
+      console.log(`   Email: ${newUser.email}`)
+      console.log(`   Téléphone: ${newUser.phone}`)
+      console.log(`   Rôle: ${newUser.role}`)
+      console.log(`   Mot de passe: Secure01`)
+      console.log(`\n🎉 L'utilisateur peut maintenant se connecter avec :`)
+      console.log(`   Identifiant: 699425611`)
+      console.log(`   Mot de passe: Secure01`)
+    }
+  }
+}
+
+main()
+  .catch((e) => {
+    console.error('❌ Erreur:', e)
+    process.exit(1)
+  })
+  .finally(async () => {
+    await prisma.$disconnect()
+  })

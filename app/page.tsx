@@ -2,7 +2,6 @@
 
 import { useStore } from "@/stores/useStore"
 import LoginForm from "@/components/auth/login-form"
-import Navbar from "@/components/layout/navbar"
 import Dashboard from "@/components/dashboard/dashboard"
 import { useHydration } from "@/hooks/useHydration"
 
@@ -29,7 +28,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Navbar />
       <Dashboard />
     </div>
   )

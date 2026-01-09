@@ -9,13 +9,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Package, Truck, Clock, CheckCircle, AlertCircle, User, Eye, X, FileDown } from "lucide-react"
+import { Package, Truck, Clock, CheckCircle, AlertCircle, User, Eye, X, FileDown, Wrench } from "lucide-react"
 import type { Demande } from "@/types"
 import DemandeDetailsModal from "@/components/modals/demande-details-modal"
 import jsPDF from "jspdf"
 import html2canvas from "html2canvas"
 
-export default function SortiePreparationList() {
+export default function PreparationLogistiqueList() {
   const { currentUser, demandes, loadDemandes, executeAction, isLoading, error, users } = useStore()
   const [demandesAPreparer, setDemandesAPreparer] = useState<Demande[]>([])
   const [actionLoading, setActionLoading] = useState<string | null>(null)
@@ -29,22 +29,15 @@ export default function SortiePreparationList() {
   useEffect(() => {
     if (currentUser) {
       loadDemandes()
-      // Charger les utilisateurs pour avoir la liste des livreurs
       useStore.getState().loadUsers()
     }
   }, [currentUser, loadDemandes])
-  
-  useEffect(() => {
-    if (currentUser && users.length > 0) {
-      // Logs supprimés pour production
-    }
-  }, [currentUser, users])
 
   useEffect(() => {
     if (currentUser) {
       const filtered = demandes.filter((d) => 
-        d.type === "materiel" && // MATÉRIEL UNIQUEMENT (outillage géré par Responsable Logistique)
-        d.status === "en_attente_preparation_appro" &&
+        d.type === "outillage" && // OUTILLAGE UNIQUEMENT
+        d.status === "en_attente_preparation_logistique" &&
         // Filtrer par projet si l'utilisateur a des projets assignés
         (!currentUser.projets || currentUser.projets.length === 0 || currentUser.projets.includes(d.projetId))
       )
@@ -79,7 +72,7 @@ export default function SortiePreparationList() {
     setPreparationModalOpen(false)
 
     try {
-      const success = await executeAction(demandeToPrep, "preparer_sortie", { 
+      const success = await executeAction(demandeToPrep, "preparer_sortie_logistique", { 
         commentaire: commentaire || undefined,
         livreurAssigneId: selectedLivreur 
       })
@@ -102,13 +95,8 @@ export default function SortiePreparationList() {
     setDetailsModalOpen(true)
   }
 
-  const handlePricesUpdated = () => {
-    loadDemandes()
-  }
-
   const generatePDF = async (demande: Demande) => {
     try {
-      // Créer un iframe isolé pour éviter l'héritage des styles globaux
       const iframe = document.createElement('iframe')
       iframe.style.position = 'absolute'
       iframe.style.left = '-9999px'
@@ -119,7 +107,6 @@ export default function SortiePreparationList() {
       const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document
       if (!iframeDoc) throw new Error('Impossible de créer le document iframe')
 
-      // Écrire le HTML complet dans l'iframe (sans héritage de styles)
       iframeDoc.open()
       iframeDoc.write(`
         <!DOCTYPE html>
@@ -177,7 +164,7 @@ export default function SortiePreparationList() {
               color: #000000;
             }
             th {
-              background-color: #4CAF50;
+              background-color: #8b5cf6;
               color: #ffffff;
             }
             tr:nth-child(even) {
@@ -210,12 +197,12 @@ export default function SortiePreparationList() {
         </head>
         <body>
           <div class="header">
-            <h1>BON DE SORTIE MAGASIN</h1>
+            <h1>BON DE SORTIE OUTILLAGE</h1>
             <p>Demande N° ${demande.numero}</p>
           </div>
 
           <div class="info-section">
-            <div class="info-row"><strong>Type:</strong>${demande.type === "materiel" ? "Matériel" : "Outillage"}</div>
+            <div class="info-row"><strong>Type:</strong>Outillage</div>
             <div class="info-row"><strong>Projet:</strong>${demande.projet?.nom || "N/A"}</div>
             <div class="info-row"><strong>Demandeur:</strong>${demande.technicien?.nom || "N/A"} ${demande.technicien?.prenom || ""}</div>
             <div class="info-row"><strong>Date de création:</strong>${new Date(demande.dateCreation).toLocaleDateString("fr-FR")}</div>
@@ -249,7 +236,7 @@ export default function SortiePreparationList() {
 
           <div class="signature-section">
             <div class="signature-box">
-              <p><strong>Préparé par (Appro)</strong></p>
+              <p><strong>Préparé par (Logistique)</strong></p>
               <p>Nom: _____________________</p>
               <p>Date: _____________________</p>
               <p>Signature: _____________________</p>
@@ -270,10 +257,8 @@ export default function SortiePreparationList() {
       `)
       iframeDoc.close()
 
-      // Attendre que le contenu soit chargé
       await new Promise(resolve => setTimeout(resolve, 100))
 
-      // Convertir en canvas puis en PDF
       const canvas = await html2canvas(iframeDoc.body, {
         scale: 2,
         useCORS: true,
@@ -283,7 +268,6 @@ export default function SortiePreparationList() {
 
       document.body.removeChild(iframe)
 
-      // Créer le PDF
       const imgData = canvas.toDataURL('image/png')
       const pdf = new jsPDF({
         orientation: 'portrait',
@@ -291,8 +275,8 @@ export default function SortiePreparationList() {
         format: 'a4'
       })
 
-      const imgWidth = 210 // A4 width in mm
-      const pageHeight = 297 // A4 height in mm
+      const imgWidth = 210
+      const pageHeight = 297
       const imgHeight = (canvas.height * imgWidth) / canvas.width
       let heightLeft = imgHeight
       let position = 0
@@ -300,7 +284,6 @@ export default function SortiePreparationList() {
       pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
       heightLeft -= pageHeight
 
-      // Ajouter des pages supplémentaires si nécessaire
       while (heightLeft > 0) {
         position = heightLeft - imgHeight
         pdf.addPage()
@@ -308,8 +291,7 @@ export default function SortiePreparationList() {
         heightLeft -= pageHeight
       }
 
-      // Télécharger le PDF
-      pdf.save(`Bon_Sortie_${demande.numero}_${new Date().toISOString().split("T")[0]}.pdf`)
+      pdf.save(`Bon_Sortie_Outillage_${demande.numero}_${new Date().toISOString().split("T")[0]}.pdf`)
     } catch (error) {
       console.error('❌ Erreur lors de la génération du PDF:', error)
       alert('Erreur lors de la génération du PDF. Veuillez réessayer.')
@@ -324,11 +306,10 @@ export default function SortiePreparationList() {
     if (!demande) return []
     
     // Filtrer tous les utilisateurs assignés au même projet que la demande
-    // Prioriser les responsable_livreur, mais permettre les autres rôles
     const utilisateursProjet = users.filter(user => 
       user.projets && 
       user.projets.includes(demande.projetId) &&
-      user.role !== "superadmin" // Exclure le superadmin
+      user.role !== "superadmin"
     )
     
     // Trier pour mettre les responsable_livreur en premier
@@ -352,42 +333,40 @@ export default function SortiePreparationList() {
   }
 
   return (
-    <Card className="bg-gray-50 border-gray-200">
+    <Card className="bg-purple-50 border-purple-200">
       <CardHeader>
-        <CardTitle className="text-gray-800">Demandes à préparer pour sortie</CardTitle>
+        <CardTitle className="text-purple-800 flex items-center gap-2">
+          <Wrench className="h-5 w-5" />
+          Demandes d'outillage à préparer
+        </CardTitle>
       </CardHeader>
       <CardContent>
         {demandesAPreparer.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             <Package className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-            <p>Aucune demande à préparer</p>
+            <p>Aucune demande d'outillage à préparer</p>
           </div>
         ) : (
           <div className="space-y-4">
             {demandesAPreparer.map((demande) => (
               <div
                 key={demande.id}
-                className="bg-white p-4 rounded-lg border border-gray-200 hover:shadow-sm transition-shadow"
+                className="bg-white p-4 rounded-lg border border-purple-200 hover:shadow-sm transition-shadow"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="font-medium text-gray-800">{demande.numero}</h3>
-                      <Badge className="bg-green-500 text-white text-xs">{demande.status}</Badge>
-                      <Badge variant="outline" className="text-xs">
-                        {demande.type === "materiel" ? "Matériel" : "Outillage"}
+                      <Badge className="bg-purple-500 text-white text-xs">À préparer</Badge>
+                      <Badge variant="outline" className="text-xs bg-purple-100 text-purple-800">
+                        Outillage
                       </Badge>
                     </div>
                     <p className="text-sm text-gray-600 mb-2">
-                      {demande.items.length} article{demande.items.length > 1 ? "s" : ""} • Validée le{" "}
-                      {demande.validationConducteur?.date
-                        ? new Date(demande.validationConducteur.date).toLocaleDateString()
-                        : demande.validationLogistique?.date
-                          ? new Date(demande.validationLogistique.date).toLocaleDateString()
-                          : "N/A"}
+                      {demande.items.length} article{demande.items.length > 1 ? "s" : ""} • Projet: {demande.projet?.nom || "N/A"}
                     </p>
                     {demande.commentaires && (
-                      <p className="text-sm text-blue-600 bg-blue-50 p-2 rounded">
+                      <p className="text-sm text-purple-600 bg-purple-50 p-2 rounded">
                         <strong>Commentaire:</strong> {demande.commentaires}
                       </p>
                     )}
@@ -424,7 +403,7 @@ export default function SortiePreparationList() {
                       className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                     >
                       <Eye className="h-4 w-4 mr-1" />
-                      <span className="hidden sm:inline">Détails & Prix</span>
+                      <span className="hidden sm:inline">Détails</span>
                     </Button>
                   </div>
                 </div>
@@ -434,7 +413,7 @@ export default function SortiePreparationList() {
         )}
       </CardContent>
 
-      {/* Modal de détails avec saisie des prix */}
+      {/* Modal de détails */}
       <DemandeDetailsModal
         isOpen={detailsModalOpen}
         onClose={() => {
@@ -450,8 +429,8 @@ export default function SortiePreparationList() {
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Truck className="h-5 w-5 text-green-600" />
-              Préparer la sortie
+              <Truck className="h-5 w-5 text-purple-600" />
+              Préparer la sortie d'outillage
             </DialogTitle>
             <DialogDescription>
               Sélectionnez le livreur qui sera chargé de cette livraison
@@ -534,7 +513,7 @@ export default function SortiePreparationList() {
             <Button
               onClick={handleConfirmPreparation}
               disabled={!selectedLivreur}
-              className="bg-green-600 hover:bg-green-700"
+              className="bg-purple-600 hover:bg-purple-700"
             >
               <CheckCircle className="h-4 w-4 mr-2" />
               Confirmer la préparation

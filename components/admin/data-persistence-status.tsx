@@ -53,7 +53,6 @@ export default function DataPersistenceStatus() {
         const testUser = users[0]
         const testProject = projets[0]
         
-        console.log('🧪 Test: Ajout utilisateur au projet...')
         const addResult = await addUserToProject(testUser.id, testProject.id, 'employe')
         results.addUserToProject = {
           success: addResult,
@@ -62,7 +61,6 @@ export default function DataPersistenceStatus() {
 
         // Test 3: Test de suppression d'utilisateur du projet
         if (addResult) {
-          console.log('🧪 Test: Suppression utilisateur du projet...')
           const removeResult = await removeUserFromProject(testUser.id, testProject.id)
           results.removeUserFromProject = {
             success: removeResult,
@@ -76,7 +74,6 @@ export default function DataPersistenceStatus() {
         const testUser = users[0]
         const originalRole = testUser.role
         
-        console.log('🧪 Test: Modification de rôle...')
         const roleResult = await updateUserRole(testUser.id, 'conducteur_travaux')
         
         // Remettre le rôle original
@@ -94,7 +91,6 @@ export default function DataPersistenceStatus() {
       if (projets.length > 0) {
         const testProject = projets[0]
         
-        console.log('🧪 Test: Modification de projet...')
         const projectResult = await updateProject(testProject.id, {
           description: testProject.description + ' [TEST]'
         })

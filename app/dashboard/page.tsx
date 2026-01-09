@@ -56,13 +56,11 @@ export default function DashboardPage() {
     case "responsable_travaux":
       return <ResponsableTravauxDashboard />
     case "responsable_logistique":
-      return <QHSEDashboard />
+      return <ResponsableLogistiqueDashboard />
     case "charge_affaire":
       return <ChargeAffaireDashboard />
     case "responsable_appro":
       return <ApproDashboard />
-    case "responsable_livreur":
-      return <ResponsableLogistiqueDashboard />
     case "employe":
     default:
       return <EmployeDashboard />

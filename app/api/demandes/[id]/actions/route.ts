@@ -24,7 +24,7 @@ const VALIDATION_FLOWS: Record<string, DemandeStatus[]> = {
     "en_attente_validation_logistique",
     "en_attente_validation_responsable_travaux",
     "en_attente_validation_charge_affaire",
-    "en_attente_preparation_appro",
+    "en_attente_preparation_logistique",
     "en_attente_reception_livreur",
     "en_attente_livraison",
     "en_attente_validation_finale_demandeur",
@@ -38,7 +38,8 @@ const ROLE_TO_STATUS: Record<string, DemandeStatus> = {
   "responsable_travaux": "en_attente_validation_responsable_travaux",
   "charge_affaire": "en_attente_validation_charge_affaire",
   "responsable_appro": "en_attente_preparation_appro",
-  "responsable_livreur": "en_attente_reception_livreur"
+  "responsable_livreur": "en_attente_reception_livreur",
+  "responsable_logistique_preparation": "en_attente_preparation_logistique"
 }
 
 /**
@@ -98,20 +99,25 @@ function getNextStatusWithAutoValidation(currentStatus: DemandeStatus, userRole:
  * Détermine le prochain statut selon le statut actuel et le rôle (fonction legacy)
  */
 function getNextStatus(currentStatus: DemandeStatus, userRole: string, demandeType: string): DemandeStatus | null {
+  // Logique spéciale pour le Chargé d'Affaire : dépend du type de demande
+  if (currentStatus === "en_attente_validation_charge_affaire" && userRole === "charge_affaire") {
+    return demandeType === "materiel" ? "en_attente_preparation_appro" : "en_attente_preparation_logistique"
+  }
+
   const transitions: Record<string, Record<string, DemandeStatus>> = {
-    // Flow Matériel: Conducteur -> Responsable Travaux -> Chargé Affaire -> Appro -> Logistique -> Demandeur
+    // Flow Matériel: Conducteur -> Responsable Travaux -> Chargé Affaire -> Appro -> Livreur -> Demandeur
     "en_attente_validation_conducteur": {
       "conducteur_travaux": "en_attente_validation_responsable_travaux"
     },
-    // Flow Outillage: Logistique -> Responsable Travaux -> Chargé Affaire -> Appro -> Livreur -> Demandeur  
+    // Flow Outillage: Logistique -> Responsable Travaux -> Chargé Affaire -> Préparation Logistique -> Livreur -> Demandeur  
     "en_attente_validation_logistique": {
       "responsable_logistique": "en_attente_validation_responsable_travaux"
     },
+    "en_attente_preparation_logistique": {
+      "responsable_logistique": "en_attente_reception_livreur"
+    },
     "en_attente_validation_responsable_travaux": {
       "responsable_travaux": "en_attente_validation_charge_affaire"
-    },
-    "en_attente_validation_charge_affaire": {
-      "charge_affaire": "en_attente_preparation_appro"
     },
     "en_attente_preparation_appro": {
       "responsable_appro": "en_attente_reception_livreur"
@@ -263,6 +269,10 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
           
           if (demande.status === "en_attente_preparation_appro" && currentUser.role !== "responsable_appro") {
             return NextResponse.json({ success: false, error: "Seul le responsable appro peut préparer la sortie" }, { status: 403 })
+          }
+          
+          if (demande.status === ("en_attente_preparation_logistique" as DemandeStatus) && currentUser.role !== "responsable_logistique") {
+            return NextResponse.json({ success: false, error: "Seul le responsable Logistique peut préparer la sortie d'outillage" }, { status: 403 })
           }
           
           if ((demande.status === "en_attente_reception_livreur" || demande.status === "en_attente_livraison") && demande.livreurAssigneId !== currentUser.id) {
@@ -616,6 +626,103 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
           console.log(`❌ [PREPARER-SORTIE] Conditions non remplies:`)
           console.log(`  - Status correct: ${demande.status === "en_attente_preparation_appro"}`)
           console.log(`  - Role correct: ${currentUser.role === "responsable_appro"}`)
+          return NextResponse.json({ 
+            success: false, 
+            error: `Action non autorisée. Status: ${demande.status}, Role: ${currentUser.role}` 
+          }, { status: 403 })
+        }
+        break
+
+      case "preparer_sortie_logistique":
+        console.log(`📦 [PREPARER-SORTIE-LOGISTIQUE] Vérifications:`)
+        console.log(`  - Status demande: ${demande.status}`)
+        console.log(`  - Role utilisateur: ${currentUser.role}`)
+        console.log(`  - Livreur assigné: ${livreurAssigneId}`)
+        console.log(`  - Status attendu: en_attente_preparation_logistique`)
+        console.log(`  - Role attendu: responsable_logistique`)
+        
+        if (demande.status === ("en_attente_preparation_logistique" as any) && currentUser.role === "responsable_logistique") {
+          // Vérifier que le livreur est assigné
+          if (!livreurAssigneId) {
+            console.log(`❌ [PREPARER-SORTIE-LOGISTIQUE] Aucun livreur assigné`)
+            return NextResponse.json({ 
+              success: false, 
+              error: "Vous devez choisir un livreur avant de valider la préparation" 
+            }, { status: 400 })
+          }
+
+          // Vérifier que le livreur existe
+          const livreurLogistique = await prisma.user.findUnique({
+            where: { id: livreurAssigneId }
+          })
+
+          if (!livreurLogistique) {
+            console.log(`❌ [PREPARER-SORTIE-LOGISTIQUE] Livreur ${livreurAssigneId} non trouvé`)
+            return NextResponse.json({ 
+              success: false, 
+              error: "Le livreur sélectionné n'existe pas" 
+            }, { status: 404 })
+          }
+
+          const nextStatusLogistique = getNextStatus(demande.status, currentUser.role, demande.type)
+          console.log(`  - Next status calculé: ${nextStatusLogistique}`)
+          
+          if (!nextStatusLogistique) {
+            console.log(`❌ [PREPARER-SORTIE-LOGISTIQUE] Impossible de déterminer le prochain statut`)
+            return NextResponse.json({ success: false, error: "Impossible de déterminer le prochain statut de la demande" }, { status: 403 })
+          }
+          
+          console.log(`✅ [PREPARER-SORTIE-LOGISTIQUE] Préparation de sortie validée, transition: ${demande.status} → ${nextStatusLogistique}`)
+          console.log(`✅ [PREPARER-SORTIE-LOGISTIQUE] Livreur assigné: ${livreurLogistique.prenom} ${livreurLogistique.nom} (${livreurLogistique.role})`)
+          
+          newStatus = nextStatusLogistique as any
+          
+          // Assigner le livreur
+          updates.livreurAssigneId = livreurAssigneId
+          
+          // Créer la sortie signature (pour traçabilité)
+          await prisma.sortieSignature.create({
+            data: {
+              userId: currentUser.id,
+              demandeId: demande.id,
+              commentaire: commentaire || null,
+              signature: `${currentUser.id}-sortie-logistique-${Date.now()}`,
+              quantitesSorties: quantitesSorties || {},
+              dateModificationLimite: new Date(Date.now() + 45 * 60 * 1000) // +45 minutes
+            }
+          })
+          
+          console.log(`✅ [PREPARER-SORTIE-LOGISTIQUE] Sortie signature créée`)
+
+          // Créer automatiquement une livraison complète
+          const itemsLogistique = await prisma.itemDemande.findMany({
+            where: { demandeId: demande.id }
+          })
+          
+          await prisma.livraison.create({
+            data: {
+              demandeId: demande.id,
+              livreurId: livreurAssigneId,
+              commentaire: commentaire || "Livraison outillage créée automatiquement",
+              statut: "prete",
+              items: {
+                create: itemsLogistique.map(item => ({
+                  itemDemandeId: item.id,
+                  quantiteLivree: item.quantiteValidee || item.quantiteDemandee
+                }))
+              }
+            }
+          })
+          
+          console.log(`✅ [PREPARER-SORTIE-LOGISTIQUE] Livraison complète créée automatiquement`)
+
+          // Envoyer notification au livreur assigné
+          await notificationService.notifyLivreurAssigne(demande.id, livreurAssigneId, currentUser.id)
+          console.log(`✅ [PREPARER-SORTIE-LOGISTIQUE] Notification envoyée au livreur`)
+        } else {
+          console.log(`❌ [PREPARER-SORTIE-LOGISTIQUE] Conditions non remplies:`)
+          console.log(`  - Status correct: ${demande.status === "en_attente_preparation_logistique"}`)
+          console.log(`  - Role correct: ${currentUser.role === "responsable_logistique"}`)
           return NextResponse.json({ 
             success: false, 
             error: `Action non autorisée. Status: ${demande.status}, Role: ${currentUser.role}` 

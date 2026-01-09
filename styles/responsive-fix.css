@@ -1,0 +1,395 @@
+/* ========================================
+   CORRECTION RESPONSIVE - PROBLÈME PC/MOBILE
+   Résout le problème où les PC affichent l'interface mobile
+   
+   PROBLÈME : Le breakpoint 768px est trop élevé et affecte 
+   les PC avec scaling Windows ou faible résolution.
+   
+   SOLUTION : Utiliser des breakpoints plus précis et détecter
+   le type d'appareil avec pointer/hover.
+======================================== */
+
+/* ========================================
+   1. VARIABLES ET BREAKPOINTS STANDARDS
+   
+   - Mobile strict : <= 480px (téléphones)
+   - Mobile large : 481px - 640px (grands téléphones)
+   - Tablette : 641px - 1024px
+   - Desktop : > 1024px
+======================================== */
+
+:root {
+  --breakpoint-mobile: 480px;
+  --breakpoint-mobile-lg: 640px;
+  --breakpoint-tablet: 1024px;
+  --breakpoint-desktop: 1025px;
+}
+
+/* ========================================
+   2. FORCER L'AFFICHAGE DESKTOP SUR PC
+   
+   Utilise (pointer: fine) pour détecter les appareils
+   avec une souris (PC, laptops) vs tactiles (mobiles)
+======================================== */
+
+/* Sur les appareils avec souris (PC), toujours afficher desktop */
+@media (pointer: fine) {
+  .desktop-dashboard {
+    display: block !important;
+  }
+  
+  .mobile-dashboard {
+    display: none !important;
+  }
+  
+  /* Annuler les styles mobile sur PC */
+  .mobile-only {
+    display: none !important;
+  }
+  
+  .desktop-only {
+    display: block !important;
+  }
+}
+
+/* ========================================
+   3. MOBILE UNIQUEMENT POUR VRAIS MOBILES
+   
+   Combine (pointer: coarse) + (max-width) pour cibler
+   uniquement les vrais appareils mobiles tactiles
+======================================== */
+
+/* Vrais mobiles tactiles uniquement */
+@media (pointer: coarse) and (max-width: 768px) {
+  .desktop-dashboard {
+    display: none !important;
+  }
+  
+  .mobile-dashboard {
+    display: flex !important;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+}
+
+/* ========================================
+   4. TABLETTES EN MODE PAYSAGE = DESKTOP
+   
+   Les tablettes en paysage avec largeur > 1024px
+   affichent l'interface desktop
+======================================== */
+
+@media (pointer: coarse) and (min-width: 1025px) {
+  .desktop-dashboard {
+    display: block !important;
+  }
+  
+  .mobile-dashboard {
+    display: none !important;
+  }
+}
+
+/* ========================================
+   5. CORRECTION DU BREAKPOINT 768px
+   
+   Remplace les règles 768px par des règles plus précises
+======================================== */
+
+/* Annuler les règles 768px sur PC */
+@media (pointer: fine) and (max-width: 768px) {
+  /* Ces règles s'appliquent aux petits écrans PC (pas mobiles) */
+  
+  .min-h-screen {
+    padding: 1rem !important;
+  }
+  
+  /* Adapter les grilles mais garder le layout desktop */
+  .grid-cols-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  .grid-cols-3 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  /* Modals adaptés mais toujours style desktop */
+  [data-radix-dialog-content] {
+    max-width: 90vw !important;
+    width: auto !important;
+  }
+}
+
+/* ========================================
+   6. STYLES SPÉCIFIQUES PETITS ÉCRANS PC
+   
+   Pour les PC avec résolution < 1280px (petits laptops)
+======================================== */
+
+@media (pointer: fine) and (max-width: 1280px) {
+  /* Réduire les marges */
+  .min-h-screen {
+    padding: 1rem !important;
+  }
+  
+  /* Adapter les cartes stats */
+  .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
+    gap: 0.75rem !important;
+  }
+  
+  /* Texte légèrement plus petit */
+  .text-2xl {
+    font-size: 1.25rem !important;
+  }
+  
+  .text-3xl {
+    font-size: 1.5rem !important;
+  }
+}
+
+/* ========================================
+   7. PETITS ÉCRANS PC (< 1024px)
+   
+   Adaptation pour petits laptops ou fenêtres réduites
+======================================== */
+
+@media (pointer: fine) and (max-width: 1024px) {
+  /* Grille à 2 colonnes */
+  .grid-cols-4,
+  .grid-cols-3 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  /* Sidebar réduite si présente */
+  .sidebar {
+    width: 200px !important;
+  }
+  
+  /* Cards plus compactes */
+  [class*="CardContent"] {
+    padding: 1rem !important;
+  }
+}
+
+/* ========================================
+   8. TRÈS PETITS ÉCRANS PC (< 800px)
+   
+   Fenêtres très réduites sur PC
+======================================== */
+
+@media (pointer: fine) and (max-width: 800px) {
+  /* Layout en une colonne */
+  .grid-cols-4,
+  .grid-cols-3,
+  .grid-cols-2 {
+    grid-template-columns: 1fr !important;
+  }
+  
+  /* Tables avec scroll horizontal */
+  table {
+    display: block;
+    overflow-x: auto;
+  }
+  
+  /* Navbar compacte mais toujours visible */
+  nav {
+    padding: 0.5rem 1rem !important;
+  }
+}
+
+/* ========================================
+   9. CORRECTION HOVER SUR PC
+   
+   Assure que les effets hover fonctionnent sur PC
+======================================== */
+
+@media (hover: hover) {
+  /* Hover effects sur PC */
+  button:hover,
+  a:hover,
+  [role="button"]:hover {
+    cursor: pointer;
+  }
+  
+  .card:hover,
+  [class*="Card"]:hover {
+    transition: box-shadow 0.2s ease;
+  }
+}
+
+/* ========================================
+   10. CORRECTION SCROLLBARS PC
+   
+   Scrollbars visibles et utilisables sur PC
+======================================== */
+
+@media (pointer: fine) {
+  /* Scrollbar toujours visible */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 5px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 5px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: #666;
+  }
+}
+
+/* ========================================
+   11. SCALING WINDOWS - CORRECTION DPI
+   
+   Certains PC Windows avec scaling 125%-150%
+   peuvent avoir une résolution effective réduite
+======================================== */
+
+/* Forcer le mode desktop même sur résolutions effectives basses */
+@media (pointer: fine) and (hover: hover) {
+  /* C'est un PC avec souris et hover - toujours desktop */
+  .mobile-dashboard {
+    display: none !important;
+  }
+  
+  .desktop-dashboard,
+  .min-h-screen.bg-gray-50,
+  .dashboard-fullscreen {
+    display: block !important;
+  }
+}
+
+/* ========================================
+   12. CLASSES UTILITAIRES
+======================================== */
+
+/* Force le mode desktop */
+.force-desktop {
+  display: block !important;
+}
+
+/* Force le mode mobile */
+.force-mobile {
+  display: flex !important;
+  flex-direction: column;
+}
+
+/* Visible uniquement sur PC */
+.pc-only {
+  display: none;
+}
+
+@media (pointer: fine) {
+  .pc-only {
+    display: block !important;
+  }
+}
+
+/* Visible uniquement sur mobile tactile */
+.touch-only {
+  display: none;
+}
+
+@media (pointer: coarse) and (max-width: 768px) {
+  .touch-only {
+    display: block !important;
+  }
+}
+
+/* ========================================
+   13. CORRECTION DES MODALS SUR PC
+======================================== */
+
+@media (pointer: fine) {
+  /* Modals toujours bien dimensionnés sur PC */
+  [data-radix-dialog-content] {
+    min-width: 400px;
+    max-width: min(90vw, 1200px);
+  }
+  
+  /* Petits modals */
+  [data-radix-dialog-content].max-w-sm {
+    max-width: 400px !important;
+  }
+  
+  /* Modals moyens */
+  [data-radix-dialog-content].max-w-md {
+    max-width: 500px !important;
+  }
+  
+  /* Grands modals */
+  [data-radix-dialog-content].max-w-lg,
+  [data-radix-dialog-content].max-w-xl {
+    max-width: 700px !important;
+  }
+  
+  /* Très grands modals */
+  [data-radix-dialog-content].max-w-4xl,
+  [data-radix-dialog-content].max-w-6xl {
+    max-width: min(95vw, 1400px) !important;
+  }
+}
+
+/* ========================================
+   14. NAVBAR - TOUJOURS DESKTOP SUR PC
+======================================== */
+
+@media (pointer: fine) {
+  /* Menu hamburger caché sur PC */
+  .mobile-menu-button,
+  [aria-label="Menu mobile"],
+  [aria-label="Toggle menu"] {
+    display: none !important;
+  }
+  
+  /* Navigation desktop visible */
+  nav .desktop-nav,
+  nav .hidden.md\\:flex,
+  nav .hidden.lg\\:flex {
+    display: flex !important;
+  }
+}
+
+/* ========================================
+   15. FORMULAIRES - ADAPTATION PC
+======================================== */
+
+@media (pointer: fine) {
+  /* Inputs bien dimensionnés */
+  input, select, textarea {
+    min-height: 38px;
+    font-size: 14px;
+  }
+  
+  /* Boutons accessibles */
+  button {
+    min-height: 36px;
+    min-width: 80px;
+  }
+  
+  /* Labels lisibles */
+  label {
+    font-size: 14px;
+  }
+}
+
+/* ========================================
+   16. PRINT - TOUJOURS MODE DESKTOP
+======================================== */
+
+@media print {
+  .mobile-dashboard {
+    display: none !important;
+  }
+  
+  .desktop-dashboard {
+    display: block !important;
+  }
+}

@@ -89,38 +89,19 @@ export default function Navbar() {
             </Button>
           )}
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="relative hover:bg-gray-100"
-                onClick={() => router.push('/notifications')}
-              >
-                <Bell className="h-4 w-4" />
-                {unreadCount > 0 && (
-                  <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-red-500">
-                    {unreadCount > 99 ? '99+' : unreadCount}
-                  </Badge>
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80 bg-white border-gray-200">
-              <DropdownMenuLabel className="text-gray-800">Notifications</DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-gray-200" />
-              {notifications.length === 0 ? (
-                <div className="p-4 text-sm text-gray-500 text-center">Aucune notification</div>
-              ) : (
-                notifications.slice(0, 5).map((notification) => (
-                  <DropdownMenuItem key={notification.id} className="flex flex-col items-start p-4 hover:bg-gray-50">
-                    <div className="font-medium text-gray-800">{notification.title}</div>
-                    <div className="text-sm text-gray-600">{notification.message}</div>
-                    <div className="text-xs text-gray-400 mt-1">{notification.timestamp ? new Date(notification.timestamp).toLocaleString() : "—"}</div>
-                  </DropdownMenuItem>
-                ))
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="relative hover:bg-gray-100"
+            onClick={() => router.push('/notifications')}
+          >
+            <Bell className="h-5 w-5" />
+            {unreadCount > 0 && (
+              <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px] bg-red-500 text-white border-2 border-white animate-pulse">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </Badge>
+            )}
+          </Button>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -195,17 +176,40 @@ export default function Navbar() {
                   <div className="flex items-center justify-between">
                     <h3 className="font-medium text-gray-800">Notifications</h3>
                     {unreadCount > 0 && (
-                      <Badge className="bg-red-500 text-white">{unreadCount}</Badge>
+                      <Badge className="bg-red-500 text-white animate-pulse">{unreadCount}</Badge>
                     )}
                   </div>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={() => {
+                      router.push('/notifications')
+                      setMobileMenuOpen(false)
+                    }}
+                  >
+                    <Bell className="h-4 w-4 mr-2" />
+                    Voir toutes les notifications
+                  </Button>
                   <div className="max-h-40 overflow-y-auto space-y-2">
                     {notifications.length === 0 ? (
                       <div className="text-sm text-gray-500 text-center py-4">Aucune notification</div>
                     ) : (
                       notifications.slice(0, 3).map((notification) => (
-                        <div key={notification.id} className="p-3 bg-gray-50 rounded-lg">
-                          <div className="font-medium text-sm text-gray-800">{notification.title}</div>
+                        <div 
+                          key={notification.id} 
+                          className={`p-3 rounded-lg cursor-pointer ${notification.read ? 'bg-gray-50' : 'bg-blue-50 border border-blue-200'}`}
+                          onClick={() => {
+                            router.push('/notifications')
+                            setMobileMenuOpen(false)
+                          }}
+                        >
+                          <div className={`font-medium text-sm ${notification.read ? 'text-gray-800' : 'text-gray-900'}`}>
+                            {notification.title || notification.titre}
+                          </div>
                           <div className="text-xs text-gray-600 mt-1">{notification.message}</div>
+                          {!notification.read && !notification.lu && (
+                            <Badge className="mt-2 bg-blue-600 text-white text-[10px]">Nouveau</Badge>
+                          )}
                         </div>
                       ))
                     )}

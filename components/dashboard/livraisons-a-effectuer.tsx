@@ -269,10 +269,10 @@ export default function LivraisonsAEffectuer() {
 
       {selectedDemande && (
         <DemandeDetailsModal
-          demande={selectedDemande}
           isOpen={detailsModalOpen}
           onClose={() => setDetailsModalOpen(false)}
-          showDeliveryColumns={true}
+          demandeId={selectedDemande?.id || null}
+          mode="view"
         />
       )}
     </>

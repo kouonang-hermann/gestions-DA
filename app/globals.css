@@ -1,6 +1,8 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import '../styles/universal-mobile-responsive.css';
+@import '../styles/desktop-fixes.css';
+@import '../styles/responsive-fix.css';
 
 @custom-variant dark (&:is(.dark *));
 
