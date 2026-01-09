@@ -483,7 +483,7 @@ export const useStore = create<AppState>()(
       },
 
       loadArticles: async (filters = {}) => {
-        const { currentUser } = get()
+        const { currentUser, token } = get()
         if (!currentUser) {
           console.warn("Tentative de chargement des articles sans utilisateur connecté")
           return
@@ -497,40 +497,52 @@ export const useStore = create<AppState>()(
 
           const response = await fetch(`/api/articles?${params}`, {
             headers: {
+              "Authorization": token ? `Bearer ${token}` : "",
               "x-user-id": currentUser.id,
             },
           })
+
+          const contentType = response.headers.get('content-type')
+          if (!contentType || !contentType.includes('application/json')) {
+            console.warn('⚠️ [STORE] Réponse non-JSON reçue (loadArticles)')
+            return
+          }
 
           const result = await response.json()
           if (result.success) {
             set({ articles: result.data })
           } else {
             console.error("Erreur API articles:", result.error)
-            set({ error: result.error })
           }
         } catch (error) {
-          console.error("Erreur lors du chargement des articles:", error)
-          set({ error: "Erreur lors du chargement des articles" })
+          console.debug("Info: Articles non disponibles", error)
         }
       },
 
       loadNotifications: async () => {
-    const { currentUser } = get()
+    const { currentUser, token } = get()
     if (!currentUser) return
 
     try {
       const response = await fetch("/api/notifications", {
         headers: {
+          "Authorization": token ? `Bearer ${token}` : "",
           "x-user-id": currentUser.id,
         },
       })
+
+      const contentType = response.headers.get('content-type')
+      if (!contentType || !contentType.includes('application/json')) {
+        console.warn('⚠️ [STORE] Réponse non-JSON reçue (loadNotifications)')
+        return
+      }
 
       const result = await response.json()
       if (result.success) {
         set({ notifications: result.data })
       }
     } catch (error) {
-      console.error("Erreur lors du chargement des notifications:", error)
+      console.debug("Info: Notifications non disponibles", error)
     }
   },
 

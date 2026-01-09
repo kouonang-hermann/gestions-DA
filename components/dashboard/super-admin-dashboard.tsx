@@ -582,9 +582,8 @@ export default function SuperAdminDashboard() {
               <SharedDemandesSection onCardClick={handleCardClick} hideClotureSection={true} />
             </div>
 
-            {/* Sections de validation pour le super admin */}
-            <ValidationDemandesList type="materiel" title="Demandes de matériel à valider" />
-            <ValidationDemandesList type="outillage" title="Demandes d'outillage à valider" />
+            {/* Section de validation pour le super admin - Matériel ET Outillage */}
+            <ValidationDemandesList title="Demandes à valider" />
 
             {/* Section Finance - Version enrichie */}
             <Card className="h-fit">

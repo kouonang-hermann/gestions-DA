@@ -10,7 +10,7 @@ import type { Demande, DemandeType } from "@/types"
 import DemandeDetailsModal from "@/components/modals/demande-details-modal"
 
 interface ValidationDemandesListProps {
-  type: DemandeType
+  type?: DemandeType // Optionnel pour afficher les deux types
   title: string
 }
 
@@ -23,7 +23,12 @@ export default function ValidationDemandesList({ type, title }: ValidationDemand
 
   useEffect(() => {
     if (currentUser) {
-      loadDemandes({ type })
+      // Si type est défini, charger uniquement ce type, sinon charger tous
+      if (type) {
+        loadDemandes({ type })
+      } else {
+        loadDemandes()
+      }
     }
   }, [currentUser, type]) // Supprimé loadDemandes des dépendances pour éviter la boucle infinie
 
@@ -49,7 +54,7 @@ export default function ValidationDemandesList({ type, title }: ValidationDemand
       
       const filtered = currentUser.role === "superadmin"
         ? demandes.filter(
-            (d) => d.type === type && 
+            (d) => (type ? d.type === type : true) && 
                    ![
                      "brouillon", 
                      "cloturee", 
@@ -58,7 +63,7 @@ export default function ValidationDemandesList({ type, title }: ValidationDemand
                    ].includes(d.status)
           )
         : demandes.filter(
-            (d) => d.type === type && 
+            (d) => (type ? d.type === type : true) && 
                    d.status === statusToFilter &&
                    // Filtrer par projet si l'utilisateur a des projets assignés
                    (!currentUser.projets || currentUser.projets.length === 0 || currentUser.projets.includes(d.projetId))
@@ -130,7 +135,11 @@ export default function ValidationDemandesList({ type, title }: ValidationDemand
 
   const handleItemRemoved = () => {
     // Recharger les demandes après suppression d'un article
-    loadDemandes({ type })
+    if (type) {
+      loadDemandes({ type })
+    } else {
+      loadDemandes()
+    }
     setDetailsModalOpen(false)
     setSelectedDemande(null)
   }
@@ -139,6 +148,27 @@ export default function ValidationDemandesList({ type, title }: ValidationDemand
   const canRemoveItems = () => {
     if (!currentUser) return false
     return ["conducteur_travaux", "responsable_travaux", "charge_affaire"].includes(currentUser.role)
+  }
+
+  // Fonction pour obtenir le label du statut en français
+  const getStatusLabel = (status: string): string => {
+    const statusLabels: Record<string, string> = {
+      "soumise": "Soumise",
+      "en_attente_validation_conducteur": "Attente validation conducteur",
+      "en_attente_validation_logistique": "Attente validation logistique",
+      "en_attente_validation_responsable_travaux": "Attente validation resp. travaux",
+      "en_attente_validation_charge_affaire": "Attente validation chargé d'affaire",
+      "en_attente_preparation_appro": "Attente préparation appro",
+      "en_attente_reception_livreur": "Attente réception livreur",
+      "en_attente_livraison": "Attente livraison",
+      "en_attente_validation_finale_demandeur": "Attente validation finale",
+      "en_attente_preparation_logistique": "Attente préparation logistique",
+      "cloturee": "Clôturée",
+      "rejetee": "Rejetée",
+      "brouillon": "Brouillon",
+      "archivee": "Archivée"
+    }
+    return statusLabels[status] || status
   }
 
   if (isLoading) {
@@ -171,7 +201,9 @@ export default function ValidationDemandesList({ type, title }: ValidationDemand
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-2">
                       <h3 className="font-medium text-gray-800 text-sm sm:text-base">{demande.numero}</h3>
-                      <Badge className="bg-blue-500 text-white text-xs truncate max-w-[150px]">{demande.status}</Badge>
+                      <Badge className="bg-blue-500 text-white text-xs whitespace-normal break-words max-w-full">
+                        {getStatusLabel(demande.status)}
+                      </Badge>
                       <Badge variant="outline" className="text-xs">
                         {demande.type === "materiel" ? "Matériel" : "Outillage"}
                       </Badge>
