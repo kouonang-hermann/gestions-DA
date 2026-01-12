@@ -29,11 +29,13 @@ export const PUT = async (
 
   try {
     const body = await request.json()
-    const { items } = body // Format: [{ itemId: string, prixUnitaire: number }]
+    const { prices } = body // Format: { itemId: prixUnitaire }
 
-    if (!items || !Array.isArray(items)) {
+    console.log("💰 [API-PRICES] Réception des prix:", prices)
+
+    if (!prices || typeof prices !== 'object') {
       return NextResponse.json(
-        { success: false, error: "Format invalide. Attendu: { items: [{ itemId, prixUnitaire }] }" },
+        { success: false, error: "Format invalide. Attendu: { prices: { itemId: prixUnitaire } }" },
         { status: 400 }
       )
     }

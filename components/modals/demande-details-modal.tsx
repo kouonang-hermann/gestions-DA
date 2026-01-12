@@ -144,80 +144,84 @@ export default function DemandeDetailModal({
             </div>
           </div>
 
-          {/* Tableau des articles */}
-          <div className="border border-gray-300 rounded overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-white border-b-2 border-gray-400">
-                  <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm">Référence</TableHead>
-                  <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm">Désignation</TableHead>
-                  <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm">Unité</TableHead>
-                  <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm">Qté demandée</TableHead>
-                  
-                  {showValidatedColumn && (
-                    <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm">Qté validée</TableHead>
-                  )}
-                  
-                  {showDeliveryColumns && (
-                    <>
-                      <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-blue-50 text-blue-600">Qté livrée</TableHead>
-                      <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-orange-50 text-orange-600">Qté restante</TableHead>
-                    </>
-                  )}
-                  
-                  <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm">Date 1</TableHead>
-                  <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm">Date 2</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {demande.items.map((item, index) => {
-                  const qteValidee = item.quantiteValidee || item.quantiteDemandee
-                  const qteLivree = item.quantiteSortie || item.quantiteRecue || 0
-                  const qteRestante = Math.max(0, qteValidee - qteLivree)
-
-                  return (
-                    <TableRow key={index} className="border-b hover:bg-gray-50">
-                      <TableCell className="text-center border border-gray-300 p-3 text-xs sm:text-sm">
-                        {item.article?.reference || '----'}
-                      </TableCell>
-                      <TableCell className="text-center border border-gray-300 p-3 text-xs sm:text-sm">
-                        {item.article?.nom || 'Article inconnu'}
-                      </TableCell>
-                      <TableCell className="text-center border border-gray-300 p-3 text-xs sm:text-sm">
-                        {item.article?.unite || 'pièce'}
-                      </TableCell>
-                      <TableCell className="text-center border border-gray-300 p-3 text-xs sm:text-sm font-medium">
-                        {item.quantiteDemandee}
-                      </TableCell>
+          {/* Tableau des articles avec scroll */}
+          <div className="border border-gray-300 rounded">
+            <div className="overflow-x-auto">
+              <div className="max-h-[400px] overflow-y-auto">
+                <Table>
+                  <TableHeader className="sticky top-0 bg-white z-10">
+                    <TableRow className="border-b-2 border-gray-400">
+                      <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-white">Référence</TableHead>
+                      <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-white">Désignation</TableHead>
+                      <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-white">Unité</TableHead>
+                      <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-white">Qté demandée</TableHead>
                       
                       {showValidatedColumn && (
-                        <TableCell className="text-center border border-gray-300 p-3 text-xs sm:text-sm font-medium">
-                          {qteValidee}
-                        </TableCell>
+                        <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-white">Qté validée</TableHead>
                       )}
                       
                       {showDeliveryColumns && (
                         <>
-                          <TableCell className="text-center border border-gray-300 p-3 text-xs sm:text-sm bg-blue-50">
-                            <span className="font-semibold text-blue-600">{qteLivree}</span>
-                          </TableCell>
-                          <TableCell className="text-center border border-gray-300 p-3 text-xs sm:text-sm bg-orange-50">
-                            <span className="font-semibold text-orange-600">{qteRestante}</span>
-                          </TableCell>
+                          <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-blue-50 text-blue-600">Qté livrée</TableHead>
+                          <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-orange-50 text-orange-600">Qté restante</TableHead>
                         </>
                       )}
                       
-                      <TableCell className="text-center border border-gray-300 p-3 text-xs sm:text-sm">
-                        {demande.dateCreation ? new Date(demande.dateCreation).toLocaleDateString('fr-FR') : '-'}
-                      </TableCell>
-                      <TableCell className="text-center border border-gray-300 p-3 text-xs sm:text-sm">
-                        {demande.dateLivraisonSouhaitee ? new Date(demande.dateLivraisonSouhaitee).toLocaleDateString('fr-FR') : '-'}
-                      </TableCell>
+                      <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-white">Date 1</TableHead>
+                      <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-white">Date 2</TableHead>
                     </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {demande.items.map((item, index) => {
+                      const qteValidee = item.quantiteValidee || item.quantiteDemandee
+                      const qteLivree = item.quantiteSortie || item.quantiteRecue || 0
+                      const qteRestante = Math.max(0, qteValidee - qteLivree)
+
+                      return (
+                        <TableRow key={index} className="border-b hover:bg-gray-50">
+                          <TableCell className="text-center border border-gray-300 p-3 text-xs sm:text-sm">
+                            {item.article?.reference || '----'}
+                          </TableCell>
+                          <TableCell className="text-center border border-gray-300 p-3 text-xs sm:text-sm">
+                            {item.article?.nom || 'Article inconnu'}
+                          </TableCell>
+                          <TableCell className="text-center border border-gray-300 p-3 text-xs sm:text-sm">
+                            {item.article?.unite || 'pièce'}
+                          </TableCell>
+                          <TableCell className="text-center border border-gray-300 p-3 text-xs sm:text-sm font-medium">
+                            {item.quantiteDemandee}
+                          </TableCell>
+                          
+                          {showValidatedColumn && (
+                            <TableCell className="text-center border border-gray-300 p-3 text-xs sm:text-sm font-medium">
+                              {qteValidee}
+                            </TableCell>
+                          )}
+                          
+                          {showDeliveryColumns && (
+                            <>
+                              <TableCell className="text-center border border-gray-300 p-3 text-xs sm:text-sm bg-blue-50">
+                                <span className="font-semibold text-blue-600">{qteLivree}</span>
+                              </TableCell>
+                              <TableCell className="text-center border border-gray-300 p-3 text-xs sm:text-sm bg-orange-50">
+                                <span className="font-semibold text-orange-600">{qteRestante}</span>
+                              </TableCell>
+                            </>
+                          )}
+                          
+                          <TableCell className="text-center border border-gray-300 p-3 text-xs sm:text-sm">
+                            {demande.dateCreation ? new Date(demande.dateCreation).toLocaleDateString('fr-FR') : '-'}
+                          </TableCell>
+                          <TableCell className="text-center border border-gray-300 p-3 text-xs sm:text-sm">
+                            {demande.dateLivraisonSouhaitee ? new Date(demande.dateLivraisonSouhaitee).toLocaleDateString('fr-FR') : '-'}
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
           </div>
 
           {/* Section Commentaires */}

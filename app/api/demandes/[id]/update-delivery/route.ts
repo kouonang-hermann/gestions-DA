@@ -4,7 +4,7 @@ import { requireAuth } from "@/lib/auth"
 
 const prisma = new PrismaClient()
 
-export async function PUT(
+export async function POST(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
@@ -27,9 +27,12 @@ export async function PUT(
       )
     }
 
-    const { items } = await request.json()
+    const body = await request.json()
+    const { quantitesSorties } = body // Format: { itemId: quantite }
     const params = await context.params
     const demandeId = params.id
+
+    console.log("📦 [UPDATE-DELIVERY] Réception des quantités:", quantitesSorties)
 
     // Vérifier que la demande existe
     const demande = await prisma.demande.findUnique({
@@ -45,13 +48,15 @@ export async function PUT(
     }
 
     // Mettre à jour les quantités sorties pour chaque article
-    for (const itemData of items) {
-      await prisma.itemDemande.update({
-        where: { id: itemData.itemId },
-        data: {
-          quantiteSortie: itemData.quantiteSortie
-        }
-      })
+    if (quantitesSorties && typeof quantitesSorties === 'object') {
+      for (const [itemId, quantite] of Object.entries(quantitesSorties)) {
+        await prisma.itemDemande.update({
+          where: { id: itemId },
+          data: {
+            quantiteSortie: quantite as number
+          }
+        })
+      }
     }
 
     console.log(`✅ [UPDATE-DELIVERY] Quantités livrées mises à jour pour la demande ${demande.numero}`)

@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Package, Truck, Clock, CheckCircle, AlertCircle, User, Eye, X, FileDown } from "lucide-react"
 import type { Demande } from "@/types"
-import DemandeDetailsModal from "@/components/modals/demande-details-modal"
+import DemandePreparationModal from "@/components/appro/demande-preparation-modal"
 import jsPDF from "jspdf"
 import html2canvas from "html2canvas"
 
@@ -102,8 +102,74 @@ export default function SortiePreparationList() {
     setDetailsModalOpen(true)
   }
 
-  const handlePricesUpdated = () => {
-    loadDemandes()
+  const handleSaveQuantites = async (quantites: { [itemId: string]: number }, prix: { [itemId: string]: number }) => {
+    if (!selectedDemande) return
+    
+    console.log("💾 Sauvegarde des quantités et prix pour la demande:", selectedDemande.numero)
+    console.log("  - Quantités:", quantites)
+    console.log("  - Prix:", prix)
+    
+    try {
+      // Transformer les quantités et prix pour l'API
+      const quantitesSorties: { [itemId: string]: number } = {}
+      const prixUnitaires: { [itemId: string]: number } = {}
+      
+      selectedDemande.items.forEach((item, index) => {
+        const qteKey = `item-${index}`
+        if (quantites[qteKey] !== undefined) {
+          quantitesSorties[item.id] = quantites[qteKey]
+        }
+        if (prix[qteKey] !== undefined) {
+          prixUnitaires[item.id] = prix[qteKey]
+        }
+      })
+      
+      console.log("📦 Données à sauvegarder:")
+      console.log("  - Quantités sorties:", quantitesSorties)
+      console.log("  - Prix unitaires:", prixUnitaires)
+      
+      // Appeler l'API pour mettre à jour les quantités de sortie
+      const responseQte = await fetch(`/api/demandes/${selectedDemande.id}/update-delivery`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ quantitesSorties }),
+      })
+      
+      const resultQte = await responseQte.json()
+      
+      if (!resultQte.success) {
+        alert(`❌ Erreur quantités: ${resultQte.error || "Impossible de sauvegarder les quantités"}`)
+        return
+      }
+      
+      // Appeler l'API pour mettre à jour les prix
+      const responsePrix = await fetch(`/api/demandes/${selectedDemande.id}/update-prices`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ prices: prixUnitaires }),
+      })
+      
+      const resultPrix = await responsePrix.json()
+      
+      if (resultPrix.success) {
+        alert("✅ Quantités et prix enregistrés avec succès !")
+        await loadDemandes()
+        setDetailsModalOpen(false)
+        setSelectedDemande(null)
+      } else {
+        alert(`⚠️ Quantités OK mais erreur prix: ${resultPrix.error || "Impossible de sauvegarder les prix"}`)
+        await loadDemandes()
+      }
+    } catch (error) {
+      console.error("❌ Erreur lors de la sauvegarde:", error)
+      alert("❌ Erreur de connexion lors de la sauvegarde")
+    }
   }
 
   const generatePDF = async (demande: Demande) => {
@@ -434,15 +500,15 @@ export default function SortiePreparationList() {
         )}
       </CardContent>
 
-      {/* Modal de détails avec saisie des prix */}
-      <DemandeDetailsModal
+      {/* Modal de préparation avec saisie des quantités */}
+      <DemandePreparationModal
         isOpen={detailsModalOpen}
         onClose={() => {
           setDetailsModalOpen(false)
           setSelectedDemande(null)
         }}
         demandeId={selectedDemande?.id || null}
-        mode="view"
+        onSave={handleSaveQuantites}
       />
 
       {/* Modal de préparation de sortie */}
@@ -477,7 +543,7 @@ export default function SortiePreparationList() {
                   <SelectTrigger id="livreur">
                     <SelectValue placeholder="Choisir un utilisateur pour la livraison..." />
                   </SelectTrigger>
-                  <SelectContent className="max-w-md bg-white shadow-lg border-2 border-gray-200">
+                  <SelectContent className="max-w-md bg-white shadow-lg border-2 border-gray-200 z-[9999]">
                     {livreursDisponibles.map((livreur) => (
                       <SelectItem key={livreur.id} value={livreur.id} className="cursor-pointer bg-white hover:bg-gray-50 focus:bg-gray-100">
                         <div className="flex items-center gap-2 w-full py-1">
