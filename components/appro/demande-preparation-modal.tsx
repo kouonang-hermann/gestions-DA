@@ -1,5 +1,8 @@
 "use client"
 
+// VERSION 2.0 - Modal avec colonnes: Qté validée, Qté à livrer, Qté restante, Prix unitaire (FCFA), Total (FCFA)
+// Dernière mise à jour: 12/01/2026 11:00
+
 import { useEffect, useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
