@@ -34,27 +34,35 @@ export default function UniversalClosureList({ onClose }: UniversalClosureListPr
 
     setIsLoading(true)
     try {
-      const response = await fetch(`/api/demandes/${demandeId}`, {
-        method: "PUT",
+      const response = await fetch(`/api/demandes/${demandeId}/actions`, {
+        method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          status: "cloturee",
-          commentaire: `Demande clôturée par ${currentUser.prenom} ${currentUser.nom} (${currentUser.role})`
+          action: "cloturer",
+          commentaire: `Demande clôturée par ${currentUser.prenom} ${currentUser.nom}`
         }),
       })
 
-      if (response.ok) {
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error("❌ Erreur API clôture:", errorText)
+        toast.error(errorText || "Erreur lors de la clôture")
+        return
+      }
+
+      const result = await response.json()
+      
+      if (result.success) {
         toast.success("Demande clôturée avec succès")
         await loadDemandes()
         
         // Mettre à jour la liste locale
         setDemandesACloturer(prev => prev.filter(d => d.id !== demandeId))
       } else {
-        const error = await response.json()
-        toast.error(error.error || "Erreur lors de la clôture")
+        toast.error(result.error || "Erreur lors de la clôture")
       }
     } catch (error) {
       console.error("Erreur lors de la clôture:", error)

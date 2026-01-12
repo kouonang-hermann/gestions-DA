@@ -123,6 +123,10 @@
   
   html {
     @apply scroll-smooth;
+    /* Fix scroll sur mobile (Huawei et autres) */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    height: 100%;
   }
   
   body {
@@ -131,12 +135,28 @@
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Fix scroll sur mobile (Huawei et autres) */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    min-height: 100vh;
+    position: relative;
   }
   
   /* Mobile optimizations */
   @media (max-width: 768px) {
     body {
       @apply text-sm;
+      /* Force scroll sur mobile */
+      overflow-y: scroll !important;
+      -webkit-overflow-scrolling: touch !important;
+    }
+    
+    /* Fix pour les conteneurs principaux sur mobile */
+    main, #__next, [role="main"] {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      height: auto;
+      min-height: 100vh;
     }
   }
   
