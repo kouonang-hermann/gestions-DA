@@ -138,6 +138,14 @@ export default function SortiePreparationList() {
         body: JSON.stringify({ quantitesSorties }),
       })
       
+      // Vérifier si la réponse est OK avant de parser le JSON
+      if (!responseQte.ok) {
+        const errorText = await responseQte.text()
+        console.error("❌ Erreur API update-delivery:", errorText)
+        alert(`❌ Erreur quantités: ${errorText || "Impossible de sauvegarder les quantités"}`)
+        return
+      }
+      
       const resultQte = await responseQte.json()
       
       if (!resultQte.success) {
@@ -154,6 +162,15 @@ export default function SortiePreparationList() {
         },
         body: JSON.stringify({ prices: prixUnitaires }),
       })
+      
+      // Vérifier si la réponse est OK avant de parser le JSON
+      if (!responsePrix.ok) {
+        const errorText = await responsePrix.text()
+        console.error("❌ Erreur API update-prices:", errorText)
+        alert(`⚠️ Quantités OK mais erreur prix: ${errorText || "Impossible de sauvegarder les prix"}`)
+        await loadDemandes()
+        return
+      }
       
       const resultPrix = await responsePrix.json()
       
