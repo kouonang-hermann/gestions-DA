@@ -120,7 +120,7 @@ function getNextStatus(currentStatus: DemandeStatus, userRole: string, demandeTy
       "responsable_travaux": "en_attente_validation_charge_affaire"
     },
     "en_attente_preparation_appro": {
-      "responsable_appro": "en_attente_reception_livreur"
+      "responsable_appro": "en_attente_validation_logistique"
     },
     "en_attente_reception_livreur": {
       "responsable_livreur": "en_attente_livraison",

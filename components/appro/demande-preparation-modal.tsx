@@ -164,7 +164,6 @@ export default function DemandePreparationModal({
                       <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-white">Désignation</TableHead>
                       <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-white">Unité</TableHead>
                       <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-white">Qté validée</TableHead>
-                      <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-blue-50 text-blue-600">Qté livrée</TableHead>
                       <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-green-50 text-green-700">Qté à livrer</TableHead>
                       <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-orange-50 text-orange-600">Qté restante</TableHead>
                       <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-purple-50 text-purple-700">Prix unitaire (FCFA)</TableHead>
@@ -174,8 +173,8 @@ export default function DemandePreparationModal({
                   <TableBody>
                     {demande.items.map((item, index) => {
                       const qteValidee = item.quantiteValidee || item.quantiteDemandee
-                      const qteLivree = item.quantiteSortie || item.quantiteRecue || 0
                       const qteLivraison = quantites[`item-${index}`] || 0
+                      const qteLivree = item.quantiteSortie || item.quantiteRecue || 0
                       const qteRestante = Math.max(0, qteValidee - qteLivree - qteLivraison)
                       const prixUnit = prix[`item-${index}`] || 0
                       const totalLigne = qteLivraison * prixUnit
@@ -193,9 +192,6 @@ export default function DemandePreparationModal({
                           </TableCell>
                           <TableCell className="text-center border border-gray-300 p-3 text-xs sm:text-sm font-medium">
                             {qteValidee}
-                          </TableCell>
-                          <TableCell className="text-center border border-gray-300 p-3 text-xs sm:text-sm bg-blue-50">
-                            <span className="font-semibold text-blue-600">{qteLivree}</span>
                           </TableCell>
                           <TableCell className="text-center border border-gray-300 p-3 bg-green-50">
                             <Input
