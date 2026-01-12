@@ -91,28 +91,24 @@ export const PUT = async (
     // Mettre à jour les prix unitaires de chaque article
     let coutTotal = 0
 
-    for (const item of items) {
-      if (!item.itemId || item.prixUnitaire === undefined) {
-        continue
-      }
-
-      const prixUnitaire = parseFloat(item.prixUnitaire)
+    for (const [itemId, prixValue] of Object.entries(prices)) {
+      const prixUnitaire = parseFloat(String(prixValue))
       
       if (isNaN(prixUnitaire) || prixUnitaire < 0) {
         return NextResponse.json(
-          { success: false, error: `Prix invalide pour l'article ${item.itemId}` },
+          { success: false, error: `Prix invalide pour l'article ${itemId}` },
           { status: 400 }
         )
       }
 
       // Mettre à jour le prix unitaire de l'item
       await prisma.itemDemande.update({
-        where: { id: item.itemId },
+        where: { id: itemId },
         data: { prixUnitaire }
       })
 
       // Trouver l'item pour calculer le coût (priorité: quantiteSortie > quantiteValidee > quantiteDemandee)
-      const demandeItem = demande.items.find((i: any) => i.id === item.itemId)
+      const demandeItem = demande.items.find((i: any) => i.id === itemId)
       if (demandeItem) {
         const quantite = demandeItem.quantiteSortie || demandeItem.quantiteValidee || demandeItem.quantiteDemandee
         coutTotal += prixUnitaire * quantite
@@ -160,7 +156,7 @@ export const PUT = async (
       data: {
         demandeId,
         coutTotal,
-        itemsUpdated: items.length
+        itemsUpdated: Object.keys(prices).length
       }
     })
 
