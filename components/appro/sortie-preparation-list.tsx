@@ -16,7 +16,7 @@ import jsPDF from "jspdf"
 import html2canvas from "html2canvas"
 
 export default function SortiePreparationList() {
-  const { currentUser, demandes, loadDemandes, executeAction, isLoading, error, users } = useStore()
+  const { currentUser, demandes, loadDemandes, executeAction, isLoading, error, users, token } = useStore()
   const [demandesAPreparer, setDemandesAPreparer] = useState<Demande[]>([])
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
@@ -133,7 +133,7 @@ export default function SortiePreparationList() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("token")}`,
+          "Authorization": `Bearer ${token}`,
         },
         body: JSON.stringify({ quantitesSorties }),
       })
@@ -150,7 +150,7 @@ export default function SortiePreparationList() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("token")}`,
+          "Authorization": `Bearer ${token}`,
         },
         body: JSON.stringify({ prices: prixUnitaires }),
       })
