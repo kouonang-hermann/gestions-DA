@@ -8,6 +8,7 @@ import ResponsableTravauxDashboard from "./responsable-travaux-dashboard"
 import ApproDashboard from "./appro-dashboard"
 import ChargeAffaireDashboard from "./charge-affaire-dashboard"
 import ResponsableLogistiqueDashboard from "./responsable-logistique-dashboard"
+import ResponsableLivreurDashboard from "./responsable-livreur-dashboard"
 
 export default function Dashboard() {
   const { currentUser } = useStore()
@@ -39,6 +40,8 @@ export default function Dashboard() {
           return <ApproDashboard />
         case "charge_affaire":
           return <ChargeAffaireDashboard />
+        case "responsable_livreur":
+          return <ResponsableLivreurDashboard />
         default:
           return (
             <div className="p-6 text-center text-gray-500">

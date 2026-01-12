@@ -120,34 +120,9 @@ export default function UserDetailsModal({ isOpen, onClose, title, data, type }:
     }
   }
 
-  // Pas de filtrage supplémentaire pour "enCours" car déjà filtré par le dashboard
-  // Les autres types peuvent nécessiter un filtrage supplémentaire pour compatibilité
-  const filteredData = data.filter(item => {
-    switch (type) {
-      case "total":
-      case "enCours":
-        // Faire confiance aux données déjà filtrées du dashboard
-        return true
-      case "validees":
-        return ["cloturee", "archivee"].includes(item.status)
-      case "rejetees":
-        return item.status === "rejetee"
-      case "brouillons":
-        return item.status === "brouillon"
-      case "enAttente":
-        return item.status === "soumise"
-      case "aPreparer":
-        return ["en_attente_validation_conducteur", "en_attente_validation_logistique"].includes(item.status)
-      case "preparees":
-        return item.status === "en_attente_preparation_appro"
-      case "livrees":
-        return ["cloturee", "archivee"].includes(item.status)
-      case "aValider":
-        return item.status === "en_attente_validation_finale_demandeur"
-      default:
-        return true
-    }
-  })
+  // CORRECTION: Faire confiance aux données déjà filtrées par le dashboard
+  // Le re-filtrage causait des problèmes car chaque dashboard a sa propre logique
+  const filteredData = data
 
   const handleCloture = async (demandeId: string) => {
     setClotureLoading(demandeId)
