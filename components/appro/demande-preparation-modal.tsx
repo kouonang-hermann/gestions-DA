@@ -167,8 +167,8 @@ export default function DemandePreparationModal({
                       <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-blue-50 text-blue-600">Qté livrée</TableHead>
                       <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-green-50 text-green-700">Qté à livrer</TableHead>
                       <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-orange-50 text-orange-600">Qté restante</TableHead>
-                      <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-purple-50 text-purple-700">Prix unitaire (€)</TableHead>
-                      <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-purple-50 text-purple-700">Total (€)</TableHead>
+                      <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-purple-50 text-purple-700">Prix unitaire (FCFA)</TableHead>
+                      <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-purple-50 text-purple-700">Total (FCFA)</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -222,7 +222,7 @@ export default function DemandePreparationModal({
                             />
                           </TableCell>
                           <TableCell className="text-center border border-gray-300 p-3 text-xs sm:text-sm bg-purple-50">
-                            <span className="font-semibold text-purple-700">{totalLigne.toFixed(2)} €</span>
+                            <span className="font-semibold text-purple-700">{totalLigne.toFixed(2)} FCFA</span>
                           </TableCell>
                         </TableRow>
                       )
@@ -245,7 +245,7 @@ export default function DemandePreparationModal({
               </div>
               <div className="flex justify-between items-center text-sm font-semibold">
                 <span>Coût total:</span>
-                <span className="text-lg text-purple-600">{totalPrix.toFixed(2)} €</span>
+                <span className="text-lg text-purple-600">{totalPrix.toFixed(2)} FCFA</span>
               </div>
             </div>
           </div>
