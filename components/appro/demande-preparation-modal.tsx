@@ -178,7 +178,12 @@ export default function DemandePreparationModal({
                     {demande.items.map((item, index) => {
                       const qteValidee = item.quantiteValidee || item.quantiteDemandee
                       const qteLivraison = quantites[`item-${index}`] || 0
-                      const qteLivree = item.quantiteSortie || item.quantiteRecue || 0
+                      
+                      // Calculer le total des quantités déjà livrées (toutes les livraisons précédentes)
+                      const qteLivree = item.livraisons 
+                        ? item.livraisons.reduce((total: number, liv: any) => total + (liv.quantiteLivree || 0), 0)
+                        : (item.quantiteSortie || item.quantiteRecue || 0)
+                      
                       const qteRestante = Math.max(0, qteValidee - qteLivree - qteLivraison)
                       const prixUnit = prix[`item-${index}`] || 0
                       const totalLigne = qteLivraison * prixUnit

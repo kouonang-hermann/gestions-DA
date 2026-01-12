@@ -232,7 +232,12 @@ export const GET = async (request: NextRequest) => {
         },
         items: {
           include: {
-            article: true
+            article: true,
+            livraisons: {
+              select: {
+                quantiteLivree: true
+              }
+            }
           }
         }
       },
