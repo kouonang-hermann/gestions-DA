@@ -76,6 +76,7 @@ export interface ItemDemande {
   quantiteRecue?: number
   commentaire?: string
   prixUnitaire?: number // Prix unitaire saisi par le responsable appro
+  livraisons?: Array<{ quantiteLivree: number }> // Livraisons associées à cet item
 }
 
 export interface Demande {
