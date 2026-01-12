@@ -115,8 +115,9 @@ export default function DemandePreparationModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-[95vw] max-w-6xl max-h-[90vh] flex flex-col p-4 sm:p-6">
         <DialogHeader className="flex-shrink-0">
-          <DialogTitle className="text-base sm:text-xl font-bold text-center bg-[#015fc4] text-white py-3 px-4 rounded-t">
+          <DialogTitle className="text-base sm:text-xl font-bold text-center bg-[#015fc4] text-white py-3 px-4 rounded-t flex items-center justify-center gap-2">
             Préparation - Demande {demande.numero}
+            <Badge className="bg-green-500 text-white text-xs">v2.0 FCFA</Badge>
           </DialogTitle>
         </DialogHeader>
 
@@ -153,7 +154,7 @@ export default function DemandePreparationModal({
             <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
             <div className="text-sm text-blue-800">
               <p className="font-semibold">Renseignez les quantités à livrer</p>
-              <p>Modifiez les quantités si nécessaire, puis cliquez sur "Enregistrer les quantités"</p>
+              <p>Modifiez les quantités si nécessaire, puis cliquez sur "Enregistrer les quantités & prix"</p>
             </div>
           </div>
 
