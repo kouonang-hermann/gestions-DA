@@ -3,6 +3,10 @@
 import { useEffect, useState } from 'react'
 import { useStore } from '@/stores/useStore'
 import UniversalClosureModal from '@/components/modals/universal-closure-modal'
+import MobileValidationSection from '@/components/mobile/mobile-validation-section'
+import MobileLivraisonsSection from '@/components/mobile/mobile-livraisons-section'
+import MobileApproSection from '@/components/mobile/mobile-appro-section'
+import CreateDemandeModal from '@/components/demandes/create-demande-modal'
 import { 
   Settings, 
   Bell, 
@@ -24,6 +28,8 @@ export default function UniversalMobileInjector() {
   const { currentUser } = useStore()
   const [isMobile, setIsMobile] = useState(false)
   const [universalClosureModalOpen, setUniversalClosureModalOpen] = useState(false)
+  const [createDemandeModalOpen, setCreateDemandeModalOpen] = useState(false)
+  const [demandeType, setDemandeType] = useState<'materiel' | 'outillage'>('materiel')
 
   useEffect(() => {
     const checkMobile = () => {
@@ -46,10 +52,10 @@ export default function UniversalMobileInjector() {
       'employe': 'Employé',
       'conducteur_travaux': 'Conducteur Travaux',
       'responsable_travaux': 'Responsable Travaux',
-      'responsable_qhse': 'Responsable QHSE',
       'responsable_appro': 'Responsable Appro',
       'charge_affaire': 'Chargé d\'Affaire',
-      'responsable_logistique': 'Responsable Logistique'
+      'responsable_logistique': 'Responsable Logistique',
+      'responsable_livreur': 'Responsable Livreur'
     }
     return roleMap[currentUser?.role || ''] || 'Utilisateur'
   }
@@ -60,10 +66,10 @@ export default function UniversalMobileInjector() {
       'employe': { label: 'Nouvelle Demande', icon: <Plus size={20} /> },
       'conducteur_travaux': { label: 'Valider Demande', icon: <FileText size={20} /> },
       'responsable_travaux': { label: 'Valider Demande', icon: <FileText size={20} /> },
-      'responsable_qhse': { label: 'Valider Sécurité', icon: <FileText size={20} /> },
       'responsable_appro': { label: 'Préparer Sortie', icon: <Package size={20} /> },
       'charge_affaire': { label: 'Valider Budget', icon: <CreditCard size={20} /> },
-      'responsable_logistique': { label: 'Valider Logistique', icon: <FileText size={20} /> }
+      'responsable_logistique': { label: 'Valider Logistique', icon: <FileText size={20} /> },
+      'responsable_livreur': { label: 'Gérer Livraisons', icon: <Package size={20} /> }
     }
     return actionMap[currentUser?.role || ''] || { label: 'Action', icon: <Plus size={20} /> }
   }
@@ -77,46 +83,33 @@ export default function UniversalMobileInjector() {
         { icon: <BarChart3 size={18} />, label: 'Rapports' }
       ],
       'employe': [
-        { icon: <Package size={18} />, label: 'DA-Matériel' },
-        { icon: <Wrench size={18} />, label: 'DA-Outillage' },
-        { icon: <CheckCircle size={18} />, label: 'Clôturer', action: 'closure' },
-        { icon: <BarChart3 size={18} />, label: 'Rapports' }
+        { icon: <Package size={18} />, label: 'DA-Matériel', action: 'materiel' },
+        { icon: <Wrench size={18} />, label: 'DA-Outillage', action: 'outillage' },
+        { icon: <CheckCircle size={18} />, label: 'Clôturer', action: 'closure' }
       ],
       'conducteur_travaux': [
-        { icon: <FileText size={18} />, label: 'Valider' },
         { icon: <CheckCircle size={18} />, label: 'Clôturer', action: 'closure' },
-        { icon: <Users size={18} />, label: 'Équipe' },
-        { icon: <BarChart3 size={18} />, label: 'Rapports' }
+        { icon: <Users size={18} />, label: 'Équipe' }
       ],
       'responsable_travaux': [
-        { icon: <FileText size={18} />, label: 'Valider' },
         { icon: <CheckCircle size={18} />, label: 'Clôturer', action: 'closure' },
-        { icon: <Users size={18} />, label: 'Équipe' },
-        { icon: <BarChart3 size={18} />, label: 'Rapports' }
-      ],
-      'responsable_qhse': [
-        { icon: <FileText size={18} />, label: 'Sécurité' },
-        { icon: <CheckCircle size={18} />, label: 'Clôturer', action: 'closure' },
-        { icon: <BarChart3 size={18} />, label: 'Rapports' },
-        { icon: <Settings size={18} />, label: 'Normes' }
+        { icon: <Users size={18} />, label: 'Équipe' }
       ],
       'responsable_appro': [
-        { icon: <Package size={18} />, label: 'Préparer' },
         { icon: <CheckCircle size={18} />, label: 'Clôturer', action: 'closure' },
-        { icon: <Wrench size={18} />, label: 'Stock' },
-        { icon: <BarChart3 size={18} />, label: 'Rapports' }
+        { icon: <Wrench size={18} />, label: 'Stock' }
       ],
       'charge_affaire': [
         { icon: <CreditCard size={18} />, label: 'Budget' },
-        { icon: <CheckCircle size={18} />, label: 'Clôturer', action: 'closure' },
-        { icon: <BarChart3 size={18} />, label: 'Rapports' },
-        { icon: <FolderOpen size={18} />, label: 'Projets' }
+        { icon: <CheckCircle size={18} />, label: 'Clôturer', action: 'closure' }
       ],
       'responsable_logistique': [
-        { icon: <FileText size={18} />, label: 'Valider' },
         { icon: <CheckCircle size={18} />, label: 'Clôturer', action: 'closure' },
+        { icon: <Package size={18} />, label: 'Livraisons' }
+      ],
+      'responsable_livreur': [
         { icon: <Package size={18} />, label: 'Livraisons' },
-        { icon: <BarChart3 size={18} />, label: 'Rapports' }
+        { icon: <CheckCircle size={18} />, label: 'Clôturer', action: 'closure' }
       ]
     }
     return actionsMap[currentUser?.role || ''] || []
@@ -126,6 +119,14 @@ export default function UniversalMobileInjector() {
     switch (action) {
       case 'closure':
         setUniversalClosureModalOpen(true)
+        break
+      case 'materiel':
+        setDemandeType('materiel')
+        setCreateDemandeModalOpen(true)
+        break
+      case 'outillage':
+        setDemandeType('outillage')
+        setCreateDemandeModalOpen(true)
         break
       default:
         console.log('Action non implémentée:', action)
@@ -175,6 +176,15 @@ export default function UniversalMobileInjector() {
           </button>
         </div>
 
+        {/* Section de validation mobile */}
+        <MobileValidationSection />
+
+        {/* Section des livraisons pour livreur */}
+        <MobileLivraisonsSection />
+
+        {/* Section des préparations pour appro */}
+        <MobileApproSection />
+
         {/* Actions rapides */}
         <div className="universal-mobile-actions">
           <h3>Actions Rapides</h3>
@@ -213,6 +223,13 @@ export default function UniversalMobileInjector() {
       <UniversalClosureModal
         isOpen={universalClosureModalOpen}
         onClose={() => setUniversalClosureModalOpen(false)}
+      />
+
+      {/* Modal de création de demande */}
+      <CreateDemandeModal
+        isOpen={createDemandeModalOpen}
+        onClose={() => setCreateDemandeModalOpen(false)}
+        type={demandeType}
       />
     </div>
   )

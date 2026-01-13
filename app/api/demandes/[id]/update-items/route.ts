@@ -23,19 +23,46 @@ export const PATCH = withAuth(async (request: NextRequest, currentUser: any, con
       return NextResponse.json({ success: false, error: "Demande non trouvée" }, { status: 404 })
     }
 
-    // Vérifier que c'est bien le demandeur ou un superadmin
-    if (demande.technicienId !== currentUser.id && currentUser.role !== "superadmin") {
-      return NextResponse.json({ 
-        success: false, 
-        error: "Seul le demandeur peut modifier sa demande" 
-      }, { status: 403 })
+    // Vérifier les permissions selon le rôle et le statut
+    const isOwner = demande.technicienId === currentUser.id
+    const isSuperAdmin = currentUser.role === "superadmin"
+    const isConducteur = currentUser.role === "conducteur_travaux"
+    const isResponsableTravaux = currentUser.role === "responsable_travaux"
+    
+    // Statuts où la modification est autorisée
+    const modifiableStatuses = [
+      "rejetee", // Demandeur peut modifier après rejet
+      "en_attente_validation_conducteur", // Conducteur peut modifier avant validation
+      "en_attente_validation_responsable_travaux", // Responsable travaux peut modifier avant validation
+    ]
+    
+    // Vérifier les permissions
+    if (!isSuperAdmin) {
+      // Le demandeur peut modifier sa demande rejetée
+      if (isOwner && demande.status === "rejetee") {
+        // OK
+      }
+      // Le conducteur peut modifier les demandes en attente de sa validation
+      else if (isConducteur && demande.status === "en_attente_validation_conducteur") {
+        // OK
+      }
+      // Le responsable travaux peut modifier les demandes en attente de sa validation
+      else if (isResponsableTravaux && demande.status === "en_attente_validation_responsable_travaux") {
+        // OK
+      }
+      else {
+        return NextResponse.json({ 
+          success: false, 
+          error: "Vous n'avez pas la permission de modifier cette demande" 
+        }, { status: 403 })
+      }
     }
-
-    // Vérifier que la demande est rejetée
-    if (demande.status !== "rejetee") {
+    
+    // Vérifier que la demande est dans un statut modifiable
+    if (!modifiableStatuses.includes(demande.status)) {
       return NextResponse.json({ 
         success: false, 
-        error: "Seules les demandes rejetées peuvent être modifiées" 
+        error: `Cette demande ne peut pas être modifiée (statut: ${demande.status})` 
       }, { status: 403 })
     }
 

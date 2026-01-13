@@ -110,7 +110,7 @@ export default function ProjectManagementModal({ isOpen, onClose }: ProjectManag
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[95vw] sm:max-w-6xl max-h-[95vh] overflow-hidden">
+      <DialogContent className="max-w-[95vw] sm:max-w-6xl max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
             <FolderOpen className="h-5 w-5" style={{ color: '#015fc4' }} />

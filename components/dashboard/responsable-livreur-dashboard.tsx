@@ -17,6 +17,7 @@ import {
 import CreateDemandeModal from "@/components/demandes/create-demande-modal"
 import UniversalClosureModal from "@/components/modals/universal-closure-modal"
 import LivraisonsAEffectuer from "@/components/dashboard/livraisons-a-effectuer"
+import DemandesCategoryModal from "@/components/modals/demandes-category-modal"
 import { useAutoReload } from "@/hooks/useAutoReload"
 
 export default function ResponsableLivreurDashboard() {
@@ -34,6 +35,9 @@ export default function ResponsableLivreurDashboard() {
   const [createDemandeModalOpen, setCreateDemandeModalOpen] = useState(false)
   const [demandeType, setDemandeType] = useState<"materiel" | "outillage">("materiel")
   const [universalClosureModalOpen, setUniversalClosureModalOpen] = useState(false)
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false)
+  const [detailsModalType, setDetailsModalType] = useState<"total" | "aRecevoir" | "aLivrer" | "livrees" | "mesDemandesEnCours">("total")
+  const [detailsModalTitle, setDetailsModalTitle] = useState("")
 
   useEffect(() => {
     if (currentUser && demandes) {
@@ -70,6 +74,38 @@ export default function ResponsableLivreurDashboard() {
       })
     }
   }, [demandes, currentUser])
+
+  const handleCardClick = (type: "total" | "aRecevoir" | "aLivrer" | "livrees" | "mesDemandesEnCours", title: string) => {
+    setDetailsModalType(type)
+    setDetailsModalTitle(title)
+    setDetailsModalOpen(true)
+  }
+
+  const getDemandesForType = (type: "total" | "aRecevoir" | "aLivrer" | "livrees" | "mesDemandesEnCours") => {
+    if (!currentUser) return []
+
+    const mesLivraisons = demandes.filter((d) => d.livreurAssigneId === currentUser.id)
+    const mesDemandes = demandes.filter((d) => d.technicienId === currentUser.id)
+
+    switch (type) {
+      case "total":
+        return mesLivraisons
+      case "aRecevoir":
+        return mesLivraisons.filter((d) => d.status === "en_attente_reception_livreur")
+      case "aLivrer":
+        return mesLivraisons.filter((d) => d.status === "en_attente_livraison")
+      case "livrees":
+        return mesLivraisons.filter((d) => 
+          ["en_attente_validation_finale_demandeur", "cloturee"].includes(d.status)
+        )
+      case "mesDemandesEnCours":
+        return mesDemandes.filter((d) => 
+          !["brouillon", "cloturee", "rejetee", "archivee"].includes(d.status)
+        )
+      default:
+        return []
+    }
+  }
 
   const generateChartData = () => {
     return [
@@ -117,7 +153,10 @@ export default function ResponsableLivreurDashboard() {
       {/* Cartes statistiques */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {/* Total livraisons */}
-        <Card className="border-l-4 border-l-gray-500 hover:shadow-md transition-shadow cursor-pointer">
+        <Card 
+          className="border-l-4 border-l-gray-500 hover:shadow-md transition-shadow cursor-pointer"
+          onClick={() => handleCardClick("total", "Toutes mes livraisons")}
+        >
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-medium text-gray-600">
@@ -133,7 +172,10 @@ export default function ResponsableLivreurDashboard() {
         </Card>
 
         {/* À recevoir */}
-        <Card className="border-l-4 border-l-blue-500 hover:shadow-md transition-shadow cursor-pointer">
+        <Card 
+          className="border-l-4 border-l-blue-500 hover:shadow-md transition-shadow cursor-pointer"
+          onClick={() => handleCardClick("aRecevoir", "Matériel à recevoir")}
+        >
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-medium text-gray-600">
@@ -149,7 +191,10 @@ export default function ResponsableLivreurDashboard() {
         </Card>
 
         {/* À livrer */}
-        <Card className="border-l-4 border-l-orange-500 hover:shadow-md transition-shadow cursor-pointer">
+        <Card 
+          className="border-l-4 border-l-orange-500 hover:shadow-md transition-shadow cursor-pointer"
+          onClick={() => handleCardClick("aLivrer", "Livraisons à effectuer")}
+        >
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-medium text-gray-600">
@@ -165,7 +210,10 @@ export default function ResponsableLivreurDashboard() {
         </Card>
 
         {/* Livrées */}
-        <Card className="border-l-4 border-l-green-500 hover:shadow-md transition-shadow cursor-pointer">
+        <Card 
+          className="border-l-4 border-l-green-500 hover:shadow-md transition-shadow cursor-pointer"
+          onClick={() => handleCardClick("livrees", "Livraisons terminées")}
+        >
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-medium text-gray-600">
@@ -181,7 +229,10 @@ export default function ResponsableLivreurDashboard() {
         </Card>
 
         {/* Mes demandes */}
-        <Card className="border-l-4 border-l-purple-500 hover:shadow-md transition-shadow cursor-pointer">
+        <Card 
+          className="border-l-4 border-l-purple-500 hover:shadow-md transition-shadow cursor-pointer"
+          onClick={() => handleCardClick("mesDemandesEnCours", "Mes demandes en cours")}
+        >
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-medium text-gray-600">
@@ -228,6 +279,18 @@ export default function ResponsableLivreurDashboard() {
         isOpen={universalClosureModalOpen}
         onClose={() => setUniversalClosureModalOpen(false)}
       />
+
+      {/* Modal de détails des demandes */}
+      {detailsModalOpen && (
+        <DemandesCategoryModal
+          isOpen={detailsModalOpen}
+          onClose={() => setDetailsModalOpen(false)}
+          title={detailsModalTitle}
+          demandes={getDemandesForType(detailsModalType)}
+          categoryType={detailsModalType === "aRecevoir" || detailsModalType === "aLivrer" ? "enCours" : detailsModalType === "livrees" ? "validees" : "total"}
+          currentUser={currentUser}
+        />
+      )}
     </div>
   )
 }

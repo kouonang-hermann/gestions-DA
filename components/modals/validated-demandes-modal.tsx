@@ -212,7 +212,7 @@ export default function ValidatedDemandesModal({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="w-[95vw] max-w-6xl max-h-[90vh] overflow-hidden p-3 sm:p-6">
+        <DialogContent className="w-[95vw] max-w-6xl max-h-[90vh] overflow-y-auto p-3 sm:p-6">
           <DialogHeader>
             <DialogTitle className="flex flex-wrap items-center gap-2 text-base sm:text-xl">
               <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: '#22c55e' }} />

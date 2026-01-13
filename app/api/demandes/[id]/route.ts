@@ -14,7 +14,7 @@ function getNextStatus(currentStatus: string, userRole: string): DemandeStatus |
     "en_attente_validation_conducteur": {
       "conducteur_travaux": "en_attente_validation_responsable_travaux"
     },
-    // Flow Outillage: Logistique -> Responsable Travaux -> Chargé Affaire -> Appro -> Livreur -> Demandeur  
+    // Flow Outillage: Logistique -> Responsable Travaux -> Chargé Affaire -> Logistique (préparation) -> Livreur -> Demandeur  
     "en_attente_validation_logistique": {
       "responsable_logistique": "en_attente_validation_responsable_travaux"
     },
@@ -26,6 +26,9 @@ function getNextStatus(currentStatus: string, userRole: string): DemandeStatus |
     },
     "en_attente_preparation_appro": {
       "responsable_appro": "en_attente_reception_livreur"
+    },
+    "en_attente_preparation_logistique": {
+      "responsable_logistique": "en_attente_reception_livreur"
     },
     "en_attente_reception_livreur": {
       "responsable_livreur": "en_attente_livraison",

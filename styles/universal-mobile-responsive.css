@@ -192,6 +192,24 @@
     padding: 12px !important;
   }
   
+  /* CORRECTION SCROLL: Formulaires et conteneurs dans les modals doivent permettre le scroll */
+  [data-radix-dialog-content] form {
+    overflow-y: visible !important;
+    overflow-x: hidden !important;
+  }
+  
+  [data-radix-dialog-content] .space-y-4,
+  [data-radix-dialog-content] .space-y-6 {
+    overflow-y: visible !important;
+    overflow-x: hidden !important;
+  }
+  
+  [data-radix-dialog-content] [data-slot="card"],
+  [data-radix-dialog-content] [data-slot="card-content"] {
+    overflow-y: visible !important;
+    overflow-x: hidden !important;
+  }
+  
   /* Formulaires dans les modals */
   .space-y-4 > * + * {
     margin-top: 12px !important;
@@ -652,9 +670,10 @@
 @media (max-width: 768px) {
   
   /* Cards générales */
-  [class*="card"],
-  .rounded-lg,
-  .border {
+  /* Note: Ne pas toucher à overflow pour préserver le scroll */
+  [class*="card"]:not([data-radix-dialog-content] *),
+  .rounded-lg:not([data-radix-dialog-content] *),
+  .border:not([data-radix-dialog-content] *) {
     border-radius: 8px !important;
     margin-bottom: 12px !important;
   }
@@ -685,13 +704,13 @@
     line-height: 1.4 !important;
   }
   
-  /* Flex containers dans les cards */
-  .flex.items-center {
+  /* Flex containers dans les cards - exclure les modales */
+  .flex.items-center:not([data-radix-dialog-content] *) {
     flex-wrap: wrap !important;
     gap: 8px !important;
   }
   
-  .flex.justify-between {
+  .flex.justify-between:not([data-radix-dialog-content] *) {
     flex-wrap: wrap !important;
     gap: 12px !important;
   }

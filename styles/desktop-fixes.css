@@ -73,9 +73,29 @@
   }
   
   /* Contenu des modals */
+  /* Note: Ne pas bloquer l'overflow-y pour permettre le scroll */
   [data-radix-dialog-content] > * {
     max-width: 100%;
     overflow-x: hidden;
+    overflow-y: visible;
+  }
+  
+  /* CORRECTION SCROLL: Formulaires et conteneurs dans les modals */
+  [data-radix-dialog-content] form {
+    overflow-y: visible !important;
+    overflow-x: hidden !important;
+  }
+  
+  [data-radix-dialog-content] .space-y-4,
+  [data-radix-dialog-content] .space-y-6 {
+    overflow-y: visible !important;
+    overflow-x: hidden !important;
+  }
+  
+  [data-radix-dialog-content] [data-slot="card"],
+  [data-radix-dialog-content] [data-slot="card-content"] {
+    overflow-y: visible !important;
+    overflow-x: hidden !important;
   }
 }
 
@@ -203,16 +223,19 @@
 @media (min-width: 769px) {
   
   /* Cards - largeur maximale */
+  /* IMPORTANT: Ne pas mettre overflow: hidden sur les Cards */
+  /* car cela bloque le scroll dans les modales */
   .card,
   [class*="Card"] {
     max-width: 100%;
-    overflow: hidden;
+    /* overflow: hidden; <- SUPPRIMÉ - bloquait le scroll */
   }
   
-  /* Card content */
+  /* Card content - permettre le scroll vertical si nécessaire */
   .card-content,
   [class*="CardContent"] {
     overflow-x: hidden;
+    overflow-y: visible;
     max-width: 100%;
   }
   

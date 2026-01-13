@@ -522,66 +522,6 @@ export default function EmployeDashboard() {
                     <span className="mobile-status-badge mobile-status-active">Disponible</span>
                   </div>
                 </div>
-                
-                <div 
-                  className="mobile-table-row mobile-table-row-clickable"
-                  onClick={() => {
-                    // Rapport - À implémenter
-                  }}
-                >
-                  <div className="mobile-table-cell">
-                    <div className="mobile-action-cell">
-                      <BarChart3 className="mobile-action-icon-small" style={{ color: '#f97316' }} />
-                      <span>Rapport</span>
-                    </div>
-                  </div>
-                  <div className="mobile-table-cell">
-                    <span className="mobile-type-badge mobile-type-rapport">Rapport</span>
-                  </div>
-                  <div className="mobile-table-cell">
-                    <span className="mobile-status-badge mobile-status-future">Bientôt</span>
-                  </div>
-                </div>
-                
-                <div 
-                  className="mobile-table-row mobile-table-row-clickable"
-                  onClick={() => {
-                    // Nouveau Projet - À implémenter
-                  }}
-                >
-                  <div className="mobile-table-cell">
-                    <div className="mobile-action-cell">
-                      <FolderOpen className="mobile-action-icon-small" style={{ color: '#6b7280' }} />
-                      <span>Nouveau Projet</span>
-                    </div>
-                  </div>
-                  <div className="mobile-table-cell">
-                    <span className="mobile-type-badge mobile-type-projet">Projet</span>
-                  </div>
-                  <div className="mobile-table-cell">
-                    <span className="mobile-status-badge mobile-status-future">Bientôt</span>
-                  </div>
-                </div>
-                
-                <div 
-                  className="mobile-table-row mobile-table-row-clickable"
-                  onClick={() => {
-                    // DA-Paiement - À implémenter
-                  }}
-                >
-                  <div className="mobile-table-cell">
-                    <div className="mobile-action-cell">
-                      <CreditCard className="mobile-action-icon-small" style={{ color: '#fc2d1f' }} />
-                      <span>DA-Paiement</span>
-                    </div>
-                  </div>
-                  <div className="mobile-table-cell">
-                    <span className="mobile-type-badge mobile-type-paiement">Paiement</span>
-                  </div>
-                  <div className="mobile-table-cell">
-                    <span className="mobile-status-badge mobile-status-future">Bientôt</span>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
