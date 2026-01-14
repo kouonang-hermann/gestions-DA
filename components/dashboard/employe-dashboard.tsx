@@ -57,8 +57,7 @@ import { useAutoReload } from "@/hooks/useAutoReload"
 
 export default function EmployeDashboard() {
   const { currentUser, demandes, projets, isLoading } = useStore()
-  const { handleManualReload } = useAutoReload("EMPLOYE")
-
+  
   const [stats, setStats] = useState({
     total: 0,
     enCours: 0,
@@ -76,6 +75,13 @@ export default function EmployeDashboard() {
   const [searchTerm, setSearchTerm] = useState("")
   const [activeChart, setActiveChart] = useState<"material" | "tooling">("material")
   const [universalClosureModalOpen, setUniversalClosureModalOpen] = useState(false)
+  const [expandedSections, setExpandedSections] = useState<{[key: string]: boolean}>({
+    livraisons: false,
+    cloture: false,
+    projets: false
+  })
+
+  const { handleManualReload } = useAutoReload("EMPLOYE")
 
   // Fonction pour obtenir les demandes selon le rôle
   const getDemandesForRole = () => {
@@ -214,6 +220,7 @@ export default function EmployeDashboard() {
     return labels[status as keyof typeof labels] || status
   }
 
+  // Early returns AFTER all hooks
   if (!currentUser) {
     return (
       <div className="text-center p-8 text-red-500">
@@ -231,7 +238,7 @@ export default function EmployeDashboard() {
     )
   }
 
-  const mesProjetIds = currentUser?.projets || []
+  const mesProjetIds = currentUser.projets || []
   const mesProjets = projets.filter((p) => mesProjetIds.includes(p.id)) || []
   const demandesForRole = getDemandesForRole()
   const demandesValidationFinale = demandesForRole.filter(d => d.status === "en_attente_validation_finale_demandeur")
@@ -387,6 +394,25 @@ export default function EmployeDashboard() {
     return statusMap[status as keyof typeof statusMap] || { label: status, class: "status-brouillon" }
   }
 
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }))
+  }
+
+  // Demandes à clôturer pour mobile
+  const demandesACloturerMobile = demandes.filter(d => 
+    d.technicienId === currentUser?.id && 
+    d.status === "en_attente_validation_finale_demandeur"
+  )
+
+  // Livraisons assignées pour mobile
+  const livraisonsAssigneesMobile = demandes.filter(d => 
+    d.livreurAssigneId === currentUser?.id &&
+    ["en_attente_validation_livreur", "en_cours_livraison"].includes(d.status)
+  )
+
   // Composant Mobile Dashboard
   const MobileDashboard = () => (
     <div className="mobile-dashboard">
@@ -409,7 +435,7 @@ export default function EmployeDashboard() {
           </div>
         </div>
         <div className="mobile-header-actions">
-          <div className="mobile-header-icon">
+          <div className="mobile-header-icon" onClick={handleManualReload}>
             <Settings size={18} />
           </div>
           <div className="mobile-header-icon">
@@ -423,9 +449,264 @@ export default function EmployeDashboard() {
 
       {/* Contenu Mobile */}
       <div className="mobile-content">
+        {/* Cartes Statistiques */}
+        <div className="mobile-stats-grid">
+          <div 
+            className="mobile-stat-card stat-total"
+            onClick={() => handleCardClick("total", "Toutes mes demandes")}
+          >
+            <div className="mobile-stat-card-header">
+              <span className="mobile-stat-card-title">Total</span>
+              <FileText className="mobile-stat-card-icon" />
+            </div>
+            <div className="mobile-stat-card-value">{stats.total}</div>
+            <div className="mobile-stat-card-desc">Mes demandes</div>
+          </div>
+
+          <div 
+            className="mobile-stat-card stat-encours"
+            onClick={() => handleCardClick("enCours", "Mes demandes en cours")}
+          >
+            <div className="mobile-stat-card-header">
+              <span className="mobile-stat-card-title">En cours</span>
+              <Clock className="mobile-stat-card-icon" />
+            </div>
+            <div className="mobile-stat-card-value">{stats.enCours}</div>
+            <div className="mobile-stat-card-desc">En traitement</div>
+          </div>
+
+          <div 
+            className="mobile-stat-card stat-validees"
+            onClick={() => handleCardClick("validees", "Mes demandes validées")}
+          >
+            <div className="mobile-stat-card-header">
+              <span className="mobile-stat-card-title">Validées</span>
+              <CheckCircle className="mobile-stat-card-icon" />
+            </div>
+            <div className="mobile-stat-card-value">{stats.validees}</div>
+            <div className="mobile-stat-card-desc">Terminées</div>
+          </div>
+
+          <div 
+            className="mobile-stat-card stat-brouillons"
+            onClick={() => handleCardClick("brouillons", "Mes brouillons")}
+          >
+            <div className="mobile-stat-card-header">
+              <span className="mobile-stat-card-title">Brouillons</span>
+              <Package className="mobile-stat-card-icon" />
+            </div>
+            <div className="mobile-stat-card-value">{stats.brouillons}</div>
+            <div className="mobile-stat-card-desc">Non soumis</div>
+          </div>
+        </div>
+
+        {/* Actions Rapides */}
+        <div className="mobile-section">
+          <h2 className="mobile-section-title">Actions Rapides</h2>
+          <div className="mobile-quick-actions">
+            <button 
+              className="mobile-quick-action-btn btn-materiel"
+              onClick={() => {
+                setDemandeType("materiel")
+                setCreateDemandeModalOpen(true)
+              }}
+            >
+              <div className="mobile-quick-action-icon">
+                <Package size={20} />
+              </div>
+              <div className="mobile-quick-action-text">
+                <div className="mobile-quick-action-title">Nouvelle demande matériel</div>
+                <div className="mobile-quick-action-desc">Créer une DA matériel</div>
+              </div>
+            </button>
+
+            <button 
+              className="mobile-quick-action-btn btn-outillage"
+              onClick={() => {
+                setDemandeType("outillage")
+                setCreateDemandeModalOpen(true)
+              }}
+            >
+              <div className="mobile-quick-action-icon">
+                <Wrench size={20} />
+              </div>
+              <div className="mobile-quick-action-text">
+                <div className="mobile-quick-action-title">Nouvelle demande outillage</div>
+                <div className="mobile-quick-action-desc">Créer une DA outillage</div>
+              </div>
+            </button>
+
+            <button 
+              className="mobile-quick-action-btn btn-cloture"
+              onClick={() => setUniversalClosureModalOpen(true)}
+            >
+              <div className="mobile-quick-action-icon">
+                <CheckCircle size={20} />
+              </div>
+              <div className="mobile-quick-action-text">
+                <div className="mobile-quick-action-title">Clôturer mes demandes</div>
+                <div className="mobile-quick-action-desc">{demandesACloturerMobile.length} demande(s) à clôturer</div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* Section Livraisons Assignées */}
+        {livraisonsAssigneesMobile.length > 0 && (
+          <div className="mobile-expandable-section">
+            <div 
+              className="mobile-expandable-header"
+              onClick={() => toggleSection('livraisons')}
+            >
+              <div className="mobile-expandable-header-left">
+                <div className="mobile-expandable-icon icon-livraison">
+                  <Package size={18} />
+                </div>
+                <div>
+                  <div className="mobile-expandable-title">Livraisons assignées</div>
+                  <div className="mobile-expandable-subtitle">Matériel à livrer</div>
+                </div>
+              </div>
+              <span className="mobile-expandable-badge badge-warning">
+                {livraisonsAssigneesMobile.length}
+              </span>
+            </div>
+            {expandedSections.livraisons && (
+              <div className="mobile-expandable-content">
+                <div className="mobile-item-list">
+                  {livraisonsAssigneesMobile.slice(0, 3).map((demande) => (
+                    <div key={demande.id} className="mobile-item-card">
+                      <div className="mobile-item-header">
+                        <span className="mobile-item-title">{demande.numero}</span>
+                        <span className="mobile-item-badge" style={{ backgroundColor: '#fef3c7', color: '#92400e' }}>
+                          {demande.type === "materiel" ? "Matériel" : "Outillage"}
+                        </span>
+                      </div>
+                      <div className="mobile-item-details">
+                        <span className="mobile-item-detail">
+                          <Clock size={12} />
+                          {new Date(demande.dateCreation).toLocaleDateString('fr-FR')}
+                        </span>
+                        <span className="mobile-item-detail">
+                          <Package size={12} />
+                          {demande.items?.length || 0} article(s)
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Section Demandes à Clôturer */}
+        {demandesACloturerMobile.length > 0 && (
+          <div className="mobile-expandable-section">
+            <div 
+              className="mobile-expandable-header"
+              onClick={() => toggleSection('cloture')}
+            >
+              <div className="mobile-expandable-header-left">
+                <div className="mobile-expandable-icon icon-cloture">
+                  <CheckCircle size={18} />
+                </div>
+                <div>
+                  <div className="mobile-expandable-title">À clôturer</div>
+                  <div className="mobile-expandable-subtitle">Confirmer la réception</div>
+                </div>
+              </div>
+              <span className="mobile-expandable-badge badge-success">
+                {demandesACloturerMobile.length}
+              </span>
+            </div>
+            {expandedSections.cloture && (
+              <div className="mobile-expandable-content">
+                <div className="mobile-item-list">
+                  {demandesACloturerMobile.slice(0, 3).map((demande) => (
+                    <div key={demande.id} className="mobile-item-card">
+                      <div className="mobile-item-header">
+                        <span className="mobile-item-title">{demande.numero}</span>
+                        <span className="mobile-item-badge" style={{ backgroundColor: '#dcfce7', color: '#166534' }}>
+                          Prêt
+                        </span>
+                      </div>
+                      <div className="mobile-item-details">
+                        <span className="mobile-item-detail">
+                          <Clock size={12} />
+                          {new Date(demande.dateCreation).toLocaleDateString('fr-FR')}
+                        </span>
+                        <span className="mobile-item-detail">
+                          <Package size={12} />
+                          {demande.items?.length || 0} article(s)
+                        </span>
+                      </div>
+                      <div className="mobile-item-actions">
+                        <button 
+                          className="mobile-item-btn mobile-item-btn-success"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setUniversalClosureModalOpen(true)
+                          }}
+                        >
+                          <CheckCircle size={14} />
+                          Clôturer
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Section Mes Projets */}
+        {mesProjets.length > 0 && (
+          <div className="mobile-expandable-section">
+            <div 
+              className="mobile-expandable-header"
+              onClick={() => toggleSection('projets')}
+            >
+              <div className="mobile-expandable-header-left">
+                <div className="mobile-expandable-icon icon-projets">
+                  <FolderOpen size={18} />
+                </div>
+                <div>
+                  <div className="mobile-expandable-title">Mes projets</div>
+                  <div className="mobile-expandable-subtitle">Projets assignés</div>
+                </div>
+              </div>
+              <span className="mobile-expandable-badge">
+                {mesProjets.length}
+              </span>
+            </div>
+            {expandedSections.projets && (
+              <div className="mobile-expandable-content">
+                <div className="mobile-item-list" style={{ paddingTop: '8px' }}>
+                  {mesProjets.map((projet) => (
+                    <div key={projet.id} className="mobile-projet-item">
+                      <div className="mobile-projet-icon">
+                        <FolderOpen size={16} />
+                      </div>
+                      <div className="mobile-projet-info">
+                        <div className="mobile-projet-name">{projet.nom}</div>
+                        <div className="mobile-projet-desc">{projet.description}</div>
+                      </div>
+                      <span className={`mobile-projet-status ${projet.actif ? 'status-actif' : 'status-inactif'}`}>
+                        {projet.actif ? 'Actif' : 'Inactif'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Mes 3 dernières demandes */}
         <div className="mobile-section">
-          <h2 className="mobile-section-title">Mes 3 dernières demandes</h2>
+          <h2 className="mobile-section-title">Dernières demandes</h2>
           <div className="mobile-demandes-list">
             {getLastThreeRequests().length > 0 ? (
               getLastThreeRequests().map((demande) => {
@@ -434,7 +715,7 @@ export default function EmployeDashboard() {
                   <div key={demande.id} className="mobile-demande-item">
                     <div className="mobile-demande-header">
                       <h3 className="mobile-demande-title">
-                        DA-{demande.numero} - {demande.type === "materiel" ? "Matériel" : "Outillage"}
+                        {demande.numero} - {demande.type === "materiel" ? "Matériel" : "Outillage"}
                       </h3>
                       <span className={`mobile-demande-status ${statusInfo.class}`}>
                         {statusInfo.label}
@@ -451,81 +732,6 @@ export default function EmployeDashboard() {
             )}
           </div>
         </div>
-
-        {/* Actions Rapides - Tableau Scrollable */}
-        <div className="mobile-section">
-          <h2 className="mobile-section-title">Actions Rapides</h2>
-          <div className="mobile-actions-table-container">
-            <div className="mobile-actions-table">
-              <div className="mobile-actions-table-header">
-                <div className="mobile-table-cell">Action</div>
-                <div className="mobile-table-cell">Type</div>
-                <div className="mobile-table-cell">Statut</div>
-              </div>
-              <div className="mobile-actions-table-body">
-                <div 
-                  className="mobile-table-row mobile-table-row-clickable"
-                  onClick={() => {
-                    setDemandeType("materiel")
-                    setCreateDemandeModalOpen(true)
-                  }}
-                >
-                  <div className="mobile-table-cell">
-                    <div className="mobile-action-cell">
-                      <Package className="mobile-action-icon-small" style={{ color: '#015fc4' }} />
-                      <span>DA-Matériel</span>
-                    </div>
-                  </div>
-                  <div className="mobile-table-cell">
-                    <span className="mobile-type-badge mobile-type-materiel">Matériel</span>
-                  </div>
-                  <div className="mobile-table-cell">
-                    <span className="mobile-status-badge mobile-status-active">Disponible</span>
-                  </div>
-                </div>
-                
-                <div 
-                  className="mobile-table-row mobile-table-row-clickable"
-                  onClick={() => {
-                    setDemandeType("outillage")
-                    setCreateDemandeModalOpen(true)
-                  }}
-                >
-                  <div className="mobile-table-cell">
-                    <div className="mobile-action-cell">
-                      <Wrench className="mobile-action-icon-small" style={{ color: '#7c3aed' }} />
-                      <span>DA-Outillage</span>
-                    </div>
-                  </div>
-                  <div className="mobile-table-cell">
-                    <span className="mobile-type-badge mobile-type-outillage">Outillage</span>
-                  </div>
-                  <div className="mobile-table-cell">
-                    <span className="mobile-status-badge mobile-status-active">Disponible</span>
-                  </div>
-                </div>
-                
-                <div 
-                  className="mobile-table-row mobile-table-row-clickable"
-                  onClick={() => setUniversalClosureModalOpen(true)}
-                >
-                  <div className="mobile-table-cell">
-                    <div className="mobile-action-cell">
-                      <CheckCircle className="mobile-action-icon-small" style={{ color: '#22c55e' }} />
-                      <span>Clôturer Demandes</span>
-                    </div>
-                  </div>
-                  <div className="mobile-table-cell">
-                    <span className="mobile-type-badge mobile-type-action">Action</span>
-                  </div>
-                  <div className="mobile-table-cell">
-                    <span className="mobile-status-badge mobile-status-active">Disponible</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Navigation Bottom */}
@@ -539,11 +745,30 @@ export default function EmployeDashboard() {
           onClick={() => handleCardClick("total", "Toutes mes demandes")}
         >
           <Archive className="mobile-nav-icon" />
-          <span className="mobile-nav-label">Mes demandes</span>
+          <span className="mobile-nav-label">Demandes</span>
+          {stats.total > 0 && (
+            <span className="mobile-nav-badge">{stats.total}</span>
+          )}
         </div>
-        <div className="mobile-nav-item">
-          <User className="mobile-nav-icon" />
-          <span className="mobile-nav-label">Profil</span>
+        <div 
+          className="mobile-nav-item"
+          onClick={() => {
+            setDemandeType("materiel")
+            setCreateDemandeModalOpen(true)
+          }}
+        >
+          <Plus className="mobile-nav-icon" />
+          <span className="mobile-nav-label">Créer</span>
+        </div>
+        <div 
+          className="mobile-nav-item"
+          onClick={() => setUniversalClosureModalOpen(true)}
+        >
+          <CheckCircle className="mobile-nav-icon" />
+          <span className="mobile-nav-label">Clôturer</span>
+          {demandesACloturerMobile.length > 0 && (
+            <span className="mobile-nav-badge">{demandesACloturerMobile.length}</span>
+          )}
         </div>
       </div>
     </div>

@@ -19,10 +19,15 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Loader2
 } from "lucide-react"
 import type { Demande } from "@/types"
 import DemandeDetailsModal from "@/components/modals/demande-details-modal"
+import CreateDemandeModal from "@/components/demandes/create-demande-modal"
+import EditDemandeModal from "@/components/admin/edit-demande-modal"
+import { useStore } from "@/stores/useStore"
+import { toast } from "sonner"
 
 interface DemandesCategoryModalProps {
   isOpen: boolean
@@ -41,11 +46,15 @@ export default function DemandesCategoryModal({
   categoryType,
   currentUser
 }: DemandesCategoryModalProps) {
+  const { deleteDemande, loadDemandes } = useStore()
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedDemande, setSelectedDemande] = useState<Demande | null>(null)
   const [demandeDetailsOpen, setDemandeDetailsOpen] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [demandeToDelete, setDemandeToDelete] = useState<Demande | null>(null)
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [demandeToEdit, setDemandeToEdit] = useState<Demande | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Filtrer les demandes selon le terme de recherche
   const filteredDemandes = demandes.filter(demande => 
@@ -107,9 +116,8 @@ export default function DemandesCategoryModal({
   }
 
   const handleEditDemande = (demande: Demande) => {
-    // TODO: Implémenter la logique de modification
-    console.log('Modifier la demande:', demande.numero)
-    // Ici on pourrait ouvrir une modale de modification ou rediriger vers une page d'édition
+    setDemandeToEdit(demande)
+    setEditModalOpen(true)
   }
 
   const handleDeleteDemande = (demande: Demande) => {
@@ -117,27 +125,51 @@ export default function DemandesCategoryModal({
     setDeleteConfirmOpen(true)
   }
 
-  const confirmDelete = () => {
-    if (demandeToDelete) {
-      // TODO: Implémenter la logique de suppression
-      console.log('Supprimer la demande:', demandeToDelete.numero)
-      // Ici on pourrait appeler une API pour supprimer la demande
+  const confirmDelete = async () => {
+    if (!demandeToDelete) return
+    
+    setIsDeleting(true)
+    try {
+      const success = await deleteDemande(demandeToDelete.id)
       
-      setDeleteConfirmOpen(false)
-      setDemandeToDelete(null)
+      if (success) {
+        toast.success(`Demande ${demandeToDelete.numero} supprimée avec succès`)
+        await loadDemandes()
+        setDeleteConfirmOpen(false)
+        setDemandeToDelete(null)
+      } else {
+        toast.error("Erreur lors de la suppression de la demande")
+      }
+    } catch (error) {
+      console.error("Erreur suppression:", error)
+      toast.error("Erreur lors de la suppression de la demande")
+    } finally {
+      setIsDeleting(false)
     }
   }
 
   // Fonction pour déterminer si une demande peut être modifiée/supprimée
   const canModifyDemande = (demande: Demande) => {
-    // Seules les demandes en brouillon ou soumises peuvent être modifiées
-    return ["brouillon", "soumise"].includes(demande.status) && 
+    // Superadmin peut modifier n'importe quelle demande
+    if (currentUser?.role === "superadmin") {
+      return true
+    }
+    
+    // Demandes modifiables: brouillon, soumise, en_attente_validation_conducteur (non validées)
+    const modifiableStatuses = ["brouillon", "soumise", "en_attente_validation_conducteur"]
+    return modifiableStatuses.includes(demande.status) && 
            demande.technicienId === currentUser?.id
   }
 
   const canDeleteDemande = (demande: Demande) => {
-    // Seules les demandes en brouillon peuvent être supprimées
-    return demande.status === "brouillon" && 
+    // Superadmin peut supprimer n'importe quelle demande
+    if (currentUser?.role === "superadmin") {
+      return true
+    }
+    
+    // Demandes supprimables: brouillon, soumise, en_attente_validation_conducteur (non validées)
+    const deletableStatuses = ["brouillon", "soumise", "en_attente_validation_conducteur"]
+    return deletableStatuses.includes(demande.status) && 
            demande.technicienId === currentUser?.id
   }
 
@@ -213,7 +245,16 @@ export default function DemandesCategoryModal({
                         const typeColor = getTypeColor(demande.type)
                         
                         return (
-                          <TableRow key={demande.id} className="hover:bg-gray-50">
+                          <TableRow 
+                            key={demande.id} 
+                            className="hover:bg-gray-50 cursor-pointer"
+                            onDoubleClick={() => {
+                              if (currentUser?.role === "superadmin") {
+                                handleEditDemande(demande)
+                              }
+                            }}
+                            title={currentUser?.role === "superadmin" ? "Double-cliquez pour modifier" : ""}
+                          >
                             <TableCell className="font-medium">
                               <div className="flex items-center gap-2">
                                 {getTypeIcon(demande.type)}
@@ -365,6 +406,18 @@ export default function DemandesCategoryModal({
         mode="view"
       />
 
+      {/* Modal de modification de demande */}
+      <CreateDemandeModal
+        isOpen={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false)
+          setDemandeToEdit(null)
+          loadDemandes()
+        }}
+        type={demandeToEdit?.type}
+        existingDemande={demandeToEdit}
+      />
+
       {/* Modal de confirmation de suppression */}
       <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <DialogContent className="max-w-md">
@@ -416,15 +469,35 @@ export default function DemandesCategoryModal({
               <Button
                 variant="destructive"
                 onClick={confirmDelete}
+                disabled={isDeleting}
                 className="bg-red-600 hover:bg-red-700"
               >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Supprimer
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Suppression...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Supprimer
+                  </>
+                )}
               </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Modale d'édition pour le super admin */}
+      <EditDemandeModal
+        isOpen={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false)
+          setDemandeToEdit(null)
+        }}
+        demande={demandeToEdit}
+      />
     </>
   )
 }

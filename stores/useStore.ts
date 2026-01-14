@@ -83,6 +83,7 @@ interface AppState {
   addNotification: (notification: AppNotification) => void
   addHistoryEntry: (entry: HistoryEntry) => void
   updateDemandeContent: (id: string, demandeData: any) => Promise<boolean>
+  deleteDemande: (id: string) => Promise<boolean>
   
   // Project Management Actions
   addUserToProject: (userId: string, projectId: string, role?: string) => Promise<boolean>
@@ -191,82 +192,13 @@ export const useStore = create<AppState>()(
             
             set({ users: transformedUsers })
           } else {
-            // Si l'erreur est "Accès non autorisé", c'est normal pour certains rôles (employé)
-            if (result.error === "Accès non autorisé") {
-              // Ajouter des utilisateurs de test pour le développement
-              const testUsers = [
-                {
-                  id: "user-superadmin-1",
-                  nom: "Admin",
-                  prenom: "Super",
-                  email: "superadmin@test.com",
-                  telephone: "123456789",
-                  role: "superadmin" as const,
-                  statut: "actif",
-                  projets: [],
-                  isAdmin: true,
-                  createdAt: new Date(),
-                  updatedAt: new Date()
-                },
-                {
-                  id: "user-appro-1",
-                  nom: "Appro",
-                  prenom: "Responsable",
-                  email: "appro@test.com",
-                  telephone: "123456789",
-                  role: "responsable_appro" as const,
-                  statut: "actif",
-                  projets: ["projet-demo-1"],
-                  isAdmin: false,
-                  createdAt: new Date(),
-                  updatedAt: new Date()
-                },
-                {
-                  id: "user-livreur-1",
-                  nom: "Livreur",
-                  prenom: "Responsable",
-                  email: "livreur@test.com",
-                  telephone: "123456789",
-                  role: "responsable_livreur" as const,
-                  statut: "actif",
-                  projets: ["projet-demo-1"],
-                  isAdmin: false,
-                  createdAt: new Date(),
-                  updatedAt: new Date()
-                },
-                {
-                  id: "user-conducteur-1",
-                  nom: "Conducteur",
-                  prenom: "Travaux",
-                  email: "conducteur@test.com",
-                  telephone: "123456789",
-                  role: "conducteur_travaux" as const,
-                  statut: "actif",
-                  projets: ["projet-demo-1"],
-                  isAdmin: false,
-                  createdAt: new Date(),
-                  updatedAt: new Date()
-                },
-                {
-                  id: "user-employe-1",
-                  nom: "Employé",
-                  prenom: "Test",
-                  email: "employe@test.com",
-                  telephone: "123456789",
-                  role: "employe" as const,
-                  statut: "actif",
-                  projets: ["projet-demo-1"],
-                  isAdmin: false,
-                  createdAt: new Date(),
-                  updatedAt: new Date()
-                }
-              ]
-              
-              set({ users: testUsers })
+            // Ignorer les erreurs d'authentification temporaires
+            if (result.error === "Accès non autorisé" || result.error === "Utilisateur non trouvé") {
+              console.log("⚠️ [STORE] Problème d'authentification temporaire lors du chargement des utilisateurs, ignoré")
               return
             }
             // Seulement logger les vraies erreurs
-            console.error("Erreur API users:", result.error)
+            console.error("❌ [STORE] Erreur API users:", result.error)
             set({ error: result.error })
           }
         } catch (error) {
@@ -330,10 +262,12 @@ export const useStore = create<AppState>()(
         }
         
         if (!currentUser) {
+          console.log("⚠️ [STORE] loadDemandes: Pas d'utilisateur connecté")
           return
         }
 
         if (!token) {
+          console.log("⚠️ [STORE] loadDemandes: Pas de token disponible")
           return
         }
 
@@ -350,7 +284,23 @@ export const useStore = create<AppState>()(
 
           if (!response.ok) {
             if (response.status === 401) {
-              throw new Error(`Non authentifié - Veuillez vous reconnecter`)
+              console.error("❌ [STORE] Erreur 401: Token invalide ou expiré")
+              
+              // Déconnecter automatiquement l'utilisateur si le token est invalide
+              set({ 
+                currentUser: null, 
+                token: null, 
+                isLoading: false,
+                isLoadingDemandes: false,
+                error: "Session expirée - Veuillez vous reconnecter"
+              })
+              
+              // Rediriger vers la page de connexion
+              if (typeof window !== 'undefined') {
+                window.location.href = '/login'
+              }
+              
+              return
             }
             throw new Error(`Erreur HTTP: ${response.status}`)
           }
@@ -369,9 +319,20 @@ export const useStore = create<AppState>()(
             throw new Error(data.error || 'Erreur lors du chargement des demandes')
           }
         } catch (error) {
-          console.error("❌ [STORE] Erreur lors du chargement des demandes:", error)
+          const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue'
+          console.error("❌ [STORE] Erreur lors du chargement des demandes:", errorMessage)
           
-          // Fallback vers des demandes de test pour le debug
+          // Si c'est une erreur d'authentification, ne pas utiliser le fallback
+          if (errorMessage.includes('authentifié') || errorMessage.includes('Session expirée')) {
+            set({ 
+              isLoading: false, 
+              isLoadingDemandes: false,
+              error: errorMessage
+            })
+            return
+          }
+          
+          // Fallback vers des demandes de test pour le debug (uniquement pour erreurs réseau)
           
           const testDemandes: Demande[] = [
             // Demande 1 : À valider par le conducteur
@@ -830,6 +791,39 @@ export const useStore = create<AppState>()(
         } catch (error) {
           console.error("Erreur mise à jour demande:", error)
           set({ error: "Erreur lors de la mise à jour de la demande", isLoading: false })
+          return false
+        }
+      },
+
+      deleteDemande: async (id: string) => {
+        const { currentUser, token } = get()
+        if (!currentUser || !token) return false
+
+        set({ isLoading: true, error: null })
+
+        try {
+          const response = await fetch(`/api/demandes/${id}`, {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`,
+            },
+          })
+
+          const result = await response.json()
+          if (result.success) {
+            set((state) => ({
+              demandes: state.demandes.filter((d) => d.id !== id),
+              isLoading: false,
+            }))
+            return true
+          } else {
+            set({ error: result.error, isLoading: false })
+            return false
+          }
+        } catch (error) {
+          console.error("Erreur suppression demande:", error)
+          set({ error: "Erreur lors de la suppression de la demande", isLoading: false })
           return false
         }
       },

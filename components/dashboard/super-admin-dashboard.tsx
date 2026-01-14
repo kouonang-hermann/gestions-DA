@@ -53,6 +53,7 @@ import ValidatedRequestsHistory from "@/components/dashboard/validated-requests-
 import ManageAdminRoles from "../admin/manage-admin-roles"
 import SharedDemandesSection from "@/components/dashboard/shared-demandes-section"
 import ValidationDemandesList from "@/components/validation/validation-demandes-list"
+import DemandesCategoryModal from "@/components/modals/demandes-category-modal"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { VisuallyHidden } from "@/components/ui/visually-hidden"
 import FinancialDashboard from "@/components/admin/financial-dashboard"
@@ -109,8 +110,9 @@ export default function SuperAdminDashboard() {
   const [detailsModalTitle, setDetailsModalTitle] = useState("")
   const [detailsModalData, setDetailsModalData] = useState<any[]>([])
 
-  // Modale personnalisée pour demandes en cours
+  // Modale pour demandes en cours
   const [enCoursModalOpen, setEnCoursModalOpen] = useState(false)
+  const [enCoursModalTitle, setEnCoursModalTitle] = useState("Mes demandes en cours")
   
   // Modale tableau de bord financier
   const [financialModalOpen, setFinancialModalOpen] = useState(false)
@@ -297,6 +299,7 @@ export default function SuperAdminDashboard() {
   const handleCardClick = (type: string, title: string) => {
     if (type === "enCours") {
       setEnCoursModalOpen(true)
+      setEnCoursModalTitle(title)
     }
   }
 
@@ -1344,97 +1347,15 @@ export default function SuperAdminDashboard() {
         </DialogContent>
       </Dialog>
 
-      {/* Modale personnalisée pour les demandes en cours */}
-      <Dialog open={enCoursModalOpen} onOpenChange={setEnCoursModalOpen}>
-        <DialogContent className="w-[95vw] max-w-4xl max-h-[80vh] p-4 sm:p-6">
-          <DialogHeader>
-            <DialogTitle>Mes demandes en cours</DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4 overflow-y-auto" style={{maxHeight: 'calc(80vh - 120px)'}}>
-            {getMesDemandesEnCours().length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <Package className="mx-auto h-12 w-12 mb-4 opacity-50" />
-                <p>Aucune demande en cours</p>
-              </div>
-            ) : (
-              <div className="grid gap-4">
-                {getMesDemandesEnCours().map((demande) => (
-                  <Card key={demande.id} className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-4 mb-2">
-                          <Badge variant="outline" className="font-mono">
-                            {demande.numero}
-                          </Badge>
-                          <Badge 
-                            variant={demande.type === "materiel" ? "default" : "secondary"}
-                            className={demande.type === "materiel" ? "bg-blue-100 text-blue-800" : "bg-purple-100 text-purple-800"}
-                          >
-                            {demande.type === "materiel" ? "Matériel" : "Outillage"}
-                          </Badge>
-                          <Badge 
-                            variant="outline"
-                            className={
-                              demande.status === "en_attente_validation_finale_demandeur" ? "bg-green-100 text-green-800" :
-                              demande.status.includes("en_attente") ? "bg-orange-100 text-orange-800" :
-                              "bg-gray-100 text-gray-800"
-                            }
-                          >
-                            {demande.status === "en_attente_validation_finale_demandeur" ? "Prêt à clôturer" :
-                             demande.status.includes("en_attente") ? "En cours" :
-                             demande.status}
-                          </Badge>
-                        </div>
-                        
-                        <table className="text-sm text-gray-600 w-full">
-                          <tbody>
-                            <tr>
-                              <td className="font-semibold pr-2 py-0.5 whitespace-nowrap align-top w-24">Projet:</td>
-                              <td className="py-0.5 break-all">{getProjetNom(demande)}</td>
-                            </tr>
-                            <tr>
-                              <td className="font-semibold pr-2 py-0.5 whitespace-nowrap align-top w-24">Demandeur:</td>
-                              <td className="py-0.5 break-all">{getDemandeurNom(demande)}</td>
-                            </tr>
-                            <tr>
-                              <td className="font-semibold pr-2 py-0.5 whitespace-nowrap align-top w-24">Date:</td>
-                              <td className="py-0.5">{new Date(demande.dateCreation).toLocaleDateString('fr-FR')}</td>
-                            </tr>
-                            {demande.commentaires && (
-                              <tr>
-                                <td className="font-semibold pr-2 py-0.5 whitespace-nowrap align-top w-24">Commentaires:</td>
-                                <td className="py-0.5 break-all">{demande.commentaires}</td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
-                      
-                      <div className="flex flex-col items-end gap-2">
-                        <div className="text-sm text-gray-500">
-                          {new Date(demande.dateCreation).toLocaleDateString('fr-FR')}
-                        </div>
-                        {demande.status === "en_attente_validation_finale_demandeur" && (
-                          <Button 
-                            size="sm" 
-                            className="bg-green-500 hover:bg-green-600 text-white"
-                            onClick={() => {
-                              // Logique de clôture
-                            }}
-                          >
-                            Clôturer
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Modale pour les demandes en cours avec boutons Modifier/Annuler */}
+      <DemandesCategoryModal
+        isOpen={enCoursModalOpen}
+        onClose={() => setEnCoursModalOpen(false)}
+        categoryType="enCours"
+        title={enCoursModalTitle}
+        demandes={getMesDemandesEnCours()}
+        currentUser={currentUser}
+      />
     </div>
   )
 }

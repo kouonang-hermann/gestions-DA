@@ -114,13 +114,133 @@ export const GET = withAuth(async (request: NextRequest, currentUser: any, conte
 })
 
 /**
- * PUT /api/demandes/[id] - Met à jour le statut d'une demande (validation/rejet)
- * NOUVEAU : En cas de rejet, la demande retourne au statut précédent pour modification
+ * PUT /api/demandes/[id] - Met à jour une demande
+ * - Si body contient "status" : Validation/rejet (workflow existant)
+ * - Si body contient "type", "items", etc. : Modification complète (super admin uniquement)
  */
 export const PUT = withAuth(async (request: NextRequest, currentUser: any, context: { params: Promise<{ id: string }> }) => {
   try {
     const params = await context.params
     const body = await request.json()
+    
+    // Vérifier si c'est une modification complète (super admin) ou une validation
+    if (body.items !== undefined || body.type !== undefined) {
+      // MODIFICATION COMPLÈTE - Réservé au super admin
+      if (currentUser.role !== "superadmin") {
+        return NextResponse.json({ 
+          success: false, 
+          error: "Seul le super admin peut modifier complètement une demande" 
+        }, { status: 403 })
+      }
+
+      console.log(`✏️ [MODIFICATION] Super admin modifie la demande ${params.id}`)
+
+      // Récupérer la demande actuelle
+      const demande = await prisma.demande.findUnique({
+        where: { id: params.id },
+        include: { items: true }
+      })
+
+      if (!demande) {
+        return NextResponse.json({ success: false, error: "Demande non trouvée" }, { status: 404 })
+      }
+
+      // Préparer les données de mise à jour
+      const updateData: any = {
+        dateModification: new Date(),
+      }
+
+      if (body.type) updateData.type = body.type
+      if (body.projetId) updateData.projetId = body.projetId
+      if (body.technicienId) updateData.technicienId = body.technicienId
+      if (body.commentaires !== undefined) updateData.commentaires = body.commentaires
+      if (body.dateLivraisonSouhaitee !== undefined) {
+        updateData.dateLivraisonSouhaitee = body.dateLivraisonSouhaitee ? new Date(body.dateLivraisonSouhaitee) : null
+      }
+
+      // Mettre à jour la demande
+      const updatedDemande = await prisma.demande.update({
+        where: { id: params.id },
+        data: updateData,
+      })
+
+      // Gérer les articles si fournis
+      if (body.items && Array.isArray(body.items)) {
+        // Supprimer les anciens articles
+        await prisma.itemDemande.deleteMany({
+          where: { demandeId: params.id }
+        })
+
+        // Créer les nouveaux articles
+        for (const item of body.items) {
+          // Générer une référence auto si vide
+          const reference = item.reference?.trim() || `AUTO-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+          
+          // Créer ou récupérer l'article
+          let article = await prisma.article.findFirst({
+            where: {
+              reference: reference,
+              nom: item.nom
+            }
+          })
+
+          if (!article) {
+            article = await prisma.article.create({
+              data: {
+                reference: reference,
+                nom: item.nom,
+                unite: item.unite || "pièce",
+                description: item.nom,
+                type: updatedDemande.type,
+              }
+            })
+          }
+
+          // Créer l'item de demande
+          await prisma.itemDemande.create({
+            data: {
+              demandeId: params.id,
+              articleId: article.id,
+              quantiteDemandee: item.quantiteDemandee,
+              quantiteValidee: item.quantiteValidee || item.quantiteDemandee,
+              prixUnitaire: item.prixUnitaire,
+            }
+          })
+        }
+      }
+
+      // Créer une entrée dans l'historique
+      await prisma.historyEntry.create({
+        data: {
+          demandeId: params.id,
+          userId: currentUser.id,
+          action: `Demande modifiée par ${currentUser.prenom} ${currentUser.nom} (super admin)`,
+          ancienStatus: demande.status as any,
+          nouveauStatus: demande.status as any,
+          commentaire: "Modification complète de la demande",
+          signature: `superadmin-edit-${Date.now()}`,
+        }
+      })
+
+      // Récupérer la demande complète mise à jour
+      const finalDemande = await prisma.demande.findUnique({
+        where: { id: params.id },
+        include: {
+          projet: { select: { id: true, nom: true } },
+          technicien: { select: { id: true, nom: true, prenom: true, email: true } },
+          items: { include: { article: true } }
+        }
+      })
+
+      console.log(`✅ [MODIFICATION] Demande ${demande.numero} modifiée avec succès`)
+
+      return NextResponse.json({
+        success: true,
+        data: finalDemande,
+      })
+    }
+
+    // VALIDATION/REJET - Workflow existant
     const validatedData = updateDemandeStatusSchema.parse(body)
 
     // Récupérer la demande actuelle
@@ -320,7 +440,8 @@ async function canUserValidateStatus(status: string, user: any, projetId: string
 }
 
 /**
- * DELETE /api/demandes/[id] - Supprime une demande (seulement si brouillon)
+ * DELETE /api/demandes/[id] - Supprime une demande (si non validée)
+ * Autorisé pour: brouillon, soumise, en_attente_validation_conducteur
  */
 export const DELETE = withAuth(async (request: NextRequest, currentUser: any, context: { params: Promise<{ id: string }> }) => {
   try {
@@ -333,18 +454,28 @@ export const DELETE = withAuth(async (request: NextRequest, currentUser: any, co
       return NextResponse.json({ success: false, error: "Demande non trouvée" }, { status: 404 })
     }
 
-    // Seul le créateur ou un superadmin peut supprimer une demande brouillon
+    // Seul le créateur ou un superadmin peut supprimer une demande
     if (demande.technicienId !== currentUser.id && currentUser.role !== "superadmin") {
       return NextResponse.json({ success: false, error: "Accès non autorisé" }, { status: 403 })
     }
 
-    if (demande.status !== "brouillon") {
-      return NextResponse.json({ success: false, error: "Seules les demandes en brouillon peuvent être supprimées" }, { status: 400 })
+    // Superadmin peut supprimer n'importe quelle demande, quel que soit son statut
+    if (currentUser.role !== "superadmin") {
+      // Pour les autres utilisateurs, autoriser uniquement les demandes non validées
+      const allowedStatuses = ["brouillon", "soumise", "en_attente_validation_conducteur"]
+      if (!allowedStatuses.includes(demande.status)) {
+        return NextResponse.json({ 
+          success: false, 
+          error: "Cette demande a déjà été validée et ne peut plus être supprimée" 
+        }, { status: 400 })
+      }
     }
 
     await prisma.demande.delete({
       where: { id: params.id }
     })
+
+    console.log(`🗑️ [SUPPRESSION] Demande ${demande.numero} supprimée par ${currentUser.nom}`)
 
     return NextResponse.json({ success: true })
   } catch (error) {

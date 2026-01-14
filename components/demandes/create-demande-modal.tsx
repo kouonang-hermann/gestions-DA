@@ -27,7 +27,7 @@ interface ManualItem {
 }
 
 export default function CreateDemandeModal({ isOpen, onClose, type = "materiel", existingDemande }: CreateDemandeModalProps) {
-  const { currentUser, projets, createDemande, loadProjets, isLoading, executeAction, loadDemandes } = useStore()
+  const { currentUser, projets, createDemande, loadProjets, isLoading, executeAction, loadDemandes, token } = useStore()
   
   const DRAFT_KEY = `demande_draft_${type}_${currentUser?.id}`
   const isEditMode = !!existingDemande
@@ -185,8 +185,8 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel",
 
     // Validation des articles
     for (const item of formData.items) {
-      if (!item.nom.trim() || !item.reference.trim() || !item.unite.trim()) {
-        setError("Tous les articles doivent avoir un nom, une référence et une unité")
+      if (!item.nom.trim() || !item.unite.trim()) {
+        setError("Tous les articles doivent avoir un nom et une unité")
         return
       }
       if (item.quantiteDemandee <= 0) {
@@ -201,7 +201,10 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel",
         // 1. Mettre à jour les données de la demande
         const response = await fetch(`/api/demandes/${existingDemande.id}/update-items`, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
           body: JSON.stringify({
             projetId: formData.projetId,
             commentaires: formData.commentaires,

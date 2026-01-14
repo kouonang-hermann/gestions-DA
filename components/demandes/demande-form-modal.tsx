@@ -162,10 +162,6 @@ export default function DemandeFormModal({ isOpen, onClose, demande, mode, type 
         setError("Tous les articles doivent avoir un nom")
         return false
       }
-      if (!item.reference.trim()) {
-        setError("Tous les articles doivent avoir une référence")
-        return false
-      }
       if (!item.unite.trim()) {
         setError("Tous les articles doivent avoir une unité")
         return false

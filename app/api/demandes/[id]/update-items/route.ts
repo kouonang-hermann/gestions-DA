@@ -29,14 +29,14 @@ export const PATCH = withAuth(async (request: NextRequest, currentUser: any, con
     const isConducteur = currentUser.role === "conducteur_travaux"
     const isResponsableTravaux = currentUser.role === "responsable_travaux"
     
-    // Statuts où la modification est autorisée
+    // Statuts où la modification est autorisée (pour les non-superadmin)
     const modifiableStatuses = [
       "rejetee", // Demandeur peut modifier après rejet
       "en_attente_validation_conducteur", // Conducteur peut modifier avant validation
       "en_attente_validation_responsable_travaux", // Responsable travaux peut modifier avant validation
     ]
     
-    // Vérifier les permissions
+    // Superadmin peut tout modifier, sinon vérifier les permissions
     if (!isSuperAdmin) {
       // Le demandeur peut modifier sa demande rejetée
       if (isOwner && demande.status === "rejetee") {
@@ -56,14 +56,14 @@ export const PATCH = withAuth(async (request: NextRequest, currentUser: any, con
           error: "Vous n'avez pas la permission de modifier cette demande" 
         }, { status: 403 })
       }
-    }
-    
-    // Vérifier que la demande est dans un statut modifiable
-    if (!modifiableStatuses.includes(demande.status)) {
-      return NextResponse.json({ 
-        success: false, 
-        error: `Cette demande ne peut pas être modifiée (statut: ${demande.status})` 
-      }, { status: 403 })
+      
+      // Vérifier que la demande est dans un statut modifiable
+      if (!modifiableStatuses.includes(demande.status)) {
+        return NextResponse.json({ 
+          success: false, 
+          error: `Cette demande ne peut pas être modifiée (statut: ${demande.status})` 
+        }, { status: 403 })
+      }
     }
 
     // Supprimer les anciens items
@@ -74,10 +74,13 @@ export const PATCH = withAuth(async (request: NextRequest, currentUser: any, con
     // Créer les nouveaux items
     const items = body.items || []
     for (const item of items) {
+      // Générer une référence auto si vide
+      const reference = item.article.reference?.trim() || `AUTO-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      
       // Créer ou récupérer l'article
       let article = await prisma.article.findFirst({
         where: {
-          reference: item.article.reference,
+          reference: reference,
           nom: item.article.nom
         }
       })
@@ -87,7 +90,7 @@ export const PATCH = withAuth(async (request: NextRequest, currentUser: any, con
           data: {
             nom: item.article.nom,
             description: item.article.description || "",
-            reference: item.article.reference,
+            reference: reference,
             unite: item.article.unite,
             type: item.article.type,
           }
