@@ -91,26 +91,18 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
 
         // Si c'est un article manuel, le créer
         if (item.articleId.startsWith('manual-') && item.article) {
-          const existingArticle = await prisma.article.findUnique({
-            where: { reference: item.article.reference }
+          const newArticle = await prisma.article.create({
+            data: {
+              nom: item.article.nom,
+              description: item.article.description || '',
+              reference: item.article.reference?.trim() || null,
+              unite: item.article.unite,
+              type: demande.type,
+              stock: null,
+              prixUnitaire: null,
+            }
           })
-          
-          if (existingArticle) {
-            articleId = existingArticle.id
-          } else {
-            const newArticle = await prisma.article.create({
-              data: {
-                nom: item.article.nom,
-                description: item.article.description || '',
-                reference: item.article.reference,
-                unite: item.article.unite,
-                type: demande.type,
-                stock: null,
-                prixUnitaire: null,
-              }
-            })
-            articleId = newArticle.id
-          }
+          articleId = newArticle.id
         }
 
         // Vérifier les permissions pour modifier les quantités

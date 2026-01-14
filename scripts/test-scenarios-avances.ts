@@ -120,10 +120,8 @@ async function testScenariosAvances() {
     console.log(`✅ Projet créé: ${projetTest.nom}\n`)
 
     // Créer des articles
-    const article = await prisma.article.upsert({
-      where: { reference: 'TEST-GRAVIER-001' },
-      update: {},
-      create: {
+    const article = await prisma.article.create({
+      data: {
         nom: 'Gravier TEST',
         description: 'Gravier pour test livraisons partielles',
         reference: 'TEST-GRAVIER-001',

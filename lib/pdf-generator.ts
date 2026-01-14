@@ -72,50 +72,79 @@ export const generatePurchaseRequestPDF = async (
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body { 
             font-family: Arial, sans-serif; 
-            padding: 30px;
+            padding: 15px;
             background-color: #ffffff;
             color: #000000;
           }
           .header {
             text-align: center;
-            margin-bottom: 25px;
-            padding: 15px;
-            background-color: #015fc4;
-            color: #ffffff;
-            border-radius: 8px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #333333;
+            padding-bottom: 5px;
           }
           .header h1 {
             margin: 0;
-            font-size: 20px;
+            color: #333333;
+            font-size: 14px;
+            font-weight: bold;
           }
           .header p {
-            margin: 5px 0 0 0;
-            font-size: 14px;
-            opacity: 0.9;
+            margin: 3px 0;
+            font-size: 11px;
+            color: #000000;
           }
           .info-section {
-            margin-bottom: 20px;
-            padding: 15px;
-            background-color: #f8f9fa;
-            border: 1px solid #e5e7eb;
-            border-radius: 6px;
-          }
-          .info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-          }
-          .info-item {
             margin-bottom: 8px;
+            padding: 5px 8px;
+            background-color: #f5f5f5;
+            border-radius: 3px;
           }
-          .info-label {
+          .info-row {
+            margin-bottom: 3px;
+            color: #000000;
+            font-size: 10px;
+          }
+          .info-row strong {
+            display: inline-block;
+            width: 150px;
+            color: #000000;
+            font-size: 10px;
+          }
+          .visa-section {
+            margin: 8px 0;
+            padding: 5px;
+            background-color: #f9f9f9;
+            border: 1px solid #dddddd;
+            border-radius: 3px;
+          }
+          .visa-section h3 {
+            margin: 0 0 5px 0;
+            color: #333333;
+            font-size: 11px;
+            text-align: center;
             font-weight: bold;
-            color: #374151;
-            font-size: 12px;
           }
-          .info-value {
-            color: #1f2937;
-            font-size: 14px;
+          .visa-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 3px;
+          }
+          .visa-table th,
+          .visa-table td {
+            border: 1px solid #dddddd;
+            padding: 3px 5px;
+            text-align: center;
+            color: #000000;
+            font-size: 9px;
+          }
+          .visa-table th {
+            background-color: #2196F3;
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 9px;
+          }
+          .visa-table tr:nth-child(even) {
+            background-color: #f5f5f5;
           }
           .status-badge {
             display: inline-block;
@@ -130,22 +159,23 @@ export const generatePurchaseRequestPDF = async (
           table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 15px;
-            font-size: 12px;
+            margin-top: 10px;
           }
           th, td {
-            border: 1px solid #d1d5db;
+            border: 2px solid #333333;
             padding: 10px;
             text-align: left;
             color: #000000;
+            font-size: 13px;
           }
           th {
-            background-color: #015fc4;
+            background-color: #4CAF50;
             color: #ffffff;
             font-weight: bold;
+            font-size: 14px;
           }
           tr:nth-child(even) {
-            background-color: #f9fafb;
+            background-color: #f9f9f9;
           }
           .qty-delivered { color: #2563eb; font-weight: bold; }
           .qty-remaining { color: #ea580c; font-weight: bold; }
@@ -169,116 +199,153 @@ export const generatePurchaseRequestPDF = async (
             font-size: 12px;
           }
           .signature-section {
-            margin-top: 40px;
+            margin-top: 20px;
             display: flex;
             justify-content: space-between;
           }
           .signature-box {
             width: 45%;
             border-top: 1px solid #333333;
-            padding-top: 10px;
+            padding-top: 5px;
             text-align: center;
           }
           .signature-box p {
-            margin: 5px 0;
+            margin: 3px 0;
             color: #000000;
-            font-size: 12px;
+            font-size: 10px;
+          }
+          .signature-box p strong {
+            font-size: 11px;
           }
           .footer {
-            margin-top: 30px;
-            padding-top: 15px;
-            border-top: 1px solid #e5e7eb;
+            margin-top: 15px;
+            padding-top: 8px;
+            border-top: 1px solid #dddddd;
             text-align: center;
-            color: #6b7280;
-            font-size: 10px;
+            color: #666666;
+            font-size: 8px;
           }
         </style>
       </head>
       <body>
         <div class="header">
-          <h1>DEMANDE ${demande.type === "materiel" ? "MATÉRIEL" : "OUTILLAGE"}</h1>
-          <p>N° ${demande.numero}</p>
+          <h1>DEMANDE D'ACHAT</h1>
+          <p>Demande N° ${demande.numero}</p>
         </div>
 
         <div class="info-section">
-          <div class="info-grid">
-            <div class="info-item">
-              <div class="info-label">Demandeur</div>
-              <div class="info-value">${demande.technicien?.prenom || ""} ${demande.technicien?.nom || "N/A"}</div>
-            </div>
-            <div class="info-item">
-              <div class="info-label">Projet</div>
-              <div class="info-value">${demande.projet?.nom || "N/A"}</div>
-            </div>
-            <div class="info-item">
-              <div class="info-label">Date de création</div>
-              <div class="info-value">${demande.dateCreation ? new Date(demande.dateCreation).toLocaleDateString("fr-FR") : "N/A"}</div>
-            </div>
-            <div class="info-item">
-              <div class="info-label">Date souhaitée</div>
-              <div class="info-value">${demande.dateLivraisonSouhaitee ? new Date(demande.dateLivraisonSouhaitee).toLocaleDateString("fr-FR") : "N/A"}</div>
-            </div>
-            <div class="info-item">
-              <div class="info-label">Statut</div>
-              <div class="info-value">
-                <span class="status-badge ${
-                  demande.status === 'cloturee' || demande.status === 'confirmee_demandeur' ? 'status-validated' :
-                  demande.status === 'rejetee' ? 'status-rejected' : 'status-pending'
-                }">${getStatusLabel(demande.status)}</span>
-              </div>
-            </div>
-          </div>
+          <div class="info-row"><strong>Type:</strong> ${demande.type === "materiel" ? "Matériel" : "Outillage"}</div>
+          <div class="info-row"><strong>Projet:</strong> ${demande.projet?.nom || "N/A"}</div>
+          <div class="info-row"><strong>Demandeur:</strong> ${demande.technicien?.nom || "N/A"} ${demande.technicien?.prenom || ""}</div>
+          <div class="info-row"><strong>Date de création:</strong> ${demande.dateCreation ? new Date(demande.dateCreation).toLocaleDateString("fr-FR") : "N/A"}</div>
+          <div class="info-row"><strong>Date de livraison:</strong> ${demande.dateLivraisonSouhaitee ? new Date(demande.dateLivraisonSouhaitee).toLocaleDateString("fr-FR") : "N/A"}</div>
+        </div>
+
+        <div class="visa-section">
+          <h3>Visas et Signatures</h3>
+          <table class="visa-table">
+            <thead>
+              <tr>
+                <th>Rôle</th>
+                <th>Nom</th>
+                <th>Date</th>
+                <th>Heure</th>
+                <th>Visa</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${demande.validationConducteur ? `
+              <tr>
+                <td>Conducteur Travaux</td>
+                <td>_____________________</td>
+                <td>${demande.validationConducteur.date ? new Date(demande.validationConducteur.date).toLocaleDateString("fr-FR") : "_____"}</td>
+                <td>${demande.validationConducteur.date ? new Date(demande.validationConducteur.date).toLocaleTimeString("fr-FR", {hour: '2-digit', minute: '2-digit'}) : "_____"}</td>
+                <td>✓</td>
+              </tr>
+              ` : `
+              <tr>
+                <td>Conducteur Travaux</td>
+                <td>_____________________</td>
+                <td>_____________________</td>
+                <td>_____________________</td>
+                <td></td>
+              </tr>
+              `}
+              ${demande.validationResponsableTravaux ? `
+              <tr>
+                <td>Responsable Travaux</td>
+                <td>_____________________</td>
+                <td>${demande.validationResponsableTravaux.date ? new Date(demande.validationResponsableTravaux.date).toLocaleDateString("fr-FR") : "_____"}</td>
+                <td>${demande.validationResponsableTravaux.date ? new Date(demande.validationResponsableTravaux.date).toLocaleTimeString("fr-FR", {hour: '2-digit', minute: '2-digit'}) : "_____"}</td>
+                <td>✓</td>
+              </tr>
+              ` : `
+              <tr>
+                <td>Responsable Travaux</td>
+                <td>_____________________</td>
+                <td>_____________________</td>
+                <td>_____________________</td>
+                <td></td>
+              </tr>
+              `}
+              ${demande.validationChargeAffaire ? `
+              <tr>
+                <td>Chargé d'Affaire</td>
+                <td>_____________________</td>
+                <td>${demande.validationChargeAffaire.date ? new Date(demande.validationChargeAffaire.date).toLocaleDateString("fr-FR") : "_____"}</td>
+                <td>${demande.validationChargeAffaire.date ? new Date(demande.validationChargeAffaire.date).toLocaleTimeString("fr-FR", {hour: '2-digit', minute: '2-digit'}) : "_____"}</td>
+                <td>✓</td>
+              </tr>
+              ` : `
+              <tr>
+                <td>Chargé d'Affaire</td>
+                <td>_____________________</td>
+                <td>_____________________</td>
+                <td>_____________________</td>
+                <td></td>
+              </tr>
+              `}
+            </tbody>
+          </table>
         </div>
 
         <table>
           <thead>
             <tr>
+              <th>Article</th>
               <th>Référence</th>
-              <th>Désignation</th>
               <th>Unité</th>
               <th>Qté Dem.</th>
               <th>Qté Val.</th>
-              <th>Qté Livrée</th>
-              <th>Qté Restante</th>
+              <th>Commentaire</th>
             </tr>
           </thead>
           <tbody>
             ${demande.items?.map((item: any) => {
               const qteValidee = item.quantiteValidee || item.quantiteDemandee
-              const qteLivree = item.quantiteSortie || item.quantiteRecue || 0
-              const qteRestante = Math.max(0, qteValidee - qteLivree)
               return `
                 <tr>
-                  <td>${item.article?.reference || "----"}</td>
-                  <td>${item.article?.nom || "Article inconnu"}</td>
-                  <td>${item.article?.unite || "pièce"}</td>
+                  <td>${item.article?.nom || "N/A"}</td>
+                  <td>${item.article?.reference || "N/A"}</td>
+                  <td>${item.article?.unite || "N/A"}</td>
                   <td>${item.quantiteDemandee}</td>
                   <td>${qteValidee}</td>
-                  <td class="qty-delivered">${qteLivree}</td>
-                  <td class="qty-remaining">${qteRestante}</td>
+                  <td>${item.commentaire || ""}</td>
                 </tr>
               `
-            }).join("") || "<tr><td colspan='7'>Aucun article</td></tr>"}
+            }).join("") || "<tr><td colspan='6'>Aucun article</td></tr>"}
           </tbody>
         </table>
 
-        ${demande.commentaires || demande.rejetMotif ? `
-          <div class="comments-section">
-            <div class="comments-title">Commentaires</div>
-            ${demande.commentaires ? `<div class="comment-item">Demandeur: ${demande.commentaires}</div>` : ""}
-            ${demande.rejetMotif ? `<div class="comment-item" style="border-left-color: #ef4444;">Motif de rejet: ${demande.rejetMotif}</div>` : ""}
-          </div>
-        ` : ""}
-
         <div class="signature-section">
           <div class="signature-box">
-            <p><strong>Demandeur</strong></p>
+            <p><strong>Préparé par (Appro)</strong></p>
             <p>Nom: _____________________</p>
             <p>Date: _____________________</p>
             <p>Signature: _____________________</p>
           </div>
           <div class="signature-box">
-            <p><strong>Valideur</strong></p>
+            <p><strong>Reçu par (Livreur)</strong></p>
             <p>Nom: _____________________</p>
             <p>Date: _____________________</p>
             <p>Signature: _____________________</p>
@@ -287,7 +354,6 @@ export const generatePurchaseRequestPDF = async (
 
         <div class="footer">
           <p>Document généré le ${new Date().toLocaleDateString("fr-FR")} à ${new Date().toLocaleTimeString("fr-FR")}</p>
-          <p>Gestion Demandes Matériel - InstrumElec</p>
         </div>
       </body>
       </html>
@@ -316,23 +382,38 @@ export const generatePurchaseRequestPDF = async (
       format: 'a4'
     })
 
+    // Définir les marges (en mm)
+    const marginLeft = 10
+    const marginRight = 10
+    const marginTop = 10
+    const marginBottom = 10
+
     const pdfWidth = pdf.internal.pageSize.getWidth()
     const pdfHeight = pdf.internal.pageSize.getHeight()
-    const imgWidth = pdfWidth
+    
+    // Calculer la largeur et hauteur disponibles après marges
+    const availableWidth = pdfWidth - marginLeft - marginRight
+    const availableHeight = pdfHeight - marginTop - marginBottom
+    
+    // Calculer les dimensions de l'image en respectant les marges
+    const imgWidth = availableWidth
     const imgHeight = (canvas.height * imgWidth) / canvas.width
 
     let heightLeft = imgHeight
     let position = 0
 
-    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
-    heightLeft -= pdfHeight
+    // Première page avec marges
+    pdf.addImage(imgData, 'PNG', marginLeft, marginTop, imgWidth, imgHeight)
+    heightLeft -= availableHeight
 
     // Ajouter des pages supplémentaires si nécessaire
     while (heightLeft > 0) {
-      position = heightLeft - imgHeight
       pdf.addPage()
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
-      heightLeft -= pdfHeight
+      // Calculer la position négative pour continuer l'image
+      position = -(imgHeight - heightLeft)
+      // Ajouter les marges pour créer un vrai espace en haut de chaque page
+      pdf.addImage(imgData, 'PNG', marginLeft, position + marginTop, imgWidth, imgHeight)
+      heightLeft -= availableHeight
     }
 
     // Télécharger le PDF

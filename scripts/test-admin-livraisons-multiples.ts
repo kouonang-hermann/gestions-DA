@@ -105,10 +105,8 @@ async function testAdminLivraisonsMultiples() {
     console.log(`✅ Projet créé: ${projetTest.nom}\n`)
 
     // Créer des articles
-    const article1 = await prisma.article.upsert({
-      where: { reference: 'TEST-BETON-001' },
-      update: {},
-      create: {
+    const article1 = await prisma.article.create({
+      data: {
         nom: 'Béton TEST',
         description: 'Béton pour test livraisons admin',
         reference: 'TEST-BETON-001',
@@ -119,10 +117,8 @@ async function testAdminLivraisonsMultiples() {
       }
     })
 
-    const article2 = await prisma.article.upsert({
-      where: { reference: 'TEST-SABLE-002' },
-      update: {},
-      create: {
+    const article2 = await prisma.article.create({
+      data: {
         nom: 'Sable TEST',
         description: 'Sable pour test',
         reference: 'TEST-SABLE-002',

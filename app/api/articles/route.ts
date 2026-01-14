@@ -70,15 +70,7 @@ export async function POST(request: NextRequest) {
     // Validation des données
     const validatedData = createArticleSchema.parse(body)
 
-    // Vérifier si la référence existe déjà
-    const existingArticle = await prisma.article.findUnique({
-      where: { reference: validatedData.reference }
-    })
-
-    if (existingArticle) {
-      return NextResponse.json({ success: false, error: "Cette référence existe déjà" }, { status: 400 })
-    }
-
+    // Créer l'article (référence n'est plus unique)
     const newArticle = await prisma.article.create({
       data: {
         nom: validatedData.nom,

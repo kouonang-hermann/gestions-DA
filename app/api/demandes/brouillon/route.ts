@@ -38,31 +38,20 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any) => {
     for (const item of body.items || []) {
       let articleId = item.articleId || `manual-${item.id}`
       
-      // Si c'est un article manuel, le créer ou le récupérer
+      // Si c'est un article manuel, le créer
       if (articleId.startsWith('manual-') && item.article) {
-        const existingArticle = await prisma.article.findFirst({
-          where: {
-            reference: item.article.reference,
-            nom: item.article.nom
+        const newArticle = await prisma.article.create({
+          data: {
+            nom: item.article.nom,
+            description: item.article.description || '',
+            reference: item.article.reference?.trim() || null,
+            unite: item.article.unite,
+            type: body.type,
+            stock: null,
+            prixUnitaire: null,
           }
         })
-        
-        if (existingArticle) {
-          articleId = existingArticle.id
-        } else {
-          const newArticle = await prisma.article.create({
-            data: {
-              nom: item.article.nom,
-              description: item.article.description || '',
-              reference: item.article.reference,
-              unite: item.article.unite,
-              type: body.type,
-              stock: null,
-              prixUnitaire: null,
-            }
-          })
-          articleId = newArticle.id
-        }
+        articleId = newArticle.id
       }
       
       processedItems.push({

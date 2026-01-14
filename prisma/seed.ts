@@ -241,10 +241,8 @@ async function main() {
 
   // Créer des articles de test
   const articles = await Promise.all([
-    prisma.article.upsert({
-      where: { reference: 'MAT-001' },
-      update: {},
-      create: {
+    prisma.article.create({
+      data: {
         nom: 'Casque de sécurité',
         description: 'Casque de sécurité conforme aux normes EN 397',
         reference: 'MAT-001',
@@ -254,10 +252,8 @@ async function main() {
         prixUnitaire: 12.50,
       },
     }),
-    prisma.article.upsert({
-      where: { reference: 'OUT-001' },
-      update: {},
-      create: {
+    prisma.article.create({
+      data: {
         nom: 'Perceuse électrique',
         description: 'Perceuse électrique 18V avec batterie',
         reference: 'OUT-001',
@@ -267,10 +263,8 @@ async function main() {
         prixUnitaire: 150.00,
       },
     }),
-    prisma.article.upsert({
-      where: { reference: 'MAT-002' },
-      update: {},
-      create: {
+    prisma.article.create({
+      data: {
         nom: 'Gants de protection',
         description: 'Gants de protection en cuir renforcé',
         reference: 'MAT-002',

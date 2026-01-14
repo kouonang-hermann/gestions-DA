@@ -151,10 +151,8 @@ async function testWorkflowAvecUsersTest() {
     // ============================================
     console.log('📦 ÉTAPE 2 : Création des articles de test...\n')
 
-    const article1 = await prisma.article.upsert({
-      where: { reference: 'TEST-CIMENT-001' },
-      update: {},
-      create: {
+    const article1 = await prisma.article.create({
+      data: {
         nom: 'Ciment Portland TEST',
         description: 'Ciment pour test de livraison',
         reference: 'TEST-CIMENT-001',
@@ -165,10 +163,8 @@ async function testWorkflowAvecUsersTest() {
       }
     })
 
-    const article2 = await prisma.article.upsert({
-      where: { reference: 'TEST-FER-002' },
-      update: {},
-      create: {
+    const article2 = await prisma.article.create({
+      data: {
         nom: 'Fer à béton TEST',
         description: 'Fer à béton pour test',
         reference: 'TEST-FER-002',

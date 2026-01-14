@@ -341,27 +341,18 @@ export const POST = async (request: NextRequest) => {
       
       // Si c'est un article manuel (commence par "manual-"), le créer d'abord
       if (item.articleId.startsWith('manual-') && item.article) {
-        // Vérifier si l'article existe déjà avec cette référence
-        const existingArticle = await prisma.article.findUnique({
-          where: { reference: item.article.reference }
+        const newArticle = await prisma.article.create({
+          data: {
+            nom: item.article.nom,
+            description: item.article.description || '',
+            reference: item.article.reference?.trim() || null,
+            unite: item.article.unite,
+            type: validatedData.type,
+            stock: null,
+            prixUnitaire: null,
+          }
         })
-        
-        if (existingArticle) {
-          articleId = existingArticle.id
-        } else {
-          const newArticle = await prisma.article.create({
-            data: {
-              nom: item.article.nom,
-              description: item.article.description || '',
-              reference: item.article.reference,
-              unite: item.article.unite,
-              type: validatedData.type,
-              stock: null,
-              prixUnitaire: null,
-            }
-          })
-          articleId = newArticle.id
-        }
+        articleId = newArticle.id
       }
       
       processedItems.push({

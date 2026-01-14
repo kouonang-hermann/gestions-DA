@@ -66,7 +66,7 @@ model Article {
   id           String        @id @default(cuid())
   nom          String
   description  String
-  reference    String        @unique
+  reference    String?
   unite        String
   type         DemandeType
   stock        Int?

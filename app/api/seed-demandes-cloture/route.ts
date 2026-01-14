@@ -49,11 +49,9 @@ export async function GET(req: NextRequest) {
       })
     }
 
-    // Créer ou récupérer des articles de test
-    const casque = await prisma.article.upsert({
-      where: { reference: 'ART-CASQUE-001' },
-      update: {},
-      create: {
+    // Créer des articles de test (référence n'est plus unique, on crée toujours de nouveaux articles)
+    const casque = await prisma.article.create({
+      data: {
         nom: 'Casque de chantier',
         description: 'Casque de protection pour chantier',
         reference: 'ART-CASQUE-001',
@@ -63,10 +61,8 @@ export async function GET(req: NextRequest) {
       }
     })
 
-    const gants = await prisma.article.upsert({
-      where: { reference: 'ART-GANTS-001' },
-      update: {},
-      create: {
+    const gants = await prisma.article.create({
+      data: {
         nom: 'Gants de protection',
         description: 'Gants de protection industriels',
         reference: 'ART-GANTS-001',
@@ -76,10 +72,8 @@ export async function GET(req: NextRequest) {
       }
     })
 
-    const perceuse = await prisma.article.upsert({
-      where: { reference: 'ART-PERCEUSE-001' },
-      update: {},
-      create: {
+    const perceuse = await prisma.article.create({
+      data: {
         nom: 'Perceuse électrique',
         description: 'Perceuse électrique professionnelle',
         reference: 'ART-PERCEUSE-001',
@@ -89,10 +83,8 @@ export async function GET(req: NextRequest) {
       }
     })
 
-    const tournevis = await prisma.article.upsert({
-      where: { reference: 'ART-TOURNEVIS-001' },
-      update: {},
-      create: {
+    const tournevis = await prisma.article.create({
+      data: {
         nom: 'Jeu de tournevis',
         description: 'Set de tournevis professionnels',
         reference: 'ART-TOURNEVIS-001',
@@ -102,10 +94,8 @@ export async function GET(req: NextRequest) {
       }
     })
 
-    const chaussures = await prisma.article.upsert({
-      where: { reference: 'ART-CHAUSSURES-001' },
-      update: {},
-      create: {
+    const chaussures = await prisma.article.create({
+      data: {
         nom: 'Chaussures de sécurité',
         description: 'Chaussures de sécurité normées',
         reference: 'ART-CHAUSSURES-001',

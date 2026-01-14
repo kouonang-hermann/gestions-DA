@@ -213,87 +213,133 @@ export default function SortiePreparationList() {
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body { 
               font-family: Arial, sans-serif; 
-              padding: 40px;
+              padding: 15px;
               background-color: #ffffff;
               color: #000000;
             }
             .header {
               text-align: center;
-              margin-bottom: 30px;
-              border-bottom: 2px solid #333333;
-              padding-bottom: 20px;
+              margin-bottom: 8px;
+              border-bottom: 1px solid #333333;
+              padding-bottom: 5px;
             }
             .header h1 {
               margin: 0;
               color: #333333;
-              font-size: 24px;
+              font-size: 14px;
+              font-weight: bold;
             }
             .header p {
-              margin: 10px 0;
-              font-size: 16px;
+              margin: 3px 0;
+              font-size: 11px;
               color: #000000;
             }
             .info-section {
-              margin-bottom: 20px;
-              padding: 15px;
+              margin-bottom: 8px;
+              padding: 5px 8px;
               background-color: #f5f5f5;
-              border-radius: 5px;
+              border-radius: 3px;
+            }
+            .visa-section {
+              margin: 8px 0;
+              padding: 5px;
+              background-color: #f9f9f9;
+              border: 1px solid #dddddd;
+              border-radius: 3px;
+            }
+            .visa-section h3 {
+              margin: 0 0 5px 0;
+              color: #333333;
+              font-size: 11px;
+              text-align: center;
+              font-weight: bold;
+            }
+            .visa-table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 3px;
+            }
+            .visa-table th,
+            .visa-table td {
+              border: 1px solid #dddddd;
+              padding: 3px 5px;
+              text-align: center;
+              color: #000000;
+              font-size: 9px;
+            }
+            .visa-table th {
+              background-color: #2196F3;
+              color: #ffffff;
+              font-weight: bold;
+              font-size: 9px;
+            }
+            .visa-table tr:nth-child(even) {
+              background-color: #f5f5f5;
             }
             .info-row {
-              margin-bottom: 8px;
+              margin-bottom: 3px;
               color: #000000;
+              font-size: 10px;
             }
             .info-row strong {
               display: inline-block;
-              width: 200px;
+              width: 150px;
               color: #000000;
+              font-size: 10px;
             }
             table {
               width: 100%;
               border-collapse: collapse;
-              margin-top: 20px;
+              margin-top: 10px;
             }
             th, td {
-              border: 1px solid #dddddd;
-              padding: 12px;
+              border: 2px solid #333333;
+              padding: 10px;
               text-align: left;
               color: #000000;
+              font-size: 13px;
             }
             th {
               background-color: #4CAF50;
               color: #ffffff;
+              font-weight: bold;
+              font-size: 14px;
             }
             tr:nth-child(even) {
               background-color: #f9f9f9;
             }
             .signature-section {
-              margin-top: 50px;
+              margin-top: 20px;
               display: flex;
               justify-content: space-between;
             }
             .signature-box {
               width: 45%;
               border-top: 1px solid #333333;
-              padding-top: 10px;
+              padding-top: 5px;
               text-align: center;
             }
             .signature-box p {
-              margin: 5px 0;
+              margin: 3px 0;
               color: #000000;
+              font-size: 10px;
+            }
+            .signature-box p strong {
+              font-size: 11px;
             }
             .footer {
-              margin-top: 40px;
-              padding-top: 20px;
+              margin-top: 15px;
+              padding-top: 8px;
               border-top: 1px solid #dddddd;
               text-align: center;
               color: #666666;
-              font-size: 12px;
+              font-size: 8px;
             }
           </style>
         </head>
         <body>
           <div class="header">
-            <h1>BON DE SORTIE MAGASIN</h1>
+            <h1>DEMANDE D'ACHAT</h1>
             <p>Demande N° ${demande.numero}</p>
           </div>
 
@@ -303,6 +349,74 @@ export default function SortiePreparationList() {
             <div class="info-row"><strong>Demandeur:</strong>${demande.technicien?.nom || "N/A"} ${demande.technicien?.prenom || ""}</div>
             <div class="info-row"><strong>Date de création:</strong>${new Date(demande.dateCreation).toLocaleDateString("fr-FR")}</div>
             <div class="info-row"><strong>Date de livraison:</strong>${demande.dateLivraisonSouhaitee ? new Date(demande.dateLivraisonSouhaitee).toLocaleDateString("fr-FR") : "N/A"}</div>
+          </div>
+
+          <div class="visa-section">
+            <h3>Visas et Signatures</h3>
+            <table class="visa-table">
+              <thead>
+                <tr>
+                  <th>Rôle</th>
+                  <th>Nom</th>
+                  <th>Date</th>
+                  <th>Heure</th>
+                  <th>Visa</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${demande.validationConducteur ? `
+                <tr>
+                  <td>Conducteur Travaux</td>
+                  <td>_____________________</td>
+                  <td>${demande.validationConducteur.date ? new Date(demande.validationConducteur.date).toLocaleDateString("fr-FR") : "_____"}</td>
+                  <td>${demande.validationConducteur.date ? new Date(demande.validationConducteur.date).toLocaleTimeString("fr-FR", {hour: '2-digit', minute: '2-digit'}) : "_____"}</td>
+                  <td>✓</td>
+                </tr>
+                ` : `
+                <tr>
+                  <td>Conducteur Travaux</td>
+                  <td>_____________________</td>
+                  <td>_____________________</td>
+                  <td>_____________________</td>
+                  <td></td>
+                </tr>
+                `}
+                ${demande.validationResponsableTravaux ? `
+                <tr>
+                  <td>Responsable Travaux</td>
+                  <td>_____________________</td>
+                  <td>${demande.validationResponsableTravaux.date ? new Date(demande.validationResponsableTravaux.date).toLocaleDateString("fr-FR") : "_____"}</td>
+                  <td>${demande.validationResponsableTravaux.date ? new Date(demande.validationResponsableTravaux.date).toLocaleTimeString("fr-FR", {hour: '2-digit', minute: '2-digit'}) : "_____"}</td>
+                  <td>✓</td>
+                </tr>
+                ` : `
+                <tr>
+                  <td>Responsable Travaux</td>
+                  <td>_____________________</td>
+                  <td>_____________________</td>
+                  <td>_____________________</td>
+                  <td></td>
+                </tr>
+                `}
+                ${demande.validationChargeAffaire ? `
+                <tr>
+                  <td>Chargé d'Affaire</td>
+                  <td>_____________________</td>
+                  <td>${demande.validationChargeAffaire.date ? new Date(demande.validationChargeAffaire.date).toLocaleDateString("fr-FR") : "_____"}</td>
+                  <td>${demande.validationChargeAffaire.date ? new Date(demande.validationChargeAffaire.date).toLocaleTimeString("fr-FR", {hour: '2-digit', minute: '2-digit'}) : "_____"}</td>
+                  <td>✓</td>
+                </tr>
+                ` : `
+                <tr>
+                  <td>Chargé d'Affaire</td>
+                  <td>_____________________</td>
+                  <td>_____________________</td>
+                  <td>_____________________</td>
+                  <td></td>
+                </tr>
+                `}
+              </tbody>
+            </table>
           </div>
 
           <table>
@@ -374,21 +488,38 @@ export default function SortiePreparationList() {
         format: 'a4'
       })
 
-      const imgWidth = 210 // A4 width in mm
-      const pageHeight = 297 // A4 height in mm
+      // Définir les marges (en mm)
+      const marginLeft = 10
+      const marginRight = 10
+      const marginTop = 10
+      const marginBottom = 10
+
+      const pdfWidth = pdf.internal.pageSize.getWidth()
+      const pdfHeight = pdf.internal.pageSize.getHeight()
+      
+      // Calculer la largeur et hauteur disponibles après marges
+      const availableWidth = pdfWidth - marginLeft - marginRight
+      const availableHeight = pdfHeight - marginTop - marginBottom
+      
+      // Calculer les dimensions de l'image en respectant les marges
+      const imgWidth = availableWidth
       const imgHeight = (canvas.height * imgWidth) / canvas.width
+
       let heightLeft = imgHeight
       let position = 0
 
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
-      heightLeft -= pageHeight
+      // Première page avec marges
+      pdf.addImage(imgData, 'PNG', marginLeft, marginTop, imgWidth, imgHeight)
+      heightLeft -= availableHeight
 
       // Ajouter des pages supplémentaires si nécessaire
       while (heightLeft > 0) {
-        position = heightLeft - imgHeight
         pdf.addPage()
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
-        heightLeft -= pageHeight
+        // Calculer la position négative pour continuer l'image
+        position = -(imgHeight - heightLeft)
+        // Ajouter les marges pour créer un vrai espace en haut de chaque page
+        pdf.addImage(imgData, 'PNG', marginLeft, position + marginTop, imgWidth, imgHeight)
+        heightLeft -= availableHeight
       }
 
       // Télécharger le PDF

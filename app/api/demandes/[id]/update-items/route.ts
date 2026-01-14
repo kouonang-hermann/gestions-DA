@@ -74,28 +74,16 @@ export const PATCH = withAuth(async (request: NextRequest, currentUser: any, con
     // Créer les nouveaux items
     const items = body.items || []
     for (const item of items) {
-      // Générer une référence auto si vide
-      const reference = item.article.reference?.trim() || `AUTO-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-      
-      // Créer ou récupérer l'article
-      let article = await prisma.article.findFirst({
-        where: {
-          reference: reference,
-          nom: item.article.nom
+      // Créer un nouvel article pour chaque item (pas de réutilisation)
+      const article = await prisma.article.create({
+        data: {
+          nom: item.article.nom,
+          description: item.article.description || "",
+          reference: item.article.reference?.trim() || null,
+          unite: item.article.unite,
+          type: item.article.type,
         }
       })
-
-      if (!article) {
-        article = await prisma.article.create({
-          data: {
-            nom: item.article.nom,
-            description: item.article.description || "",
-            reference: reference,
-            unite: item.article.unite,
-            type: item.article.type,
-          }
-        })
-      }
 
       // Créer l'item de demande
       await prisma.itemDemande.create({

@@ -439,7 +439,7 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel",
 
                         <div>
                           <label className="block text-sm font-medium mb-1">
-                            Référence *
+                            Référence
                           </label>
                           <input
                             type="text"
@@ -447,7 +447,6 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel",
                             onChange={(e) => updateItem(item.id, "reference", e.target.value)}
                             className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                             placeholder="Ex: CAS-001"
-                            required
                           />
                         </div>
 
