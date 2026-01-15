@@ -185,50 +185,94 @@ export const GET = async (request: NextRequest) => {
         break
 
       case "conducteur_travaux":
-        // Voit les demandes de matériel des projets où il est assigné
+        // Voit :
+        // 1. Les demandes de matériel des projets où il est assigné (pour validation)
+        // 2. TOUTES ses propres demandes (matériel ET outillage)
         const conducteurProjets = await prisma.userProjet.findMany({
           where: { userId: currentUser.id },
           select: { projetId: true }
         })
         whereClause = {
-          type: "materiel",
-          projetId: { in: conducteurProjets.map((up: any) => up.projetId) }
+          OR: [
+            // Demandes matériel des projets assignés (pour validation)
+            {
+              type: "materiel",
+              projetId: { in: conducteurProjets.map((up: any) => up.projetId) }
+            },
+            // Toutes ses propres demandes (matériel ET outillage)
+            {
+              technicienId: currentUser.id
+            }
+          ]
         }
         break
 
       case "responsable_logistique":
-        // Voit les demandes d'outillage des projets où il est assigné
+        // Voit :
+        // 1. Les demandes d'outillage des projets où il est assigné (pour validation)
+        // 2. TOUTES ses propres demandes (matériel ET outillage)
         const logistiqueProjets = await prisma.userProjet.findMany({
           where: { userId: currentUser.id },
           select: { projetId: true }
         })
         whereClause = {
-          type: "outillage",
-          projetId: { in: logistiqueProjets.map((up: any) => up.projetId) }
+          OR: [
+            // Demandes outillage des projets assignés (pour validation)
+            {
+              type: "outillage",
+              projetId: { in: logistiqueProjets.map((up: any) => up.projetId) }
+            },
+            // Toutes ses propres demandes (matériel ET outillage)
+            {
+              technicienId: currentUser.id
+            }
+          ]
         }
         break
 
       case "responsable_travaux":
-        // Voit les demandes matériel ET outillage des projets où il est assigné
+        // Voit :
+        // 1. Les demandes matériel ET outillage des projets où il est assigné (pour validation)
+        // 2. TOUTES ses propres demandes (matériel ET outillage)
         const responsableProjets = await prisma.userProjet.findMany({
           where: { userId: currentUser.id },
           select: { projetId: true }
         })
         whereClause = {
-          projetId: { in: responsableProjets.map((up: any) => up.projetId) }
+          OR: [
+            // Demandes des projets assignés (pour validation)
+            {
+              projetId: { in: responsableProjets.map((up: any) => up.projetId) }
+            },
+            // Toutes ses propres demandes (matériel ET outillage)
+            {
+              technicienId: currentUser.id
+            }
+          ]
         }
         break
 
       case "responsable_appro":
       case "charge_affaire":
       case "responsable_livreur":
-        // Voient les demandes des projets où ils sont assignés
+        // Voient :
+        // 1. Les demandes des projets où ils sont assignés (pour validation/traitement)
+        // 2. TOUTES leurs propres demandes (matériel ET outillage)
         const approProjets = await prisma.userProjet.findMany({
           where: { userId: currentUser.id },
           select: { projetId: true }
         })
         whereClause = {
-          projetId: { in: approProjets.map((up: any) => up.projetId) }
+          OR: [
+            // Demandes des projets assignés (pour validation/traitement)
+            {
+              projetId: { in: approProjets.map((up: any) => up.projetId) }
+            },
+            // Toutes ses propres demandes (matériel ET outillage)
+            {
+              technicienId: currentUser.id
+            }
+          ]
         }
         break
 
