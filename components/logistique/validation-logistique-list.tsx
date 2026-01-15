@@ -35,7 +35,7 @@ export default function ValidationLogistiqueList() {
     }
   }, [currentUser, demandes])
 
-  const handleValidation = async (demandeId: string, action: "valider_sortie" | "rejeter") => {
+  const handleValidation = async (demandeId: string, action: "valider" | "rejeter") => {
     setActionLoading(demandeId)
 
     try {
@@ -48,7 +48,7 @@ export default function ValidationLogistiqueList() {
           return
         }
       } else {
-        commentaire = prompt("Commentaire de livraison (optionnel):") || ""
+        commentaire = prompt("Commentaire de validation (optionnel):") || ""
       }
 
       const success = await executeAction(demandeId, action, { commentaire })
@@ -85,7 +85,7 @@ export default function ValidationLogistiqueList() {
           return
         }
         
-        const apiAction = action === "valider_sortie" ? "valider_sortie" : action === "rejeter" ? "rejeter" : action === "cloturer" ? "cloturer" : "valider_sortie"
+        const apiAction = action === "valider" ? "valider" : action === "rejeter" ? "rejeter" : action === "cloturer" ? "cloturer" : "valider"
         const success = await executeAction(selectedDemande.id, apiAction, payload)
         
         if (success) {
@@ -158,16 +158,16 @@ export default function ValidationLogistiqueList() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleValidation(demande.id, "valider_sortie")}
+                      onClick={() => handleValidation(demande.id, "valider")}
                       disabled={actionLoading === demande.id}
                       className="text-green-600 hover:text-green-700 hover:bg-green-50"
                     >
                       {actionLoading === demande.id ? (
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
                       ) : (
-                        <Truck className="h-4 w-4 mr-2" />
+                        <CheckCircle className="h-4 w-4 mr-2" />
                       )}
-                      Livré
+                      Valider
                     </Button>
                     <Button
                       variant="outline"

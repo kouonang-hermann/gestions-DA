@@ -21,16 +21,64 @@ function getInitialStatus(type: "materiel" | "outillage", creatorRole: string): 
     ]
   }
 
-  const skipRules: Record<string, string[]> = {
-    "conducteur_travaux": ["en_attente_validation_conducteur"],
-    "responsable_logistique": ["en_attente_validation_logistique"],
-    "responsable_travaux": ["en_attente_validation_responsable_travaux"],
-    "charge_affaire": ["en_attente_validation_charge_affaire"],
-    "superadmin": []
+  // LOGIQUE DIFFÉRENTE SELON LE TYPE DE DEMANDE (matériel vs outillage)
+  const skipRules: Record<string, { materiel: string[], outillage: string[] }> = {
+    // CONDUCTEUR (matériel uniquement)
+    "conducteur_travaux": {
+      materiel: ["en_attente_validation_conducteur"],
+      outillage: [] // Pas dans le flow outillage
+    },
+    
+    // RESPONSABLE LOGISTIQUE (outillage uniquement)
+    "responsable_logistique": {
+      materiel: [], // Pas dans le flow matériel
+      outillage: [] // Ne saute rien, il valide 2 fois (validation + préparation)
+    },
+    
+    // RESPONSABLE TRAVAUX
+    "responsable_travaux": {
+      // Matériel: saute Conducteur + lui-même (démarre au Chargé Affaire)
+      materiel: [
+        "en_attente_validation_conducteur",
+        "en_attente_validation_responsable_travaux"
+      ],
+      // Outillage: ne saute RIEN (flow normal: Logistique → lui → Chargé Affaire)
+      outillage: []
+    },
+    
+    // CHARGÉ AFFAIRE
+    "charge_affaire": {
+      // Matériel: saute Conducteur + Resp. Travaux + lui-même (démarre à l'Appro)
+      materiel: [
+        "en_attente_validation_conducteur",
+        "en_attente_validation_responsable_travaux",
+        "en_attente_validation_charge_affaire"
+      ],
+      // Outillage: saute uniquement Resp. Travaux (Logistique → lui → Préparation Logistique)
+      outillage: [
+        "en_attente_validation_responsable_travaux"
+      ]
+    },
+    
+    // RESPONSABLE APPRO (matériel uniquement)
+    "responsable_appro": {
+      materiel: [
+        "en_attente_validation_conducteur",
+        "en_attente_validation_responsable_travaux",
+        "en_attente_validation_charge_affaire"
+      ],
+      outillage: [] // Pas dans le flow outillage
+    },
+    
+    // SUPERADMIN ne saute AUCUNE étape
+    "superadmin": {
+      materiel: [],
+      outillage: []
+    }
   }
 
   const flow = flows[type]
-  const stepsToSkip = skipRules[creatorRole] || []
+  const stepsToSkip = skipRules[creatorRole]?.[type] || []
   
   for (const step of flow) {
     if (!stepsToSkip.includes(step.status)) {

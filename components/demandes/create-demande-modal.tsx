@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useStore } from "@/stores/useStore"
-import { Plus, Trash2, Save, Loader2, Copy } from 'lucide-react'
+import { Plus, Trash2, Save, Loader2, Copy, Upload, FileSpreadsheet, X } from 'lucide-react'
 import type { DemandeType, ItemDemande } from "@/types"
 
 interface CreateDemandeModalProps {
@@ -42,6 +42,8 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel",
   
   const [error, setError] = useState("")
   const [hasDraft, setHasDraft] = useState(false)
+  const [uploadedFiles, setUploadedFiles] = useState<string[]>([])
+  const [uploadingFiles, setUploadingFiles] = useState(false)
 
   // Charger le brouillon depuis localStorage au montage
   useEffect(() => {
@@ -267,6 +269,7 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel",
       items,
       commentaires: formData.commentaires,
       dateLivraisonSouhaitee: new Date(formData.dateLivraisonSouhaitee),
+      fichiersJoints: uploadedFiles,
     })
 
     if (success) {
@@ -377,6 +380,94 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel",
                   className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   placeholder="Commentaires sur la demande..."
                 />
+              </div>
+
+              {/* Téléversement de fichiers Excel */}
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Fichiers Excel (optionnel)
+                </label>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <label className="flex-1 cursor-pointer">
+                      <div className="flex items-center justify-center gap-2 h-10 px-4 py-2 bg-blue-50 text-blue-700 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors">
+                        <Upload className="h-4 w-4" />
+                        <span className="text-sm font-medium">
+                          {uploadingFiles ? "Téléversement..." : "Téléverser des fichiers Excel"}
+                        </span>
+                      </div>
+                      <input
+                        type="file"
+                        accept=".xlsx,.xls,.csv"
+                        multiple
+                        className="hidden"
+                        disabled={uploadingFiles}
+                        onChange={async (e) => {
+                          const files = Array.from(e.target.files || [])
+                          if (files.length === 0) return
+
+                          setUploadingFiles(true)
+                          try {
+                            const formData = new FormData()
+                            files.forEach(file => formData.append('files', file))
+
+                            const response = await fetch('/api/upload', {
+                              method: 'POST',
+                              headers: {
+                                'Authorization': `Bearer ${token}`,
+                              },
+                              body: formData,
+                            })
+
+                            const result = await response.json()
+                            if (result.success) {
+                              setUploadedFiles(prev => [...prev, ...result.files])
+                              console.log('✅ Fichiers téléversés:', result.files)
+                            } else {
+                              alert(result.error || 'Erreur lors du téléversement')
+                            }
+                          } catch (error) {
+                            console.error('Erreur upload:', error)
+                            alert('Erreur lors du téléversement des fichiers')
+                          } finally {
+                            setUploadingFiles(false)
+                            e.target.value = '' // Reset input
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+
+                  {/* Liste des fichiers téléversés */}
+                  {uploadedFiles.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-gray-600">
+                        {uploadedFiles.length} fichier(s) téléversé(s)
+                      </p>
+                      <div className="space-y-1">
+                        {uploadedFiles.map((fileUrl, index) => (
+                          <div key={index} className="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded-md">
+                            <FileSpreadsheet className="h-4 w-4 text-green-600" />
+                            <span className="flex-1 text-sm text-green-800 truncate">
+                              {fileUrl.split('/').pop()}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setUploadedFiles(prev => prev.filter((_, i) => i !== index))}
+                              className="p-1 hover:bg-green-100 rounded transition-colors"
+                            >
+                              <X className="h-4 w-4 text-green-600" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <p className="text-xs text-gray-500">
+                    Formats acceptés: .xlsx, .xls, .csv
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>

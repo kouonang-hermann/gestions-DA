@@ -1201,6 +1201,12 @@ export const useStore = create<AppState>()(
         // Callback appelé quand l'hydratation depuis localStorage est terminée
         console.log("🔄 [STORE] Hydratation terminée depuis localStorage")
         if (state) {
+          // Validation: si currentUser est null, forcer isAuthenticated à false
+          if (!state.currentUser && state.isAuthenticated) {
+            console.warn("⚠️ [STORE] État incohérent détecté: isAuthenticated=true mais currentUser=null. Correction...")
+            state.isAuthenticated = false
+            state.token = null
+          }
           state.setHasHydrated(true)
         }
       },

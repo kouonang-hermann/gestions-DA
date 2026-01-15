@@ -100,6 +100,7 @@ model Demande {
   livreurAssigneId       String?               // ID de la personne assignée pour livrer
   dateReceptionLivreur   DateTime?             // Date de réception du matériel par le livreur
   dateLivraison          DateTime?             // Date de livraison au demandeur
+  fichiersJoints         String[]              @default([]) // URLs/chemins des fichiers Excel téléversés
   projet                 Projet                @relation(fields: [projetId], references: [id], onDelete: Cascade)
   technicien             User                  @relation("DemandeCreateur", fields: [technicienId], references: [id])
   livreurAssigne         User?                 @relation("DemandesALivrer", fields: [livreurAssigneId], references: [id])

@@ -32,39 +32,67 @@ function getInitialStatus(type: "materiel" | "outillage", creatorRole: string): 
     ]
   }
 
-  // Mapping des rôles qui peuvent sauter leur propre étape UNIQUEMENT
-  // Chaque rôle liste UNIQUEMENT l'étape qu'il peut valider (donc qu'il doit sauter quand il crée)
-  const skipRules: Record<string, string[]> = {
-    // Conducteur peut valider l'étape "conducteur" uniquement
-    "conducteur_travaux": ["en_attente_validation_conducteur"],
+  // Mapping des rôles qui peuvent sauter les étapes de validation
+  // LOGIQUE DIFFÉRENTE SELON LE TYPE DE DEMANDE (matériel vs outillage)
+  const skipRules: Record<string, { materiel: string[], outillage: string[] }> = {
+    // CONDUCTEUR (matériel uniquement)
+    "conducteur_travaux": {
+      materiel: ["en_attente_validation_conducteur"],
+      outillage: [] // Pas dans le flow outillage
+    },
     
-    // Responsable Logistique peut valider l'étape "Logistique" (1ère validation) ET "Préparation Logistique"
-    "responsable_logistique": [
-      "en_attente_validation_logistique",
-      "en_attente_preparation_logistique"
-    ],
+    // RESPONSABLE LOGISTIQUE (outillage uniquement)
+    "responsable_logistique": {
+      materiel: [], // Pas dans le flow matériel
+      outillage: [] // Ne saute rien, il valide 2 fois (validation + préparation)
+    },
     
-    // Responsable travaux peut valider UNIQUEMENT l'étape "responsable travaux"
-    // Il ne peut PAS sauter les étapes précédentes (conducteur, logistique)
-    "responsable_travaux": [
-      "en_attente_validation_responsable_travaux"
-    ],
+    // RESPONSABLE TRAVAUX
+    "responsable_travaux": {
+      // Matériel: saute Conducteur + lui-même (démarre au Chargé Affaire)
+      materiel: [
+        "en_attente_validation_conducteur",
+        "en_attente_validation_responsable_travaux"
+      ],
+      // Outillage: ne saute RIEN (flow normal: Logistique → lui → Chargé Affaire)
+      outillage: []
+    },
     
-    // Chargé affaires peut valider UNIQUEMENT l'étape "chargé affaires"
-    // Il ne peut PAS sauter les étapes précédentes
-    "charge_affaire": [
-      "en_attente_validation_charge_affaire"
-    ],
+    // CHARGÉ AFFAIRE
+    "charge_affaire": {
+      // Matériel: saute Conducteur + Resp. Travaux + lui-même (démarre à l'Appro)
+      materiel: [
+        "en_attente_validation_conducteur",
+        "en_attente_validation_responsable_travaux",
+        "en_attente_validation_charge_affaire"
+      ],
+      // Outillage: saute uniquement Resp. Travaux (Logistique → lui → Préparation Logistique)
+      outillage: [
+        "en_attente_validation_responsable_travaux"
+      ]
+    },
     
-    // Superadmin ne saute AUCUNE étape (pas d'auto-validation)
-    // Ses demandes suivent le flow normal complet
-    "superadmin": []
+    // RESPONSABLE APPRO (matériel uniquement)
+    "responsable_appro": {
+      materiel: [
+        "en_attente_validation_conducteur",
+        "en_attente_validation_responsable_travaux",
+        "en_attente_validation_charge_affaire"
+      ],
+      outillage: [] // Pas dans le flow outillage
+    },
+    
+    // SUPERADMIN ne saute AUCUNE étape
+    "superadmin": {
+      materiel: [],
+      outillage: []
+    }
   }
 
   const flow = flows[type]
-  const stepsToSkip = skipRules[creatorRole] || []
+  const stepsToSkip = skipRules[creatorRole]?.[type] || []
   
-  console.log(`📋 [INITIAL-STATUS] Étapes à sauter pour ${creatorRole}:`, stepsToSkip)
+  console.log(`📋 [INITIAL-STATUS] Type: ${type}, Étapes à sauter pour ${creatorRole}:`, stepsToSkip)
   
   // Trouver la première étape qui n'est pas dans la liste des étapes à sauter
   for (const step of flow) {
