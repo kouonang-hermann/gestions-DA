@@ -132,9 +132,11 @@ export default function ResponsableLogistiqueDashboard() {
       )
       
       // 5. DEMANDES VALIDÉES (toutes les demandes outillage validées par le responsable logistique)
-      // Inclut : validation initiale + préparation + livraison + terminées
+      // Inclut : APRÈS validation initiale + préparation + livraison + terminées
       const demandesValidees = mesDemandesLogistique.filter((d) => 
         d.type === "outillage" && (
+          d.status === "en_attente_validation_responsable_travaux" || // Validée aujourd'hui par logistique
+          d.status === "en_attente_validation_charge_affaire" ||
           d.status === "en_attente_preparation_logistique" ||
           d.status === "en_attente_reception_livreur" ||
           d.status === "en_attente_livraison" ||
@@ -234,9 +236,11 @@ export default function ResponsableLogistiqueDashboard() {
       
       case "validees":
         // Demandes outillage validées par le responsable logistique
-        // Inclut : validation initiale + préparation + livraison + terminées
+        // Inclut : APRÈS validation initiale + préparation + livraison + terminées
         return demandesFiltered.filter((d) => 
           d.type === "outillage" && (
+            d.status === "en_attente_validation_responsable_travaux" || // Validée aujourd'hui par logistique
+            d.status === "en_attente_validation_charge_affaire" ||
             d.status === "en_attente_preparation_logistique" ||
             d.status === "en_attente_reception_livreur" ||
             d.status === "en_attente_livraison" ||
