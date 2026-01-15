@@ -200,6 +200,8 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel",
     // Si on est en mode édition (demande rejetée), mettre à jour et renvoyer
     if (isEditMode && existingDemande) {
       try {
+        console.log(`📝 [EDIT-MODE] Début de la modification de la demande ${existingDemande.numero}`)
+        
         // 1. Mettre à jour les données de la demande
         const response = await fetch(`/api/demandes/${existingDemande.id}/update-items`, {
           method: 'PATCH',
@@ -227,22 +229,35 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel",
         })
 
         if (!response.ok) {
-          setError("Erreur lors de la mise à jour de la demande")
+          const errorData = await response.json()
+          console.error(`❌ [EDIT-MODE] Erreur update-items:`, errorData)
+          setError(errorData.error || "Erreur lors de la mise à jour de la demande")
           return
         }
 
-        // 2. Renvoyer la demande
+        const updateResult = await response.json()
+        console.log(`✅ [EDIT-MODE] Demande mise à jour avec succès:`, updateResult.data)
+
+        // 2. Attendre un court instant pour que la base de données soit à jour
+        // Ceci évite que l'action "renvoyer" recharge l'ancienne version de la demande
+        console.log(`⏳ [EDIT-MODE] Attente de la synchronisation de la base de données...`)
+        await new Promise(resolve => setTimeout(resolve, 500))
+
+        // 3. Renvoyer la demande
+        console.log(`🔄 [EDIT-MODE] Renvoi de la demande...`)
         const renvoyerSuccess = await executeAction(existingDemande.id, "renvoyer", {})
         
         if (renvoyerSuccess) {
+          console.log(`✅ [EDIT-MODE] Demande renvoyée avec succès`)
           await loadDemandes()
           alert("✅ Demande modifiée et renvoyée avec succès !")
           onClose()
         } else {
+          console.error(`❌ [EDIT-MODE] Erreur lors du renvoi`)
           setError("Erreur lors du renvoi de la demande")
         }
       } catch (error) {
-        console.error("Erreur:", error)
+        console.error("❌ [EDIT-MODE] Erreur globale:", error)
         setError("Erreur lors de la modification de la demande")
       }
       return

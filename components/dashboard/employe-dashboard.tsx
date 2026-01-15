@@ -48,6 +48,7 @@ import CreateDemandeModal from "@/components/demandes/create-demande-modal"
 import { UserRequestsChart } from "@/components/charts/user-requests-chart"
 import UserDetailsModal from "@/components/modals/user-details-modal"
 import MesDemandesACloturer from "@/components/demandes/mes-demandes-a-cloturer"
+import MesDemandesEnAttente from "@/components/demandes/mes-demandes-en-attente"
 import MesLivraisonsSection from "@/components/dashboard/mes-livraisons-section"
 import ValidatedRequestsHistory from "@/components/dashboard/validated-requests-history"
 import ValidatedDemandesModal from "@/components/modals/validated-demandes-modal"
@@ -837,6 +838,9 @@ export default function EmployeDashboard() {
 
             {/* Section des livraisons assignées */}
             <MesLivraisonsSection />
+
+            {/* Mes demandes en attente de validation conducteur */}
+            <MesDemandesEnAttente />
 
             {/* Mes demandes à clôturer */}
             <MesDemandesACloturer />

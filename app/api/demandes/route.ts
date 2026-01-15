@@ -353,10 +353,58 @@ export const POST = async (request: NextRequest) => {
       }, { status: 400 })
     }
 
-    // Générer un numéro de demande
+    // Générer un numéro de demande unique avec retry en cas de collision
     const year = new Date().getFullYear()
-    const count = await prisma.demande.count()
-    const numero = `DEM-${year}-${String(count + 1).padStart(4, "0")}`
+    let numero = ""
+    let attempts = 0
+    const maxAttempts = 5
+    
+    while (attempts < maxAttempts) {
+      try {
+        // Compter les demandes de l'année en cours pour avoir un numéro séquentiel
+        const countThisYear = await prisma.demande.count({
+          where: {
+            numero: {
+              startsWith: `DEM-${year}-`
+            }
+          }
+        })
+        
+        // Générer le numéro avec le compteur + 1
+        const sequenceNumber = countThisYear + 1
+        numero = `DEM-${year}-${String(sequenceNumber).padStart(4, "0")}`
+        
+        // Vérifier que ce numéro n'existe pas déjà (double sécurité)
+        const existing = await prisma.demande.findUnique({
+          where: { numero }
+        })
+        
+        if (!existing) {
+          console.log(`✅ [CREATE-DEMANDE] Numéro unique généré: ${numero}`)
+          break // Numéro unique trouvé
+        }
+        
+        // Si le numéro existe déjà, ajouter un timestamp pour garantir l'unicité
+        console.log(`⚠️ [CREATE-DEMANDE] Numéro ${numero} existe déjà, ajout timestamp`)
+        const timestamp = Date.now().toString().slice(-4)
+        numero = `DEM-${year}-${String(sequenceNumber).padStart(4, "0")}-${timestamp}`
+        break
+        
+      } catch (error) {
+        attempts++
+        console.error(`❌ [CREATE-DEMANDE] Tentative ${attempts}/${maxAttempts} échouée:`, error)
+        
+        if (attempts >= maxAttempts) {
+          // En dernier recours, utiliser un UUID partiel
+          const uuid = Math.random().toString(36).substring(2, 8).toUpperCase()
+          numero = `DEM-${year}-${uuid}`
+          console.log(`⚠️ [CREATE-DEMANDE] Utilisation d'un numéro de secours: ${numero}`)
+        }
+        
+        // Attendre un peu avant de réessayer
+        await new Promise(resolve => setTimeout(resolve, 100 * attempts))
+      }
+    }
 
     // Déterminer le statut initial selon le type de demande et le rôle du créateur
     const initialStatus = getInitialStatus(validatedData.type, currentUser.role)

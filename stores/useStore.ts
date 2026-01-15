@@ -295,9 +295,9 @@ export const useStore = create<AppState>()(
                 error: "Session expirée - Veuillez vous reconnecter"
               })
               
-              // Rediriger vers la page de connexion
+              // Rediriger vers la page d'accueil (qui affiche le formulaire de connexion)
               if (typeof window !== 'undefined') {
-                window.location.href = '/login'
+                window.location.href = '/'
               }
               
               return
