@@ -28,12 +28,16 @@ export const PATCH = withAuth(async (request: NextRequest, currentUser: any, con
     const isSuperAdmin = currentUser.role === "superadmin"
     const isConducteur = currentUser.role === "conducteur_travaux"
     const isResponsableTravaux = currentUser.role === "responsable_travaux"
+    const isChargeAffaire = currentUser.role === "charge_affaire"
+    const isResponsableLogistique = currentUser.role === "responsable_logistique"
     
     // Statuts où la modification est autorisée (pour les non-superadmin)
     const modifiableStatuses = [
       "rejetee", // Demandeur peut modifier après rejet
       "en_attente_validation_conducteur", // Conducteur peut modifier avant validation
       "en_attente_validation_responsable_travaux", // Responsable travaux peut modifier avant validation
+      "en_attente_validation_charge_affaire", // Chargé d'affaire peut modifier avant validation
+      "en_attente_validation_logistique", // Responsable logistique peut modifier avant validation
     ]
     
     // Superadmin peut tout modifier, sinon vérifier les permissions
@@ -48,6 +52,14 @@ export const PATCH = withAuth(async (request: NextRequest, currentUser: any, con
       }
       // Le responsable travaux peut modifier les demandes en attente de sa validation
       else if (isResponsableTravaux && demande.status === "en_attente_validation_responsable_travaux") {
+        // OK
+      }
+      // Le chargé d'affaire peut modifier les demandes en attente de sa validation
+      else if (isChargeAffaire && demande.status === "en_attente_validation_charge_affaire") {
+        // OK
+      }
+      // Le responsable logistique peut modifier les demandes en attente de sa validation
+      else if (isResponsableLogistique && demande.status === "en_attente_validation_logistique") {
         // OK
       }
       else {

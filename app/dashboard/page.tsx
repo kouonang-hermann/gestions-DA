@@ -12,6 +12,7 @@ import QHSEDashboard from "@/components/dashboard/qhse-dashboard"
 import ChargeAffaireDashboard from "@/components/dashboard/charge-affaire-dashboard"
 import ApproDashboard from "@/components/dashboard/appro-dashboard"
 import ResponsableLogistiqueDashboard from "@/components/dashboard/responsable-logistique-dashboard"
+import ResponsableLivreurDashboard from "@/components/dashboard/responsable-livreur-dashboard"
 
 export default function DashboardPage() {
   const { currentUser, isAuthenticated } = useStore()
@@ -61,6 +62,8 @@ export default function DashboardPage() {
       return <ChargeAffaireDashboard />
     case "responsable_appro":
       return <ApproDashboard />
+    case "responsable_livreur":
+      return <ResponsableLivreurDashboard />
     case "employe":
     default:
       return <EmployeDashboard />

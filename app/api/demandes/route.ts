@@ -111,6 +111,11 @@ function getInitialStatus(type: "materiel" | "outillage", creatorRole: string): 
  * Détermine le prochain statut selon le statut actuel et le rôle
  */
 function getNextStatus(currentStatus: string, userRole: string, demandeType?: string): string | null {
+  // Cas spécial : Chargé d'affaire valide différemment selon le type de demande
+  if (currentStatus === "en_attente_validation_charge_affaire" && userRole === "charge_affaire") {
+    return demandeType === "outillage" ? "en_attente_preparation_logistique" : "en_attente_preparation_appro"
+  }
+
   const transitions: Record<string, Record<string, string>> = {
     "en_attente_validation_conducteur": {
       "conducteur_travaux": "en_attente_validation_responsable_travaux"
@@ -120,9 +125,6 @@ function getNextStatus(currentStatus: string, userRole: string, demandeType?: st
     },
     "en_attente_validation_logistique": {
       "responsable_logistique": "en_attente_validation_responsable_travaux"
-    },
-    "en_attente_validation_charge_affaire": {
-      "charge_affaire": "en_attente_preparation_appro"
     },
     "en_attente_preparation_appro": {
       "responsable_appro": "en_attente_reception_livreur"
@@ -134,16 +136,17 @@ function getNextStatus(currentStatus: string, userRole: string, demandeType?: st
       "responsable_livreur": "en_attente_livraison"
     },
     "en_attente_livraison": {
-      "responsable_livreur": "en_attente_validation_finale_demandeur"
+      "responsable_livreur": "en_attente_validation_reception_demandeur"
+    },
+    "en_attente_validation_reception_demandeur": {
+      "employe": "en_attente_validation_finale_demandeur"
     },
     "en_attente_validation_finale_demandeur": {
       "employe": "confirmee_demandeur"
+    },
+    "renvoyee_vers_appro": {
+      "responsable_appro": "en_attente_reception_livreur"
     }
-  }
-
-  // Cas spécial : Chargé d'affaire valide différemment selon le type de demande
-  if (currentStatus === "en_attente_validation_charge_affaire" && userRole === "charge_affaire") {
-    return demandeType === "outillage" ? "en_attente_preparation_logistique" : "en_attente_preparation_appro"
   }
 
   return transitions[currentStatus]?.[userRole] || null

@@ -32,7 +32,7 @@ INSTRUMELEC est une application de gestion des demandes de matériel et outillag
 
 - ✅ **Créer et suivre** des demandes de matériel et outillage
 - ✅ **Valider hiérarchiquement** via un workflow multi-niveaux (10 étapes)
-- ✅ **Workflows différenciés** : Matériel (Conducteur) vs Outillage (QHSE)
+- ✅ **Workflows différenciés** : Matériel (Conducteur) vs Outillage (Logistique)
 - ✅ **Gérer les stocks** et préparer les sorties (Appro pour matériel, Logistique pour outillage)
 - ✅ **Notifier en temps réel** tous les acteurs du workflow
 - ✅ **Filtrer par projet** pour une visibilité ciblée
@@ -242,11 +242,10 @@ Ouvre une interface web sur **http://localhost:5555**
 | **superadmin** | Accès complet, gestion utilisateurs/projets, tableau de bord financier |
 | **employe** | Création de demandes, clôture de ses propres demandes |
 | **conducteur_travaux** | Validation des demandes de **matériel uniquement** (1ère validation) |
-| **responsable_qhse** | Validation des demandes d'**outillage uniquement** (1ère validation) |
+| **responsable_logistique** | Validation des demandes d'**outillage uniquement** (1ère validation) + Préparation des sorties d'outillage |
 | **responsable_travaux** | Validation matériel ET outillage (2ème validation) |
 | **charge_affaire** | Validation budgétaire matériel ET outillage (3ème validation) |
 | **responsable_appro** | Préparation des sorties de **matériel uniquement** |
-| **responsable_logistique** | Préparation des sorties d'**outillage uniquement** |
 | **responsable_livreur** | Réception et livraison des demandes |
 
 ## 🔄 Workflow de l'Application
@@ -350,17 +349,17 @@ Chaque type suit un **workflow de validation en 10 étapes** avec des valideurs 
 │  ÉTAPE 1 : CRÉATION (Employé)                                   │
 │  ────────────────────────────────────────────────────────────   │
 │  Action : Créer demande + Soumettre                             │
-│  Statut : brouillon → soumise → en_attente_validation_qhse      │
-│  Notification → Responsable QHSE (PAS Conducteur)               │
+│  Statut : brouillon → soumise → en_attente_validation_logistique│
+│  Notification → Responsable Logistique (PAS Conducteur)         │
 └─────────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│  ÉTAPE 2 : VALIDATION QHSE (Responsable QHSE)                   │
+│  ÉTAPE 2 : VALIDATION LOGISTIQUE (Responsable Logistique)       │
 │  ────────────────────────────────────────────────────────────   │
-│  Statut : en_attente_validation_qhse                            │
-│  Action : Valider ou Rejeter (vérification sécurité)            │
+│  Statut : en_attente_validation_logistique                      │
+│  Action : Valider ou Rejeter                                    │
 │  Notification → Responsable des Travaux                         │
-│  ⚠️ QHSE valide en premier pour outillage                       │
+│  ⚠️ Logistique valide en premier pour outillage                 │
 └─────────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────────┐
@@ -426,7 +425,7 @@ Chaque type suit un **workflow de validation en 10 étapes** avec des valideurs 
 ```
 
 **⚠️ DIFFÉRENCES CLÉS avec le flow Matériel** :
-1. **QHSE au lieu de Conducteur** : Responsable QHSE valide en premier pour outillage (sécurité)
+1. **Logistique au lieu de Conducteur** : Responsable Logistique valide en premier pour outillage
 2. **Logistique au lieu d'Appro** : Responsable Logistique prépare les sorties d'outillage
 3. **Appro exclu** : Le Responsable Appro ne voit que les demandes de matériel
 4. **Nouveau statut** : `en_attente_validation_qhse` et `en_attente_preparation_logistique`

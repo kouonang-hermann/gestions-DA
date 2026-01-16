@@ -108,7 +108,7 @@ Demande → Validation → ❌ REJET → Retour au statut précédent
 ## 👥 Permissions de modification par niveau
 
 ### Niveau 1 : Valideurs techniques
-**Rôles**: Conducteur, QHSE, Responsable Travaux
+**Rôles**: Conducteur, Responsable Logistique, Responsable Travaux
 
 | Permission | Autorisé |
 |-----------|----------|

@@ -40,7 +40,8 @@ const localDemandes: Demande[] = [
     validationResponsableTravaux: undefined,
     validationLivreur: undefined,
     nombreRejets: 0,
-    statusPrecedent: undefined
+    statusPrecedent: undefined,
+    typeDemande: "principale"
   },
   {
     id: "demande-2", 
@@ -77,7 +78,8 @@ const localDemandes: Demande[] = [
     validationResponsableTravaux: undefined,
     validationLivreur: undefined,
     nombreRejets: 0,
-    statusPrecedent: undefined
+    statusPrecedent: undefined,
+    typeDemande: "principale"
   },
   {
     id: "demande-3",
@@ -113,7 +115,8 @@ const localDemandes: Demande[] = [
     validationResponsableTravaux: undefined,
     validationLivreur: undefined,
     nombreRejets: 0,
-    statusPrecedent: undefined
+    statusPrecedent: undefined,
+    typeDemande: "principale"
   }
 ]
 
@@ -309,7 +312,8 @@ export const POST = async (request: NextRequest) => {
       validationResponsableTravaux: undefined,
       validationLivreur: undefined,
       nombreRejets: 0,
-      statusPrecedent: undefined
+      statusPrecedent: undefined,
+      typeDemande: "principale"
     }
 
     localDemandes.push(newDemande)

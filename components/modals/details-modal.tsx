@@ -10,6 +10,7 @@ import InstrumElecLogo from "@/components/ui/instrumelec-logo"
 import ProjectDetailsModal from "@/components/modals/project-details-modal"
 import DemandeDetailModal from "@/components/demandes/demande-detail-modal"
 import type { User as UserType, Projet, Demande } from "@/types"
+import { useStore } from "@/stores/useStore"
 
 interface DetailsModalProps {
   isOpen: boolean
@@ -30,10 +31,27 @@ export default function DetailsModal({
   onChangeUserRole, 
   onRemoveUserFromProject 
 }: DetailsModalProps) {
+  const { executeAction, loadDemandes } = useStore()
   const [projectDetailsModalOpen, setProjectDetailsModalOpen] = useState(false)
   const [selectedProject, setSelectedProject] = useState<Projet | null>(null)
   const [demandeDetailsOpen, setDemandeDetailsOpen] = useState(false)
   const [selectedDemande, setSelectedDemande] = useState<Demande | null>(null)
+
+  // Fonction de validation pour le super-admin
+  const handleValidation = async (demandeId: string) => {
+    try {
+      const commentaire = prompt("Commentaire (optionnel):")
+      const success = await executeAction(demandeId, "valider", { commentaire: commentaire || "" })
+      if (success) {
+        await loadDemandes()
+        setDemandeDetailsOpen(false)
+        setSelectedDemande(null)
+      }
+    } catch (error) {
+      console.error("Erreur lors de la validation:", error)
+      alert("Erreur lors de la validation")
+    }
+  }
   const getRoleLabel = (role: string) => {
     const labels = {
       superadmin: "Super Administrateur",
@@ -286,6 +304,8 @@ export default function DetailsModal({
             }}
             demandeId={selectedDemande.id}
             mode="view"
+            canValidate={true}
+            onValidate={handleValidation}
           />
         )}
       </DialogContent>

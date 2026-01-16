@@ -4,8 +4,10 @@ import { useEffect, useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Download, Loader2, CheckCircle } from "lucide-react"
 import type { Demande } from "@/types"
 import { useStore } from "@/stores/useStore"
+import { generatePurchaseRequestPDF } from "@/lib/pdf-generator"
 
 interface DemandeDetailModalProps {
   isOpen: boolean
@@ -13,16 +15,22 @@ interface DemandeDetailModalProps {
   demandeId: string | null
   mode: "view" | "edit"
   showDeliveryColumns?: boolean
+  canValidate?: boolean
+  onValidate?: (demandeId: string) => void
 }
 
 export default function DemandeDetailModal({ 
   isOpen, 
   onClose, 
   demandeId,
-  mode
+  mode,
+  canValidate = false,
+  onValidate
 }: DemandeDetailModalProps) {
-  const { demandes } = useStore()
+  const { demandes, currentUser } = useStore()
   const [demande, setDemande] = useState<Demande | null>(null)
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
+  const [isValidating, setIsValidating] = useState(false)
 
   useEffect(() => {
     if (demandeId && demandes.length > 0) {
@@ -32,6 +40,48 @@ export default function DemandeDetailModal({
       setDemande(null)
     }
   }, [demandeId, demandes])
+
+  // Fonction pour télécharger le PDF
+  const handleDownloadPDF = async () => {
+    if (!demande) return
+    setIsGeneratingPDF(true)
+    try {
+      await generatePurchaseRequestPDF(demande)
+    } catch (error) {
+      console.error('Erreur lors de la génération du PDF:', error)
+      alert('Erreur lors de la génération du PDF. Veuillez réessayer.')
+    } finally {
+      setIsGeneratingPDF(false)
+    }
+  }
+
+  // Vérifier si l'utilisateur peut valider cette demande
+  const canUserValidate = canValidate && demande && currentUser && (
+    (demande.status === "en_attente_validation_conducteur" && currentUser.role === "conducteur_travaux") ||
+    (demande.status === "en_attente_validation_logistique" && currentUser.role === "responsable_logistique") ||
+    (demande.status === "en_attente_validation_responsable_travaux" && currentUser.role === "responsable_travaux") ||
+    (demande.status === "en_attente_validation_charge_affaire" && currentUser.role === "charge_affaire") ||
+    (demande.status === "en_attente_preparation_appro" && currentUser.role === "responsable_appro") ||
+    (demande.status === "en_attente_preparation_logistique" && currentUser.role === "responsable_logistique") ||
+    currentUser.role === "superadmin"
+  )
+
+  // Fonction pour valider la demande
+  const handleValidate = async () => {
+    if (!demande || !onValidate) return
+    
+    setIsValidating(true)
+    try {
+      await onValidate(demande.id)
+      onClose()
+    } catch (error) {
+      console.error('Erreur lors de la validation:', error)
+    } finally {
+      setIsValidating(false)
+    }
+  }
+
+  const canDownload = demande && demande.status !== "brouillon"
 
   if (!demande) return null
 
@@ -220,8 +270,46 @@ export default function DemandeDetailModal({
             </div>
           </div>
 
-          {/* Bouton Fermer */}
-          <div className="flex justify-center pt-4">
+          {/* Boutons d'action */}
+          <div className="flex justify-center gap-3 pt-4">
+            {canDownload && (
+              <Button 
+                onClick={handleDownloadPDF}
+                disabled={isGeneratingPDF}
+                className="px-6 py-2 bg-[#015fc4] hover:bg-[#014a9a] text-white rounded flex items-center gap-2"
+              >
+                {isGeneratingPDF ? (
+                  <>
+                    <Loader2 className="animate-spin" size={16} />
+                    Génération...
+                  </>
+                ) : (
+                  <>
+                    <Download size={16} />
+                    Télécharger PDF
+                  </>
+                )}
+              </Button>
+            )}
+            {canUserValidate && (
+              <Button 
+                onClick={handleValidate}
+                disabled={isValidating}
+                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded flex items-center gap-2"
+              >
+                {isValidating ? (
+                  <>
+                    <Loader2 className="animate-spin" size={16} />
+                    Validation...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle size={16} />
+                    Valider
+                  </>
+                )}
+              </Button>
+            )}
             <Button 
               onClick={onClose}
               className="px-8 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded"

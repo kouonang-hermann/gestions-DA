@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Download, Loader2 } from "lucide-react"
+import { Download, Loader2, CheckCircle } from "lucide-react"
 import type { Demande } from "@/types"
 import { useStore } from "@/stores/useStore"
 import { generatePurchaseRequestPDF } from "@/lib/pdf-generator"
@@ -15,17 +15,22 @@ interface DemandeDetailModalProps {
   demandeId: string | null
   mode: "view" | "edit"
   showDeliveryColumns?: boolean
+  canValidate?: boolean
+  onValidate?: (demandeId: string) => void
 }
 
 export default function DemandeDetailModal({ 
   isOpen, 
   onClose, 
   demandeId,
-  mode
+  mode,
+  canValidate = false,
+  onValidate
 }: DemandeDetailModalProps) {
-  const { demandes } = useStore()
+  const { demandes, currentUser } = useStore()
   const [demande, setDemande] = useState<Demande | null>(null)
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
+  const [isValidating, setIsValidating] = useState(false)
 
   useEffect(() => {
     if (demandeId && demandes.length > 0) {
@@ -39,12 +44,14 @@ export default function DemandeDetailModal({
   if (!demande) return null
 
   // Déterminer si on doit afficher les colonnes de livraison selon le statut
+  // Ces colonnes ne sont visibles qu'après la préparation logistique
   const showDeliveryColumns = ![
     "brouillon", 
     "soumise", 
     "en_attente_validation_conducteur",
     "en_attente_validation_responsable_travaux",
-    "en_attente_validation_charge_affaire"
+    "en_attente_validation_charge_affaire",
+    "en_attente_validation_logistique"
   ].includes(demande.status)
 
   // Déterminer si on doit afficher la colonne Qté validée
@@ -107,6 +114,32 @@ export default function DemandeDetailModal({
   // Vérifier si la demande est validée (peut être téléchargée)
   // Toutes les demandes peuvent être téléchargées sauf les brouillons
   const canDownload = demande && demande.status !== "brouillon"
+
+  // Vérifier si l'utilisateur peut valider cette demande
+  const canUserValidate = canValidate && demande && currentUser && (
+    (demande.status === "en_attente_validation_conducteur" && currentUser.role === "conducteur_travaux") ||
+    (demande.status === "en_attente_validation_logistique" && currentUser.role === "responsable_logistique") ||
+    (demande.status === "en_attente_validation_responsable_travaux" && currentUser.role === "responsable_travaux") ||
+    (demande.status === "en_attente_validation_charge_affaire" && currentUser.role === "charge_affaire") ||
+    (demande.status === "en_attente_preparation_appro" && currentUser.role === "responsable_appro") ||
+    (demande.status === "en_attente_preparation_logistique" && currentUser.role === "responsable_logistique") ||
+    currentUser.role === "superadmin"
+  )
+
+  // Fonction pour valider la demande
+  const handleValidate = async () => {
+    if (!demande || !onValidate) return
+    
+    setIsValidating(true)
+    try {
+      await onValidate(demande.id)
+      onClose()
+    } catch (error) {
+      console.error('Erreur lors de la validation:', error)
+    } finally {
+      setIsValidating(false)
+    }
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -261,6 +294,25 @@ export default function DemandeDetailModal({
                   <>
                     <Download size={16} />
                     Télécharger PDF
+                  </>
+                )}
+              </Button>
+            )}
+            {canUserValidate && (
+              <Button 
+                onClick={handleValidate}
+                disabled={isValidating}
+                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded flex items-center gap-2"
+              >
+                {isValidating ? (
+                  <>
+                    <Loader2 className="animate-spin" size={16} />
+                    Validation...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle size={16} />
+                    Valider
                   </>
                 )}
               </Button>

@@ -48,13 +48,17 @@ export default function LivraisonsAEffectuer() {
   }
 
   const handleValiderLivraison = async (demandeId: string) => {
+    if (!confirm("Confirmer la livraison de cette demande au demandeur ?")) return
+
     setActionLoading(demandeId)
     try {
-      const success = await executeAction(demandeId, "valider_livraison", {
+      const success = await executeAction(demandeId, "livraison_effectuee", {
         commentaire: "Livraison effective validée par le livreur"
       })
       if (!success) {
         alert(error || "Erreur lors de la validation de la livraison")
+      } else {
+        alert("Livraison validée avec succès. Le demandeur doit maintenant valider la réception.")
       }
     } catch (err) {
       console.error("Erreur lors de la validation:", err)

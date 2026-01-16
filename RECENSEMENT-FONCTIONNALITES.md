@@ -38,10 +38,9 @@ Application de **Gestion des Demandes de Matériel et Outillage** pour InstrumEl
 - **Employé** : Création demandes
 - **Conducteur Travaux** : Validation matériel
 - **Responsable Travaux** : Validation générale
-- **Responsable QHSE** : Validation outillage
+- **Responsable Logistique** : Validation outillage + Préparation sorties outillage
 - **Chargé Affaires** : Validation budgétaire
-- **Responsable Appro** : Préparation sorties
-- **Responsable Logistique** : Validation livraison
+- **Responsable Appro** : Préparation sorties matériel
 
 ### **API Endpoints :**
 - `GET /api/users` - Liste utilisateurs
@@ -112,10 +111,10 @@ Application de **Gestion des Demandes de Matériel et Outillage** pour InstrumEl
 
 #### **Flow Outillage :**
 1. **Demandeur** → Création
-2. **Responsable QHSE** → Validation sécurité
+2. **Responsable Logistique** → Validation
 3. **Responsable Travaux** → Validation hiérarchique
 4. **Chargé Affaires** → Validation budgétaire
-5. **Responsable Appro** → Préparation sortie
+5. **Responsable Logistique** → Préparation sortie
 6. **Responsable Logistique** → Validation livraison
 7. **Demandeur** → Confirmation réception
 8. **Système** → Clôture automatique
@@ -124,10 +123,11 @@ Application de **Gestion des Demandes de Matériel et Outillage** pour InstrumEl
 - `brouillon` - En cours de création
 - `soumise` - Soumise pour validation
 - `en_attente_validation_conducteur` - Attente conducteur
-- `en_attente_validation_qhse` - Attente QHSE
+- `en_attente_validation_logistique` - Attente logistique
 - `en_attente_validation_responsable_travaux` - Attente resp. travaux
 - `en_attente_validation_charge_affaire` - Attente chargé affaires
-- `en_attente_preparation_appro` - Attente préparation
+- `en_attente_preparation_appro` - Attente préparation matériel
+- `en_attente_preparation_logistique` - Attente préparation outillage
 - `en_attente_validation_logistique` - Attente logistique
 - `en_attente_validation_finale_demandeur` - Attente confirmation
 - `confirmee_demandeur` - Confirmée par demandeur
@@ -178,10 +178,9 @@ Application de **Gestion des Demandes de Matériel et Outillage** pour InstrumEl
 - ✅ **Employé** : Ses demandes et historique
 - ✅ **Conducteur** : Demandes à valider (matériel)
 - ✅ **Responsable Travaux** : Demandes à valider (général)
-- ✅ **QHSE** : Demandes à valider (outillage)
+- ✅ **Responsable Logistique** : Demandes à valider (outillage) + Demandes à préparer (outillage)
 - ✅ **Chargé Affaires** : Demandes à valider (budget)
-- ✅ **Appro** : Demandes à préparer
-- ✅ **Logistique** : Demandes à livrer
+- ✅ **Appro** : Demandes à préparer (matériel)
 
 ### **Graphiques et Statistiques :**
 - ✅ Évolution des demandes par mois

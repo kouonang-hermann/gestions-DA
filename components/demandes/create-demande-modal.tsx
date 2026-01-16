@@ -197,12 +197,12 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel",
       }
     }
 
-    // Si on est en mode édition (demande rejetée), mettre à jour et renvoyer
+    // Si on est en mode édition, mettre à jour la demande
     if (isEditMode && existingDemande) {
       try {
         console.log(`📝 [EDIT-MODE] Début de la modification de la demande ${existingDemande.numero}`)
         
-        // 1. Mettre à jour les données de la demande
+        // Mettre à jour les données de la demande
         const response = await fetch(`/api/demandes/${existingDemande.id}/update-items`, {
           method: 'PATCH',
           headers: { 
@@ -238,24 +238,10 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel",
         const updateResult = await response.json()
         console.log(`✅ [EDIT-MODE] Demande mise à jour avec succès:`, updateResult.data)
 
-        // 2. Attendre un court instant pour que la base de données soit à jour
-        // Ceci évite que l'action "renvoyer" recharge l'ancienne version de la demande
-        console.log(`⏳ [EDIT-MODE] Attente de la synchronisation de la base de données...`)
-        await new Promise(resolve => setTimeout(resolve, 500))
-
-        // 3. Renvoyer la demande
-        console.log(`🔄 [EDIT-MODE] Renvoi de la demande...`)
-        const renvoyerSuccess = await executeAction(existingDemande.id, "renvoyer", {})
-        
-        if (renvoyerSuccess) {
-          console.log(`✅ [EDIT-MODE] Demande renvoyée avec succès`)
-          await loadDemandes()
-          alert("✅ Demande modifiée et renvoyée avec succès !")
-          onClose()
-        } else {
-          console.error(`❌ [EDIT-MODE] Erreur lors du renvoi`)
-          setError("Erreur lors du renvoi de la demande")
-        }
+        // Recharger les demandes et fermer la modale
+        await loadDemandes()
+        alert("✅ Demande modifiée avec succès !")
+        onClose()
       } catch (error) {
         console.error("❌ [EDIT-MODE] Erreur globale:", error)
         setError("Erreur lors de la modification de la demande")
@@ -657,7 +643,7 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel",
               >
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 <Save className="h-4 w-4 mr-2" />
-                {isEditMode ? "Modifier et renvoyer" : "Créer la demande"}
+                {isEditMode ? "Modifier" : "Créer la demande"}
               </Button>
             </div>
           </div>

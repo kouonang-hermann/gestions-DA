@@ -5,9 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useStore } from "@/stores/useStore"
-import { CheckCircle, XCircle, Eye, Package, Truck } from "lucide-react"
+import { CheckCircle, XCircle, Eye, Package, Truck, Edit } from "lucide-react"
 import type { Demande } from "@/types"
 import DemandeDetailsModal from "@/components/modals/demande-details-modal"
+import CreateDemandeModal from "@/components/demandes/create-demande-modal"
 
 export default function ValidationLogistiqueList() {
   const { currentUser, demandes, loadDemandes, executeAction, isLoading, error } = useStore()
@@ -15,6 +16,8 @@ export default function ValidationLogistiqueList() {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
   const [selectedDemande, setSelectedDemande] = useState<Demande | null>(null)
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [demandeToEdit, setDemandeToEdit] = useState<Demande | null>(null)
 
   useEffect(() => {
     if (currentUser) {
@@ -70,6 +73,11 @@ export default function ValidationLogistiqueList() {
   const handleViewDetails = (demande: Demande) => {
     setSelectedDemande(demande)
     setDetailsModalOpen(true)
+  }
+
+  const handleEdit = (demande: Demande) => {
+    setDemandeToEdit(demande)
+    setEditModalOpen(true)
   }
 
   const handleModalValidation = async (action: "valider" | "annuler" | "valider_sortie" | "rejeter" | "cloturer", quantites?: { [itemId: string]: number }, commentaire?: string) => {
@@ -186,6 +194,15 @@ export default function ValidationLogistiqueList() {
                     <Button 
                       variant="outline" 
                       size="sm"
+                      onClick={() => handleEdit(demande)}
+                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      title="Modifier la demande"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
                       onClick={() => handleViewDetails(demande)}
                     >
                       <Eye className="h-4 w-4" />
@@ -207,7 +224,22 @@ export default function ValidationLogistiqueList() {
         }}
         demandeId={selectedDemande?.id || null}
         mode="view"
+        canValidate={true}
+        onValidate={(demandeId) => handleValidation(demandeId, "valider")}
       />
+
+      {/* Modal d'édition */}
+      {demandeToEdit && (
+        <CreateDemandeModal
+          isOpen={editModalOpen}
+          onClose={() => {
+            setEditModalOpen(false)
+            setDemandeToEdit(null)
+          }}
+          type={demandeToEdit.type}
+          existingDemande={demandeToEdit}
+        />
+      )}
     </Card>
   )
 }

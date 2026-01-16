@@ -42,6 +42,7 @@ import UserDetailsModal from "@/components/modals/user-details-modal"
 import MesDemandesACloturer from "@/components/demandes/mes-demandes-a-cloturer"
 import UniversalClosureModal from "@/components/modals/universal-closure-modal"
 import LivraisonsAEffectuer from "@/components/dashboard/livraisons-a-effectuer"
+import SousDemandesList from "@/components/dashboard/sous-demandes-list"
 import { useAutoReload } from "@/hooks/useAutoReload"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
@@ -49,7 +50,7 @@ import DemandeDetailModal from "@/components/demandes/demande-detail-modal"
 import { Eye } from 'lucide-react'
 
 export default function ApproDashboard() {
-  const { currentUser, demandes, projets, users, isLoading } = useStore()
+  const { currentUser, demandes, projets, users, isLoading, executeAction, loadDemandes } = useStore()
   const { handleManualReload } = useAutoReload("APPRO")
 
   // Fonctions helper pour résoudre les noms
@@ -141,6 +142,22 @@ export default function ApproDashboard() {
     setDetailsModalType(type)
     setDetailsModalTitle(title)
     setDetailsModalOpen(true)
+  }
+
+  // Fonction de validation pour la modale
+  const handleValidation = async (demandeId: string) => {
+    try {
+      const commentaire = prompt("Commentaire (optionnel):")
+      const success = await executeAction(demandeId, "valider", { commentaire: commentaire || "" })
+      if (success) {
+        await loadDemandes()
+        setDemandeDetailOpen(false)
+        setSelectedDemandeId(null)
+      }
+    } catch (error) {
+      console.error("Erreur lors de la validation:", error)
+      alert("Erreur lors de la validation")
+    }
   }
 
   // Fonction pour obtenir les demandes selon le type de carte
@@ -321,6 +338,9 @@ export default function ApproDashboard() {
 
             {/* Livraisons à effectuer */}
             <LivraisonsAEffectuer />
+
+            {/* Anomalies de livraison - Sous-demandes et demandes renvoyées */}
+            <SousDemandesList />
 
             {/* Liste des demandes à préparer */}
             <SortiePreparationList />
@@ -587,6 +607,8 @@ export default function ApproDashboard() {
         }}
         demandeId={selectedDemandeId}
         mode="view"
+        canValidate={true}
+        onValidate={handleValidation}
       />
     </div>
   )

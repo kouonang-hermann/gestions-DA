@@ -51,6 +51,7 @@ import MesDemandesACloturer from "@/components/demandes/mes-demandes-a-cloturer"
 import MesDemandesEnAttente from "@/components/demandes/mes-demandes-en-attente"
 import MesLivraisonsSection from "@/components/dashboard/mes-livraisons-section"
 import ValidatedRequestsHistory from "@/components/dashboard/validated-requests-history"
+import ValidationReceptionList from "@/components/dashboard/validation-reception-list"
 import ValidatedDemandesModal from "@/components/modals/validated-demandes-modal"
 import DemandesCategoryModal from "@/components/modals/demandes-category-modal"
 import UniversalClosureModal from "@/components/modals/universal-closure-modal"
@@ -64,12 +65,13 @@ export default function EmployeDashboard() {
     enCours: 0,
     validees: 0,
     brouillons: 0,
+    rejetees: 0,
   })
 
   const [createDemandeModalOpen, setCreateDemandeModalOpen] = useState(false)
   const [demandeType, setDemandeType] = useState<"materiel" | "outillage">("materiel")
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
-  const [detailsModalType, setDetailsModalType] = useState<"total" | "enCours" | "validees" | "brouillons">("total")
+  const [detailsModalType, setDetailsModalType] = useState<"total" | "enCours" | "validees" | "brouillons" | "rejetees">("total")
   const [detailsModalTitle, setDetailsModalTitle] = useState("")
   const [validatedHistoryModalOpen, setValidatedHistoryModalOpen] = useState(false)
   const [validatedDemandesModalOpen, setValidatedDemandesModalOpen] = useState(false)
@@ -164,6 +166,7 @@ export default function EmployeDashboard() {
           }).length,
           validees: demandesForRole.filter((d) => ["cloturee", "archivee", "confirmee_demandeur", "en_attente_validation_finale_demandeur"].includes(d.status)).length,
           brouillons: 0, // Les validateurs ne voient pas les brouillons
+          rejetees: 0, // Les validateurs ne voient pas les demandes rejetées
         })
       } else {
         // Pour les employés normaux
@@ -178,6 +181,7 @@ export default function EmployeDashboard() {
           ].includes(d.status)).length,
           validees: mesDemandes.filter((d) => ["cloturee", "archivee"].includes(d.status)).length,
           brouillons: mesDemandes.filter((d) => d.status === "brouillon").length,
+          rejetees: mesDemandes.filter((d) => d.status === "rejetee").length,
         })
       }
     }
@@ -193,7 +197,12 @@ export default function EmployeDashboard() {
       en_attente_validation_charge_affaire: "bg-orange-500",
       en_attente_preparation_appro: "bg-purple-500",
       en_attente_validation_livreur: "bg-purple-500",
-      en_attente_validation_finale_demandeur: "bg-emerald-500", // Prêt à clôturer
+      en_attente_reception_livreur: "bg-blue-500",
+      en_attente_livraison: "bg-orange-500",
+      en_attente_validation_reception_demandeur: "bg-yellow-500",
+      en_attente_validation_finale_demandeur: "bg-emerald-500",
+      renvoyee_vers_appro: "bg-red-500",
+      cloturee_partiellement: "bg-green-400",
       confirmee_demandeur: "bg-green-500",
       cloturee: "bg-green-600",
       rejetee: "bg-red-500",
@@ -212,7 +221,12 @@ export default function EmployeDashboard() {
       en_attente_validation_charge_affaire: "En attente validation chargé d'affaire",
       en_attente_preparation_appro: "En attente préparation appro",
       en_attente_validation_livreur: "En attente validation livreur",
-      en_attente_validation_finale_demandeur: "Prêt à clôturer", // Le demandeur peut clôturer
+      en_attente_reception_livreur: "En attente réception livreur",
+      en_attente_livraison: "En cours de livraison",
+      en_attente_validation_reception_demandeur: "Validation réception",
+      en_attente_validation_finale_demandeur: "Prêt à clôturer",
+      renvoyee_vers_appro: "Renvoyée vers appro",
+      cloturee_partiellement: "Clôturée partiellement",
       confirmee_demandeur: "Confirmée",
       cloturee: "Clôturée",
       rejetee: "Rejetée",
@@ -245,7 +259,7 @@ export default function EmployeDashboard() {
   const demandesValidationFinale = demandesForRole.filter(d => d.status === "en_attente_validation_finale_demandeur")
 
   // Fonction pour filtrer les demandes selon la catégorie et le rôle
-  const getFilteredDemandes = (type: "total" | "enCours" | "validees" | "brouillons") => {
+  const getFilteredDemandes = (type: "total" | "enCours" | "validees" | "brouillons" | "rejetees") => {
     const demandesToFilter = demandesForRole
 
     switch (type) {
@@ -287,12 +301,19 @@ export default function EmployeDashboard() {
         } else {
           return demandesToFilter.filter((d) => d.status === "brouillon")
         }
+      case "rejetees":
+        // Seuls les employés voient leurs demandes rejetées
+        if (["conducteur_travaux", "responsable_logistique", "responsable_travaux", "charge_affaire", "responsable_appro", "responsable_livreur"].includes(currentUser?.role || "")) {
+          return [] // Les validateurs ne voient pas les demandes rejetées
+        } else {
+          return demandesToFilter.filter((d) => d.status === "rejetee")
+        }
       default:
         return []
     }
   }
 
-  const handleCardClick = (type: "total" | "enCours" | "validees" | "brouillons", title: string) => {
+  const handleCardClick = (type: "total" | "enCours" | "validees" | "brouillons" | "rejetees", title: string) => {
     // Pour les rôles de validation, afficher le modal spécialisé pour les demandes validées
     if (type === "validees" && currentUser && [
       "conducteur_travaux", 
@@ -790,7 +811,7 @@ export default function EmployeDashboard() {
           {/* Colonne de gauche (large) - 3/4 de la largeur */}
           <div className="xl:col-span-3 flex flex-col justify-between space-y-3 sm:space-y-4 h-full order-2 xl:order-1">
             {/* Vue d'ensemble - Cards statistiques */}
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
               <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#015fc4' }} onClick={() => handleCardClick("total", "Toutes mes demandes")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Total demandes</CardTitle>
@@ -824,6 +845,24 @@ export default function EmployeDashboard() {
                 </CardContent>
               </Card>
 
+              <Card 
+                className={`border-l-4 cursor-pointer hover:shadow-md transition-shadow ${stats.rejetees > 0 ? 'animate-pulse' : ''}`} 
+                style={{ 
+                  borderLeftColor: '#fc2d1f',
+                  backgroundColor: stats.rejetees > 0 ? 'rgba(252, 45, 31, 0.05)' : 'white'
+                }} 
+                onClick={() => handleCardClick("rejetees", "Mes demandes rejetées")}
+              >
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Rejetées</CardTitle>
+                  <XCircle className="h-4 w-4" style={{ color: '#fc2d1f' }} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" style={{ color: '#fc2d1f' }}>{stats.rejetees}</div>
+                  <p className="text-xs text-muted-foreground">À revoir</p>
+                </CardContent>
+              </Card>
+
               <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#6b7280' }} onClick={() => handleCardClick("brouillons", "Mes brouillons")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Brouillons</CardTitle>
@@ -841,6 +880,9 @@ export default function EmployeDashboard() {
 
             {/* Mes demandes en attente de validation conducteur */}
             <MesDemandesEnAttente />
+
+            {/* Validation de réception des demandes livrées */}
+            <ValidationReceptionList />
 
             {/* Mes demandes à clôturer */}
             <MesDemandesACloturer />

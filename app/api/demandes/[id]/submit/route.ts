@@ -17,7 +17,7 @@ function getInitialStatus(type: "materiel" | "outillage", creatorRole: string): 
       { status: "en_attente_validation_logistique", role: "responsable_logistique" },
       { status: "en_attente_validation_responsable_travaux", role: "responsable_travaux" },
       { status: "en_attente_validation_charge_affaire", role: "charge_affaire" },
-      { status: "en_attente_preparation_appro", role: "responsable_appro" },
+      { status: "en_attente_preparation_logistique", role: "responsable_logistique" },
     ]
   }
 

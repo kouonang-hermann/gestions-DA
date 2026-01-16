@@ -14,6 +14,7 @@ export type DemandeStatus =
   | "brouillon"
   | "soumise"
   | "en_attente_validation_conducteur"
+  | "en_attente_validation_qhse"
   | "en_attente_validation_logistique"
   | "en_attente_validation_responsable_travaux"
   | "en_attente_validation_charge_affaire"
@@ -22,7 +23,10 @@ export type DemandeStatus =
   | "en_attente_validation_logistique_finale"
   | "en_attente_reception_livreur"
   | "en_attente_livraison"
+  | "en_attente_validation_reception_demandeur"
   | "en_attente_validation_finale_demandeur"
+  | "renvoyee_vers_appro"
+  | "cloturee_partiellement"
   | "confirmee_demandeur"
   | "cloturee"
   | "rejetee"
@@ -79,6 +83,32 @@ export interface ItemDemande {
   livraisons?: Array<{ quantiteLivree: number }> // Livraisons associées à cet item
 }
 
+export interface ValidationReception {
+  id: string
+  demandeId: string
+  validePar: string
+  validateur?: User
+  dateValidation: Date
+  statut: "acceptee_totale" | "acceptee_partielle" | "refusee_totale"
+  commentaireGeneral?: string
+  items: ValidationItem[]
+}
+
+export interface ValidationItem {
+  id: string
+  validationId: string
+  itemId: string
+  item?: ItemDemande
+  quantiteValidee: number // Quantité validée par les validateurs (référence)
+  quantiteRecue: number // Quantité réellement reçue par le demandeur
+  quantiteAcceptee: number // Quantité acceptée par le demandeur
+  quantiteRefusee: number // Quantité refusée (endommagée/non conforme)
+  statut: "accepte_total" | "accepte_partiel" | "refuse_total"
+  motifRefus?: "endommage" | "non_conforme" | "manquant" | "autre"
+  commentaire?: string
+  photos?: string[] // URLs des photos de preuve
+}
+
 export interface Demande {
   validationLivreur: any
   validationResponsableTravaux: any
@@ -109,6 +139,14 @@ export interface Demande {
   sortieAppro?: SortieSignature
   validationChargeAffaire?: ValidationSignature
   validationFinale?: ValidationSignature
+  validationReception?: ValidationReception
+
+  // Sous-demandes
+  demandeParentId?: string
+  demandeParent?: Demande
+  sousDemandes?: Demande[]
+  typeDemande: string // principale | sous_demande
+  motifSousDemande?: string // complement | remplacement | autre
 
   commentaires?: string
   rejetMotif?: string

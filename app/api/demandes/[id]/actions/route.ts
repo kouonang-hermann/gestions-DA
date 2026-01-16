@@ -63,6 +63,13 @@ function getNextStatusWithAutoValidation(currentStatus: DemandeStatus, userRole:
     return targetStatus
   }
 
+  // CAS SPÉCIAL : Chargé d'affaire valide différemment selon le type de demande
+  if (currentStatus === "en_attente_validation_charge_affaire" && userRole === "charge_affaire") {
+    const nextStatus = demandeType === "materiel" ? "en_attente_preparation_appro" : "en_attente_preparation_logistique"
+    console.log(`🎯 [API CHARGE-AFFAIRE] Type: ${demandeType} → Prochain statut: ${nextStatus}`)
+    return nextStatus as DemandeStatus
+  }
+
   const flow = VALIDATION_FLOWS[demandeType as keyof typeof VALIDATION_FLOWS]
   if (!flow) return null
 

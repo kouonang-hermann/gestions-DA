@@ -21,6 +21,8 @@ import DemandesCategoryModal from "@/components/modals/demandes-category-modal"
 import { useAutoReload } from "@/hooks/useAutoReload"
 
 export default function ResponsableLivreurDashboard() {
+  console.log("🚀 [DASHBOARD] ResponsableLivreurDashboard chargé !")
+  
   const { currentUser, demandes, isLoading } = useStore()
   const { handleManualReload } = useAutoReload("RESPONSABLE-LIVREUR")
 
@@ -41,8 +43,25 @@ export default function ResponsableLivreurDashboard() {
 
   useEffect(() => {
     if (currentUser && demandes) {
+      console.log(`🔍 [LIVREUR-DEBUG] Utilisateur connecté:`, {
+        id: currentUser.id,
+        nom: currentUser.nom,
+        role: currentUser.role
+      })
+      
+      console.log(`🔍 [LIVREUR-DEBUG] Total demandes dans le store:`, demandes.length)
+      
       // Demandes où je suis assigné comme livreur
       const mesLivraisons = demandes.filter((d) => d.livreurAssigneId === currentUser.id)
+      
+      console.log(`🔍 [LIVREUR-DEBUG] Livraisons assignées à moi:`, {
+        total: mesLivraisons.length,
+        demandes: mesLivraisons.map(d => ({
+          numero: d.numero,
+          status: d.status,
+          livreurAssigneId: d.livreurAssigneId
+        }))
+      })
       
       // Mes propres demandes en cours
       const mesDemandes = demandes.filter((d) => d.technicienId === currentUser.id)
@@ -57,20 +76,22 @@ export default function ResponsableLivreurDashboard() {
         ["en_attente_validation_finale_demandeur", "cloturee"].includes(d.status)
       )
 
-      setStats({
+      const newStats = {
         total: mesLivraisons.length,
         aRecevoir: aRecevoir.length,
         aLivrer: aLivrer.length,
         livrees: livrees.length,
         mesDemandesEnCours: mesDemandesEnCours.length,
-      })
+      }
 
-      console.log("📊 [LIVREUR-STATS]", {
-        total: mesLivraisons.length,
-        aRecevoir: aRecevoir.length,
-        aLivrer: aLivrer.length,
-        livrees: livrees.length,
-        mesDemandesEnCours: mesDemandesEnCours.length,
+      console.log("📊 [LIVREUR-STATS] Statistiques calculées:", newStats)
+      
+      setStats(newStats)
+    } else {
+      console.log("⚠️ [LIVREUR-DEBUG] Pas de currentUser ou demandes:", {
+        hasCurrentUser: !!currentUser,
+        hasDemandes: !!demandes,
+        demandesLength: demandes?.length
       })
     }
   }, [demandes, currentUser])

@@ -357,7 +357,8 @@ export const useStore = create<AppState>()(
               projet: undefined,
               technicien: undefined,
               nombreRejets: 0,
-              statusPrecedent: undefined
+              statusPrecedent: undefined,
+              typeDemande: "principale"
             },
             // Demande 2 : Déjà validée par le conducteur (statut avancé)
             {
@@ -381,7 +382,8 @@ export const useStore = create<AppState>()(
               projet: undefined,
               technicien: undefined,
               nombreRejets: 0,
-              statusPrecedent: undefined
+              statusPrecedent: undefined,
+              typeDemande: "principale"
             },
             // Demande 3 : Demande personnelle du conducteur en cours
             {
@@ -405,7 +407,8 @@ export const useStore = create<AppState>()(
               projet: undefined,
               technicien: undefined,
               nombreRejets: 0,
-              statusPrecedent: undefined
+              statusPrecedent: undefined,
+              typeDemande: "principale"
             },
             // Demande 4 : Demande clôturée (validée complètement)
             {
@@ -429,7 +432,8 @@ export const useStore = create<AppState>()(
               projet: undefined,
               technicien: undefined,
               nombreRejets: 0,
-              statusPrecedent: undefined
+              statusPrecedent: undefined,
+              typeDemande: "principale"
             }
           ]
 

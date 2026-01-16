@@ -19,7 +19,7 @@ interface UserDetailsModalProps {
 }
 
 export default function UserDetailsModal({ isOpen, onClose, title, data, type }: UserDetailsModalProps) {
-  const { executeAction, loadDemandes, projets, users } = useStore()
+  const { executeAction, loadDemandes, projets, users, deleteDemande } = useStore()
   
   // Fonctions helper pour résoudre les noms à partir des IDs
   // Utilise les relations embarquées en priorité, puis le store, puis tronque l'ID
@@ -172,14 +172,35 @@ export default function UserDetailsModal({ isOpen, onClose, title, data, type }:
   }
 
   const handleModifier = (demande: any) => {
-    // Pour les demandes rejetées, ouvrir la modale de création en mode édition
-    if (demande.status === "rejetee") {
-      setDemandeToEdit(demande)
-      setEditDemandeOpen(true)
-    } else {
-      // Pour les autres, ouvrir la modale de détails
-      setSelectedDemande(demande)
-      setDemandeDetailsOpen(true)
+    // Ouvrir la modale de création en mode édition pour toutes les demandes
+    setDemandeToEdit(demande)
+    setEditDemandeOpen(true)
+  }
+
+  const handleSupprimer = async (demande: any) => {
+    // Demander confirmation avant de supprimer
+    const confirmation = confirm(
+      `Êtes-vous sûr de vouloir supprimer la demande ${demande.numero} ?\n\nCette action est irréversible.`
+    )
+    
+    if (!confirmation) return
+    
+    try {
+      const success = await deleteDemande(demande.id)
+      
+      if (success) {
+        alert(`Demande ${demande.numero} supprimée avec succès`)
+        await loadDemandes()
+        // Si c'était la dernière demande, fermer la modale
+        if (data.length <= 1) {
+          onClose()
+        }
+      } else {
+        alert("Erreur lors de la suppression de la demande")
+      }
+    } catch (error) {
+      console.error("Erreur suppression:", error)
+      alert("Erreur lors de la suppression de la demande")
     }
   }
 
@@ -371,17 +392,25 @@ export default function UserDetailsModal({ isOpen, onClose, title, data, type }:
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
-                    {/* Masquer les boutons de modification et suppression pour les demandes en cours */}
-                    {type !== "enCours" && (
-                      <>
-                        <Button variant="outline" size="sm" className="text-green-600 hover:text-green-700">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </>
-                    )}
+                    {/* Boutons de modification et suppression disponibles pour toutes les demandes */}
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="text-green-600 hover:text-green-700"
+                      onClick={() => handleModifier(item)}
+                      title="Modifier la demande"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="text-red-600 hover:text-red-700"
+                      onClick={() => handleSupprimer(item)}
+                      title="Supprimer la demande"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -410,14 +439,14 @@ export default function UserDetailsModal({ isOpen, onClose, title, data, type }:
         />
       )}
       
-      {/* Modale d'édition pour les demandes rejetées */}
+      {/* Modale d'édition */}
       {demandeToEdit && (
         <CreateDemandeModal
           isOpen={editDemandeOpen}
           onClose={() => {
             setEditDemandeOpen(false)
             setDemandeToEdit(null)
-            onClose() // Fermer aussi la modale parente
+            // Ne pas fermer la modale parente pour permettre de voir les changements
           }}
           type={demandeToEdit.type}
           existingDemande={demandeToEdit}

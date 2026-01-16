@@ -21,7 +21,10 @@ import {
   BarChart3,
   TrendingUp,
   DollarSign,
-  Activity
+  Activity,
+  Edit,
+  Trash2,
+  Eye
 } from 'lucide-react'
 import {
   PieChart,
@@ -93,6 +96,11 @@ export default function ChargeAffaireDashboard() {
   const [activeChart, setActiveChart] = useState<"material" | "tooling">("material")
   const [universalClosureModalOpen, setUniversalClosureModalOpen] = useState(false)
   const [validatedHistoryModalOpen, setValidatedHistoryModalOpen] = useState(false)
+  
+  // États pour l'édition et la suppression
+  const [editDemandeOpen, setEditDemandeOpen] = useState(false)
+  const [demandeToEdit, setDemandeToEdit] = useState<any>(null)
+  const [demandeToDelete, setDemandeToDelete] = useState<any>(null)
   
   // États pour les filtres financiers
   const [financePeriode, setFinancePeriode] = useState<"all" | "month" | "quarter" | "year">("all")
@@ -182,6 +190,26 @@ export default function ChargeAffaireDashboard() {
       setDetailsModalType(type)
       setDetailsModalTitle(title)
       setDetailsModalOpen(true)
+    }
+  }
+
+  // Fonction pour modifier une demande
+  const handleModifier = (demande: any) => {
+    setDemandeToEdit(demande)
+    setEditDemandeOpen(true)
+  }
+
+  // Fonction pour supprimer une demande
+  const handleSupprimer = async (demande: any) => {
+    if (confirm(`Êtes-vous sûr de vouloir supprimer la demande ${demande.numero} ?`)) {
+      try {
+        const { deleteDemande } = useStore.getState()
+        await deleteDemande(demande.id)
+        alert("Demande supprimée avec succès")
+      } catch (error) {
+        console.error("Erreur lors de la suppression:", error)
+        alert("Erreur lors de la suppression de la demande")
+      }
     }
   }
 
@@ -857,8 +885,36 @@ export default function ChargeAffaireDashboard() {
                       </div>
                       
                       <div className="flex flex-col items-end gap-2">
-                        <div className="text-sm text-gray-500">
-                          {new Date(demande.dateCreation).toLocaleDateString('fr-FR')}
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-blue-600 hover:text-blue-700"
+                            onClick={() => {
+                              // Voir les détails - peut ouvrir DemandeDetailsModal si besoin
+                            }}
+                            title="Voir les détails"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-green-600 hover:text-green-700"
+                            onClick={() => handleModifier(demande)}
+                            title="Modifier la demande"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-red-600 hover:text-red-700"
+                            onClick={() => handleSupprimer(demande)}
+                            title="Supprimer la demande"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                         {demande.status === "en_attente_validation_finale_demandeur" && (
                           <Button 
@@ -888,6 +944,19 @@ export default function ChargeAffaireDashboard() {
         isOpen={validatedHistoryModalOpen}
         onClose={() => setValidatedHistoryModalOpen(false)}
       />
+      
+      {/* Modale d'édition */}
+      {demandeToEdit && (
+        <CreateDemandeModal
+          isOpen={editDemandeOpen}
+          onClose={() => {
+            setEditDemandeOpen(false)
+            setDemandeToEdit(null)
+          }}
+          type={demandeToEdit.type}
+          existingDemande={demandeToEdit}
+        />
+      )}
     </div>
   )
 }

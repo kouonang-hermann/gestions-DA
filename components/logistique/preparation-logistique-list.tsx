@@ -403,7 +403,7 @@ export default function PreparationLogistiqueList() {
                       className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                     >
                       <Eye className="h-4 w-4 mr-1" />
-                      <span className="hidden sm:inline">Détails</span>
+                      <span className="hidden sm:inline">Détails & Prix</span>
                     </Button>
                   </div>
                 </div>
@@ -413,7 +413,7 @@ export default function PreparationLogistiqueList() {
         )}
       </CardContent>
 
-      {/* Modal de détails */}
+      {/* Modal de détails avec modification des quantités et prix */}
       <DemandeDetailsModal
         isOpen={detailsModalOpen}
         onClose={() => {
@@ -421,7 +421,7 @@ export default function PreparationLogistiqueList() {
           setSelectedDemande(null)
         }}
         demandeId={selectedDemande?.id || null}
-        mode="view"
+        mode="edit"
       />
 
       {/* Modal de préparation de sortie */}

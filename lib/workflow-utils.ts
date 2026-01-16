@@ -20,7 +20,7 @@ const PREVIOUS_STATUS_MAP: Record<string, Record<DemandeType, DemandeStatus>> = 
   },
   "en_attente_reception_livreur": {
     materiel: "en_attente_preparation_appro",
-    outillage: "en_attente_preparation_appro"
+    outillage: "en_attente_preparation_logistique"
   },
   "en_attente_livraison": {
     materiel: "en_attente_reception_livreur",

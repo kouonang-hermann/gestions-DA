@@ -39,7 +39,6 @@ phone String @unique  // Maintenant obligatoire et unique
 | Super Admin | `+33601020304` | `admin123` |
 | Employé | `+33602030405` | `employe123` |
 | Conducteur | `+33603040506` | `conducteur123` |
-| QHSE | `+33604050607` | `qhse123` |
 | Appro | `+33605060708` | `appro123` |
 | Chargé Affaire | `+33606070809` | `charge123` |
 | Logistique | `+33607080910` | `logistique123` |

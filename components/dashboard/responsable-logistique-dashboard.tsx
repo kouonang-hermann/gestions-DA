@@ -22,7 +22,8 @@ import {
   Wrench,
   BarChart3,
   TrendingUp,
-  Eye
+  Eye,
+  Edit
 } from 'lucide-react'
 import {
   PieChart,
@@ -54,6 +55,10 @@ import MesLivraisonsSection from "@/components/dashboard/mes-livraisons-section"
 export default function ResponsableLogistiqueDashboard() {
   const { currentUser, demandes, projets, users, isLoading } = useStore()
   const { handleManualReload } = useAutoReload("RESPONSABLE-LOGISTIQUE")
+  
+  // États pour la modale d'édition
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [demandeToEdit, setDemandeToEdit] = useState<any>(null)
 
   // Fonctions helper pour résoudre les noms
   const getProjetNom = (demande: any) => {
@@ -153,6 +158,20 @@ export default function ResponsableLogistiqueDashboard() {
         aPreparer: demandesAPreparer.length,
         enCoursLivraison: demandesEnCoursLivraison.length,
         validees: demandesValidees.length
+      })
+      
+      console.log(`🔍 [DEBUG] Détails des demandes:`, {
+        totalAPI: demandes.length,
+        mesDemandesLogistique: mesDemandesLogistique.length,
+        demandesLogistique: mesDemandesLogistique.map(d => ({
+          numero: d.numero,
+          type: d.type,
+          status: d.status,
+          projetId: d.projetId,
+          technicienId: d.technicienId
+        })),
+        currentUserId: currentUser.id,
+        currentUserProjets: currentUser.projets
       })
       
       console.log(`🔍 [DEBUG] Mes demandes créées:`, {
@@ -688,6 +707,25 @@ export default function ResponsableLogistiqueDashboard() {
                       </div>
                       
                       <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2">
+                        {demande.status === "en_attente_validation_logistique" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              // Ouvrir la modale d'édition pour cette demande
+                              const demandeFull = demandes.find(d => d.id === demande.id)
+                              if (demandeFull) {
+                                setDemandeToEdit(demandeFull)
+                                setEditModalOpen(true)
+                              }
+                            }}
+                            title="Modifier la demande"
+                            className="flex-1 sm:flex-none text-blue-600 hover:text-blue-700"
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Modifier
+                          </Button>
+                        )}
                         <Button
                           variant="outline"
                           size="sm"
@@ -728,6 +766,19 @@ export default function ResponsableLogistiqueDashboard() {
         demandeId={selectedDemandeId}
         mode="view"
       />
+      
+      {/* Modale d'édition */}
+      {demandeToEdit && (
+        <CreateDemandeModal
+          isOpen={editModalOpen}
+          onClose={() => {
+            setEditModalOpen(false)
+            setDemandeToEdit(null)
+          }}
+          type={demandeToEdit.type}
+          existingDemande={demandeToEdit}
+        />
+      )}
     </div>
   )
 }

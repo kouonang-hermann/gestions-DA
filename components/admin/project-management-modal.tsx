@@ -257,7 +257,7 @@ export default function ProjectManagementModal({ isOpen, onClose }: ProjectManag
                             <SelectTrigger>
                               <SelectValue placeholder="Sélectionner un utilisateur" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="z-[9999]">
                               {availableUsers.map((user) => (
                                 <SelectItem key={user.id} value={user.id}>
                                   {user.nom} ({user.email})
@@ -316,7 +316,7 @@ export default function ProjectManagementModal({ isOpen, onClose }: ProjectManag
                                 <SelectTrigger className="w-40">
                                   <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="z-[9999]">
                                   {Object.entries(roleLabels).map(([value, label]) => (
                                     <SelectItem key={value} value={value}>
                                       {label}
@@ -355,7 +355,7 @@ export default function ProjectManagementModal({ isOpen, onClose }: ProjectManag
                             <SelectTrigger>
                               <SelectValue placeholder="Sélectionner un utilisateur" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="z-[9999]">
                               {availableUsers.map((user) => (
                                 <SelectItem key={user.id} value={user.id}>
                                   {user.nom} ({user.email})
@@ -371,7 +371,7 @@ export default function ProjectManagementModal({ isOpen, onClose }: ProjectManag
                             <SelectTrigger>
                               <SelectValue placeholder="Sélectionner un rôle" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="z-[9999]">
                               {Object.entries(roleLabels).map(([value, label]) => (
                                 <SelectItem key={value} value={value}>
                                   {label}

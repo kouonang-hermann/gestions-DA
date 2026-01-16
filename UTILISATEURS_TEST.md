@@ -42,17 +42,6 @@ Ce document contient les informations de connexion pour tous les utilisateurs te
 
 ---
 
-### Responsable QHSE
-- **Téléphone** : `600000008`
-- **Mot de passe** : `qhse123`
-- **Rôle** : Responsable QHSE
-- **Permissions** : 
-  - Valider les demandes d'**outillage uniquement** (1ère validation)
-  - Créer ses propres demandes
-  - Clôturer ses demandes
-
----
-
 ### Responsable des Travaux
 - **Téléphone** : `600000004`
 - **Mot de passe** : `responsable123`
@@ -128,8 +117,8 @@ Ce document contient les informations de connexion pour tous les utilisateurs te
 ### FLOW OUTILLAGE
 ```
 1. Employé crée la demande (brouillon)
-2. Employé soumet la demande (soumise → en_attente_validation_qhse)
-3. Responsable QHSE valide → en_attente_validation_responsable_travaux
+2. Employé soumet la demande (soumise → en_attente_validation_logistique)
+3. Responsable Logistique valide → en_attente_validation_responsable_travaux
 4. Responsable des Travaux valide → en_attente_validation_charge_affaire
 5. Chargé d'Affaire valide → en_attente_preparation_logistique
 6. Responsable Logistique prépare → en_attente_reception_livreur
@@ -153,10 +142,9 @@ Ce document contient les informations de connexion pour tous les utilisateurs te
 
 1. **Authentification** : Se fait par numéro de téléphone (9 chiffres commençant par 6)
 2. **Tous les utilisateurs test** sont assignés au projet `projet-test-1`
-3. **Nouveau rôle** : Responsable QHSE pour la validation initiale des demandes d'outillage
-4. **Séparation des rôles** :
+3. **Séparation des rôles** :
    - **Responsable Appro** : Matériel uniquement
-   - **Responsable Logistique** : Outillage uniquement
+   - **Responsable Logistique** : Outillage uniquement (validation ET préparation)
 5. **Clôture des demandes** : Tous les utilisateurs peuvent clôturer leurs propres demandes
 6. **Filtrage par projet** : Chaque utilisateur ne voit que les demandes de ses projets assignés
 
@@ -183,7 +171,7 @@ Ce document contient les informations de connexion pour tous les utilisateurs te
 1. Connectez-vous avec `600000002` (Employé)
 2. Créez une demande d'**outillage** (ex: Perceuse électrique)
 3. Soumettez la demande
-4. Connectez-vous avec `600000008` (QHSE) → Validez
+4. Connectez-vous avec `600000005` (Logistique) → Validez
 5. Connectez-vous avec `600000004` (Resp. Travaux) → Validez
 6. Connectez-vous avec `600000007` (Chargé Affaire) → Validez
 7. Connectez-vous avec `600000005` (Logistique) → Préparez la sortie

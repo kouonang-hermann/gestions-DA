@@ -228,7 +228,7 @@ const handleDownloadPDF = async () => {
 5. ✅ Peut télécharger le PDF avant de clôturer
 
 ### **Scénario 3: Valideur consulte l'historique**
-1. ✅ Dashboard valideur (Conducteur, QHSE, etc.)
+1. ✅ Dashboard valideur (Conducteur, Logistique, etc.)
 2. ✅ Clique sur carte "Validées"
 3. ✅ Liste des demandes validées
 4. ✅ Clique sur "Détails"

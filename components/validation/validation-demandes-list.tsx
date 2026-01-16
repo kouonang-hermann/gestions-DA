@@ -5,9 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useStore } from "@/stores/useStore"
-import { CheckCircle, XCircle, Eye, Package } from "lucide-react"
+import { CheckCircle, XCircle, Eye, Package, Edit, Trash2 } from "lucide-react"
 import type { Demande, DemandeType } from "@/types"
 import DemandeDetailsModal from "@/components/modals/demande-details-modal"
+import CreateDemandeModal from "@/components/demandes/create-demande-modal"
 
 interface ValidationDemandesListProps {
   type?: DemandeType // Optionnel pour afficher les deux types
@@ -20,6 +21,8 @@ export default function ValidationDemandesList({ type, title }: ValidationDemand
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
   const [selectedDemande, setSelectedDemande] = useState<Demande | null>(null)
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [demandeToEdit, setDemandeToEdit] = useState<Demande | null>(null)
 
   useEffect(() => {
     if (currentUser) {
@@ -150,6 +153,32 @@ export default function ValidationDemandesList({ type, title }: ValidationDemand
     return ["conducteur_travaux", "responsable_travaux", "charge_affaire"].includes(currentUser.role)
   }
 
+  // Fonction pour modifier une demande
+  const handleModifier = (demande: Demande) => {
+    setDemandeToEdit(demande)
+    setEditModalOpen(true)
+  }
+
+  // Fonction pour supprimer une demande
+  const handleSupprimer = async (demande: Demande) => {
+    if (confirm(`Êtes-vous sûr de vouloir supprimer la demande ${demande.numero} ?`)) {
+      try {
+        const { deleteDemande } = useStore.getState()
+        await deleteDemande(demande.id)
+        alert("Demande supprimée avec succès")
+        // Recharger les demandes
+        if (type) {
+          loadDemandes({ type })
+        } else {
+          loadDemandes()
+        }
+      } catch (error) {
+        console.error("Erreur lors de la suppression:", error)
+        alert("Erreur lors de la suppression de la demande")
+      }
+    }
+  }
+
   // Fonction pour obtenir le label du statut en français
   const getStatusLabel = (status: string): string => {
     const statusLabels: Record<string, string> = {
@@ -219,6 +248,24 @@ export default function ValidationDemandesList({ type, title }: ValidationDemand
                     )}
                   </div>
                   <div className="flex flex-wrap gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleModifier(demande)}
+                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 flex-1 sm:flex-none"
+                      title="Modifier la demande"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleSupprimer(demande)}
+                      className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 flex-1 sm:flex-none"
+                      title="Supprimer la demande"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
@@ -251,7 +298,8 @@ export default function ValidationDemandesList({ type, title }: ValidationDemand
                       variant="outline" 
                       size="sm"
                       onClick={() => handleViewDetails(demande)}
-                      className="flex-1 sm:flex-none"
+                      className="text-gray-600 hover:text-gray-700 hover:bg-gray-50 flex-1 sm:flex-none"
+                      title="Voir les détails"
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
@@ -272,7 +320,22 @@ export default function ValidationDemandesList({ type, title }: ValidationDemand
         }}
         demandeId={selectedDemande?.id || null}
         mode="view"
+        canValidate={true}
+        onValidate={(demandeId) => handleValidation(demandeId, "valider")}
       />
+      
+      {/* Modale d'édition */}
+      {demandeToEdit && (
+        <CreateDemandeModal
+          isOpen={editModalOpen}
+          onClose={() => {
+            setEditModalOpen(false)
+            setDemandeToEdit(null)
+          }}
+          type={demandeToEdit.type}
+          existingDemande={demandeToEdit}
+        />
+      )}
     </Card>
   )
 }

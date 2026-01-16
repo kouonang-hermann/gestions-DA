@@ -28,6 +28,7 @@ model User {
   projets              UserProjet[]
   validationSignatures ValidationSignature[]
   livraisonsEffectuees Livraison[]           @relation("LivraisonsEffectuees")
+  validationsReception ValidationReception[] @relation("ValidationsReception")
 
   @@map("users")
 }
@@ -42,7 +43,7 @@ model Projet {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   createdBy     String
-  budget        Float?         // Budget alloué au projet
+  budget        Float? // Budget alloué au projet
   demandes      Demande[]
   notifications Notification[]
   createur      User           @relation("ProjetCreateur", fields: [createdBy], references: [id])
@@ -79,54 +80,65 @@ model Article {
 }
 
 model Demande {
-  id                     String                @id @default(cuid())
-  numero                 String                @unique
+  id                     String         @id @default(cuid())
+  numero                 String         @unique
   projetId               String
   technicienId           String
   type                   DemandeType
-  status                 DemandeStatus         @default(brouillon)
-  dateCreation           DateTime              @default(now())
-  dateModification       DateTime              @updatedAt
+  status                 DemandeStatus  @default(brouillon)
+  dateCreation           DateTime       @default(now())
+  dateModification       DateTime       @updatedAt
   dateSortie             DateTime?
   dateValidationFinale   DateTime?
   dateLivraisonSouhaitee DateTime?
   commentaires           String?
   rejetMotif             String?
-  nombreRejets           Int                   @default(0) // Compteur de rejets pour traçabilité
-  statusPrecedent        DemandeStatus?        // Statut avant le rejet (pour retour arrière)
-  coutTotal              Float?                // Coût total de la demande (visible uniquement par superadmin)
-  budgetPrevisionnel     Float?                // Budget prévisionnel saisi par le chargé d'affaires
-  dateEngagement         DateTime?             // Date d'engagement financier (quand les prix sont validés)
-  livreurAssigneId       String?               // ID de la personne assignée pour livrer
-  dateReceptionLivreur   DateTime?             // Date de réception du matériel par le livreur
-  dateLivraison          DateTime?             // Date de livraison au demandeur
-  fichiersJoints         String[]              @default([]) // URLs/chemins des fichiers Excel téléversés
-  projet                 Projet                @relation(fields: [projetId], references: [id], onDelete: Cascade)
-  technicien             User                  @relation("DemandeCreateur", fields: [technicienId], references: [id])
-  livreurAssigne         User?                 @relation("DemandesALivrer", fields: [livreurAssigneId], references: [id])
-  historyEntries         HistoryEntry[]
-  items                  ItemDemande[]
-  notifications          Notification[]
-  sortieAppro            SortieSignature?      @relation("SortieAppro")
-  validationSignatures   ValidationSignature[]
-  livraisons             Livraison[]
+  nombreRejets           Int            @default(0) // Compteur de rejets pour traçabilité
+  statusPrecedent        DemandeStatus? // Statut avant le rejet (pour retour arrière)
+  coutTotal              Float? // Coût total de la demande (visible uniquement par superadmin)
+  budgetPrevisionnel     Float? // Budget prévisionnel saisi par le chargé d'affaires
+  dateEngagement         DateTime? // Date d'engagement financier (quand les prix sont validés)
+  livreurAssigneId       String? // ID de la personne assignée pour livrer
+  dateReceptionLivreur   DateTime? // Date de réception du matériel par le livreur
+  dateLivraison          DateTime? // Date de livraison au demandeur
+  fichiersJoints         String[]       @default([]) // URLs/chemins des fichiers Excel téléversés
 
+  // Gestion des sous-demandes
+  demandeParentId  String? // ID de la demande parent (si sous-demande)
+  typeDemande      String  @default("principale") // principale | sous_demande
+  motifSousDemande String? // complement | remplacement | autre
+
+  projet               Projet                @relation(fields: [projetId], references: [id], onDelete: Cascade)
+  technicien           User                  @relation("DemandeCreateur", fields: [technicienId], references: [id])
+  livreurAssigne       User?                 @relation("DemandesALivrer", fields: [livreurAssigneId], references: [id])
+  demandeParent        Demande?              @relation("SousDemandes", fields: [demandeParentId], references: [id])
+  sousDemandes         Demande[]             @relation("SousDemandes")
+  historyEntries       HistoryEntry[]
+  items                ItemDemande[]
+  notifications        Notification[]
+  sortieAppro          SortieSignature?      @relation("SortieAppro")
+  validationSignatures ValidationSignature[]
+  livraisons           Livraison[]
+  validationReception  ValidationReception?
+
+  @@index([demandeParentId])
   @@map("demandes")
 }
 
 model ItemDemande {
-  id               String          @id @default(cuid())
-  demandeId        String
-  articleId        String
-  quantiteDemandee Int
-  quantiteValidee  Int?
-  quantiteSortie   Int?            // DEPRECATED - Gardé pour compatibilité
-  quantiteRecue    Int?            // DEPRECATED - Gardé pour compatibilité
-  commentaire      String?
-  prixUnitaire     Float?          // Prix unitaire saisi par le responsable appro
-  article          Article         @relation(fields: [articleId], references: [id])
-  demande          Demande         @relation(fields: [demandeId], references: [id], onDelete: Cascade)
-  livraisons       ItemLivraison[]
+  id                  String          @id @default(cuid())
+  demandeId           String
+  articleId           String
+  quantiteDemandee    Int
+  quantiteValidee     Int?
+  quantiteSortie      Int? // DEPRECATED - Gardé pour compatibilité
+  quantiteRecue       Int? // DEPRECATED - Gardé pour compatibilité
+  commentaire         String?
+  prixUnitaire        Float? // Prix unitaire saisi par le responsable appro
+  article             Article         @relation(fields: [articleId], references: [id])
+  demande             Demande         @relation(fields: [demandeId], references: [id], onDelete: Cascade)
+  livraisons          ItemLivraison[]
+  validationReception ValidationItem?
 
   @@map("item_demandes")
 }
@@ -214,6 +226,7 @@ enum DemandeStatus {
   brouillon
   soumise
   en_attente_validation_conducteur
+  en_attente_validation_qhse
   en_attente_validation_logistique
   en_attente_validation_responsable_travaux
   en_attente_validation_charge_affaire
@@ -222,7 +235,10 @@ enum DemandeStatus {
   en_attente_validation_logistique_finale
   en_attente_reception_livreur
   en_attente_livraison
+  en_attente_validation_reception_demandeur
   en_attente_validation_finale_demandeur
+  renvoyee_vers_appro
+  cloturee_partiellement
   confirmee_demandeur
   cloturee
   rejetee
@@ -261,4 +277,40 @@ enum LivraisonStatut {
   en_cours
   livree
   annulee
+}
+
+model ValidationReception {
+  id                 String           @id @default(cuid())
+  demandeId          String           @unique
+  validePar          String
+  dateValidation     DateTime         @default(now())
+  statut             String // acceptee_totale | acceptee_partielle | refusee_totale
+  commentaireGeneral String?
+  demande            Demande          @relation(fields: [demandeId], references: [id], onDelete: Cascade)
+  validateur         User             @relation("ValidationsReception", fields: [validePar], references: [id])
+  items              ValidationItem[]
+
+  @@index([demandeId])
+  @@index([validePar])
+  @@map("validation_receptions")
+}
+
+model ValidationItem {
+  id               String              @id @default(cuid())
+  validationId     String
+  itemId           String              @unique
+  quantiteValidee  Int // Quantité validée par les validateurs (référence)
+  quantiteRecue    Int // Quantité réellement reçue par le demandeur
+  quantiteAcceptee Int // Quantité acceptée par le demandeur
+  quantiteRefusee  Int // Quantité refusée (endommagée/non conforme)
+  statut           String // accepte_total | accepte_partiel | refuse_total
+  motifRefus       String? // endommage | non_conforme | manquant | autre
+  commentaire      String?
+  photos           String[]            @default([]) // URLs des photos de preuve
+  validation       ValidationReception @relation(fields: [validationId], references: [id], onDelete: Cascade)
+  item             ItemDemande         @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([validationId])
+  @@index([itemId])
+  @@map("validation_items")
 }

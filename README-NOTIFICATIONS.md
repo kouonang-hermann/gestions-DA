@@ -12,7 +12,7 @@
 | Statut | Destinataire | Action |
 |--------|--------------|--------|
 | `en_attente_validation_conducteur` | Conducteurs de travaux | Email de validation |
-| `en_attente_validation_qhse` | Responsables QHSE | Email de validation |
+| `en_attente_validation_logistique` | Responsables logistique | Email de validation |
 | `en_attente_validation_responsable_travaux` | Responsables travaux | Email de validation |
 | `en_attente_validation_charge_affaire` | Chargés d'affaire | Email de validation |
 | `en_attente_validation_finale_demandeur` | Demandeur | Email de clôture |

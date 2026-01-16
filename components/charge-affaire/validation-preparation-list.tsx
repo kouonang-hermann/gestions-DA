@@ -187,6 +187,8 @@ export default function ValidationPreparationList() {
         }}
         demandeId={selectedDemande?.id || null}
         mode="view"
+        canValidate={true}
+        onValidate={(demandeId) => handleValidation(demandeId, "valider")}
       />
     </Card>
   )

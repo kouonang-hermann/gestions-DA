@@ -34,7 +34,7 @@ interface DemandesCategoryModalProps {
   onClose: () => void
   demandes: Demande[]
   title: string
-  categoryType: "total" | "enCours" | "validees" | "brouillons"
+  categoryType: "total" | "enCours" | "validees" | "brouillons" | "rejetees"
   currentUser: any
 }
 
@@ -111,8 +111,15 @@ export default function DemandesCategoryModal({
   }
 
   const handleViewDetails = (demande: Demande) => {
-    setSelectedDemande(demande)
-    setDemandeDetailsOpen(true)
+    // Si l'utilisateur peut modifier cette demande, ouvrir en mode édition
+    // Sinon, ouvrir en mode lecture seule (détails)
+    if (canModifyDemande(demande)) {
+      setDemandeToEdit(demande)
+      setEditModalOpen(true)
+    } else {
+      setSelectedDemande(demande)
+      setDemandeDetailsOpen(true)
+    }
   }
 
   const handleEditDemande = (demande: Demande) => {
@@ -155,10 +162,40 @@ export default function DemandesCategoryModal({
       return true
     }
     
-    // Demandes modifiables: brouillon, soumise, en_attente_validation_conducteur (non validées)
+    // Le demandeur peut modifier ses propres demandes non validées
     const modifiableStatuses = ["brouillon", "soumise", "en_attente_validation_conducteur"]
-    return modifiableStatuses.includes(demande.status) && 
-           demande.technicienId === currentUser?.id
+    if (modifiableStatuses.includes(demande.status) && demande.technicienId === currentUser?.id) {
+      return true
+    }
+    
+    // Les valideurs peuvent modifier les demandes qu'ils doivent valider
+    // Conducteur peut modifier les demandes matériel en attente de sa validation
+    if (currentUser?.role === "conducteur_travaux" && 
+        demande.type === "materiel" && 
+        demande.status === "en_attente_validation_conducteur") {
+      return true
+    }
+    
+    // Responsable logistique peut modifier les demandes outillage en attente de sa validation
+    if (currentUser?.role === "responsable_logistique" && 
+        demande.type === "outillage" && 
+        demande.status === "en_attente_validation_logistique") {
+      return true
+    }
+    
+    // Responsable travaux peut modifier les demandes en attente de sa validation
+    if (currentUser?.role === "responsable_travaux" && 
+        demande.status === "en_attente_validation_responsable_travaux") {
+      return true
+    }
+    
+    // Chargé d'affaire peut modifier les demandes en attente de sa validation
+    if (currentUser?.role === "charge_affaire" && 
+        demande.status === "en_attente_validation_charge_affaire") {
+      return true
+    }
+    
+    return false
   }
 
   const canDeleteDemande = (demande: Demande) => {
@@ -167,10 +204,40 @@ export default function DemandesCategoryModal({
       return true
     }
     
-    // Demandes supprimables: brouillon, soumise, en_attente_validation_conducteur (non validées)
+    // Le demandeur peut supprimer ses propres demandes non validées
     const deletableStatuses = ["brouillon", "soumise", "en_attente_validation_conducteur"]
-    return deletableStatuses.includes(demande.status) && 
-           demande.technicienId === currentUser?.id
+    if (deletableStatuses.includes(demande.status) && demande.technicienId === currentUser?.id) {
+      return true
+    }
+    
+    // Les valideurs peuvent supprimer les demandes qu'ils doivent valider
+    // Conducteur peut supprimer les demandes matériel en attente de sa validation
+    if (currentUser?.role === "conducteur_travaux" && 
+        demande.type === "materiel" && 
+        demande.status === "en_attente_validation_conducteur") {
+      return true
+    }
+    
+    // Responsable logistique peut supprimer les demandes outillage en attente de sa validation
+    if (currentUser?.role === "responsable_logistique" && 
+        demande.type === "outillage" && 
+        demande.status === "en_attente_validation_logistique") {
+      return true
+    }
+    
+    // Responsable travaux peut supprimer les demandes en attente de sa validation
+    if (currentUser?.role === "responsable_travaux" && 
+        demande.status === "en_attente_validation_responsable_travaux") {
+      return true
+    }
+    
+    // Chargé d'affaire peut supprimer les demandes en attente de sa validation
+    if (currentUser?.role === "charge_affaire" && 
+        demande.status === "en_attente_validation_charge_affaire") {
+      return true
+    }
+    
+    return false
   }
 
   const getCategoryIcon = () => {
@@ -249,11 +316,12 @@ export default function DemandesCategoryModal({
                             key={demande.id} 
                             className="hover:bg-gray-50 cursor-pointer"
                             onDoubleClick={() => {
-                              if (currentUser?.role === "superadmin") {
+                              // Permettre la modification par double-clic si l'utilisateur peut modifier cette demande
+                              if (canModifyDemande(demande)) {
                                 handleEditDemande(demande)
                               }
                             }}
-                            title={currentUser?.role === "superadmin" ? "Double-cliquez pour modifier" : ""}
+                            title={canModifyDemande(demande) ? "Double-cliquez pour modifier" : ""}
                           >
                             <TableCell className="font-medium">
                               <div className="flex items-center gap-2">
