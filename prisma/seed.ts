@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
+import crypto from 'crypto'
 
 const prisma = new PrismaClient()
 
@@ -28,72 +29,84 @@ async function main() {
       where: { email: 'admin@example.com' },
       update: {},
       create: {
+        id: crypto.randomUUID(),
         nom: 'Admin',
         prenom: 'Super',
         email: 'admin@example.com',
         phone: '610000001',
         password: hashedPassword,
         role: 'superadmin',
+        updatedAt: new Date(),
       },
     }),
     prisma.user.upsert({
       where: { email: 'jean.dupont@example.com' },
       update: {},
       create: {
+        id: crypto.randomUUID(),
         nom: 'Dupont',
         prenom: 'Jean',
         email: 'jean.dupont@example.com',
         phone: '610000002',
         password: hashedPassword,
         role: 'employe' as any,
+        updatedAt: new Date(),
       },
     }),
     prisma.user.upsert({
       where: { email: 'pierre.martin@example.com' },
       update: {},
       create: {
+        id: crypto.randomUUID(),
         nom: 'Martin',
         prenom: 'Pierre',
         email: 'pierre.martin@example.com',
         phone: '610000003',
         password: hashedPassword,
         role: 'conducteur_travaux',
+        updatedAt: new Date(),
       },
     }),
     prisma.user.upsert({
       where: { email: 'marie.durand@example.com' },
       update: {},
       create: {
+        id: crypto.randomUUID(),
         nom: 'Durand',
         prenom: 'Marie',
         email: 'marie.durand@example.com',
         phone: '610000004',
         password: hashedPassword,
         role: 'responsable_logistique',
+        updatedAt: new Date(),
       },
     }),
     prisma.user.upsert({
       where: { email: 'paul.bernard@example.com' },
       update: {},
       create: {
+        id: crypto.randomUUID(),
         nom: 'Bernard',
         prenom: 'Paul',
         email: 'paul.bernard@example.com',
         phone: '610000005',
         password: hashedPassword,
         role: 'responsable_appro',
+        updatedAt: new Date(),
       },
     }),
     prisma.user.upsert({
       where: { email: 'sophie.moreau@example.com' },
       update: {},
       create: {
+        id: crypto.randomUUID(),
         nom: 'Moreau',
         prenom: 'Sophie',
         email: 'sophie.moreau@example.com',
         phone: '610000006',
         password: hashedPassword,
         role: 'charge_affaire',
+        updatedAt: new Date(),
       },
     }),
     // Utilisateurs de test pour le flow de validation complet
@@ -103,96 +116,112 @@ async function main() {
       where: { email: 'admin@test.com' },
       update: {},
       create: {
+        id: crypto.randomUUID(),
         nom: 'Admin',
         prenom: 'Test',
         email: 'admin@test.com',
         phone: '600000001',
         password: testPasswordHashes.admin123,
         role: 'superadmin',
+        updatedAt: new Date(),
       },
     }),
     prisma.user.upsert({
       where: { email: 'employe@test.com' },
       update: {},
       create: {
+        id: crypto.randomUUID(),
         nom: 'Employé',
         prenom: 'Test',
         email: 'employe@test.com',
         phone: '600000002',
         password: testPasswordHashes.employe123,
         role: 'employe' as any,
+        updatedAt: new Date(),
       },
     }),
     prisma.user.upsert({
       where: { email: 'conducteur@test.com' },
       update: {},
       create: {
+        id: crypto.randomUUID(),
         nom: 'Conducteur',
         prenom: 'Test',
         email: 'conducteur@test.com',
         phone: '600000003',
         password: testPasswordHashes.conducteur123,
         role: 'conducteur_travaux',
+        updatedAt: new Date(),
       },
     }),
     prisma.user.upsert({
       where: { email: 'responsable-travaux@test.com' },
       update: {},
       create: {
+        id: crypto.randomUUID(),
         nom: 'Responsable Travaux',
         prenom: 'Test',
         email: 'responsable-travaux@test.com',
         phone: '600000004',
         password: testPasswordHashes.responsable123,
         role: 'responsable_travaux' as any,
+        updatedAt: new Date(),
       },
     }),
     prisma.user.upsert({
       where: { email: 'logistique@test.com' },
       update: {},
       create: {
+        id: crypto.randomUUID(),
         nom: 'Logistique',
         prenom: 'Test',
         email: 'logistique@test.com',
         phone: '600000005',
         password: testPasswordHashes.logistique123,
         role: 'responsable_logistique',
+        updatedAt: new Date(),
       },
     }),
     prisma.user.upsert({
       where: { email: 'appro@test.com' },
       update: {},
       create: {
+        id: crypto.randomUUID(),
         nom: 'Appro',
         prenom: 'Test',
         email: 'appro@test.com',
         phone: '600000006',
         password: testPasswordHashes.appro123,
         role: 'responsable_appro',
+        updatedAt: new Date(),
       },
     }),
     prisma.user.upsert({
       where: { email: 'charge@test.com' },
       update: {},
       create: {
+        id: crypto.randomUUID(),
         nom: 'Chargé Affaire',
         prenom: 'Test',
         email: 'charge@test.com',
         phone: '600000007',
         password: testPasswordHashes.charge123,
         role: 'charge_affaire',
+        updatedAt: new Date(),
       },
     }),
     prisma.user.upsert({
       where: { email: 'livreur@test.com' },
       update: {},
       create: {
+        id: crypto.randomUUID(),
         nom: 'Livreur',
         prenom: 'Test',
         email: 'livreur@test.com',
         phone: '600000009',
         password: testPasswordHashes.livreur123,
         role: 'responsable_livreur',
+        updatedAt: new Date(),
       },
     }),
   ])
@@ -211,6 +240,7 @@ async function main() {
       dateFin: new Date('2024-12-31'),
       createdBy: users[0].id, // Super Admin
       actif: true,
+      updatedAt: new Date(),
     },
   })
 
@@ -230,6 +260,7 @@ async function main() {
         },
         update: {},
         create: {
+          id: crypto.randomUUID(),
           userId: user.id,
           projetId: projet.id,
         },
@@ -243,6 +274,7 @@ async function main() {
   const articles = await Promise.all([
     prisma.article.create({
       data: {
+        id: crypto.randomUUID(),
         nom: 'Casque de sécurité',
         description: 'Casque de sécurité conforme aux normes EN 397',
         reference: 'MAT-001',
@@ -250,10 +282,12 @@ async function main() {
         type: 'materiel',
         stock: 100,
         prixUnitaire: 12.50,
+        updatedAt: new Date(),
       },
     }),
     prisma.article.create({
       data: {
+        id: crypto.randomUUID(),
         nom: 'Perceuse électrique',
         description: 'Perceuse électrique 18V avec batterie',
         reference: 'OUT-001',
@@ -261,10 +295,12 @@ async function main() {
         type: 'outillage',
         stock: 10,
         prixUnitaire: 150.00,
+        updatedAt: new Date(),
       },
     }),
     prisma.article.create({
       data: {
+        id: crypto.randomUUID(),
         nom: 'Gants de protection',
         description: 'Gants de protection en cuir renforcé',
         reference: 'MAT-002',
@@ -272,6 +308,7 @@ async function main() {
         type: 'materiel',
         stock: 100,
         prixUnitaire: 12.50,
+        updatedAt: new Date(),
       },
     }),
   ])

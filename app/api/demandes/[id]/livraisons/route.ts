@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/auth"
 import { getDemandeDeliveryStatus, getDemandeWithLivraisons } from "@/lib/livraison-utils"
+import crypto from "crypto"
 
 /**
  * GET /api/demandes/[id]/livraisons - Récupère toutes les livraisons d'une demande
@@ -104,12 +105,14 @@ export const POST = async (request: NextRequest, context: { params: Promise<{ id
     // Créer la livraison
     const livraison = await prisma.livraison.create({
       data: {
+        id: crypto.randomUUID(),
         demandeId: demande.id,
         livreurId: livreurId || currentUser.id,
         commentaire,
         statut: "prete",
         items: {
           create: items.map((item: any) => ({
+            id: crypto.randomUUID(),
             itemDemandeId: item.itemDemandeId,
             quantiteLivree: item.quantiteLivree
           }))

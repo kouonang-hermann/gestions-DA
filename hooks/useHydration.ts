@@ -25,10 +25,12 @@ export function useHydration() {
     if (hasHydrated) {
       setHydrated(true)
     } else {
-      // Fallback : si onRehydrateStorage n'est pas appelé après 100ms, on force
+      // Fallback : si onRehydrateStorage n'est pas appelé après 1000ms, on force
       const timeout = setTimeout(() => {
+        console.log("⚠️ [HYDRATION] Forçage de l'hydratation après timeout")
         setHydrated(true)
-      }, 100)
+        useStore.getState().setHasHydrated(true)
+      }, 1000)
       return () => clearTimeout(timeout)
     }
   }, [hasHydrated])
@@ -48,10 +50,12 @@ export function useStoreHydration() {
     if (hasHydrated) {
       setIsHydrated(true)
     } else {
-      // Fallback : forcer l'hydratation après un court délai
+      // Fallback : forcer l'hydratation après 1000ms
       const timeout = setTimeout(() => {
+        console.log("⚠️ [HYDRATION] Forçage de l'hydratation (useStoreHydration)")
         setIsHydrated(true)
-      }, 100)
+        useStore.getState().setHasHydrated(true)
+      }, 1000)
       return () => clearTimeout(timeout)
     }
   }, [hasHydrated])

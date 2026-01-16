@@ -17,7 +17,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     const projet = await prisma.projet.findUnique({
       where: { id: params.id },
       include: {
-        createur: {
+        createdByUser: {
           select: { id: true, nom: true, prenom: true, email: true }
         },
         utilisateurs: {
@@ -88,7 +88,7 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
         actif: updates.actif,
       },
       include: {
-        createur: {
+        createdByUser: {
           select: { id: true, nom: true, prenom: true, email: true }
         },
         utilisateurs: {

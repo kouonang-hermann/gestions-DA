@@ -64,7 +64,7 @@ export const GET = withAuth(async (request: NextRequest, currentUser: any) => {
             date: 'asc'
           }
         },
-        historyEntries: {
+        history: {
           include: {
             user: {
               select: {

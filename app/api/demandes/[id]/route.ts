@@ -4,11 +4,18 @@ import { withAuth } from "@/lib/middleware"
 import { updateDemandeStatusSchema } from "@/lib/validations"
 import type { DemandeStatus } from "@/types"
 import { getPreviousStatus, getPreviousValidatorRole, generateRejectionNotificationMessage, hasReachedMaxRejections } from "@/lib/workflow-utils"
+import crypto from "crypto"
 
 /**
- * Détermine le prochain statut selon le statut actuel et le rôle
+ * Détermine le prochain statut selon le statut actuel, le rôle et le type de demande
  */
-function getNextStatus(currentStatus: string, userRole: string): DemandeStatus | null {
+function getNextStatus(currentStatus: string, userRole: string, demandeType?: string): DemandeStatus | null {
+  // CAS SPÉCIAL : Validation à l'étape chargé d'affaire - dépend du type de demande
+  // Le superadmin ou le chargé d'affaire peuvent valider à cette étape
+  if (currentStatus === "en_attente_validation_charge_affaire" && (userRole === "charge_affaire" || userRole === "superadmin")) {
+    return demandeType === "materiel" ? "en_attente_preparation_appro" : "en_attente_preparation_logistique"
+  }
+
   const transitions: Record<string, Record<string, DemandeStatus>> = {
     // Flow Matériel: Conducteur -> Responsable Travaux -> Chargé Affaire -> Appro -> Logistique -> Demandeur
     "en_attente_validation_conducteur": {
@@ -20,9 +27,6 @@ function getNextStatus(currentStatus: string, userRole: string): DemandeStatus |
     },
     "en_attente_validation_responsable_travaux": {
       "responsable_travaux": "en_attente_validation_charge_affaire"
-    },
-    "en_attente_validation_charge_affaire": {
-      "charge_affaire": "en_attente_preparation_appro"
     },
     "en_attente_preparation_appro": {
       "responsable_appro": "en_attente_reception_livreur"
@@ -74,7 +78,7 @@ export const GET = withAuth(async (request: NextRequest, currentUser: any, conte
           },
           orderBy: { date: 'asc' }
         },
-        historyEntries: {
+        history: {
           include: {
             user: {
               select: { id: true, nom: true, prenom: true }
@@ -176,17 +180,20 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
           // Créer un nouvel article pour chaque item (pas de réutilisation)
           const article = await prisma.article.create({
             data: {
+              id: crypto.randomUUID(),
               reference: item.reference?.trim() || null,
               nom: item.nom,
               unite: item.unite || "pièce",
               description: item.nom,
               type: updatedDemande.type,
+              updatedAt: new Date(),
             }
           })
 
           // Créer l'item de demande
           await prisma.itemDemande.create({
             data: {
+              id: crypto.randomUUID(),
               demandeId: params.id,
               articleId: article.id,
               quantiteDemandee: item.quantiteDemandee,
@@ -200,6 +207,7 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
       // Créer une entrée dans l'historique
       await prisma.historyEntry.create({
         data: {
+          id: crypto.randomUUID(),
           demandeId: params.id,
           userId: currentUser.id,
           action: `Demande modifiée par ${currentUser.prenom} ${currentUser.nom} (super admin)`,
@@ -317,6 +325,7 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
         for (const user of usersToNotify) {
           await prisma.notification.create({
             data: {
+              id: crypto.randomUUID(),
               userId: user.id,
               titre: `Demande ${demande.numero} rejetée`,
               message: notificationMessage,
@@ -328,7 +337,7 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
       }
     } else {
       // VALIDATION NORMALE - Déterminer le prochain statut
-      const nextStatus = getNextStatus(demande.status, currentUser.role)
+      const nextStatus = getNextStatus(demande.status, currentUser.role, demande.type)
       if (nextStatus) {
         newStatus = nextStatus as any
       }
@@ -357,6 +366,7 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
     // Créer une signature de validation
     await prisma.validationSignature.create({
       data: {
+        id: crypto.randomUUID(),
         demandeId: params.id,
         userId: currentUser.id,
         type: getValidationType(demande.status, currentUser.role),
@@ -368,13 +378,14 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
     // Créer une entrée dans l'historique
     await prisma.historyEntry.create({
       data: {
+        id: crypto.randomUUID(),
         demandeId: params.id,
         userId: currentUser.id,
         action: validatedData.status === "rejetee" ? 
           `Demande rejetée par ${currentUser.role} - Retour à ${newStatus}` : 
           `Demande validée par ${currentUser.role}`,
-        ancienStatus: demande.status as DemandeStatus,
-        nouveauStatus: newStatus as DemandeStatus,
+        ancienStatus: demande.status as any,
+        nouveauStatus: newStatus as any,
         commentaire: validatedData.commentaire,
         signature: `${currentUser.role}-validation-${Date.now()}`,
       }

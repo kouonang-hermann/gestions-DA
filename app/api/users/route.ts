@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { hashPassword, requireAuth, hasPermission } from "@/lib/auth"
 import { withPermission } from "@/lib/middleware"
 import { registerSchema } from "@/lib/validations"
+import crypto from "crypto"
 
 /**
  * GET /api/users - Récupère les utilisateurs
@@ -96,6 +97,7 @@ export const POST = async (request: NextRequest) => {
     // Créer l'utilisateur
     const newUser = await prisma.user.create({
       data: {
+        id: crypto.randomUUID(),
         nom: validatedData.nom,
         prenom: validatedData.prenom,
         email: emailToCheck && emailToCheck !== '' ? emailToCheck : undefined,
@@ -103,6 +105,7 @@ export const POST = async (request: NextRequest) => {
         password: hashedPassword,
         role: validatedData.role as any,
         isAdmin: validatedData.isAdmin || validatedData.role === "superadmin" || false,
+        updatedAt: new Date(),
       },
       select: {
         id: true,
@@ -120,6 +123,7 @@ export const POST = async (request: NextRequest) => {
     if (validatedData.projets && validatedData.projets.length > 0) {
       await prisma.userProjet.createMany({
         data: validatedData.projets.map((projetId: string) => ({
+          id: crypto.randomUUID(),
           userId: newUser.id,
           projetId,
         })),

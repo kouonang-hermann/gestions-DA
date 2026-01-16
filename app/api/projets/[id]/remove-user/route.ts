@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/auth"
+import crypto from "crypto"
 
 /**
  * DELETE /api/projets/[id]/remove-user - Retire un utilisateur d'un projet
@@ -135,6 +136,7 @@ export const DELETE = async (request: NextRequest, context: { params: Promise<{ 
     // Créer une entrée d'historique
     await prisma.historyEntry.create({
       data: {
+        id: crypto.randomUUID(),
         demandeId: `PROJECT_USER_REMOVAL_${params.id}`,
         userId: currentUser.id,
         action: "USER_REMOVED_FROM_PROJECT",
@@ -149,6 +151,7 @@ export const DELETE = async (request: NextRequest, context: { params: Promise<{ 
     // Créer une notification pour l'utilisateur retiré
     await prisma.notification.create({
       data: {
+        id: crypto.randomUUID(),
         userId: userId,
         titre: "Retrait d'un projet",
         message: `Vous avez été retiré du projet "${projet.nom}" par ${currentUser.prenom} ${currentUser.nom}${reason ? `. Raison: ${reason}` : ""}.`,
@@ -164,6 +167,7 @@ export const DELETE = async (request: NextRequest, context: { params: Promise<{ 
     if (autresMembres.length > 0) {
       await prisma.notification.createMany({
         data: autresMembres.map(memberId => ({
+          id: crypto.randomUUID(),
           userId: memberId,
           titre: "Modification d'équipe projet",
           message: `${userProjet.user.prenom} ${userProjet.user.nom} a été retiré du projet "${projet.nom}".`,

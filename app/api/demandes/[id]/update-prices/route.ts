@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth"
+import crypto from "crypto"
 
 /**
  * PUT /api/demandes/[id]/update-prices - Met à jour les prix des articles d'une demande
@@ -140,6 +141,7 @@ export const PUT = async (
     // Créer une entrée dans l'historique
     await prisma.historyEntry.create({
       data: {
+        id: crypto.randomUUID(),
         demandeId,
         userId: currentUser.id,
         action: "Mise à jour des prix",

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
+import crypto from 'crypto'
 
 const prisma = new PrismaClient()
 
@@ -33,16 +34,19 @@ export async function GET(req: NextRequest) {
     if (!projet) {
       projet = await prisma.projet.create({
         data: {
+          id: crypto.randomUUID(),
           nom: 'Projet Test Clôture',
           description: 'Projet de test pour les demandes à clôturer',
           dateDebut: new Date(),
-          createdBy: employe.id
+          createdBy: employe.id,
+          updatedAt: new Date()
         }
       })
 
       // Assigner l'employé au projet
       await prisma.userProjet.create({
         data: {
+          id: crypto.randomUUID(),
           userId: employe.id,
           projetId: projet.id
         }
@@ -52,56 +56,66 @@ export async function GET(req: NextRequest) {
     // Créer des articles de test (référence n'est plus unique, on crée toujours de nouveaux articles)
     const casque = await prisma.article.create({
       data: {
+        id: crypto.randomUUID(),
         nom: 'Casque de chantier',
         description: 'Casque de protection pour chantier',
         reference: 'ART-CASQUE-001',
         unite: 'pièce',
         type: 'materiel',
-        stock: 100
+        stock: 100,
+        updatedAt: new Date()
       }
     })
 
     const gants = await prisma.article.create({
       data: {
+        id: crypto.randomUUID(),
         nom: 'Gants de protection',
         description: 'Gants de protection industriels',
         reference: 'ART-GANTS-001',
         unite: 'paire',
         type: 'materiel',
-        stock: 200
+        stock: 200,
+        updatedAt: new Date()
       }
     })
 
     const perceuse = await prisma.article.create({
       data: {
+        id: crypto.randomUUID(),
         nom: 'Perceuse électrique',
         description: 'Perceuse électrique professionnelle',
         reference: 'ART-PERCEUSE-001',
         unite: 'pièce',
         type: 'outillage',
-        stock: 50
+        stock: 50,
+        updatedAt: new Date()
       }
     })
 
     const tournevis = await prisma.article.create({
       data: {
+        id: crypto.randomUUID(),
         nom: 'Jeu de tournevis',
         description: 'Set de tournevis professionnels',
         reference: 'ART-TOURNEVIS-001',
         unite: 'set',
         type: 'outillage',
-        stock: 80
+        stock: 80,
+        updatedAt: new Date()
       }
     })
 
     const chaussures = await prisma.article.create({
       data: {
+        id: crypto.randomUUID(),
         nom: 'Chaussures de sécurité',
         description: 'Chaussures de sécurité normées',
         reference: 'ART-CHAUSSURES-001',
         unite: 'paire',
         type: 'materiel',
-        stock: 150
+        stock: 150,
+        updatedAt: new Date()
       }
     })
 
@@ -111,19 +125,23 @@ export async function GET(req: NextRequest) {
     // Demande 1 : En attente de validation finale (prête à clôturer)
     const demande1 = await prisma.demande.create({
       data: {
+        id: crypto.randomUUID(),
         numero: `DA-CLOTURE-${Date.now()}-1`,
         type: 'materiel',
-        status: 'en_attente_validation_finale_demandeur',
+        status: 'en_attente_validation_finale_demandeur' as any,
         technicienId: employe.id,
         projetId: projet.id,
         commentaires: 'Demande de matériel prête à être clôturée - En attente de validation finale',
+        dateModification: new Date(),
         items: {
           create: [
             {
+              id: crypto.randomUUID(),
               articleId: casque.id,
               quantiteDemandee: 5
             },
             {
+              id: crypto.randomUUID(),
               articleId: gants.id,
               quantiteDemandee: 10
             }
@@ -136,19 +154,23 @@ export async function GET(req: NextRequest) {
     // Demande 2 : Confirmée par le demandeur (prête à clôturer)
     const demande2 = await prisma.demande.create({
       data: {
+        id: crypto.randomUUID(),
         numero: `DA-CLOTURE-${Date.now()}-2`,
         type: 'outillage',
-        status: 'confirmee_demandeur',
+        status: 'confirmee_demandeur' as any,
         technicienId: employe.id,
         projetId: projet.id,
         commentaires: 'Demande d\'outillage confirmée - Prête à être clôturée définitivement',
+        dateModification: new Date(),
         items: {
           create: [
             {
+              id: crypto.randomUUID(),
               articleId: perceuse.id,
               quantiteDemandee: 2
             },
             {
+              id: crypto.randomUUID(),
               articleId: tournevis.id,
               quantiteDemandee: 3
             }
@@ -161,15 +183,18 @@ export async function GET(req: NextRequest) {
     // Demande 3 : En attente de validation finale (autre demande)
     const demande3 = await prisma.demande.create({
       data: {
+        id: crypto.randomUUID(),
         numero: `DA-CLOTURE-${Date.now()}-3`,
         type: 'materiel',
-        status: 'en_attente_validation_finale_demandeur',
+        status: 'en_attente_validation_finale_demandeur' as any,
         technicienId: employe.id,
         projetId: projet.id,
         commentaires: 'Matériel de sécurité livré - En attente de votre validation',
+        dateModification: new Date(),
         items: {
           create: [
             {
+              id: crypto.randomUUID(),
               articleId: chaussures.id,
               quantiteDemandee: 8
             }

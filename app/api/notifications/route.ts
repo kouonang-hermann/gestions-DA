@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getCurrentUser } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import type { Notification } from "@/types"
+import crypto from "crypto"
 
 /**
  * GET /api/notifications - Récupère les notifications de l'utilisateur
@@ -64,6 +65,7 @@ export async function POST(request: NextRequest) {
 
     const notification = await prisma.notification.create({
       data: {
+        id: crypto.randomUUID(),
         userId,
         titre,
         message,

@@ -58,7 +58,7 @@ export async function PUT(
       where: { id: projectId },
       data: updateData,
       include: {
-        createur: true,
+        createdByUser: true,
         utilisateurs: {
           include: {
             user: true,

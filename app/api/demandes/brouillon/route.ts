@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { withAuth } from "@/lib/middleware"
+import crypto from "crypto"
 
 /**
  * POST /api/demandes/brouillon - Sauvegarde un brouillon de demande
@@ -42,6 +43,7 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any) => {
       if (articleId.startsWith('manual-') && item.article) {
         const newArticle = await prisma.article.create({
           data: {
+            id: crypto.randomUUID(),
             nom: item.article.nom,
             description: item.article.description || '',
             reference: item.article.reference?.trim() || null,
@@ -49,12 +51,14 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any) => {
             type: body.type,
             stock: null,
             prixUnitaire: null,
+            updatedAt: new Date(),
           }
         })
         articleId = newArticle.id
       }
       
       processedItems.push({
+        id: crypto.randomUUID(),
         articleId,
         quantiteDemandee: item.quantiteDemandee,
         commentaire: item.commentaire || null,
@@ -64,15 +68,17 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any) => {
     // Créer le brouillon
     const brouillon = await prisma.demande.create({
       data: {
+        id: crypto.randomUUID(),
         numero,
         projetId: body.projetId,
         technicienId: currentUser.id,
         type: body.type,
-        status: "brouillon",
+        status: "brouillon" as any,
         commentaires: body.commentaires || null,
         dateLivraisonSouhaitee: body.dateLivraisonSouhaitee 
           ? new Date(body.dateLivraisonSouhaitee) 
           : null,
+        dateModification: new Date(),
         items: {
           create: processedItems
         }

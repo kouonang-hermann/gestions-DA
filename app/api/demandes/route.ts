@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth, hasPermission } from "@/lib/auth"
 import { createDemandeSchema } from "@/lib/validations"
+import crypto from "crypto"
 
 /**
  * Détermine le statut initial d'une demande selon son type et le rôle du créateur
@@ -344,8 +345,20 @@ export const GET = async (request: NextRequest) => {
       data: filteredDemandes,
     })
   } catch (error) {
-    console.error("Erreur lors de la récupération des demandes:", error)
-    return NextResponse.json({ success: false, error: "Erreur serveur" }, { status: 500 })
+    console.error("❌ [API-DEMANDES] Erreur lors de la récupération des demandes:")
+    console.error("   Type:", error instanceof Error ? error.constructor.name : typeof error)
+    console.error("   Message:", error instanceof Error ? error.message : String(error))
+    if (error instanceof Error && error.stack) {
+      console.error("   Stack:", error.stack)
+    }
+    
+    // Retourner plus de détails pour le debugging
+    const errorMessage = error instanceof Error ? error.message : "Erreur serveur inconnue"
+    return NextResponse.json({ 
+      success: false, 
+      error: "Erreur serveur",
+      details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+    }, { status: 500 })
   }
 }
 
@@ -466,6 +479,7 @@ export const POST = async (request: NextRequest) => {
       if (item.articleId.startsWith('manual-') && item.article) {
         const newArticle = await prisma.article.create({
           data: {
+            id: crypto.randomUUID(),
             nom: item.article.nom,
             description: item.article.description || '',
             reference: item.article.reference?.trim() || null,
@@ -473,12 +487,14 @@ export const POST = async (request: NextRequest) => {
             type: validatedData.type,
             stock: null,
             prixUnitaire: null,
+            updatedAt: new Date(),
           }
         })
         articleId = newArticle.id
       }
       
       processedItems.push({
+        id: crypto.randomUUID(),
         articleId,
         quantiteDemandee: item.quantiteDemandee,
         commentaire: item.commentaire || null,
@@ -488,6 +504,7 @@ export const POST = async (request: NextRequest) => {
     // Créer la demande avec ses items
     const newDemande = await prisma.demande.create({
       data: {
+        id: crypto.randomUUID(),
         numero,
         projetId: validatedData.projetId,
         technicienId: currentUser.id,
@@ -495,6 +512,7 @@ export const POST = async (request: NextRequest) => {
         status: initialStatus as any,
         commentaires: validatedData.commentaires,
         dateLivraisonSouhaitee: validatedData.dateLivraisonSouhaitee ? new Date(validatedData.dateLivraisonSouhaitee) : null,
+        dateModification: new Date(),
         items: {
           create: processedItems
         }
@@ -517,6 +535,7 @@ export const POST = async (request: NextRequest) => {
     // Créer une entrée dans l'historique pour la création
     await prisma.historyEntry.create({
       data: {
+        id: crypto.randomUUID(),
         demandeId: newDemande.id,
         userId: currentUser.id,
         action: "Création de la demande",
@@ -553,6 +572,7 @@ export const POST = async (request: NextRequest) => {
       if (step.role === currentUser.role && step.status !== initialStatus) {
         await prisma.historyEntry.create({
           data: {
+            id: crypto.randomUUID(),
             demandeId: newDemande.id,
             userId: currentUser.id,
             action: `Auto-validation: ${step.label}`,

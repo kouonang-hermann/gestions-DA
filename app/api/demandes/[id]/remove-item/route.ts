@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth"
+import crypto from "crypto"
 
 /**
  * DELETE /api/demandes/[id]/remove-item - Supprime un article d'une demande
@@ -112,20 +113,21 @@ export const DELETE = async (request: NextRequest, context: { params: Promise<{ 
     // Créer une entrée d'historique
     await prisma.historyEntry.create({
       data: {
+        id: crypto.randomUUID(),
         demandeId: demande.id,
         userId: currentUser.id,
         action: "ARTICLE_SUPPRIME",
         commentaire: `Article "${itemToRemove.article.nom}" (${itemToRemove.article.reference}) supprimé par ${currentUser.prenom} ${currentUser.nom}. Justification: ${justification}`,
-        timestamp: new Date(),
         signature: `${currentUser.id}_${Date.now()}`,
-        ancienStatus: demande.status,
-        nouveauStatus: demande.status
+        ancienStatus: demande.status as any,
+        nouveauStatus: demande.status as any
       }
     })
 
     // Créer une notification pour le demandeur
     await prisma.notification.create({
       data: {
+        id: crypto.randomUUID(),
         userId: demande.technicienId,
         titre: "Article supprimé de votre demande",
         message: `L'article "${itemToRemove.article.nom}" (${itemToRemove.article.reference}) a été supprimé de votre demande ${demande.numero} par ${currentUser.prenom} ${currentUser.nom}. Justification: ${justification}`,
@@ -157,7 +159,7 @@ export const DELETE = async (request: NextRequest, context: { params: Promise<{ 
           }
         },
         validationSignatures: true,
-        historyEntries: {
+        history: {
           include: {
             user: {
               select: {

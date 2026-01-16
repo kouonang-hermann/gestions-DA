@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
+import crypto from 'crypto'
 
 const prisma = new PrismaClient()
 
@@ -32,84 +33,98 @@ export async function GET(req: NextRequest) {
         where: { email: 'admin@test.com' },
         update: {},
         create: {
+          id: crypto.randomUUID(),
           nom: 'Admin',
           prenom: 'Test',
           email: 'admin@test.com',
           phone: '600000001',
           password: testPasswordHashes.admin123,
           role: 'superadmin',
+          updatedAt: new Date(),
         },
       }),
       prisma.user.upsert({
         where: { email: 'employe@test.com' },
         update: {},
         create: {
+          id: crypto.randomUUID(),
           nom: 'Employé',
           prenom: 'Test',
           email: 'employe@test.com',
           phone: '600000002',
           password: testPasswordHashes.employe123,
           role: 'employe' as any,
+          updatedAt: new Date(),
         },
       }),
       prisma.user.upsert({
         where: { email: 'conducteur@test.com' },
         update: {},
         create: {
+          id: crypto.randomUUID(),
           nom: 'Conducteur',
           prenom: 'Test',
           email: 'conducteur@test.com',
           phone: '600000003',
           password: testPasswordHashes.conducteur123,
           role: 'conducteur_travaux',
+          updatedAt: new Date(),
         },
       }),
       prisma.user.upsert({
         where: { email: 'qhse@test.com' },
         update: {},
         create: {
+          id: crypto.randomUUID(),
           nom: 'QHSE',
           prenom: 'Test',
           email: 'logistique@test.com',
           phone: '600000005',
           password: testPasswordHashes.qhse123,
           role: 'responsable_logistique',
+          updatedAt: new Date(),
         },
       }),
       prisma.user.upsert({
         where: { email: 'appro@test.com' },
         update: {},
         create: {
+          id: crypto.randomUUID(),
           nom: 'Appro',
           prenom: 'Test',
           email: 'appro@test.com',
           phone: '600000006',
           password: testPasswordHashes.appro123,
           role: 'responsable_appro',
+          updatedAt: new Date(),
         },
       }),
       prisma.user.upsert({
         where: { email: 'charge@test.com' },
         update: {},
         create: {
+          id: crypto.randomUUID(),
           nom: 'Charge',
           prenom: 'Test',
           email: 'charge@test.com',
           phone: '600000007',
           password: testPasswordHashes.charge123,
           role: 'charge_affaire',
+          updatedAt: new Date(),
         },
       }),
       prisma.user.upsert({
         where: { email: 'logistique@test.com' },
         update: {},
         create: {
+          id: crypto.randomUUID(),
           nom: 'Logistique',
           prenom: 'Test',
           email: 'livreur@test.com',
           phone: '600000008',
           password: testPasswordHashes.logistique123,
           role: 'responsable_livreur',
+          updatedAt: new Date(),
         },
       }),
     ])

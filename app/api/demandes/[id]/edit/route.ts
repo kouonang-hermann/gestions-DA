@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { withAuth } from "@/lib/middleware"
+import crypto from "crypto"
 
 /**
  * PUT /api/demandes/[id]/edit - Modifie une demande non encore validée
@@ -66,11 +67,13 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
       if (!article) {
         article = await prisma.article.create({
           data: {
+            id: crypto.randomUUID(),
             nom: item.article.nom,
             description: item.article.description || "",
             reference: item.article.reference,
             unite: item.article.unite,
             type: item.article.type,
+            updatedAt: new Date(),
           }
         })
       }
@@ -78,6 +81,7 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
       // Créer l'item de demande
       await prisma.itemDemande.create({
         data: {
+          id: crypto.randomUUID(),
           demandeId: params.id,
           articleId: article.id,
           quantiteDemandee: item.quantiteDemandee,

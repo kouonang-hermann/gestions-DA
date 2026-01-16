@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getCurrentUser } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import type { HistoryEntry } from "@/types"
+import crypto from "crypto"
 
 /**
  * GET /api/historique - Récupère l'historique filtrable
@@ -126,6 +127,7 @@ export async function POST(request: NextRequest) {
 
     const historyEntry = await prisma.historyEntry.create({
       data: {
+        id: crypto.randomUUID(),
         demandeId,
         userId: currentUser.id,
         action,

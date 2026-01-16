@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { withAuth } from "@/lib/middleware"
 import { notificationService } from "@/services/notificationService"
 import type { DemandeStatus } from "@/types"
+import crypto from "crypto"
 
 /**
  * Flows de validation par type de demande
@@ -63,10 +64,11 @@ function getNextStatusWithAutoValidation(currentStatus: DemandeStatus, userRole:
     return targetStatus
   }
 
-  // CAS SPÉCIAL : Chargé d'affaire valide différemment selon le type de demande
-  if (currentStatus === "en_attente_validation_charge_affaire" && userRole === "charge_affaire") {
+  // CAS SPÉCIAL : Validation à l'étape chargé d'affaire - dépend du type de demande
+  // Le superadmin ou le chargé d'affaire peuvent valider à cette étape
+  if (currentStatus === "en_attente_validation_charge_affaire" && (userRole === "charge_affaire" || userRole === "superadmin")) {
     const nextStatus = demandeType === "materiel" ? "en_attente_preparation_appro" : "en_attente_preparation_logistique"
-    console.log(`🎯 [API CHARGE-AFFAIRE] Type: ${demandeType} → Prochain statut: ${nextStatus}`)
+    console.log(`🎯 [API CHARGE-AFFAIRE] Type: ${demandeType} → Prochain statut: ${nextStatus} (validé par ${userRole})`)
     return nextStatus as DemandeStatus
   }
 
@@ -106,8 +108,9 @@ function getNextStatusWithAutoValidation(currentStatus: DemandeStatus, userRole:
  * Détermine le prochain statut selon le statut actuel et le rôle (fonction legacy)
  */
 function getNextStatus(currentStatus: DemandeStatus, userRole: string, demandeType: string): DemandeStatus | null {
-  // Logique spéciale pour le Chargé d'Affaire : dépend du type de demande
-  if (currentStatus === "en_attente_validation_charge_affaire" && userRole === "charge_affaire") {
+  // Logique spéciale pour l'étape chargé d'affaire : dépend du type de demande
+  // Le superadmin ou le chargé d'affaire peuvent valider à cette étape
+  if (currentStatus === "en_attente_validation_charge_affaire" && (userRole === "charge_affaire" || userRole === "superadmin")) {
     return demandeType === "materiel" ? "en_attente_preparation_appro" : "en_attente_preparation_logistique"
   }
 
@@ -182,7 +185,7 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
           }
         },
         validationSignatures: true,
-        sortieAppro: true
+        sortieSignature: true
       }
     })
 
@@ -383,6 +386,7 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
             date: new Date()
           },
           create: {
+            id: crypto.randomUUID(),
             userId: currentUser.id,
             demandeId: demande.id,
             commentaire: commentaire || null,
@@ -592,6 +596,7 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
           // Créer la sortie appro (ancien système - compatibilité)
           await prisma.sortieSignature.create({
             data: {
+              id: crypto.randomUUID(),
               userId: currentUser.id,
               demandeId: demande.id,
               commentaire: commentaire || null,
@@ -611,12 +616,14 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
           
           await prisma.livraison.create({
             data: {
+              id: crypto.randomUUID(),
               demandeId: demande.id,
               livreurId: livreurAssigneId,
               commentaire: commentaire || "Livraison complète créée automatiquement",
               statut: "prete",
               items: {
                 create: items.map(item => ({
+                  id: crypto.randomUUID(),
                   itemDemandeId: item.id,
                   quantiteLivree: item.quantiteValidee || item.quantiteDemandee
                 }))
@@ -690,6 +697,7 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
           // Créer la sortie signature (pour traçabilité)
           await prisma.sortieSignature.create({
             data: {
+              id: crypto.randomUUID(),
               userId: currentUser.id,
               demandeId: demande.id,
               commentaire: commentaire || null,
@@ -708,12 +716,14 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
           
           await prisma.livraison.create({
             data: {
+              id: crypto.randomUUID(),
               demandeId: demande.id,
               livreurId: livreurAssigneId,
               commentaire: commentaire || "Livraison outillage créée automatiquement",
               statut: "prete",
               items: {
                 create: itemsLogistique.map(item => ({
+                  id: crypto.randomUUID(),
                   itemDemandeId: item.id,
                   quantiteLivree: item.quantiteValidee || item.quantiteDemandee
                 }))
@@ -867,6 +877,97 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         }
         break
 
+      case "update_quantites_prix":
+        console.log(`📝 [UPDATE-QTE-PRIX] Mise à jour des quantités livrées et prix:`)
+        console.log(`  - Utilisateur: ${currentUser.nom} (${currentUser.role})`)
+        console.log(`  - Demande: ${demande.numero}`)
+        
+        // Vérifier les permissions
+        if (!["responsable_logistique", "responsable_appro", "superadmin"].includes(currentUser.role)) {
+          console.log(`❌ [UPDATE-QTE-PRIX] Accès refusé - rôle insuffisant`)
+          return NextResponse.json({ 
+            success: false, 
+            error: "Seuls les responsables logistique, appro ou super admin peuvent modifier ces données" 
+          }, { status: 403 })
+        }
+
+        // Récupérer les items de la requête
+        const { items: itemsToUpdate } = await request.clone().json()
+        
+        if (!itemsToUpdate || !Array.isArray(itemsToUpdate)) {
+          console.log(`❌ [UPDATE-QTE-PRIX] Données items manquantes`)
+          return NextResponse.json({ 
+            success: false, 
+            error: "Les données des items sont requises" 
+          }, { status: 400 })
+        }
+
+        console.log(`📋 [UPDATE-QTE-PRIX] Items à mettre à jour:`, itemsToUpdate)
+
+        // Mettre à jour chaque item
+        let coutTotal = 0
+        for (const itemData of itemsToUpdate) {
+          const { itemId, quantiteLivree, prixUnitaire } = itemData
+          
+          // Récupérer l'item actuel
+          const currentItem = await prisma.itemDemande.findUnique({
+            where: { id: itemId }
+          })
+          
+          if (!currentItem) {
+            console.log(`⚠️ [UPDATE-QTE-PRIX] Item ${itemId} non trouvé, ignoré`)
+            continue
+          }
+
+          // Mettre à jour l'item
+          await prisma.itemDemande.update({
+            where: { id: itemId },
+            data: {
+              quantiteSortie: quantiteLivree || 0,
+              prixUnitaire: prixUnitaire || null
+            }
+          })
+
+          // Calculer le coût total
+          if (prixUnitaire && quantiteLivree) {
+            coutTotal += prixUnitaire * quantiteLivree
+          }
+
+          console.log(`✅ [UPDATE-QTE-PRIX] Item ${itemId} mis à jour: qté=${quantiteLivree}, prix=${prixUnitaire}`)
+        }
+
+        // Mettre à jour le coût total de la demande
+        if (coutTotal > 0) {
+          updates.coutTotal = coutTotal
+          console.log(`💰 [UPDATE-QTE-PRIX] Coût total calculé: ${coutTotal}`)
+        }
+
+        // Ne pas changer le statut pour cette action
+        newStatus = demande.status
+
+        // Créer une entrée d'historique spécifique
+        await prisma.historyEntry.create({
+          data: {
+            id: crypto.randomUUID(),
+            demandeId: params.id,
+            userId: currentUser.id,
+            action: "Mise à jour des quantités livrées et prix",
+            ancienStatus: demande.status,
+            nouveauStatus: demande.status,
+            commentaire: `Coût total: ${coutTotal.toFixed(2)} €`,
+            signature: `update-qte-prix-${Date.now()}`
+          }
+        })
+
+        console.log(`✅ [UPDATE-QTE-PRIX] Mise à jour terminée`)
+        
+        // Retourner directement la réponse car on ne veut pas créer d'entrée d'historique en double
+        return NextResponse.json({ 
+          success: true, 
+          data: { ...demande, coutTotal },
+          message: "Quantités et prix mis à jour avec succès"
+        })
+
       default:
         return NextResponse.json({ success: false, error: "Action non reconnue" }, { status: 400 })
     }
@@ -894,7 +995,7 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
           }
         },
         validationSignatures: true,
-        sortieAppro: true
+        sortieSignature: true
       }
     })
     
@@ -903,6 +1004,7 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
     // Créer une entrée d'historique
     await prisma.historyEntry.create({
       data: {
+        id: crypto.randomUUID(),
         demandeId: params.id,
         userId: currentUser.id,
         action: getActionLabel(action),
@@ -916,6 +1018,7 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
     // Créer une notification pour le demandeur
     await prisma.notification.create({
       data: {
+        id: crypto.randomUUID(),
         userId: demande.technicienId,
         titre: "Mise à jour de demande",
         message: `Votre demande ${demande.numero} a été ${getActionLabel(action)}`,

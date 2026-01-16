@@ -302,14 +302,41 @@ export const useStore = create<AppState>()(
               
               return
             }
+            
+            // Pour les erreurs 500, essayer de lire les détails
+            if (response.status === 500) {
+              try {
+                const errorData = await response.json()
+                console.error("❌ [STORE] Erreur 500 - Détails:", errorData)
+                throw new Error(`Erreur serveur: ${errorData.details || errorData.error || 'Erreur inconnue'}`)
+              } catch (parseError) {
+                throw new Error(`Erreur HTTP: ${response.status}`)
+              }
+            }
+            
             throw new Error(`Erreur HTTP: ${response.status}`)
           }
 
           const data = await response.json()
           
+          console.log(`📊 [STORE] Réponse API /api/demandes:`, {
+            success: data.success,
+            nombreDemandes: data.data?.length || 0,
+            utilisateur: currentUser.nom
+          })
+          
           if (data.success) {
+            const demandes = data.data || []
+            console.log(`✅ [STORE] ${demandes.length} demandes chargées pour ${currentUser.nom} (${currentUser.role})`)
+            
+            if (demandes.length === 0) {
+              console.warn(`⚠️ [STORE] ATTENTION: Aucune demande retournée par l'API`)
+              console.warn(`   - Vérifiez que la base de données contient des demandes`)
+              console.warn(`   - Vérifiez les filtres côté serveur dans /api/demandes`)
+            }
+            
             set({ 
-              demandes: data.data || [], 
+              demandes: demandes, 
               isLoading: false, 
               error: null,
               isLoadingDemandes: false,

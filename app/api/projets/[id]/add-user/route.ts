@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth"
+import crypto from "crypto"
 
 export async function POST(
   request: NextRequest,
@@ -80,6 +81,7 @@ export async function POST(
     // Ajouter l'utilisateur au projet
     await prisma.userProjet.create({
       data: {
+        id: crypto.randomUUID(),
         userId,
         projetId: projectId,
       },

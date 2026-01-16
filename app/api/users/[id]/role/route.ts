@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getCurrentUser, hasPermission } from "@/lib/auth"
+import crypto from "crypto"
 
 /**
  * PUT /api/users/[id]/role - Modifie le rôle d'un utilisateur
@@ -102,6 +103,7 @@ export const PUT = async (request: NextRequest, context: { params: Promise<{ id:
     if (targetUser.id !== currentUser.id) {
       await prisma.notification.create({
         data: {
+          id: crypto.randomUUID(),
           userId: targetUser.id,
           titre: "Modification de votre rôle",
           message: `Votre rôle a été modifié de "${oldRole}" vers "${newRole}" par ${currentUser.prenom} ${currentUser.nom}${reason ? `. Raison: ${reason}` : ""}.`,

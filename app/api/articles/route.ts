@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { createArticleSchema } from "@/lib/validations"
+import crypto from "crypto"
 
 /**
  * GET /api/articles - Récupère les articles
@@ -73,6 +74,7 @@ export async function POST(request: NextRequest) {
     // Créer l'article (référence n'est plus unique)
     const newArticle = await prisma.article.create({
       data: {
+        id: crypto.randomUUID(),
         nom: validatedData.nom,
         description: validatedData.description,
         reference: validatedData.reference,
@@ -80,6 +82,7 @@ export async function POST(request: NextRequest) {
         unite: validatedData.unite,
         stock: validatedData.stock || null,
         prixUnitaire: validatedData.prixUnitaire || null,
+        updatedAt: new Date(),
       }
     })
 

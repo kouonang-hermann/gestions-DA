@@ -4,6 +4,7 @@
 
 import { PrismaClient } from '@prisma/client'
 import * as bcrypt from 'bcryptjs'
+import crypto from 'crypto'
 
 const prisma = new PrismaClient()
 
@@ -43,12 +44,14 @@ async function createUser() {
     // Créer l'utilisateur
     const newUser = await prisma.user.create({
       data: {
+        id: crypto.randomUUID(),
         nom: 'Utilisateur',
         prenom: 'Nouveau',
         phone: '+237697619722',
         password: hashedPassword,
-        role: 'employe',
-        isAdmin: false
+        role: 'employe' as any,
+        isAdmin: false,
+        updatedAt: new Date()
       }
     })
 

@@ -8,174 +8,60 @@ datasource db {
   directUrl = env("POSTGRES_URL")
 }
 
-model User {
-  id                   String                @id @default(cuid())
-  nom                  String
-  prenom               String
-  email                String?               @unique
-  password             String
-  role                 UserRole
-  isAdmin              Boolean               @default(false)
-  createdAt            DateTime              @default(now())
-  updatedAt            DateTime              @updatedAt
-  phone                String                @unique @db.VarChar(20)
-  demandesCreees       Demande[]             @relation("DemandeCreateur")
-  demandesALivrer      Demande[]             @relation("DemandesALivrer")
-  historyEntries       HistoryEntry[]
-  notifications        Notification[]
-  projetsCreated       Projet[]              @relation("ProjetCreateur")
-  sortiesAppro         SortieSignature[]     @relation("SortieAppro")
-  projets              UserProjet[]
-  validationSignatures ValidationSignature[]
-  livraisonsEffectuees Livraison[]           @relation("LivraisonsEffectuees")
-  validationsReception ValidationReception[] @relation("ValidationsReception")
-
-  @@map("users")
-}
-
-model Projet {
-  id            String         @id @default(cuid())
+model Article {
+  id            String          @id
   nom           String
   description   String
-  dateDebut     DateTime
-  dateFin       DateTime?
-  actif         Boolean        @default(true)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  createdBy     String
-  budget        Float? // Budget alloué au projet
-  demandes      Demande[]
-  notifications Notification[]
-  createur      User           @relation("ProjetCreateur", fields: [createdBy], references: [id])
-  utilisateurs  UserProjet[]
-
-  @@map("projets")
-}
-
-model UserProjet {
-  id       String @id @default(cuid())
-  userId   String
-  projetId String
-  projet   Projet @relation(fields: [projetId], references: [id], onDelete: Cascade)
-  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, projetId])
-  @@map("user_projets")
-}
-
-model Article {
-  id           String        @id @default(cuid())
-  nom          String
-  description  String
-  reference    String?
-  unite        String
-  type         DemandeType
-  stock        Int?
-  prixUnitaire Float?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  itemsDemande ItemDemande[]
+  reference     String?
+  unite         String
+  type          DemandeType
+  stock         Int?
+  prixUnitaire  Float?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime
+  items         ItemDemande[]
 
   @@map("articles")
 }
 
 model Demande {
-  id                     String         @id @default(cuid())
-  numero                 String         @unique
+  id                     String                  @id
+  numero                 String                  @unique
   projetId               String
   technicienId           String
   type                   DemandeType
-  status                 DemandeStatus  @default(brouillon)
-  dateCreation           DateTime       @default(now())
-  dateModification       DateTime       @updatedAt
+  status                 DemandeStatus           @default(brouillon)
+  dateCreation           DateTime                @default(now())
+  dateModification       DateTime
   dateSortie             DateTime?
   dateValidationFinale   DateTime?
   dateLivraisonSouhaitee DateTime?
   commentaires           String?
   rejetMotif             String?
-  nombreRejets           Int            @default(0) // Compteur de rejets pour traçabilité
-  statusPrecedent        DemandeStatus? // Statut avant le rejet (pour retour arrière)
-  coutTotal              Float? // Coût total de la demande (visible uniquement par superadmin)
-  budgetPrevisionnel     Float? // Budget prévisionnel saisi par le chargé d'affaires
-  dateEngagement         DateTime? // Date d'engagement financier (quand les prix sont validés)
-  livreurAssigneId       String? // ID de la personne assignée pour livrer
-  dateReceptionLivreur   DateTime? // Date de réception du matériel par le livreur
-  dateLivraison          DateTime? // Date de livraison au demandeur
-  fichiersJoints         String[]       @default([]) // URLs/chemins des fichiers Excel téléversés
+  coutTotal              Float?
+  dateEngagement         DateTime?
+  budgetPrevisionnel     Float?
+  dateLivraison          DateTime?
+  dateReceptionLivreur   DateTime?
+  livreurAssigneId       String?
+  nombreRejets           Int                     @default(0)
+  statusPrecedent        DemandeStatus?
+  fichiersJoints         String[]                @default([])
+  livreurAssigne         User?                   @relation("demandes_livreurAssigneIdTousers", fields: [livreurAssigneId], references: [id])
+  projet                 Projet                  @relation(fields: [projetId], references: [id], onDelete: Cascade)
+  technicien             User                    @relation("demandes_technicienIdTousers", fields: [technicienId], references: [id])
+  history                HistoryEntry[]
+  items                  ItemDemande[]
+  livraisons             Livraison[]
+  notifications          Notification[]
+  sortieSignature        SortieSignature?
+  validationSignatures   ValidationSignature[]
 
-  // Gestion des sous-demandes
-  demandeParentId  String? // ID de la demande parent (si sous-demande)
-  typeDemande      String  @default("principale") // principale | sous_demande
-  motifSousDemande String? // complement | remplacement | autre
-
-  projet               Projet                @relation(fields: [projetId], references: [id], onDelete: Cascade)
-  technicien           User                  @relation("DemandeCreateur", fields: [technicienId], references: [id])
-  livreurAssigne       User?                 @relation("DemandesALivrer", fields: [livreurAssigneId], references: [id])
-  demandeParent        Demande?              @relation("SousDemandes", fields: [demandeParentId], references: [id])
-  sousDemandes         Demande[]             @relation("SousDemandes")
-  historyEntries       HistoryEntry[]
-  items                ItemDemande[]
-  notifications        Notification[]
-  sortieAppro          SortieSignature?      @relation("SortieAppro")
-  validationSignatures ValidationSignature[]
-  livraisons           Livraison[]
-  validationReception  ValidationReception?
-
-  @@index([demandeParentId])
   @@map("demandes")
 }
 
-model ItemDemande {
-  id                  String          @id @default(cuid())
-  demandeId           String
-  articleId           String
-  quantiteDemandee    Int
-  quantiteValidee     Int?
-  quantiteSortie      Int? // DEPRECATED - Gardé pour compatibilité
-  quantiteRecue       Int? // DEPRECATED - Gardé pour compatibilité
-  commentaire         String?
-  prixUnitaire        Float? // Prix unitaire saisi par le responsable appro
-  article             Article         @relation(fields: [articleId], references: [id])
-  demande             Demande         @relation(fields: [demandeId], references: [id], onDelete: Cascade)
-  livraisons          ItemLivraison[]
-  validationReception ValidationItem?
-
-  @@map("item_demandes")
-}
-
-model ValidationSignature {
-  id          String   @id @default(cuid())
-  userId      String
-  demandeId   String
-  date        DateTime @default(now())
-  commentaire String?
-  signature   String
-  type        String
-  demande     Demande  @relation(fields: [demandeId], references: [id], onDelete: Cascade)
-  user        User     @relation(fields: [userId], references: [id])
-
-  @@unique([demandeId, type])
-  @@map("validation_signatures")
-}
-
-model SortieSignature {
-  id                     String   @id @default(cuid())
-  userId                 String
-  demandeId              String   @unique
-  date                   DateTime @default(now())
-  commentaire            String?
-  signature              String
-  quantitesSorties       Json
-  modifiable             Boolean  @default(true)
-  dateModificationLimite DateTime
-  demande                Demande  @relation("SortieAppro", fields: [demandeId], references: [id], onDelete: Cascade)
-  user                   User     @relation("SortieAppro", fields: [userId], references: [id])
-
-  @@map("sortie_signatures")
-}
-
 model HistoryEntry {
-  id            String         @id @default(cuid())
+  id            String         @id
   demandeId     String
   userId        String
   action        String
@@ -190,20 +76,180 @@ model HistoryEntry {
   @@map("history_entries")
 }
 
+model ItemDemande {
+  id               String            @id
+  demandeId        String
+  articleId        String
+  quantiteDemandee Int
+  quantiteValidee  Int?
+  quantiteSortie   Int?
+  quantiteRecue    Int?
+  commentaire      String?
+  prixUnitaire     Float?
+  article          Article           @relation(fields: [articleId], references: [id])
+  demande          Demande           @relation(fields: [demandeId], references: [id], onDelete: Cascade)
+  livraisons       ItemLivraison[]
+
+  @@map("item_demandes")
+}
+
+model ItemLivraison {
+  id             String        @id
+  livraisonId    String
+  itemDemandeId  String
+  quantiteLivree Int
+  itemDemande    ItemDemande   @relation(fields: [itemDemandeId], references: [id], onDelete: Cascade)
+  livraison      Livraison     @relation(fields: [livraisonId], references: [id], onDelete: Cascade)
+
+  @@map("item_livraisons")
+}
+
+model Livraison {
+  id              String            @id
+  demandeId       String
+  livreurId       String
+  dateCreation    DateTime          @default(now())
+  dateLivraison   DateTime?
+  commentaire     String?
+  statut          LivraisonStatut   @default(en_preparation)
+  items           ItemLivraison[]
+  demande         Demande           @relation(fields: [demandeId], references: [id], onDelete: Cascade)
+  livreur         User              @relation(fields: [livreurId], references: [id])
+
+  @@map("livraisons")
+}
+
 model Notification {
-  id        String   @id @default(cuid())
+  id        String    @id
   userId    String
   titre     String
   message   String
-  lu        Boolean  @default(false)
-  createdAt DateTime @default(now())
+  lu        Boolean   @default(false)
+  createdAt DateTime  @default(now())
   demandeId String?
   projetId  String?
-  demande   Demande? @relation(fields: [demandeId], references: [id], onDelete: Cascade)
-  projet    Projet?  @relation(fields: [projetId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  demande   Demande?  @relation(fields: [demandeId], references: [id], onDelete: Cascade)
+  projet    Projet?   @relation(fields: [projetId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
+}
+
+model Projet {
+  id            String          @id
+  nom           String
+  description   String
+  dateDebut     DateTime
+  dateFin       DateTime?
+  actif         Boolean         @default(true)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime
+  createdBy     String
+  budget        Float?
+  demandes      Demande[]
+  notifications Notification[]
+  createdByUser User            @relation(fields: [createdBy], references: [id])
+  utilisateurs  UserProjet[]
+
+  @@map("projets")
+}
+
+model SortieSignature {
+  id                     String   @id
+  userId                 String
+  demandeId              String   @unique
+  date                   DateTime @default(now())
+  commentaire            String?
+  signature              String
+  quantitesSorties       Json
+  modifiable             Boolean  @default(true)
+  dateModificationLimite DateTime
+  demande                Demande  @relation(fields: [demandeId], references: [id], onDelete: Cascade)
+  user                   User     @relation(fields: [userId], references: [id])
+
+  @@map("sortie_signatures")
+}
+
+model UserProjet {
+  id       String  @id
+  userId   String
+  projetId String
+  projet   Projet  @relation(fields: [projetId], references: [id], onDelete: Cascade)
+  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, projetId])
+  @@map("user_projets")
+}
+
+model User {
+  id                      String                  @id
+  nom                     String
+  prenom                  String
+  email                   String?                 @unique
+  password                String
+  role                    UserRole
+  isAdmin                 Boolean                 @default(false)
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime
+  phone                   String                  @unique @db.VarChar(20)
+  demandesLivreur         Demande[]               @relation("demandes_livreurAssigneIdTousers")
+  demandesTechnicien      Demande[]               @relation("demandes_technicienIdTousers")
+  historyEntries          HistoryEntry[]
+  livraisons              Livraison[]
+  notifications           Notification[]
+  projetsCreated          Projet[]
+  sortieSignatures        SortieSignature[]
+  projets                 UserProjet[]
+  validationSignatures    ValidationSignature[]
+
+  @@map("users")
+}
+
+model ValidationSignature {
+  id          String   @id
+  userId      String
+  demandeId   String
+  date        DateTime @default(now())
+  commentaire String?
+  signature   String
+  type        String
+  demande     Demande  @relation(fields: [demandeId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@unique([demandeId, type])
+  @@map("validation_signatures")
+}
+
+enum DemandeStatus {
+  brouillon
+  soumise
+  en_attente_validation_conducteur
+  en_attente_validation_logistique
+  en_attente_validation_responsable_travaux
+  en_attente_validation_charge_affaire
+  en_attente_preparation_appro
+  en_attente_reception_livreur
+  en_attente_livraison
+  en_attente_validation_finale_demandeur
+  confirmee_demandeur
+  cloturee
+  rejetee
+  archivee
+  en_attente_validation_logistique_finale
+  en_attente_preparation_logistique
+}
+
+enum DemandeType {
+  materiel
+  outillage
+}
+
+enum LivraisonStatut {
+  en_preparation
+  prete
+  en_cours
+  livree
+  annulee
 }
 
 enum UserRole {
@@ -215,102 +261,4 @@ enum UserRole {
   responsable_appro
   charge_affaire
   responsable_livreur
-}
-
-enum DemandeType {
-  materiel
-  outillage
-}
-
-enum DemandeStatus {
-  brouillon
-  soumise
-  en_attente_validation_conducteur
-  en_attente_validation_qhse
-  en_attente_validation_logistique
-  en_attente_validation_responsable_travaux
-  en_attente_validation_charge_affaire
-  en_attente_preparation_appro
-  en_attente_preparation_logistique
-  en_attente_validation_logistique_finale
-  en_attente_reception_livreur
-  en_attente_livraison
-  en_attente_validation_reception_demandeur
-  en_attente_validation_finale_demandeur
-  renvoyee_vers_appro
-  cloturee_partiellement
-  confirmee_demandeur
-  cloturee
-  rejetee
-  archivee
-}
-
-model Livraison {
-  id            String          @id @default(cuid())
-  demandeId     String
-  livreurId     String
-  dateCreation  DateTime        @default(now())
-  dateLivraison DateTime?
-  commentaire   String?
-  statut        LivraisonStatut @default(en_preparation)
-  demande       Demande         @relation(fields: [demandeId], references: [id], onDelete: Cascade)
-  livreur       User            @relation("LivraisonsEffectuees", fields: [livreurId], references: [id])
-  items         ItemLivraison[]
-
-  @@map("livraisons")
-}
-
-model ItemLivraison {
-  id             String      @id @default(cuid())
-  livraisonId    String
-  itemDemandeId  String
-  quantiteLivree Int
-  livraison      Livraison   @relation(fields: [livraisonId], references: [id], onDelete: Cascade)
-  itemDemande    ItemDemande @relation(fields: [itemDemandeId], references: [id], onDelete: Cascade)
-
-  @@map("item_livraisons")
-}
-
-enum LivraisonStatut {
-  en_preparation
-  prete
-  en_cours
-  livree
-  annulee
-}
-
-model ValidationReception {
-  id                 String           @id @default(cuid())
-  demandeId          String           @unique
-  validePar          String
-  dateValidation     DateTime         @default(now())
-  statut             String // acceptee_totale | acceptee_partielle | refusee_totale
-  commentaireGeneral String?
-  demande            Demande          @relation(fields: [demandeId], references: [id], onDelete: Cascade)
-  validateur         User             @relation("ValidationsReception", fields: [validePar], references: [id])
-  items              ValidationItem[]
-
-  @@index([demandeId])
-  @@index([validePar])
-  @@map("validation_receptions")
-}
-
-model ValidationItem {
-  id               String              @id @default(cuid())
-  validationId     String
-  itemId           String              @unique
-  quantiteValidee  Int // Quantité validée par les validateurs (référence)
-  quantiteRecue    Int // Quantité réellement reçue par le demandeur
-  quantiteAcceptee Int // Quantité acceptée par le demandeur
-  quantiteRefusee  Int // Quantité refusée (endommagée/non conforme)
-  statut           String // accepte_total | accepte_partiel | refuse_total
-  motifRefus       String? // endommage | non_conforme | manquant | autre
-  commentaire      String?
-  photos           String[]            @default([]) // URLs des photos de preuve
-  validation       ValidationReception @relation(fields: [validationId], references: [id], onDelete: Cascade)
-  item             ItemDemande         @relation(fields: [itemId], references: [id], onDelete: Cascade)
-
-  @@index([validationId])
-  @@index([itemId])
-  @@map("validation_items")
 }

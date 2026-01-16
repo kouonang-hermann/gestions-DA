@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth"
 import { createProjetSchema } from "@/lib/validations"
+import crypto from "crypto"
 
 /**
  * GET /api/projets - Récupère les projets
@@ -41,7 +42,7 @@ export const GET = async (request: NextRequest) => {
     const projets = await prisma.projet.findMany({
       where: whereClause,
       include: {
-        createur: {
+        createdByUser: {
           select: {
             id: true,
             nom: true,
@@ -119,15 +120,17 @@ export const POST = async (request: NextRequest) => {
     // Créer le projet
     const newProjet = await prisma.projet.create({
       data: {
+        id: crypto.randomUUID(),
         nom: validatedData.nom,
         description: validatedData.description,
         dateDebut: new Date(validatedData.dateDebut),
         dateFin: validatedData.dateFin ? new Date(validatedData.dateFin) : null,
         createdBy: currentUser.id,
         actif: true,
+        updatedAt: new Date(),
       },
       include: {
-        createur: {
+        createdByUser: {
           select: {
             id: true,
             nom: true,
@@ -173,6 +176,7 @@ export const POST = async (request: NextRequest) => {
         utilisateursAAssigner.map((userId: string) =>
           prisma.userProjet.create({
             data: {
+              id: crypto.randomUUID(),
               userId,
               projetId: newProjet.id,
             }
@@ -185,7 +189,7 @@ export const POST = async (request: NextRequest) => {
     const projetComplet = await prisma.projet.findUnique({
       where: { id: newProjet.id },
       include: {
-        createur: {
+        createdByUser: {
           select: {
             id: true,
             nom: true,

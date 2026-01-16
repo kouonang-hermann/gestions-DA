@@ -4,7 +4,8 @@ import { useEffect, useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Download, Loader2, CheckCircle } from "lucide-react"
+import { Download, Loader2, CheckCircle, Save } from "lucide-react"
+import { Input } from "@/components/ui/input"
 import type { Demande } from "@/types"
 import { useStore } from "@/stores/useStore"
 import { generatePurchaseRequestPDF } from "@/lib/pdf-generator"
@@ -27,19 +28,36 @@ export default function DemandeDetailModal({
   canValidate = false,
   onValidate
 }: DemandeDetailModalProps) {
-  const { demandes, currentUser } = useStore()
+  const { demandes, currentUser, executeAction, loadDemandes } = useStore()
   const [demande, setDemande] = useState<Demande | null>(null)
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
   const [isValidating, setIsValidating] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  
+  // État pour les quantités livrées et prix en mode édition
+  const [quantitesLivrees, setQuantitesLivrees] = useState<{ [itemId: string]: string }>({})
+  const [prixUnitaires, setPrixUnitaires] = useState<{ [itemId: string]: string }>({})
 
   useEffect(() => {
     if (demandeId && demandes.length > 0) {
       const foundDemande = demandes.find(d => d.id === demandeId)
       setDemande(foundDemande || null)
+      
+      // Initialiser les valeurs éditables
+      if (foundDemande && mode === "edit") {
+        const initialQtes: { [itemId: string]: string } = {}
+        const initialPrix: { [itemId: string]: string } = {}
+        foundDemande.items.forEach(item => {
+          initialQtes[item.id] = (item.quantiteSortie || item.quantiteRecue || 0).toString()
+          initialPrix[item.id] = item.prixUnitaire?.toString() || ""
+        })
+        setQuantitesLivrees(initialQtes)
+        setPrixUnitaires(initialPrix)
+      }
     } else {
       setDemande(null)
     }
-  }, [demandeId, demandes])
+  }, [demandeId, demandes, mode])
 
   if (!demande) return null
 
@@ -53,6 +71,16 @@ export default function DemandeDetailModal({
     "en_attente_validation_charge_affaire",
     "en_attente_validation_logistique"
   ].includes(demande.status)
+  
+  // Déterminer si on peut éditer les quantités et prix (mode edit + rôles appropriés)
+  const canEdit = mode === "edit" && currentUser && (
+    currentUser.role === "responsable_logistique" ||
+    currentUser.role === "responsable_appro" ||
+    currentUser.role === "superadmin"
+  )
+  
+  // Afficher les colonnes éditables pour logistique/appro même avant préparation
+  const showEditableColumns = canEdit || showDeliveryColumns
 
   // Déterminer si on doit afficher la colonne Qté validée
   const showValidatedColumn = ![
@@ -140,6 +168,43 @@ export default function DemandeDetailModal({
       setIsValidating(false)
     }
   }
+  
+  // Fonction pour sauvegarder les quantités livrées et prix
+  const handleSaveQuantitesEtPrix = async () => {
+    if (!demande) return
+    
+    setIsSaving(true)
+    try {
+      // Préparer les données
+      const itemsData: { itemId: string; quantiteLivree: number; prixUnitaire: number | null }[] = []
+      
+      demande.items.forEach(item => {
+        const qteLivree = parseFloat(quantitesLivrees[item.id] || "0")
+        const prix = parseFloat(prixUnitaires[item.id] || "0")
+        
+        itemsData.push({
+          itemId: item.id,
+          quantiteLivree: isNaN(qteLivree) ? 0 : qteLivree,
+          prixUnitaire: isNaN(prix) || prix <= 0 ? null : prix
+        })
+      })
+      
+      // Appeler l'API pour mettre à jour
+      const success = await executeAction(demande.id, "update_quantites_prix", { items: itemsData })
+      
+      if (success) {
+        await loadDemandes()
+        alert("Quantités et prix enregistrés avec succès")
+      } else {
+        alert("Erreur lors de l'enregistrement")
+      }
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error)
+      alert('Erreur lors de la sauvegarde. Veuillez réessayer.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -193,10 +258,15 @@ export default function DemandeDetailModal({
                         <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-white">Qté validée</TableHead>
                       )}
                       
-                      {showDeliveryColumns && (
+                      {showEditableColumns && (
                         <>
-                          <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-blue-50 text-blue-600">Qté livrée</TableHead>
+                          <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-blue-50 text-blue-600">
+                            Qté livrée {canEdit && <span className="text-red-500">*</span>}
+                          </TableHead>
                           <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-orange-50 text-orange-600">Qté restante</TableHead>
+                          <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-green-50 text-green-600">
+                            Prix unit. (€) {canEdit && <span className="text-red-500">*</span>}
+                          </TableHead>
                         </>
                       )}
                       
@@ -207,8 +277,10 @@ export default function DemandeDetailModal({
                   <TableBody>
                     {demande.items.map((item, index) => {
                       const qteValidee = item.quantiteValidee || item.quantiteDemandee
-                      const qteLivree = item.quantiteSortie || item.quantiteRecue || 0
-                      const qteRestante = Math.max(0, qteValidee - qteLivree)
+                      // Utiliser la valeur saisie si en mode édition, sinon la valeur enregistrée
+                      const qteLivreeSaisie = canEdit ? parseFloat(quantitesLivrees[item.id] || "0") || 0 : (item.quantiteSortie || item.quantiteRecue || 0)
+                      const qteRestante = Math.max(0, qteValidee - qteLivreeSaisie)
+                      const prixUnitaire = canEdit ? prixUnitaires[item.id] : (item.prixUnitaire?.toString() || "")
 
                       return (
                         <TableRow key={index} className="border-b hover:bg-gray-50">
@@ -231,13 +303,51 @@ export default function DemandeDetailModal({
                             </TableCell>
                           )}
                           
-                          {showDeliveryColumns && (
+                          {showEditableColumns && (
                             <>
-                              <TableCell className="text-center border border-gray-300 p-3 text-xs sm:text-sm bg-blue-50">
-                                <span className="font-semibold text-blue-600">{qteLivree}</span>
+                              <TableCell className="text-center border border-gray-300 p-1 text-xs sm:text-sm bg-blue-50">
+                                {canEdit ? (
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    max={qteValidee}
+                                    step="1"
+                                    className="w-20 h-8 text-center mx-auto text-blue-600 font-semibold"
+                                    value={quantitesLivrees[item.id] || ""}
+                                    onChange={(e) => setQuantitesLivrees(prev => ({
+                                      ...prev,
+                                      [item.id]: e.target.value
+                                    }))}
+                                    placeholder="0"
+                                  />
+                                ) : (
+                                  <span className="font-semibold text-blue-600">{qteLivreeSaisie}</span>
+                                )}
                               </TableCell>
                               <TableCell className="text-center border border-gray-300 p-3 text-xs sm:text-sm bg-orange-50">
-                                <span className="font-semibold text-orange-600">{qteRestante}</span>
+                                <span className={`font-semibold ${qteRestante > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                                  {qteRestante}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-center border border-gray-300 p-1 text-xs sm:text-sm bg-green-50">
+                                {canEdit ? (
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    className="w-24 h-8 text-center mx-auto text-green-600 font-semibold"
+                                    value={prixUnitaires[item.id] || ""}
+                                    onChange={(e) => setPrixUnitaires(prev => ({
+                                      ...prev,
+                                      [item.id]: e.target.value
+                                    }))}
+                                    placeholder="0.00"
+                                  />
+                                ) : (
+                                  <span className="font-semibold text-green-600">
+                                    {prixUnitaire ? `${parseFloat(prixUnitaire).toFixed(2)} €` : '-'}
+                                  </span>
+                                )}
                               </TableCell>
                             </>
                           )}
@@ -256,6 +366,35 @@ export default function DemandeDetailModal({
               </div>
             </div>
           </div>
+
+          {/* Section Prix Total */}
+          {showEditableColumns && (
+            <div className="bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-lg border border-green-200">
+              <div className="flex justify-between items-center">
+                <span className="text-lg font-bold text-gray-700">💰 Prix Total de la demande :</span>
+                <span className="text-2xl font-bold text-green-600">
+                  {(() => {
+                    let total = 0
+                    demande.items.forEach(item => {
+                      const qteLivree = canEdit 
+                        ? parseFloat(quantitesLivrees[item.id] || "0") || 0 
+                        : (item.quantiteSortie || item.quantiteRecue || 0)
+                      const prix = canEdit 
+                        ? parseFloat(prixUnitaires[item.id] || "0") || 0 
+                        : (item.prixUnitaire || 0)
+                      total += qteLivree * prix
+                    })
+                    // Utiliser le coût total enregistré si disponible et pas en mode édition
+                    const displayTotal = !canEdit && demande.coutTotal ? demande.coutTotal : total
+                    return `${displayTotal.toFixed(2)} €`
+                  })()}
+                </span>
+              </div>
+              {demande.coutTotal && !canEdit && (
+                <p className="text-sm text-gray-500 mt-1">Coût total enregistré</p>
+              )}
+            </div>
+          )}
 
           {/* Section Commentaires */}
           <div className="space-y-2">
@@ -278,7 +417,26 @@ export default function DemandeDetailModal({
           </div>
 
           {/* Boutons d'action */}
-          <div className="flex justify-center gap-3 pt-4">
+          <div className="flex justify-center gap-3 pt-4 flex-wrap">
+            {canEdit && (
+              <Button 
+                onClick={handleSaveQuantitesEtPrix}
+                disabled={isSaving}
+                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded flex items-center gap-2"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="animate-spin" size={16} />
+                    Enregistrement...
+                  </>
+                ) : (
+                  <>
+                    <Save size={16} />
+                    Enregistrer Qté & Prix
+                  </>
+                )}
+              </Button>
+            )}
             {canDownload && (
               <Button 
                 onClick={handleDownloadPDF}
@@ -302,7 +460,7 @@ export default function DemandeDetailModal({
               <Button 
                 onClick={handleValidate}
                 disabled={isValidating}
-                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded flex items-center gap-2"
+                className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded flex items-center gap-2"
               >
                 {isValidating ? (
                   <>

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { withAuth } from "@/lib/middleware"
 import type { DemandeStatus } from "@/types"
 import { getModificationPermissions, canModifyRejectedDemande } from "@/lib/workflow-utils"
+import crypto from "crypto"
 
 /**
  * PUT /api/demandes/[id]/modify - Modifie une demande rejetée
@@ -93,6 +94,7 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
         if (item.articleId.startsWith('manual-') && item.article) {
           const newArticle = await prisma.article.create({
             data: {
+              id: crypto.randomUUID(),
               nom: item.article.nom,
               description: item.article.description || '',
               reference: item.article.reference?.trim() || null,
@@ -100,6 +102,7 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
               type: demande.type,
               stock: null,
               prixUnitaire: null,
+              updatedAt: new Date(),
             }
           })
           articleId = newArticle.id
@@ -127,6 +130,7 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
       // Créer les nouveaux items
       await prisma.itemDemande.createMany({
         data: processedItems.map(item => ({
+          id: crypto.randomUUID(),
           ...item,
           demandeId: params.id
         }))
@@ -168,11 +172,12 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
     // Créer une entrée dans l'historique
     await prisma.historyEntry.create({
       data: {
+        id: crypto.randomUUID(),
         demandeId: params.id,
         userId: currentUser.id,
         action: `Demande modifiée après rejet par ${currentUser.role}`,
-        ancienStatus: demande.status as DemandeStatus,
-        nouveauStatus: newStatus,
+        ancienStatus: demande.status as any,
+        nouveauStatus: newStatus as any,
         commentaire: body.commentaires || "Modifications apportées suite au rejet",
         signature: `${currentUser.role}-modify-${Date.now()}`,
       }

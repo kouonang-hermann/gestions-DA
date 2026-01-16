@@ -1,6 +1,7 @@
 import { emailService } from './emailService'
 import { whatsappService } from './whatsappService'
 import type { User, Demande, DemandeStatus } from '@/types'
+import crypto from 'crypto'
 
 export interface NotificationTrigger {
   demandeId: string
@@ -355,6 +356,7 @@ export class NotificationService {
       // Créer la notification dans la base de données
       await prisma.notification.create({
         data: {
+          id: crypto.randomUUID(),
           userId: livreurId,
           titre,
           message,
@@ -456,6 +458,7 @@ export class NotificationService {
       // Créer la notification dans la base de données
       await prisma.notification.create({
         data: {
+          id: crypto.randomUUID(),
           userId,
           titre,
           message,
