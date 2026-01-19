@@ -377,7 +377,7 @@ export default function DemandeDetailModal({
                                   />
                                 ) : (
                                   <span className="font-semibold text-green-600">
-                                    {prixUnitaire ? `${parseFloat(prixUnitaire).toFixed(2)} €` : '-'}
+                                    {prixUnitaire ? `${parseFloat(prixUnitaire).toFixed(0)} FCFA` : '-'}
                                   </span>
                                 )}
                               </TableCell>
@@ -418,7 +418,7 @@ export default function DemandeDetailModal({
                     })
                     // Utiliser le coût total enregistré si disponible et pas en mode édition
                     const displayTotal = !canEdit && demande.coutTotal ? demande.coutTotal : total
-                    return `${displayTotal.toFixed(2)} €`
+                    return `${displayTotal.toFixed(0)} FCFA`
                   })()}
                 </span>
               </div>

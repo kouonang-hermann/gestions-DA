@@ -169,10 +169,10 @@ function getNextStatus(currentStatus: DemandeStatus, userRole: string, demandeTy
 export const POST = withAuth(async (request: NextRequest, currentUser: any, context: { params: Promise<{ id: string }> }) => {
   try {
     const params = await context.params
-    const { action, commentaire, quantitesSorties, quantites, itemsModifications, targetStatus, livreurAssigneId, items } = await request.json()
+    const { action, commentaire, quantitesSorties, quantites, itemsModifications, targetStatus, livreurAssigneId, items, quantitesRecues } = await request.json()
 
     console.log(`🚀 [API] ${currentUser.nom} (${currentUser.role}) exécute "${action}" sur ${params.id}`)
-    console.log(`📋 [API] Payload reçu:`, { action, commentaire, targetStatus })
+    console.log(`📋 [API] Payload reçu:`, { action, commentaire, targetStatus, quantitesRecues })
 
     // Récupérer la demande
     const demande = await prisma.demande.findUnique({
@@ -483,11 +483,84 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         console.log(`  - Statut actuel: ${demande.status}`)
         console.log(`  - Demandeur: ${demande.technicienId}`)
         console.log(`  - Utilisateur actuel: ${currentUser.id}`)
-        console.log(`  - Est le demandeur: ${demande.technicienId === currentUser.id}`)
+        console.log(`  - Quantités reçues:`, quantitesRecues)
         
         // Action spécifique pour le demandeur - clôturer la demande après livraison
         if (demande.status === "en_attente_validation_finale_demandeur" && demande.technicienId === currentUser.id) {
           console.log(`✅ [API] Clôture autorisée`)
+          
+          // Vérifier les quantités reçues et identifier les items manquants
+          const itemsManquants: any[] = []
+          
+          if (quantitesRecues) {
+            for (const item of demande.items) {
+              // Utiliser quantiteSortie (quantité effectivement sortie/livrée) ou quantiteValidee comme référence
+              const quantiteAttendue = item.quantiteSortie || item.quantiteValidee || item.quantiteDemandee
+              const quantiteRecue = quantitesRecues[item.id] || 0
+              const quantiteManquante = quantiteAttendue - quantiteRecue
+              
+              console.log(`📦 [CLOTURE] Article ${item.article?.nom}:`)
+              console.log(`  - Attendue: ${quantiteAttendue}`)
+              console.log(`  - Reçue: ${quantiteRecue}`)
+              console.log(`  - Manquante: ${quantiteManquante}`)
+              
+              // Mettre à jour la quantité reçue sur l'item
+              await prisma.itemDemande.update({
+                where: { id: item.id },
+                data: { quantiteRecue }
+              })
+              
+              if (quantiteManquante > 0) {
+                itemsManquants.push({
+                  articleId: item.articleId,
+                  quantiteDemandee: quantiteManquante,
+                  quantiteValidee: quantiteManquante,
+                  commentaire: `Quantité manquante de la demande ${demande.numero}`
+                })
+              }
+            }
+          }
+          
+          // Créer une sous-demande si nécessaire
+          if (itemsManquants.length > 0) {
+            console.log(`📋 [CLOTURE] Création d'une sous-demande avec ${itemsManquants.length} article(s) manquant(s)`)
+            
+            const sousDemande = await prisma.demande.create({
+              data: {
+                id: crypto.randomUUID(),
+                numero: `${demande.numero}-SD-${Date.now().toString().slice(-4)}`,
+                type: demande.type,
+                projetId: demande.projetId,
+                technicienId: demande.technicienId,
+                status: "soumise",
+                commentaires: `Sous-demande créée automatiquement suite à réception partielle de ${demande.numero}. ${commentaire || ''}`,
+                dateLivraisonSouhaitee: demande.dateLivraisonSouhaitee,
+                dateModification: new Date(),
+                items: {
+                  create: itemsManquants.map(item => ({
+                    id: crypto.randomUUID(),
+                    ...item
+                  }))
+                }
+              }
+            })
+            
+            console.log(`✅ [CLOTURE] Sous-demande créée: ${sousDemande.numero}`)
+            
+            // Ajouter une entrée dans l'historique
+            await prisma.historyEntry.create({
+              data: {
+                id: crypto.randomUUID(),
+                demandeId: demande.id,
+                userId: currentUser.id,
+                action: "creation_sous_demande",
+                commentaire: `Sous-demande ${sousDemande.numero} créée automatiquement pour ${itemsManquants.length} article(s) manquant(s)`,
+                ancienStatus: demande.status,
+                nouveauStatus: "cloturee",
+                signature: `creation_sous_demande_${currentUser.id}_${Date.now()}`
+              }
+            })
+          }
           
           // Marquer toutes les livraisons comme livrées
           await prisma.livraison.updateMany({

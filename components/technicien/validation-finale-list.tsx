@@ -8,12 +8,14 @@ import { useStore } from "@/stores/useStore"
 import { CheckCircle, Eye, Package } from 'lucide-react'
 import type { Demande } from "@/types"
 import DemandeDetailsModal from "@/components/modals/demande-details-modal"
+import ClotureConfirmationModal from "@/components/modals/cloture-confirmation-modal"
 
 export default function ValidationFinaleList() {
   const { currentUser, demandes, loadDemandes, executeAction, isLoading, error } = useStore()
   const [demandesAValider, setDemandesAValider] = useState<Demande[]>([])
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
+  const [clotureModalOpen, setClotureModalOpen] = useState(false)
   const [selectedDemande, setSelectedDemande] = useState<Demande | null>(null)
 
   useEffect(() => {
@@ -35,15 +37,25 @@ export default function ValidationFinaleList() {
     }
   }, [currentUser, demandes])
 
-  const handleValidationFinale = async (demandeId: string) => {
-    setActionLoading(demandeId)
+  const handleOpenClotureModal = (demande: Demande) => {
+    setSelectedDemande(demande)
+    setClotureModalOpen(true)
+  }
+
+  const handleConfirmCloture = async (quantitesRecues: { [itemId: string]: number }, commentaire: string) => {
+    if (!selectedDemande) return
+
+    setActionLoading(selectedDemande.id)
 
     try {
-      const commentaire = prompt("Commentaire pour la réception (optionnel):")
-
-      const success = await executeAction(demandeId, "cloturer", { commentaire })
+      const success = await executeAction(selectedDemande.id, "cloturer", { 
+        quantitesRecues,
+        commentaire 
+      })
+      
       if (success) {
         await loadDemandes()
+        setClotureModalOpen(false)
         setDetailsModalOpen(false)
         setSelectedDemande(null)
       } else {
@@ -64,25 +76,9 @@ export default function ValidationFinaleList() {
 
   const handleModalClosure = async (action: "valider" | "rejeter" | "valider_sortie" | "cloturer", quantites?: { [itemId: string]: number }, commentaire?: string) => {
     if (selectedDemande) {
-      setActionLoading(selectedDemande.id)
-
-      try {
-        // Pour ce composant, toutes les actions sont traitées comme "cloturer"
-        const success = await executeAction(selectedDemande.id, "cloturer", { commentaire: commentaire || "" })
-        
-        if (success) {
-          await loadDemandes()
-          setDetailsModalOpen(false)
-          setSelectedDemande(null)
-        } else {
-          alert(error || "Erreur lors de la clôture")
-        }
-      } catch (err) {
-        console.error("Erreur lors de la clôture:", err)
-        alert("Erreur lors de la clôture")
-      } finally {
-        setActionLoading(null)
-      }
+      // Ouvrir le modal de clôture au lieu de clôturer directement
+      setDetailsModalOpen(false)
+      setClotureModalOpen(true)
     }
   }
 
@@ -137,7 +133,7 @@ export default function ValidationFinaleList() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleValidationFinale(demande.id)}
+                      onClick={() => handleOpenClotureModal(demande)}
                       disabled={actionLoading === demande.id}
                       className="text-green-600 hover:text-green-700 hover:bg-green-50 flex-1 sm:flex-none min-h-[44px]"
                     >
@@ -174,6 +170,18 @@ export default function ValidationFinaleList() {
         }}
         demandeId={selectedDemande?.id || null}
         mode="view"
+      />
+
+      {/* Modal de confirmation de clôture avec saisie des quantités */}
+      <ClotureConfirmationModal
+        isOpen={clotureModalOpen}
+        onClose={() => {
+          setClotureModalOpen(false)
+          setSelectedDemande(null)
+        }}
+        demande={selectedDemande}
+        onConfirm={handleConfirmCloture}
+        isLoading={!!actionLoading}
       />
     </Card>
   )

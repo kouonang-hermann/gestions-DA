@@ -215,7 +215,7 @@ export default function PreparationOutillageList() {
                                 </span>
                                 {item.prixUnitaire && (
                                   <span className="text-blue-600 font-medium">
-                                    {item.prixUnitaire.toFixed(2)} €
+                                    {item.prixUnitaire.toFixed(0)} FCFA
                                   </span>
                                 )}
                               </div>
@@ -346,7 +346,7 @@ export default function PreparationOutillageList() {
                   </p>
                 </div>
                 <div className="w-32">
-                  <Label htmlFor={`prix-${item.id}`} className="text-xs">Prix unitaire (€)</Label>
+                  <Label htmlFor={`prix-${item.id}`} className="text-xs">Prix unitaire (FCFA)</Label>
                   <Input
                     id={`prix-${item.id}`}
                     type="number"

@@ -120,7 +120,7 @@ export default function RemoveItemConfirmationModal({
               {item.article.prixUnitaire && (
                 <div className="flex items-center gap-2">
                   <strong className="text-blue-800">Prix unitaire :</strong>
-                  <span className="text-blue-700">{Number(item.article.prixUnitaire).toFixed(2)}€</span>
+                  <span className="text-blue-700">{Number(item.article.prixUnitaire).toFixed(0)} FCFA</span>
                 </div>
               )}
             </div>

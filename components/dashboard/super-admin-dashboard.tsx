@@ -717,10 +717,10 @@ export default function SuperAdminDashboard() {
                                 {coutMateriel > 0 ? `${coutMateriel.toLocaleString('fr-FR')} €` : '-'}
                               </td>
                               <td className="p-2 text-center text-purple-600">
-                                {coutOutillage > 0 ? `${coutOutillage.toLocaleString('fr-FR')} €` : '-'}
+                                {coutOutillage > 0 ? `${coutOutillage.toLocaleString('fr-FR')} FCFA` : '-'}
                               </td>
                               <td className="p-2 text-right font-bold text-green-700">
-                                {coutTotal > 0 ? `${coutTotal.toLocaleString('fr-FR')} €` : '-'}
+                                {coutTotal > 0 ? `${coutTotal.toLocaleString('fr-FR')} FCFA` : '-'}
                               </td>
                             </tr>
                           )
@@ -731,13 +731,13 @@ export default function SuperAdminDashboard() {
                           <td className="p-2">TOTAL</td>
                           <td className="p-2 text-center">{demandesFiltrees.length}</td>
                           <td className="p-2 text-center text-blue-700">
-                            {demandesFiltrees.filter(d => d.type === 'materiel').reduce((sum, d) => sum + (d.coutTotal || 0), 0).toLocaleString('fr-FR')} €
+                            {demandesFiltrees.filter(d => d.type === 'materiel').reduce((sum, d) => sum + (d.coutTotal || 0), 0).toLocaleString('fr-FR')} FCFA
                           </td>
                           <td className="p-2 text-center text-purple-700">
-                            {demandesFiltrees.filter(d => d.type === 'outillage').reduce((sum, d) => sum + (d.coutTotal || 0), 0).toLocaleString('fr-FR')} €
+                            {demandesFiltrees.filter(d => d.type === 'outillage').reduce((sum, d) => sum + (d.coutTotal || 0), 0).toLocaleString('fr-FR')} FCFA
                           </td>
                           <td className="p-2 text-right text-green-800">
-                            {demandesFiltrees.reduce((sum, d) => sum + (d.coutTotal || 0), 0).toLocaleString('fr-FR')} €
+                            {demandesFiltrees.reduce((sum, d) => sum + (d.coutTotal || 0), 0).toLocaleString('fr-FR')} FCFA
                           </td>
                         </tr>
                       </tfoot>

@@ -115,7 +115,7 @@ export default function SousDemandesList() {
 
                           {demande.budgetPrevisionnel && (
                             <p className="text-xs text-gray-600 mt-1 font-medium">
-                              Budget: {demande.budgetPrevisionnel.toFixed(2)} €
+                              Budget: {demande.budgetPrevisionnel.toFixed(0)} FCFA
                             </p>
                           )}
                         </div>
