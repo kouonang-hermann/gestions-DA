@@ -52,7 +52,7 @@ export default function LivraisonsAEffectuer() {
 
     setActionLoading(demandeId)
     try {
-      const success = await executeAction(demandeId, "livraison_effectuee", {
+      const success = await executeAction(demandeId, "valider_livraison", {
         commentaire: "Livraison effective validée par le livreur"
       })
       if (!success) {

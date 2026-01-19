@@ -407,43 +407,75 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         break
 
       case "valider_reception":
-        console.log(`📦 [VALIDER-RECEPTION] Vérifications:`)
+        console.log(`📦 [VALIDER-RECEPTION] Vérifications détaillées:`)
         console.log(`  - Status demande: ${demande.status}`)
-        console.log(`  - Livreur assigné: ${demande.livreurAssigneId}`)
-        console.log(`  - Utilisateur actuel: ${currentUser.id}`)
-        console.log(`  - Est le livreur: ${demande.livreurAssigneId === currentUser.id}`)
+        console.log(`  - Livreur assigné ID: ${demande.livreurAssigneId}`)
+        console.log(`  - Utilisateur actuel ID: ${currentUser.id}`)
+        console.log(`  - Utilisateur actuel rôle: ${currentUser.role}`)
+        console.log(`  - Utilisateur actuel nom: ${currentUser.nom}`)
+        console.log(`  - Comparaison stricte: ${demande.livreurAssigneId === currentUser.id}`)
+        console.log(`  - Type livreurAssigneId: ${typeof demande.livreurAssigneId}`)
+        console.log(`  - Type currentUser.id: ${typeof currentUser.id}`)
         
-        // Première validation : le livreur reçoit le matériel à livrer
-        if (demande.status === "en_attente_reception_livreur" && demande.livreurAssigneId === currentUser.id) {
-          console.log(`✅ [VALIDER-RECEPTION] Réception du matériel validée`)
-          newStatus = "en_attente_livraison"
-        } else if (demande.status !== "en_attente_reception_livreur") {
+        // Vérifier d'abord le statut
+        if (demande.status !== "en_attente_reception_livreur") {
           console.log(`❌ [VALIDER-RECEPTION] Statut incorrect: ${demande.status}`)
-          return NextResponse.json({ success: false, error: "La demande n'est pas en attente de réception" }, { status: 403 })
-        } else {
-          console.log(`❌ [VALIDER-RECEPTION] Utilisateur non autorisé`)
-          return NextResponse.json({ success: false, error: "Seul le livreur assigné peut valider la réception" }, { status: 403 })
+          return NextResponse.json({ 
+            success: false, 
+            error: `La demande n'est pas en attente de réception (statut actuel: ${demande.status})` 
+          }, { status: 403 })
         }
+        
+        // Vérifier que l'utilisateur est bien le livreur assigné
+        if (demande.livreurAssigneId !== currentUser.id) {
+          console.log(`❌ [VALIDER-RECEPTION] Utilisateur non autorisé`)
+          console.log(`  - Attendu: ${demande.livreurAssigneId}`)
+          console.log(`  - Reçu: ${currentUser.id}`)
+          return NextResponse.json({ 
+            success: false, 
+            error: "Seul le livreur assigné peut valider la réception" 
+          }, { status: 403 })
+        }
+        
+        // Tout est OK, valider la réception
+        console.log(`✅ [VALIDER-RECEPTION] Réception du matériel validée par ${currentUser.nom} (${currentUser.role})`)
+        newStatus = "en_attente_livraison"
         break
 
       case "valider_livraison":
-        console.log(`🚚 [VALIDER-LIVRAISON] Vérifications:`)
+        console.log(`🚚 [VALIDER-LIVRAISON] Vérifications détaillées:`)
         console.log(`  - Status demande: ${demande.status}`)
-        console.log(`  - Livreur assigné: ${demande.livreurAssigneId}`)
-        console.log(`  - Utilisateur actuel: ${currentUser.id}`)
-        console.log(`  - Est le livreur: ${demande.livreurAssigneId === currentUser.id}`)
+        console.log(`  - Livreur assigné ID: ${demande.livreurAssigneId}`)
+        console.log(`  - Utilisateur actuel ID: ${currentUser.id}`)
+        console.log(`  - Utilisateur actuel rôle: ${currentUser.role}`)
+        console.log(`  - Utilisateur actuel nom: ${currentUser.nom}`)
+        console.log(`  - Comparaison stricte: ${demande.livreurAssigneId === currentUser.id}`)
+        console.log(`  - Type livreurAssigneId: ${typeof demande.livreurAssigneId}`)
+        console.log(`  - Type currentUser.id: ${typeof currentUser.id}`)
         
-        // Deuxième validation : le livreur livre effectivement le matériel au demandeur
-        if (demande.status === "en_attente_livraison" && demande.livreurAssigneId === currentUser.id) {
-          console.log(`✅ [VALIDER-LIVRAISON] Livraison effective validée`)
-          newStatus = "en_attente_validation_finale_demandeur"
-        } else if (demande.status !== "en_attente_livraison") {
+        // Vérifier d'abord le statut
+        if (demande.status !== "en_attente_livraison") {
           console.log(`❌ [VALIDER-LIVRAISON] Statut incorrect: ${demande.status}`)
-          return NextResponse.json({ success: false, error: "La demande n'est pas en attente de livraison" }, { status: 403 })
-        } else {
-          console.log(`❌ [VALIDER-LIVRAISON] Utilisateur non autorisé`)
-          return NextResponse.json({ success: false, error: "Seul le livreur assigné peut valider la livraison" }, { status: 403 })
+          return NextResponse.json({ 
+            success: false, 
+            error: `La demande n'est pas en attente de livraison (statut actuel: ${demande.status})` 
+          }, { status: 403 })
         }
+        
+        // Vérifier que l'utilisateur est bien le livreur assigné
+        if (demande.livreurAssigneId !== currentUser.id) {
+          console.log(`❌ [VALIDER-LIVRAISON] Utilisateur non autorisé`)
+          console.log(`  - Attendu: ${demande.livreurAssigneId}`)
+          console.log(`  - Reçu: ${currentUser.id}`)
+          return NextResponse.json({ 
+            success: false, 
+            error: "Seul le livreur assigné peut valider la livraison" 
+          }, { status: 403 })
+        }
+        
+        // Tout est OK, valider la livraison
+        console.log(`✅ [VALIDER-LIVRAISON] Livraison effective validée par ${currentUser.nom} (${currentUser.role})`)
+        newStatus = "en_attente_validation_finale_demandeur"
         break
 
       case "cloturer":
