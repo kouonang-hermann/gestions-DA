@@ -65,27 +65,34 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
 
     // Préparer les données pour création
     for (const item of items) {
-      // Chercher si l'article existe déjà
-      let article = existingArticles.find(a => 
-        a.reference === item.article.reference && 
-        a.nom === item.article.nom
-      )
-
       let articleId: string
-      if (!article) {
-        // Préparer la création du nouvel article
-        articleId = crypto.randomUUID()
-        articlesData.push({
-          id: articleId,
-          nom: item.article.nom,
-          description: item.article.description || "",
-          reference: item.article.reference,
-          unite: item.article.unite,
-          type: item.article.type,
-          updatedAt: new Date(),
-        })
+
+      // Si l'item a déjà un articleId (modification d'un item existant), le réutiliser
+      if (item.articleId && !item.articleId.startsWith('temp-')) {
+        articleId = item.articleId
       } else {
-        articleId = article.id
+        // Chercher si l'article existe déjà dans la base
+        const existingArticle = existingArticles.find(a => 
+          a.reference === item.article.reference && 
+          a.nom === item.article.nom
+        )
+
+        if (existingArticle) {
+          // Réutiliser l'article existant
+          articleId = existingArticle.id
+        } else {
+          // Créer un nouvel article seulement si nécessaire
+          articleId = crypto.randomUUID()
+          articlesData.push({
+            id: articleId,
+            nom: item.article.nom,
+            description: item.article.description || "",
+            reference: item.article.reference,
+            unite: item.article.unite,
+            type: item.article.type,
+            updatedAt: new Date(),
+          })
+        }
       }
 
       // Préparer l'item de demande
