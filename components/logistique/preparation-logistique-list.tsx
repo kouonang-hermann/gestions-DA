@@ -35,12 +35,28 @@ export default function PreparationLogistiqueList() {
 
   useEffect(() => {
     if (currentUser) {
+      console.log(`🔍 [PREPARATION-LOGISTIQUE] Filtrage pour ${currentUser.nom} (${currentUser.role}):`)
+      console.log(`  - Total demandes: ${demandes.length}`)
+      console.log(`  - Projets utilisateur:`, currentUser.projets)
+      
+      // Afficher toutes les demandes avec leurs détails
+      demandes.forEach(d => {
+        console.log(`  • ${d.numero}: type=${d.type}, status=${d.status}, projetId=${d.projetId}`)
+      })
+      
       const filtered = demandes.filter((d) => 
         d.type === "outillage" && // OUTILLAGE UNIQUEMENT
         d.status === "en_attente_preparation_logistique" &&
         // Filtrer par projet si l'utilisateur a des projets assignés
         (!currentUser.projets || currentUser.projets.length === 0 || currentUser.projets.includes(d.projetId))
       )
+      
+      console.log(`  - Demandes à préparer (outillage + en_attente_preparation_logistique): ${filtered.length}`)
+      if (filtered.length > 0) {
+        console.log(`  - IDs des demandes à préparer:`, filtered.map(d => d.numero))
+      } else {
+        console.log(`  ⚠️ Aucune demande d'outillage avec statut "en_attente_preparation_logistique"`)
+      }
       
       setDemandesAPreparer(filtered)
     }

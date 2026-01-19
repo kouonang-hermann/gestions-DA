@@ -9,6 +9,7 @@ import { useStore } from "@/stores/useStore"
 import { CheckCircle, Package, Clock, Eye } from "lucide-react"
 import type { Demande } from "@/types"
 import DemandeDetailsModal from "@/components/modals/demande-details-modal"
+import ClotureConfirmationModal from "@/components/modals/cloture-confirmation-modal"
 
 export default function MesDemandesACloturer() {
   const { currentUser, demandes, loadDemandes, executeAction, isLoading } = useStore()
@@ -16,6 +17,8 @@ export default function MesDemandesACloturer() {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
   const [selectedDemandeId, setSelectedDemandeId] = useState<string | null>(null)
+  const [clotureModalOpen, setClotureModalOpen] = useState(false)
+  const [selectedDemande, setSelectedDemande] = useState<Demande | null>(null)
 
   useEffect(() => {
     if (currentUser && demandes) {
@@ -51,23 +54,49 @@ export default function MesDemandesACloturer() {
     }
   }, [currentUser, demandes])
 
-  const handleCloturer = async (demandeId: string) => {
-    setActionLoading(demandeId)
+  const handleOpenClotureModal = (demande: Demande) => {
+    console.log('🎯 [MES-DEMANDES-A-CLOTURER] Ouverture du modal de clôture pour:', demande.numero)
+    setSelectedDemande(demande)
+    setClotureModalOpen(true)
+  }
+
+  const handleConfirmCloture = async (quantitesRecues: { [itemId: string]: number }, commentaire: string) => {
+    console.log('🔄 [MES-DEMANDES-A-CLOTURER] handleConfirmCloture appelé')
+    console.log('  - Demande sélectionnée:', selectedDemande?.numero)
+    console.log('  - Quantités reçues:', quantitesRecues)
+    console.log('  - Commentaire:', commentaire)
     
+    if (!selectedDemande) {
+      console.log('❌ [MES-DEMANDES-A-CLOTURER] Pas de demande sélectionnée')
+      return
+    }
+
+    setActionLoading(selectedDemande.id)
+    console.log('⏳ [MES-DEMANDES-A-CLOTURER] Appel de executeAction...')
+
     try {
-      const commentaire = prompt("Commentaire de clôture (optionnel) :")
-      
-      const success = await executeAction(demandeId, "cloturer", { 
-        commentaire: commentaire || "Demande clôturée par le demandeur" 
+      const success = await executeAction(selectedDemande.id, "cloturer", { 
+        quantitesRecues,
+        commentaire 
       })
       
+      console.log('📊 [MES-DEMANDES-A-CLOTURER] Résultat executeAction:', success)
+      
       if (success) {
+        console.log('✅ [MES-DEMANDES-A-CLOTURER] Clôture réussie, rechargement des demandes')
         await loadDemandes()
+        setClotureModalOpen(false)
+        setSelectedDemande(null)
+      } else {
+        console.log('❌ [MES-DEMANDES-A-CLOTURER] Échec de la clôture')
+        alert("Erreur lors de la clôture")
       }
     } catch (error) {
-      console.error("Erreur lors de la clôture:", error)
+      console.error("❌ [MES-DEMANDES-A-CLOTURER] Exception lors de la clôture:", error)
+      alert("Erreur lors de la clôture")
     } finally {
       setActionLoading(null)
+      console.log('🏁 [MES-DEMANDES-A-CLOTURER] Fin du processus de clôture')
     }
   }
 
@@ -202,7 +231,7 @@ export default function MesDemandesACloturer() {
                       
                       <Button
                         size="sm"
-                        onClick={() => handleCloturer(demande.id)}
+                        onClick={() => handleOpenClotureModal(demande)}
                         disabled={actionLoading === demande.id}
                         className="bg-blue-600 hover:bg-blue-700 text-white"
                       >
@@ -234,6 +263,18 @@ export default function MesDemandesACloturer() {
           mode="view"
         />
       )}
+
+      {/* Modal de confirmation de clôture avec saisie des quantités */}
+      <ClotureConfirmationModal
+        isOpen={clotureModalOpen}
+        onClose={() => {
+          setClotureModalOpen(false)
+          setSelectedDemande(null)
+        }}
+        demande={selectedDemande}
+        onConfirm={handleConfirmCloture}
+        isLoading={!!actionLoading}
+      />
     </>
   )
 }

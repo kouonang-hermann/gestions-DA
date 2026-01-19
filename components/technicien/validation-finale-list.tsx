@@ -43,9 +43,18 @@ export default function ValidationFinaleList() {
   }
 
   const handleConfirmCloture = async (quantitesRecues: { [itemId: string]: number }, commentaire: string) => {
-    if (!selectedDemande) return
+    console.log('🔄 [VALIDATION-FINALE] handleConfirmCloture appelé')
+    console.log('  - Demande sélectionnée:', selectedDemande?.numero)
+    console.log('  - Quantités reçues:', quantitesRecues)
+    console.log('  - Commentaire:', commentaire)
+    
+    if (!selectedDemande) {
+      console.log('❌ [VALIDATION-FINALE] Pas de demande sélectionnée')
+      return
+    }
 
     setActionLoading(selectedDemande.id)
+    console.log('⏳ [VALIDATION-FINALE] Appel de executeAction...')
 
     try {
       const success = await executeAction(selectedDemande.id, "cloturer", { 
@@ -53,19 +62,24 @@ export default function ValidationFinaleList() {
         commentaire 
       })
       
+      console.log('📊 [VALIDATION-FINALE] Résultat executeAction:', success)
+      
       if (success) {
+        console.log('✅ [VALIDATION-FINALE] Clôture réussie, rechargement des demandes')
         await loadDemandes()
         setClotureModalOpen(false)
         setDetailsModalOpen(false)
         setSelectedDemande(null)
       } else {
+        console.log('❌ [VALIDATION-FINALE] Échec de la clôture:', error)
         alert(error || "Erreur lors de la clôture")
       }
     } catch (err) {
-      console.error("Erreur lors de la clôture:", err)
+      console.error("❌ [VALIDATION-FINALE] Exception lors de la clôture:", err)
       alert("Erreur lors de la clôture")
     } finally {
       setActionLoading(null)
+      console.log('🏁 [VALIDATION-FINALE] Fin du processus de clôture')
     }
   }
 

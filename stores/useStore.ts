@@ -691,20 +691,31 @@ export const useStore = create<AppState>()(
       },
 
       executeAction: async (demandeId: string, action: string, data = {}) => {
+        console.log('🚀 [STORE] executeAction appelé')
+        console.log('  - demandeId:', demandeId)
+        console.log('  - action:', action)
+        console.log('  - data:', data)
+        
         const { currentUser, token, demandes } = get()
-        if (!currentUser || !token) return false
+        if (!currentUser || !token) {
+          console.log('❌ [STORE] Pas d\'utilisateur ou token')
+          return false
+        }
 
         // Trouver la demande concernée
         const demande = demandes.find(d => d.id === demandeId)
         if (!demande) {
-          console.error("[EXECUTE-ACTION] Demande non trouvée:", demandeId)
+          console.error("❌ [STORE] Demande non trouvée:", demandeId)
           return false
         }
+
+        console.log('📋 [STORE] Demande trouvée:', demande.numero, '- Statut:', demande.status)
 
         // Calculer le prochain statut avec auto-validation
         let targetStatus = null
         if (action === "valider") {
           targetStatus = get().getNextStatusWithAutoValidation(demande, demande.status, action)
+          console.log('🎯 [STORE] Target status calculé:', targetStatus)
         }
 
         try {
@@ -713,6 +724,8 @@ export const useStore = create<AppState>()(
             targetStatus, // Envoyer le statut cible au backend
             ...data
           }
+
+          console.log('📤 [STORE] Envoi de la requête API avec payload:', payload)
 
           const response = await fetch(`/api/demandes/${demandeId}/actions`, {
             method: "POST",
@@ -723,7 +736,10 @@ export const useStore = create<AppState>()(
             body: JSON.stringify(payload),
           })
 
+          console.log('📥 [STORE] Réponse API reçue - Status:', response.status)
+
           const result = await response.json()
+          console.log('📊 [STORE] Résultat API:', result)
 
           if (result.success) {
             // Mettre à jour la demande dans le store
