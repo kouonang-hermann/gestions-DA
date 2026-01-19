@@ -110,27 +110,29 @@ export default function ResponsableLogistiqueDashboard() {
       // Filtrer les demandes des projets où le responsable logistique travaille
       // Si pas de projets assignés, voir toutes les demandes (comportement superadmin)
       const mesDemandesLogistique = demandes.filter((d) => 
-        !currentUser.projets || 
-        currentUser.projets.length === 0 || 
-        currentUser.projets.includes(d.projetId)
+        d && d.projetId && (
+          !currentUser.projets || 
+          currentUser.projets.length === 0 || 
+          currentUser.projets.includes(d.projetId)
+        )
       )
       
       // 1. MES DEMANDES CRÉÉES (en tant que demandeur)
-      const mesDemandesCreees = mesDemandesLogistique.filter((d) => d.technicienId === currentUser.id)
+      const mesDemandesCreees = mesDemandesLogistique.filter((d) => d && d.technicienId === currentUser.id)
 
       // 2. DEMANDES À VALIDER (1ère validation logistique - outillage)
       const demandesAValider = mesDemandesLogistique.filter((d) => 
-        d.type === "outillage" && d.status === "en_attente_validation_logistique"
+        d && d.type === "outillage" && d.status === "en_attente_validation_logistique"
       )
       
       // 3. DEMANDES À PRÉPARER (préparation logistique - outillage après validation chargé affaire)
       const demandesAPreparer = mesDemandesLogistique.filter((d) => 
-        d.type === "outillage" && d.status === "en_attente_preparation_logistique"
+        d && d.type === "outillage" && d.status === "en_attente_preparation_logistique"
       )
       
       // 4. DEMANDES EN COURS DE LIVRAISON (réception + livraison)
       const demandesEnCoursLivraison = mesDemandesLogistique.filter((d) => 
-        d.type === "outillage" && (
+        d && d.type === "outillage" && d.status && (
           d.status === "en_attente_reception_livreur" || 
           d.status === "en_attente_livraison"
         )
@@ -139,7 +141,7 @@ export default function ResponsableLogistiqueDashboard() {
       // 5. DEMANDES VALIDÉES (toutes les demandes outillage validées par le responsable logistique)
       // Inclut : APRÈS validation initiale + préparation + livraison + terminées
       const demandesValidees = mesDemandesLogistique.filter((d) => 
-        d.type === "outillage" && (
+        d && d.type === "outillage" && d.status && (
           d.status === "en_attente_validation_responsable_travaux" || // Validée aujourd'hui par logistique
           d.status === "en_attente_validation_charge_affaire" ||
           d.status === "en_attente_preparation_logistique" ||

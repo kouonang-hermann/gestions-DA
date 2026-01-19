@@ -48,47 +48,75 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
       }, { status: 403 })
     }
 
-    // Supprimer les anciens items
-    await prisma.itemDemande.deleteMany({
-      where: { demandeId: params.id }
-    })
-
-    // Créer les nouveaux items
+    // Préparer les données pour création en batch
     const items = body.items || []
-    for (const item of items) {
-      // Créer ou récupérer l'article
-      let article = await prisma.article.findFirst({
-        where: {
+    const articlesData = []
+    const itemsData = []
+
+    // Récupérer tous les articles existants en une seule requête
+    const existingArticles = await prisma.article.findMany({
+      where: {
+        OR: items.map((item: any) => ({
           reference: item.article.reference,
           nom: item.article.nom
-        }
+        }))
+      }
+    })
+
+    // Préparer les données pour création
+    for (const item of items) {
+      // Chercher si l'article existe déjà
+      let article = existingArticles.find(a => 
+        a.reference === item.article.reference && 
+        a.nom === item.article.nom
+      )
+
+      let articleId: string
+      if (!article) {
+        // Préparer la création du nouvel article
+        articleId = crypto.randomUUID()
+        articlesData.push({
+          id: articleId,
+          nom: item.article.nom,
+          description: item.article.description || "",
+          reference: item.article.reference,
+          unite: item.article.unite,
+          type: item.article.type,
+          updatedAt: new Date(),
+        })
+      } else {
+        articleId = article.id
+      }
+
+      // Préparer l'item de demande
+      itemsData.push({
+        id: crypto.randomUUID(),
+        demandeId: params.id,
+        articleId: articleId,
+        quantiteDemandee: item.quantiteDemandee,
+        commentaire: item.commentaire,
+      })
+    }
+
+    // Utiliser une transaction pour garantir la cohérence
+    await prisma.$transaction(async (tx) => {
+      // Supprimer les anciens items
+      await tx.itemDemande.deleteMany({
+        where: { demandeId: params.id }
       })
 
-      if (!article) {
-        article = await prisma.article.create({
-          data: {
-            id: crypto.randomUUID(),
-            nom: item.article.nom,
-            description: item.article.description || "",
-            reference: item.article.reference,
-            unite: item.article.unite,
-            type: item.article.type,
-            updatedAt: new Date(),
-          }
+      // Créer tous les nouveaux articles en batch
+      if (articlesData.length > 0) {
+        await tx.article.createMany({
+          data: articlesData
         })
       }
 
-      // Créer l'item de demande
-      await prisma.itemDemande.create({
-        data: {
-          id: crypto.randomUUID(),
-          demandeId: params.id,
-          articleId: article.id,
-          quantiteDemandee: item.quantiteDemandee,
-          commentaire: item.commentaire,
-        }
+      // Créer tous les items en batch
+      await tx.itemDemande.createMany({
+        data: itemsData
       })
-    }
+    })
 
     // Mettre à jour les autres champs de la demande
     const updatedDemande = await prisma.demande.update({

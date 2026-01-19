@@ -79,38 +79,45 @@ export const PATCH = withAuth(async (request: NextRequest, currentUser: any, con
       }
     }
 
-    // Supprimer les anciens items
-    await prisma.itemDemande.deleteMany({
-      where: { demandeId: params.id }
-    })
-
-    // Créer les nouveaux items
+    // Préparer les données pour création en batch
     const items = body.items || []
-    for (const item of items) {
-      // Créer un nouvel article pour chaque item (pas de réutilisation)
-      const article = await prisma.article.create({
-        data: {
-          id: crypto.randomUUID(),
-          nom: item.article.nom,
-          description: item.article.description || "",
-          reference: item.article.reference?.trim() || null,
-          unite: item.article.unite,
-          type: item.article.type,
-          updatedAt: new Date(),
-        }
+    const articlesData = items.map((item: any) => ({
+      id: crypto.randomUUID(),
+      nom: item.article.nom,
+      description: item.article.description || "",
+      reference: item.article.reference?.trim() || null,
+      unite: item.article.unite,
+      type: item.article.type,
+      updatedAt: new Date(),
+    }))
+
+    // Utiliser une transaction pour garantir la cohérence
+    await prisma.$transaction(async (tx) => {
+      // Supprimer les anciens items
+      await tx.itemDemande.deleteMany({
+        where: { demandeId: params.id }
       })
 
-      // Créer l'item de demande
-      await prisma.itemDemande.create({
-        data: {
+      // Créer tous les articles en batch
+      if (articlesData.length > 0) {
+        await tx.article.createMany({
+          data: articlesData
+        })
+
+        // Créer tous les items de demande en batch
+        const itemsData = items.map((item: any, index: number) => ({
           id: crypto.randomUUID(),
           demandeId: params.id,
-          articleId: article.id,
+          articleId: articlesData[index].id,
           quantiteDemandee: item.quantiteDemandee,
           commentaire: item.commentaire,
-        }
-      })
-    }
+        }))
+
+        await tx.itemDemande.createMany({
+          data: itemsData
+        })
+      }
+    })
 
     // Mettre à jour les autres champs de la demande
     const updatedDemande = await prisma.demande.update({

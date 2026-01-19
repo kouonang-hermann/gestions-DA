@@ -324,8 +324,8 @@ export const GET = async (request: NextRequest) => {
 
     // Filtrer les données financières pour les non-superadmin
     const filteredDemandes = demandes.map((demande: any) => {
-      if (currentUser.role === 'superadmin') {
-        // Le superadmin voit tout, y compris les prix
+      if (currentUser.role === 'superadmin' || currentUser.role === 'responsable_logistique') {
+        // Le superadmin et le responsable logistique voient tout, y compris les prix
         return demande
       } else {
         // Les autres utilisateurs ne voient PAS les prix

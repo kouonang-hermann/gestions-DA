@@ -1,0 +1,178 @@
+/* Styles spécifiques pour la validation mobile */
+
+/* Touch targets optimisés pour mobile (minimum 44px) */
+.mobile-touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Boutons de validation mobile */
+.mobile-validation-btn {
+  @apply min-h-[44px] w-full sm:w-auto px-4 py-3 sm:py-2 text-sm sm:text-base;
+  @apply flex items-center justify-center gap-2;
+  @apply transition-all duration-200;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Carte de demande responsive */
+.mobile-demande-card {
+  @apply bg-white p-3 sm:p-4 rounded-lg border border-gray-200;
+  @apply hover:shadow-sm transition-shadow;
+}
+
+/* Layout flexible pour mobile */
+.mobile-validation-layout {
+  @apply flex flex-col sm:flex-row sm:items-center justify-between gap-3;
+}
+
+/* Contenu de demande */
+.mobile-demande-content {
+  @apply flex-1 min-w-0;
+}
+
+/* Badges responsive */
+.mobile-badge {
+  @apply text-xs whitespace-normal break-words max-w-full;
+}
+
+/* Texte responsive */
+.mobile-text-sm {
+  @apply text-xs sm:text-sm;
+}
+
+.mobile-text-base {
+  @apply text-sm sm:text-base;
+}
+
+/* Groupe de boutons d'action */
+.mobile-action-buttons {
+  @apply flex flex-wrap gap-2;
+}
+
+/* Bouton d'action individuel */
+.mobile-action-btn {
+  @apply flex-1 sm:flex-none min-h-[44px];
+}
+
+/* Modal responsive */
+.mobile-modal-content {
+  @apply w-[95vw] max-w-6xl max-h-[90vh] overflow-y-auto;
+  @apply p-3 sm:p-4 md:p-6;
+}
+
+/* Boutons de modal empilés sur mobile */
+.mobile-modal-buttons {
+  @apply flex flex-col sm:flex-row justify-center gap-2 sm:gap-3 pt-4;
+}
+
+/* Amélioration du scroll sur mobile */
+.mobile-smooth-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Désactiver le zoom sur les inputs (iOS) */
+input[type="text"],
+input[type="number"],
+textarea,
+select {
+  font-size: 16px;
+}
+
+@media (min-width: 640px) {
+  input[type="text"],
+  input[type="number"],
+  textarea,
+  select {
+    font-size: 14px;
+  }
+}
+
+/* Amélioration de la lisibilité sur mobile */
+.mobile-truncate {
+  @apply truncate;
+}
+
+@media (max-width: 639px) {
+  .mobile-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* Espacement optimisé pour mobile */
+.mobile-spacing {
+  @apply space-y-3 sm:space-y-4;
+}
+
+/* Tableau responsive pour modal */
+.mobile-table-wrapper {
+  @apply overflow-x-auto -webkit-overflow-scrolling-touch;
+}
+
+.mobile-table-cell {
+  @apply text-center border border-gray-300 p-2 sm:p-3;
+  @apply text-xs sm:text-sm;
+}
+
+/* Feedback visuel amélioré pour le touch */
+.mobile-touch-feedback {
+  @apply active:scale-95 transition-transform duration-100;
+}
+
+/* Amélioration des zones cliquables */
+.mobile-clickable {
+  @apply cursor-pointer select-none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Loader optimisé pour mobile */
+.mobile-loader {
+  @apply animate-spin rounded-full h-4 w-4 border-b-2;
+}
+
+/* Badge de statut mobile */
+.mobile-status-badge {
+  @apply inline-flex items-center px-2 py-1 rounded text-xs font-medium;
+  @apply whitespace-nowrap;
+}
+
+/* Container de validation mobile */
+.mobile-validation-container {
+  @apply max-w-full overflow-hidden;
+}
+
+/* Amélioration de la performance du scroll */
+.mobile-scroll-container {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  will-change: scroll-position;
+}
+
+/* Désactiver les effets hover sur mobile */
+@media (hover: none) {
+  .hover\:shadow-sm {
+    box-shadow: none;
+  }
+  
+  .hover\:bg-green-50,
+  .hover\:bg-red-50,
+  .hover\:bg-blue-50,
+  .hover\:bg-gray-50 {
+    background-color: transparent;
+  }
+}
+
+/* Amélioration des transitions sur mobile */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

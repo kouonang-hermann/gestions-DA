@@ -193,7 +193,39 @@ export default function DemandeDetailModal({
       const success = await executeAction(demande.id, "update_quantites_prix", { items: itemsData })
       
       if (success) {
+        // Forcer le rechargement en réinitialisant le timestamp
+        useStore.setState({ lastDemandesLoad: 0 })
+        
+        // Recharger les demandes
         await loadDemandes()
+        
+        // Attendre que le store soit complètement mis à jour
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        
+        // Recharger la demande depuis le store mis à jour
+        const updatedDemande = demandes.find(d => d.id === demande.id)
+        if (updatedDemande) {
+          console.log('📊 Demande rechargée:', updatedDemande)
+          console.log('💰 Coût total:', updatedDemande.coutTotal)
+          console.log('📦 Items avec prix:', updatedDemande.items.map(i => ({ 
+            id: i.id, 
+            prixUnitaire: i.prixUnitaire,
+            quantiteSortie: i.quantiteSortie 
+          })))
+          
+          setDemande(updatedDemande)
+          
+          // Réinitialiser les valeurs éditables avec les nouvelles données
+          const newQtes: { [itemId: string]: string } = {}
+          const newPrix: { [itemId: string]: string } = {}
+          updatedDemande.items.forEach(item => {
+            newQtes[item.id] = (item.quantiteSortie || item.quantiteRecue || 0).toString()
+            newPrix[item.id] = item.prixUnitaire?.toString() || ""
+          })
+          setQuantitesLivrees(newQtes)
+          setPrixUnitaires(newPrix)
+        }
+        
         alert("Quantités et prix enregistrés avec succès")
       } else {
         alert("Erreur lors de l'enregistrement")
@@ -208,7 +240,7 @@ export default function DemandeDetailModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] max-w-6xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+      <DialogContent className="w-[95vw] max-w-6xl max-h-[90vh] overflow-y-auto p-3 sm:p-4 md:p-6">
         {/* En-tête avec titre */}
         <DialogHeader>
           <DialogTitle className="text-base sm:text-xl font-bold text-center bg-[#015fc4] text-white py-3 px-4 rounded-t">
@@ -417,22 +449,24 @@ export default function DemandeDetailModal({
           </div>
 
           {/* Boutons d'action */}
-          <div className="flex justify-center gap-3 pt-4 flex-wrap">
+          <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-3 pt-4">
             {canEdit && (
               <Button 
                 onClick={handleSaveQuantitesEtPrix}
                 disabled={isSaving}
-                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded flex items-center gap-2"
+                className="w-full sm:w-auto px-4 sm:px-6 py-3 sm:py-2 bg-green-600 hover:bg-green-700 text-white rounded flex items-center justify-center gap-2 min-h-[48px] text-sm sm:text-base"
               >
                 {isSaving ? (
                   <>
                     <Loader2 className="animate-spin" size={16} />
-                    Enregistrement...
+                    <span className="hidden sm:inline">Enregistrement...</span>
+                    <span className="sm:hidden">Enregistrement...</span>
                   </>
                 ) : (
                   <>
                     <Save size={16} />
-                    Enregistrer Qté & Prix
+                    <span className="hidden sm:inline">Enregistrer Qté & Prix</span>
+                    <span className="sm:hidden">Enregistrer</span>
                   </>
                 )}
               </Button>
@@ -441,17 +475,19 @@ export default function DemandeDetailModal({
               <Button 
                 onClick={handleDownloadPDF}
                 disabled={isGeneratingPDF}
-                className="px-6 py-2 bg-[#015fc4] hover:bg-[#014a9a] text-white rounded flex items-center gap-2"
+                className="w-full sm:w-auto px-4 sm:px-6 py-3 sm:py-2 bg-[#015fc4] hover:bg-[#014a9a] text-white rounded flex items-center justify-center gap-2 min-h-[48px] text-sm sm:text-base"
               >
                 {isGeneratingPDF ? (
                   <>
                     <Loader2 className="animate-spin" size={16} />
-                    Génération...
+                    <span className="hidden sm:inline">Génération...</span>
+                    <span className="sm:hidden">PDF...</span>
                   </>
                 ) : (
                   <>
                     <Download size={16} />
-                    Télécharger PDF
+                    <span className="hidden sm:inline">Télécharger PDF</span>
+                    <span className="sm:hidden">PDF</span>
                   </>
                 )}
               </Button>
@@ -460,7 +496,7 @@ export default function DemandeDetailModal({
               <Button 
                 onClick={handleValidate}
                 disabled={isValidating}
-                className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded flex items-center gap-2"
+                className="w-full sm:w-auto px-4 sm:px-6 py-3 sm:py-2 bg-purple-600 hover:bg-purple-700 text-white rounded flex items-center justify-center gap-2 min-h-[48px] text-sm sm:text-base font-semibold"
               >
                 {isValidating ? (
                   <>
@@ -477,7 +513,7 @@ export default function DemandeDetailModal({
             )}
             <Button 
               onClick={onClose}
-              className="px-8 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded"
+              className="w-full sm:w-auto px-4 sm:px-8 py-3 sm:py-2 bg-gray-600 hover:bg-gray-700 text-white rounded min-h-[48px] text-sm sm:text-base"
             >
               Fermer
             </Button>

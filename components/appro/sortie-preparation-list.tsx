@@ -155,7 +155,7 @@ export default function SortiePreparationList() {
       
       // Appeler l'API pour mettre à jour les prix
       const responsePrix = await fetch(`/api/demandes/${selectedDemande.id}/update-prices`, {
-        method: "POST",
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,

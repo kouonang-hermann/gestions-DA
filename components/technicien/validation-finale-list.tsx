@@ -110,48 +110,50 @@ export default function ValidationFinaleList() {
             {demandesAValider.map((demande) => (
               <div  
                 key={demande.id}
-                className="bg-white p-4 rounded-lg border border-gray-200 hover:shadow-sm transition-shadow"
+                className="bg-white p-3 sm:p-4 rounded-lg border border-gray-200 hover:shadow-sm transition-shadow"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-medium text-gray-800">{demande.numero}</h3>
-                      <Badge className="bg-emerald-500 text-white text-xs">Livrée</Badge>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                      <h3 className="font-medium text-gray-800 text-sm sm:text-base">{demande.numero}</h3>
+                      <Badge className="bg-emerald-500 text-white text-xs whitespace-normal break-words max-w-full">Livrée</Badge>
                       <Badge variant="outline" className="text-xs">
                         {demande.type === "materiel" ? "Matériel" : "Outillage"}
                       </Badge>
                     </div>
-                    <p className="text-sm text-gray-600 mb-2">
+                    <p className="text-xs sm:text-sm text-gray-600 mb-2">
                       Projet: {demande.projet?.nom} • {demande.items?.length || 0} article{(demande.items?.length || 0) > 1 ? "s" : ""}
                     </p>
                     <p className="text-xs text-gray-500">
                       Livrée par la logistique • Prête pour clôture
                     </p>
                     {demande.commentaires && (
-                      <p className="text-sm text-emerald-600 bg-emerald-50 p-2 rounded mt-2">
-                        <strong>Commentaire de livraison:</strong> {demande.commentaires}
+                      <p className="text-xs sm:text-sm text-emerald-600 bg-emerald-50 p-2 rounded mt-2 truncate">
+                        <strong>Commentaire:</strong> {demande.commentaires}
                       </p>
                     )}
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleValidationFinale(demande.id)}
                       disabled={actionLoading === demande.id}
-                      className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                      className="text-green-600 hover:text-green-700 hover:bg-green-50 flex-1 sm:flex-none min-h-[44px]"
                     >
                       {actionLoading === demande.id ? (
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
                       ) : (
-                        <CheckCircle className="h-4 w-4 mr-2" />
+                        <CheckCircle className="h-4 w-4 sm:mr-2" />
                       )}
-                      Clôturer
+                      <span className="hidden sm:inline">Clôturer</span>
                     </Button>
                     <Button 
                       variant="outline" 
                       size="sm"
                       onClick={() => handleViewDetails(demande)}
+                      className="flex-1 sm:flex-none min-h-[44px]"
+                      title="Voir les détails"
                     >
                       <Eye className="h-4 w-4" />
                     </Button>

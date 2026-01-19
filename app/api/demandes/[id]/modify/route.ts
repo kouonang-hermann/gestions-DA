@@ -71,12 +71,8 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
 
     // Mettre à jour les items (articles et quantités)
     if (body.items && Array.isArray(body.items)) {
-      // Supprimer les anciens items
-      await prisma.itemDemande.deleteMany({
-        where: { demandeId: params.id }
-      })
-
-      // Créer les nouveaux items
+      // Vérifications préalables et préparation des données
+      const newArticles = []
       const processedItems = []
       
       for (const item of body.items) {
@@ -90,27 +86,25 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
           }, { status: 403 })
         }
 
-        // Si c'est un article manuel, le créer
+        // Si c'est un article manuel, préparer sa création
         if (item.articleId.startsWith('manual-') && item.article) {
-          const newArticle = await prisma.article.create({
-            data: {
-              id: crypto.randomUUID(),
-              nom: item.article.nom,
-              description: item.article.description || '',
-              reference: item.article.reference?.trim() || null,
-              unite: item.article.unite,
-              type: demande.type,
-              stock: null,
-              prixUnitaire: null,
-              updatedAt: new Date(),
-            }
+          const newArticleId = crypto.randomUUID()
+          newArticles.push({
+            id: newArticleId,
+            nom: item.article.nom,
+            description: item.article.description || '',
+            reference: item.article.reference?.trim() || null,
+            unite: item.article.unite,
+            type: demande.type,
+            stock: null,
+            prixUnitaire: null,
+            updatedAt: new Date(),
           })
-          articleId = newArticle.id
+          articleId = newArticleId
         }
 
         // Vérifier les permissions pour modifier les quantités
         if (!permissions.canModifyQuantities && item.quantiteDemandee !== undefined) {
-          // Vérifier que la quantité n'a pas changé
           const originalItem = demande.items.find(i => i.articleId === articleId)
           if (originalItem && originalItem.quantiteDemandee !== item.quantiteDemandee) {
             return NextResponse.json({ 
@@ -127,13 +121,28 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
         })
       }
 
-      // Créer les nouveaux items
-      await prisma.itemDemande.createMany({
-        data: processedItems.map(item => ({
-          id: crypto.randomUUID(),
-          ...item,
-          demandeId: params.id
-        }))
+      // Utiliser une transaction pour garantir la cohérence
+      await prisma.$transaction(async (tx) => {
+        // Supprimer les anciens items
+        await tx.itemDemande.deleteMany({
+          where: { demandeId: params.id }
+        })
+
+        // Créer tous les nouveaux articles en batch
+        if (newArticles.length > 0) {
+          await tx.article.createMany({
+            data: newArticles
+          })
+        }
+
+        // Créer tous les items en batch
+        await tx.itemDemande.createMany({
+          data: processedItems.map(item => ({
+            id: crypto.randomUUID(),
+            ...item,
+            demandeId: params.id
+          }))
+        })
       })
     }
 

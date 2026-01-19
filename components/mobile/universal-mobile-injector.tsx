@@ -145,33 +145,33 @@ export default function UniversalMobileInjector() {
   const getStats = () => {
     if (!currentUser || !demandes) return { total: 0, aValider: 0, enCours: 0, validees: 0 }
 
-    const mesDemandesCreees = demandes.filter(d => d.technicienId === currentUser.id)
+    const mesDemandesCreees = demandes.filter(d => d && d.technicienId === currentUser.id)
     const demandesProjet = demandes.filter(d => 
-      !currentUser.projets || currentUser.projets.length === 0 || currentUser.projets.includes(d.projetId)
+      d && d.projetId && (!currentUser.projets || currentUser.projets.length === 0 || currentUser.projets.includes(d.projetId))
     )
 
     // Demandes à valider selon le rôle
-    const demandesAValider = demandesProjet.filter(d => canUserValidateStep(currentUser.role, d.type, d.status))
+    const demandesAValider = demandesProjet.filter(d => d && d.type && d.status && canUserValidateStep(currentUser.role, d.type, d.status))
 
     // Livraisons assignées
     const livraisonsAssignees = demandes.filter(d => 
-      d.livreurAssigneId === currentUser.id &&
-      ["en_attente_reception_livreur", "en_attente_livraison"].includes(d.status)
+      d && d.livreurAssigneId === currentUser.id &&
+      d.status && ["en_attente_reception_livreur", "en_attente_livraison"].includes(d.status)
     )
 
     // Demandes à préparer (appro)
     const demandesAPreparer = demandesProjet.filter(d => 
-      d.type === "materiel" && d.status === "en_attente_preparation_appro"
+      d && d.type === "materiel" && d.status === "en_attente_preparation_appro"
     )
 
     // Mes demandes en cours
     const mesDemandesEnCours = mesDemandesCreees.filter(d => 
-      !["brouillon", "cloturee", "rejetee", "archivee"].includes(d.status)
+      d && d.status && !["brouillon", "cloturee", "rejetee", "archivee"].includes(d.status)
     )
 
     // Mes demandes clôturées
     const mesDemandesValidees = mesDemandesCreees.filter(d => 
-      ["cloturee", "archivee"].includes(d.status)
+      d && d.status && ["cloturee", "archivee"].includes(d.status)
     )
 
     return {
@@ -190,7 +190,7 @@ export default function UniversalMobileInjector() {
   const getDemandesRejetees = () => {
     if (!currentUser) return []
     return demandes.filter(d => 
-      d.technicienId === currentUser.id && 
+      d && d.technicienId === currentUser.id && 
       d.status === "rejetee"
     )
   }
@@ -200,17 +200,17 @@ export default function UniversalMobileInjector() {
   // Filtrer les demandes pour la modale
   const getFilteredDemandes = (type: "total" | "enCours" | "validees" | "brouillons") => {
     if (!currentUser) return []
-    const mesDemandesCreees = demandes.filter(d => d.technicienId === currentUser.id)
+    const mesDemandesCreees = demandes.filter(d => d && d.technicienId === currentUser.id)
     
     switch (type) {
       case "total":
         return mesDemandesCreees
       case "enCours":
-        return mesDemandesCreees.filter(d => !["brouillon", "cloturee", "rejetee", "archivee"].includes(d.status))
+        return mesDemandesCreees.filter(d => d && d.status && !["brouillon", "cloturee", "rejetee", "archivee"].includes(d.status))
       case "validees":
-        return mesDemandesCreees.filter(d => ["cloturee", "archivee"].includes(d.status))
+        return mesDemandesCreees.filter(d => d && d.status && ["cloturee", "archivee"].includes(d.status))
       case "brouillons":
-        return mesDemandesCreees.filter(d => d.status === "brouillon")
+        return mesDemandesCreees.filter(d => d && d.status === "brouillon")
       default:
         return []
     }

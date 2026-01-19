@@ -456,7 +456,7 @@ export default function PreparationLogistiqueList() {
                   <SelectTrigger id="livreur">
                     <SelectValue placeholder="Choisir un utilisateur pour la livraison..." />
                   </SelectTrigger>
-                  <SelectContent className="max-w-md bg-white shadow-lg border-2 border-gray-200">
+                  <SelectContent className="max-w-md bg-white shadow-lg border-2 border-gray-200 z-[9999]">
                     {livreursDisponibles.map((livreur) => (
                       <SelectItem key={livreur.id} value={livreur.id} className="cursor-pointer bg-white hover:bg-gray-50 focus:bg-gray-100">
                         <div className="flex items-center gap-2 w-full py-1">

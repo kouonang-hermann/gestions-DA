@@ -64,14 +64,6 @@ function getNextStatusWithAutoValidation(currentStatus: DemandeStatus, userRole:
     return targetStatus
   }
 
-  // CAS SPÉCIAL : Validation à l'étape chargé d'affaire - dépend du type de demande
-  // Le superadmin ou le chargé d'affaire peuvent valider à cette étape
-  if (currentStatus === "en_attente_validation_charge_affaire" && (userRole === "charge_affaire" || userRole === "superadmin")) {
-    const nextStatus = demandeType === "materiel" ? "en_attente_preparation_appro" : "en_attente_preparation_logistique"
-    console.log(`🎯 [API CHARGE-AFFAIRE] Type: ${demandeType} → Prochain statut: ${nextStatus} (validé par ${userRole})`)
-    return nextStatus as DemandeStatus
-  }
-
   const flow = VALIDATION_FLOWS[demandeType as keyof typeof VALIDATION_FLOWS]
   if (!flow) return null
 
@@ -83,6 +75,15 @@ function getNextStatusWithAutoValidation(currentStatus: DemandeStatus, userRole:
 
   console.log(`🔄 [API] Calcul du prochain statut depuis ${currentStatus} → ${nextStatus}`)
   console.log(`🔄 [API] Demandeur original: ${demandeurRole}, Valideur actuel: ${userRole}`)
+
+  // CAS SPÉCIAL : Validation à l'étape chargé d'affaire - dépend du type de demande
+  // IMPORTANT: Ce cas doit être traité AVANT l'auto-validation pour éviter les conflits
+  if (currentStatus === "en_attente_validation_charge_affaire" && (userRole === "charge_affaire" || userRole === "superadmin")) {
+    const nextStatusChargeAffaire = demandeType === "materiel" ? "en_attente_preparation_appro" : "en_attente_preparation_logistique"
+    console.log(`🎯 [API CHARGE-AFFAIRE] Type: ${demandeType} → Prochain statut: ${nextStatusChargeAffaire} (validé par ${userRole})`)
+    console.log(`✅ [API] Prochain statut déterminé (cas spécial chargé affaire): ${nextStatusChargeAffaire}`)
+    return nextStatusChargeAffaire as DemandeStatus
+  }
 
   // Vérifier les auto-validations successives
   // IMPORTANT: On vérifie si le demandeur ORIGINAL peut auto-valider les étapes suivantes
@@ -168,7 +169,7 @@ function getNextStatus(currentStatus: DemandeStatus, userRole: string, demandeTy
 export const POST = withAuth(async (request: NextRequest, currentUser: any, context: { params: Promise<{ id: string }> }) => {
   try {
     const params = await context.params
-    const { action, commentaire, quantitesSorties, quantites, itemsModifications, targetStatus, livreurAssigneId } = await request.json()
+    const { action, commentaire, quantitesSorties, quantites, itemsModifications, targetStatus, livreurAssigneId, items } = await request.json()
 
     console.log(`🚀 [API] ${currentUser.nom} (${currentUser.role}) exécute "${action}" sur ${params.id}`)
     console.log(`📋 [API] Payload reçu:`, { action, commentaire, targetStatus })
@@ -891,8 +892,8 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
           }, { status: 403 })
         }
 
-        // Récupérer les items de la requête
-        const { items: itemsToUpdate } = await request.clone().json()
+        // Récupérer les items de la requête (déjà extraits du payload initial)
+        const itemsToUpdate = items
         
         if (!itemsToUpdate || !Array.isArray(itemsToUpdate)) {
           console.log(`❌ [UPDATE-QTE-PRIX] Données items manquantes`)
@@ -937,13 +938,26 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         }
 
         // Mettre à jour le coût total de la demande
-        if (coutTotal > 0) {
-          updates.coutTotal = coutTotal
-          console.log(`💰 [UPDATE-QTE-PRIX] Coût total calculé: ${coutTotal}`)
-        }
+        console.log(`💰 [UPDATE-QTE-PRIX] Coût total calculé: ${coutTotal}`)
 
-        // Ne pas changer le statut pour cette action
-        newStatus = demande.status
+        // Mettre à jour la demande avec le coût total
+        const updatedDemandeWithPrices = await prisma.demande.update({
+          where: { id: params.id },
+          data: {
+            coutTotal,
+            dateModification: new Date(),
+            dateEngagement: new Date() // Date d'engagement financier
+          },
+          include: {
+            projet: true,
+            technicien: true,
+            items: {
+              include: {
+                article: true
+              }
+            }
+          }
+        })
 
         // Créer une entrée d'historique spécifique
         await prisma.historyEntry.create({
@@ -954,17 +968,17 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
             action: "Mise à jour des quantités livrées et prix",
             ancienStatus: demande.status,
             nouveauStatus: demande.status,
-            commentaire: `Coût total: ${coutTotal.toFixed(2)} €`,
+            commentaire: `Coût total: ${coutTotal.toFixed(2)} FCFA`,
             signature: `update-qte-prix-${Date.now()}`
           }
         })
 
-        console.log(`✅ [UPDATE-QTE-PRIX] Mise à jour terminée`)
+        console.log(`✅ [UPDATE-QTE-PRIX] Mise à jour terminée avec coût total: ${coutTotal}`)
         
-        // Retourner directement la réponse car on ne veut pas créer d'entrée d'historique en double
+        // Retourner directement la réponse avec les données mises à jour
         return NextResponse.json({ 
           success: true, 
-          data: { ...demande, coutTotal },
+          data: updatedDemandeWithPrices,
           message: "Quantités et prix mis à jour avec succès"
         })
 
