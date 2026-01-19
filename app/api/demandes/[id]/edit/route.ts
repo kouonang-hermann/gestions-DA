@@ -50,8 +50,8 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
 
     // Préparer les données pour création en batch
     const items = body.items || []
-    const articlesData = []
-    const itemsData = []
+    const articlesData: any[] = []
+    const itemsData: any[] = []
 
     // Récupérer tous les articles existants en une seule requête
     const existingArticles = await prisma.article.findMany({

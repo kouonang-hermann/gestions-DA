@@ -72,8 +72,8 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
     // Mettre à jour les items (articles et quantités)
     if (body.items && Array.isArray(body.items)) {
       // Vérifications préalables et préparation des données
-      const newArticles = []
-      const processedItems = []
+      const newArticles: any[] = []
+      const processedItems: any[] = []
       
       for (const item of body.items) {
         let articleId = item.articleId
