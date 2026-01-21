@@ -467,7 +467,7 @@ export default function ChargeAffaireDashboard() {
                                     </Badge>
                                   </td>
                                   <td className="p-2 text-center text-blue-600">
-                                    {coutMateriel > 0 ? `${coutMateriel.toLocaleString('fr-FR')} €` : '-'}
+                                    {coutMateriel > 0 ? `${coutMateriel.toLocaleString('fr-FR')} FCFA` : '-'}
                                   </td>
                                   <td className="p-2 text-center text-purple-600">
                                     {coutOutillage > 0 ? `${coutOutillage.toLocaleString('fr-FR')} FCFA` : '-'}
@@ -527,7 +527,7 @@ export default function ChargeAffaireDashboard() {
                                 className="h-full rounded-full flex items-center justify-end pr-2 text-white text-xs font-bold transition-all duration-500"
                                 style={{ width: `${Math.max(pctMateriel, 5)}%`, backgroundColor: '#015fc4' }}
                               >
-                                {coutMateriel > 0 && `${coutMateriel.toLocaleString('fr-FR')} €`}
+                                {coutMateriel > 0 && `${coutMateriel.toLocaleString('fr-FR')} FCFA`}
                               </div>
                             </div>
                           </div>
@@ -542,14 +542,14 @@ export default function ChargeAffaireDashboard() {
                                 className="h-full rounded-full flex items-center justify-end pr-2 text-gray-800 text-xs font-bold transition-all duration-500"
                                 style={{ width: `${Math.max(pctOutillage, 5)}%`, backgroundColor: '#b8d1df' }}
                               >
-                                {coutOutillage > 0 && `${coutOutillage.toLocaleString('fr-FR')} €`}
+                                {coutOutillage > 0 && `${coutOutillage.toLocaleString('fr-FR')} FCFA`}
                               </div>
                             </div>
                           </div>
                           
                           <div className="pt-2 border-t flex justify-between items-center">
                             <span className="text-sm font-medium text-gray-700">Total</span>
-                            <span className="text-lg font-bold text-green-700">{total.toLocaleString('fr-FR')} €</span>
+                            <span className="text-lg font-bold text-green-700">{total.toLocaleString('fr-FR')} FCFA</span>
                           </div>
                         </div>
                       )
@@ -610,7 +610,7 @@ export default function ChargeAffaireDashboard() {
                                     />
                                   </div>
                                   <span className="text-xs font-bold text-green-700 min-w-[80px] text-right">
-                                    {projet.cout.toLocaleString('fr-FR')} €
+                                    {projet.cout.toLocaleString('fr-FR')} FCFA
                                   </span>
                                 </div>
                               </div>

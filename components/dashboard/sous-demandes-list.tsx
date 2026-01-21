@@ -6,22 +6,36 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { PackageX, Eye, AlertTriangle, Package } from "lucide-react"
-import type { Demande } from "@/types"
+import type { Demande, DemandeType } from "@/types"
 import DemandeDetailsModal from "@/components/modals/demande-details-modal"
 
-export default function SousDemandesList() {
+interface SousDemandesListProps {
+  type?: DemandeType // "materiel" ou "outillage"
+}
+
+export default function SousDemandesList({ type }: SousDemandesListProps) {
   const { demandes, currentUser } = useStore()
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
   const [selectedDemande, setSelectedDemande] = useState<Demande | null>(null)
 
   if (!currentUser) return null
 
-  // Filtrer les sous-demandes et les demandes renvoyées
-  const sousDemandes = demandes.filter(
-    (d) =>
-      d.typeDemande === "sous_demande" &&
-      d.status === "en_attente_preparation_appro"
-  )
+  // Filtrer les sous-demandes selon le type spécifié
+  // - Si type="materiel" : seulement les sous-demandes matériel (en_attente_preparation_appro)
+  // - Si type="outillage" : seulement les sous-demandes outillage (en_attente_preparation_logistique)
+  // - Si pas de type : afficher les deux (comportement par défaut)
+  const sousDemandes = demandes.filter((d) => {
+    if (d.typeDemande !== "sous_demande") return false
+    
+    if (type === "materiel") {
+      return d.type === "materiel" && d.status === "en_attente_preparation_appro"
+    } else if (type === "outillage") {
+      return d.type === "outillage" && d.status === "en_attente_preparation_logistique"
+    } else {
+      // Par défaut, afficher les deux types
+      return d.status === "en_attente_preparation_appro" || d.status === "en_attente_preparation_logistique"
+    }
+  })
 
   const demandesRenvoyees = demandes.filter(
     (d) => d.status === "renvoyee_vers_appro"

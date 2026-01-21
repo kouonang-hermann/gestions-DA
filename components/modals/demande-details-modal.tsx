@@ -297,7 +297,7 @@ export default function DemandeDetailModal({
                           </TableHead>
                           <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-orange-50 text-orange-600">Qté restante</TableHead>
                           <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-green-50 text-green-600">
-                            Prix unit. (€) {canEdit && <span className="text-red-500">*</span>}
+                            Prix unit. (FCFA) {canEdit && <span className="text-red-500">*</span>}
                           </TableHead>
                         </>
                       )}

@@ -104,21 +104,46 @@ export default function ApproDashboard() {
         (!currentUser.projets || currentUser.projets.length === 0 || currentUser.projets.includes(d.projetId))
       )
 
-      // 1. MES DEMANDES CRÉÉES (en tant que demandeur)
-      const mesDemandesCreees = demandesFiltered.filter((d) => d.technicienId === currentUser.id)
-
-      // 2. DEMANDES À TRAITER (en tant qu'Appro dans le flow - MATÉRIEL UNIQUEMENT)
-      const demandesATraiter = demandesFiltered.filter((d) => d.type === "materiel" && d.status === "en_attente_preparation_appro")
-      
-      // 3. DEMANDES PRÉPARÉES (préparées par moi, en attente logistique)
-      const demandesPreparees = demandesFiltered.filter((d) => d.status === "en_attente_validation_logistique")
-      
-      // 4. DEMANDES EN ATTENTE DE LIVRAISON (validées logistique, en attente demandeur)
-      const demandesEnAttenteLivraison = demandesFiltered.filter((d) => 
-        d.status === "en_attente_validation_finale_demandeur"
+      // 1. TOTAL DEMANDES MATÉRIEL CONCERNANT L'APPRO (dans le flow Appro)
+      // Toutes les demandes matériel qui sont passées ou vont passer par l'Appro
+      const demandesAppro = demandesFiltered.filter((d) => 
+        d.type === "materiel" && [
+          "en_attente_preparation_appro",      // À préparer
+          "en_attente_reception_livreur",      // Préparées, chez le livreur
+          "en_attente_livraison",              // En cours de livraison
+          "en_attente_validation_finale_demandeur", // Livrées, en attente validation
+          "cloturee"                           // Clôturées
+        ].includes(d.status)
       )
 
-      // 5. MES DEMANDES EN COURS (comme employé)
+      // 2. DEMANDES À PRÉPARER (en attente de préparation par l'Appro - MATÉRIEL UNIQUEMENT)
+      const demandesATraiter = demandesFiltered.filter((d) => 
+        d.type === "materiel" && d.status === "en_attente_preparation_appro"
+      )
+      
+      // 3. DEMANDES PRÉPARÉES PAR MOI (préparées par l'Appro connecté - MATÉRIEL UNIQUEMENT)
+      // Utilise la signature sortieAppro pour identifier les demandes préparées par cet Appro
+      const demandesPreparees = demandesFiltered.filter((d) => 
+        d.type === "materiel" && 
+        d.status === "en_attente_reception_livreur" &&
+        d.sortieAppro?.userId === currentUser.id
+      )
+      
+      // 4. DEMANDES EN COURS DE LIVRAISON (MATÉRIEL UNIQUEMENT)
+      const demandesEnLivraison = demandesFiltered.filter((d) => 
+        d.type === "materiel" && d.status === "en_attente_livraison"
+      )
+
+      // 5. DEMANDES LIVRÉES (en attente validation finale ou clôturées - MATÉRIEL UNIQUEMENT)
+      const demandesLivrees = demandesFiltered.filter((d) => 
+        d.type === "materiel" && [
+          "en_attente_validation_finale_demandeur",
+          "cloturee"
+        ].includes(d.status)
+      )
+
+      // 6. MES DEMANDES PERSONNELLES EN COURS (en tant que demandeur)
+      const mesDemandesCreees = demandesFiltered.filter((d) => d.technicienId === currentUser.id)
       const mesDemandesEnCours = mesDemandesCreees.filter((d) => ![
         "brouillon", 
         "cloturee", 
@@ -126,12 +151,20 @@ export default function ApproDashboard() {
         "archivee"
       ].includes(d.status))
 
+      console.log(`🔍 [APPRO-DASHBOARD] Statistiques calculées:`)
+      console.log(`  - Total demandes Appro (matériel): ${demandesAppro.length}`)
+      console.log(`  - À préparer: ${demandesATraiter.length}`)
+      console.log(`  - Préparées (chez livreur): ${demandesPreparees.length}`)
+      console.log(`  - En livraison: ${demandesEnLivraison.length}`)
+      console.log(`  - Livrées: ${demandesLivrees.length}`)
+      console.log(`  - Mes demandes en cours: ${mesDemandesEnCours.length}`)
+
       setStats({
-        total: mesDemandesCreees.length, // MES demandes créées
-        aPreparer: demandesATraiter.length, // Demandes que JE dois préparer
-        enCours: mesDemandesEnCours.length, // MES demandes en cours (comme employé)
-        preparees: demandesPreparees.length, // Demandes que J'AI préparées
-        livrees: demandesEnAttenteLivraison.length, // En attente de livraison
+        total: demandesAppro.length,           // Total demandes matériel dans le flow Appro
+        aPreparer: demandesATraiter.length,    // À préparer par moi
+        enCours: mesDemandesEnCours.length,    // MES demandes personnelles en cours
+        preparees: demandesPreparees.length,   // Préparées, chez le livreur
+        livrees: demandesLivrees.length,       // Livrées (validation finale + clôturées)
       })
     }
   }, [currentUser, demandes])
@@ -170,15 +203,25 @@ export default function ApproDashboard() {
 
     switch (type) {
       case "total":
-        // MES demandes créées (en tant que demandeur)
-        return demandesFiltered.filter((d) => d.technicienId === currentUser.id)
+        // Total demandes matériel concernant l'Appro (dans le flow Appro)
+        return demandesFiltered.filter((d) => 
+          d.type === "materiel" && [
+            "en_attente_preparation_appro",
+            "en_attente_reception_livreur",
+            "en_attente_livraison",
+            "en_attente_validation_finale_demandeur",
+            "cloturee"
+          ].includes(d.status)
+        )
       
       case "aPreparer":
         // Demandes à préparer (en tant qu'Appro - MATÉRIEL UNIQUEMENT)
-        return demandesFiltered.filter((d) => d.type === "materiel" && d.status === "en_attente_preparation_appro")
+        return demandesFiltered.filter((d) => 
+          d.type === "materiel" && d.status === "en_attente_preparation_appro"
+        )
       
       case "enCours":
-        // MES demandes en cours (comme employé)
+        // MES demandes personnelles en cours (comme demandeur)
         return demandesFiltered.filter((d) => 
           d.technicienId === currentUser.id && ![
             "brouillon", 
@@ -189,12 +232,21 @@ export default function ApproDashboard() {
         )
       
       case "preparees":
-        // Demandes préparées (en attente logistique)
-        return demandesFiltered.filter((d) => d.status === "en_attente_validation_logistique")
+        // Demandes préparées PAR MOI (l'Appro connecté), chez le livreur (MATÉRIEL UNIQUEMENT)
+        return demandesFiltered.filter((d) => 
+          d.type === "materiel" && 
+          d.status === "en_attente_reception_livreur" &&
+          d.sortieAppro?.userId === currentUser.id
+        )
       
       case "livrees":
-        // Demandes en attente de livraison
-        return demandesFiltered.filter((d) => d.status === "en_attente_validation_finale_demandeur")
+        // Demandes livrées (en attente validation finale + clôturées - MATÉRIEL UNIQUEMENT)
+        return demandesFiltered.filter((d) => 
+          d.type === "materiel" && [
+            "en_attente_validation_finale_demandeur",
+            "cloturee"
+          ].includes(d.status)
+        )
       
       default:
         return []
@@ -279,14 +331,14 @@ export default function ApproDashboard() {
           <div className="xl:col-span-3 space-y-3 sm:space-y-4 order-2 xl:order-1">
             {/* Vue d'ensemble - Cards statistiques */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
-              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#015fc4' }} onClick={() => handleCardClick("total", "Mes demandes émises")}>
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#015fc4' }} onClick={() => handleCardClick("total", "Total demandes matériel Appro")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Total demandes</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Total Appro</CardTitle>
                   <Package className="h-4 w-4" style={{ color: '#015fc4' }} />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold" style={{ color: '#015fc4' }}>{stats.total}</div>
-                  <p className="text-xs text-muted-foreground">Émises par moi</p>
+                  <p className="text-xs text-muted-foreground">Matériel (flow Appro)</p>
                 </CardContent>
               </Card>
 
@@ -297,40 +349,40 @@ export default function ApproDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold" style={{ color: '#f97316' }}>{stats.aPreparer}</div>
-                  <p className="text-xs text-muted-foreground">À préparer par moi</p>
+                  <p className="text-xs text-muted-foreground">Matériel à préparer</p>
                 </CardContent>
               </Card>
 
-              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#3b82f6' }} onClick={() => handleCardClick("enCours", "Mes demandes en cours")}>
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#3b82f6' }} onClick={() => handleCardClick("enCours", "Mes demandes personnelles en cours")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">En cours</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Mes demandes</CardTitle>
                   <Clock className="h-4 w-4" style={{ color: '#3b82f6' }} />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold" style={{ color: '#3b82f6' }}>{stats.enCours}</div>
-                  <p className="text-xs text-muted-foreground">Mes demandes en cours</p>
+                  <p className="text-xs text-muted-foreground">En cours (demandeur)</p>
                 </CardContent>
               </Card>
 
-              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#8b5cf6' }} onClick={() => handleCardClick("preparees", "Demandes préparées")}>
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#8b5cf6' }} onClick={() => handleCardClick("preparees", "Demandes préparées (chez livreur)")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Préparées</CardTitle>
                   <Truck className="h-4 w-4" style={{ color: '#8b5cf6' }} />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold" style={{ color: '#8b5cf6' }}>{stats.preparees}</div>
-                  <p className="text-xs text-muted-foreground">Préparées par moi</p>
+                  <p className="text-xs text-muted-foreground">Chez le livreur</p>
                 </CardContent>
               </Card>
 
-              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#22c55e' }} onClick={() => handleCardClick("livrees", "En attente de livraison")}>
+              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#22c55e' }} onClick={() => handleCardClick("livrees", "Demandes livrées")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">En attente livraison</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Livrées</CardTitle>
                   <CheckCircle className="h-4 w-4" style={{ color: '#22c55e' }} />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold" style={{ color: '#22c55e' }}>{stats.livrees}</div>
-                  <p className="text-xs text-muted-foreground">Prêtes à livrer</p>
+                  <p className="text-xs text-muted-foreground">Livrées/Clôturées</p>
                 </CardContent>
               </Card>
             </div>
@@ -339,8 +391,8 @@ export default function ApproDashboard() {
             {/* Livraisons à effectuer */}
             <LivraisonsAEffectuer />
 
-            {/* Anomalies de livraison - Sous-demandes et demandes renvoyées */}
-            <SousDemandesList />
+            {/* Anomalies de livraison - Sous-demandes et demandes renvoyées (matériel uniquement) */}
+            <SousDemandesList type="materiel" />
 
             {/* Liste des demandes à préparer */}
             <SortiePreparationList />

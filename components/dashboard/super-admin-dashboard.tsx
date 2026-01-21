@@ -714,7 +714,7 @@ export default function SuperAdminDashboard() {
                                 </Badge>
                               </td>
                               <td className="p-2 text-center text-blue-600">
-                                {coutMateriel > 0 ? `${coutMateriel.toLocaleString('fr-FR')} €` : '-'}
+                                {coutMateriel > 0 ? `${coutMateriel.toLocaleString('fr-FR')} FCFA` : '-'}
                               </td>
                               <td className="p-2 text-center text-purple-600">
                                 {coutOutillage > 0 ? `${coutOutillage.toLocaleString('fr-FR')} FCFA` : '-'}
@@ -775,7 +775,7 @@ export default function SuperAdminDashboard() {
                                 className="h-full rounded-full flex items-center justify-end pr-2 text-white text-xs font-bold transition-all duration-500"
                                 style={{ width: `${Math.max(pctMateriel, 5)}%`, backgroundColor: '#015fc4' }}
                               >
-                                {coutMateriel > 0 && `${coutMateriel.toLocaleString('fr-FR')} €`}
+                                {coutMateriel > 0 && `${coutMateriel.toLocaleString('fr-FR')} FCFA`}
                               </div>
                             </div>
                           </div>
@@ -790,7 +790,7 @@ export default function SuperAdminDashboard() {
                                 className="h-full rounded-full flex items-center justify-end pr-2 text-gray-800 text-xs font-bold transition-all duration-500"
                                 style={{ width: `${Math.max(pctOutillage, 5)}%`, backgroundColor: '#b8d1df' }}
                               >
-                                {coutOutillage > 0 && `${coutOutillage.toLocaleString('fr-FR')} €`}
+                                {coutOutillage > 0 && `${coutOutillage.toLocaleString('fr-FR')} FCFA`}
                               </div>
                             </div>
                           </div>
@@ -798,7 +798,7 @@ export default function SuperAdminDashboard() {
                           {/* Total */}
                           <div className="pt-2 border-t flex justify-between items-center">
                             <span className="text-sm font-medium text-gray-700">Total</span>
-                            <span className="text-lg font-bold text-green-700">{total.toLocaleString('fr-FR')} €</span>
+                            <span className="text-lg font-bold text-green-700">{total.toLocaleString('fr-FR')} FCFA</span>
                           </div>
                         </div>
                       )
@@ -859,7 +859,7 @@ export default function SuperAdminDashboard() {
                                     />
                                   </div>
                                   <span className="text-xs font-bold text-green-700 min-w-[80px] text-right">
-                                    {projet.cout.toLocaleString('fr-FR')} €
+                                    {projet.cout.toLocaleString('fr-FR')} FCFA
                                   </span>
                                 </div>
                               </div>
@@ -917,12 +917,12 @@ export default function SuperAdminDashboard() {
                         </div>
                         <div className="bg-white p-3 rounded-lg border-l-4 border-purple-500">
                           <p className="text-xs text-gray-600 mb-1">Coût Moy. Matériel</p>
-                          <p className="text-xl font-bold text-purple-700">{coutMoyenMateriel.toLocaleString('fr-FR')} €</p>
+                          <p className="text-xl font-bold text-purple-700">{coutMoyenMateriel.toLocaleString('fr-FR')} FCFA</p>
                           <p className="text-xs text-gray-500">par demande</p>
                         </div>
                         <div className="bg-white p-3 rounded-lg border-l-4 border-cyan-500">
                           <p className="text-xs text-gray-600 mb-1">Coût Moy. Outillage</p>
-                          <p className="text-xl font-bold text-cyan-700">{coutMoyenOutillage.toLocaleString('fr-FR')} €</p>
+                          <p className="text-xl font-bold text-cyan-700">{coutMoyenOutillage.toLocaleString('fr-FR')} FCFA</p>
                           <p className="text-xs text-gray-500">par demande</p>
                         </div>
                       </div>
@@ -991,7 +991,7 @@ export default function SuperAdminDashboard() {
                           </div>
                           <div className="text-right">
                             <p className="text-xs text-gray-600">Ce mois</p>
-                            <p className="text-lg font-bold text-gray-800">{moisActuel.total.toLocaleString('fr-FR')} €</p>
+                            <p className="text-lg font-bold text-gray-800">{moisActuel.total.toLocaleString('fr-FR')} FCFA</p>
                           </div>
                         </div>
                         
@@ -1003,7 +1003,7 @@ export default function SuperAdminDashboard() {
                                 <span className="font-medium text-gray-700 w-16">{data.mois}</span>
                                 <span className="text-gray-500">{data.nbDemandes} demande{data.nbDemandes > 1 ? 's' : ''}</span>
                                 <span className="font-bold text-green-700 w-24 text-right">
-                                  {data.total.toLocaleString('fr-FR')} €
+                                  {data.total.toLocaleString('fr-FR')} FCFA
                                 </span>
                               </div>
                               <div className="flex gap-1 h-6">
@@ -1011,7 +1011,7 @@ export default function SuperAdminDashboard() {
                                 <div 
                                   className="bg-blue-500 rounded-l transition-all duration-500 flex items-center justify-center text-white text-xs font-bold"
                                   style={{ width: `${(data.materiel / maxCout) * 100}%` }}
-                                  title={`Matériel: ${data.materiel.toLocaleString('fr-FR')} €`}
+                                  title={`Matériel: ${data.materiel.toLocaleString('fr-FR')} FCFA`}
                                 >
                                   {data.materiel > maxCout * 0.1 && `${(data.materiel / 1000).toFixed(0)}k`}
                                 </div>
@@ -1019,7 +1019,7 @@ export default function SuperAdminDashboard() {
                                 <div 
                                   className="bg-cyan-400 rounded-r transition-all duration-500 flex items-center justify-center text-gray-800 text-xs font-bold"
                                   style={{ width: `${(data.outillage / maxCout) * 100}%` }}
-                                  title={`Outillage: ${data.outillage.toLocaleString('fr-FR')} €`}
+                                  title={`Outillage: ${data.outillage.toLocaleString('fr-FR')} FCFA`}
                                 >
                                   {data.outillage > maxCout * 0.1 && `${(data.outillage / 1000).toFixed(0)}k`}
                                 </div>

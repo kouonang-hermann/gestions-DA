@@ -51,6 +51,7 @@ import { useAutoReload } from "@/hooks/useAutoReload"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import DemandeDetailsModal from "@/components/modals/demande-details-modal"
 import MesLivraisonsSection from "@/components/dashboard/mes-livraisons-section"
+import SousDemandesList from "@/components/dashboard/sous-demandes-list"
 
 export default function ResponsableLogistiqueDashboard() {
   const { currentUser, demandes, projets, users, isLoading } = useStore()
@@ -473,6 +474,9 @@ export default function ResponsableLogistiqueDashboard() {
 
             {/* Liste des demandes à valider */}
             <ValidationLogistiqueList />
+            
+            {/* Anomalies de livraison - Sous-demandes et demandes renvoyées (outillage uniquement) */}
+            <SousDemandesList type="outillage" />
             
             {/* Liste des demandes d'outillage à préparer */}
             <PreparationLogistiqueList />
