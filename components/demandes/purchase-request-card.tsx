@@ -5,13 +5,14 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Download, Loader2 } from "lucide-react"
 import type { Demande } from "@/types"
+import { PDFTypeSelector, type PDFType } from "@/components/demandes/pdf-type-selector"
 
 interface PurchaseRequestCardProps {
   logoUrl?: string
   demande: Demande | null
   onValidate?: (action: "valider" | "rejeter") => void
   canValidate?: boolean
-  onDownloadPDF?: () => void | Promise<void>
+  onDownloadPDF?: (type: PDFType) => void | Promise<void>
   isGeneratingPDF?: boolean
 }
 
@@ -260,19 +261,11 @@ export default function PurchaseRequestCard({
 
       <div className="mt-6 flex justify-end gap-3">
         {onDownloadPDF && (
-          <Button 
-            variant="outline" 
-            onClick={onDownloadPDF} 
-            disabled={isGeneratingPDF}
-            className="flex items-center gap-2"
-          >
-            {isGeneratingPDF ? (
-              <Loader2 className="animate-spin" size={16} />
-            ) : (
-              <Download size={16} />
-            )}
-            Télécharger PDF
-          </Button>
+          <PDFTypeSelector
+            onSelect={onDownloadPDF}
+            isGenerating={isGeneratingPDF}
+            className="px-6 py-2"
+          />
         )}
         {canValidate && onValidate && (
           <>

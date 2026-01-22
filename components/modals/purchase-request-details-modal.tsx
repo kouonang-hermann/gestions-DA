@@ -6,7 +6,8 @@ import { VisuallyHidden } from "@/components/ui/visually-hidden"
 import { Button } from "@/components/ui/button"
 import type { Demande } from "@/types"
 import PurchaseRequestCard from "@/components/demandes/purchase-request-card"
-import { generatePurchaseRequestPDF } from "@/lib/pdf-generator"
+import { generatePurchaseRequestPDF, generateBonLivraisonPDF, generateBonSortiePDF } from "@/lib/pdf-generator"
+import { PDFTypeSelector, type PDFType } from "@/components/demandes/pdf-type-selector"
 import { toast } from "sonner"
 
 interface PurchaseRequestDetailsModalProps {
@@ -24,10 +25,20 @@ export default function PurchaseRequestDetailsModal({
 
   if (!demande) return null
 
-  const handleDownloadPDF = async () => {
+  const handleDownloadPDF = async (type: PDFType) => {
     setIsGeneratingPDF(true)
     try {
-      await generatePurchaseRequestPDF(demande)
+      switch (type) {
+        case 'demande':
+          await generatePurchaseRequestPDF(demande)
+          break
+        case 'bon_livraison':
+          await generateBonLivraisonPDF(demande)
+          break
+        case 'bon_sortie':
+          await generateBonSortiePDF(demande)
+          break
+      }
       toast.success("PDF téléchargé avec succès!")
     } catch (error) {
       console.error("Erreur lors de la génération du PDF:", error)

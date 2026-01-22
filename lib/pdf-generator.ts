@@ -427,6 +427,520 @@ export const generatePurchaseRequestPDF = async (
 }
 
 /**
+ * Génère un Bon de Livraison (Bordereau de livraison)
+ */
+export const generateBonLivraisonPDF = async (demande: any): Promise<void> => {
+  if (typeof window === 'undefined') {
+    throw new Error('La génération PDF ne peut être effectuée que côté client')
+  }
+
+  try {
+    const jsPDF = (await import('jspdf')).default
+    const html2canvas = (await import('html2canvas')).default
+
+    const iframe = document.createElement('iframe')
+    iframe.style.position = 'absolute'
+    iframe.style.left = '-9999px'
+    iframe.style.width = '800px'
+    iframe.style.height = '1200px'
+    document.body.appendChild(iframe)
+
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document
+    if (!iframeDoc) throw new Error('Impossible de créer le document iframe')
+
+    iframeDoc.open()
+    iframeDoc.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px;
+            background-color: #ffffff;
+            color: #000000;
+          }
+          .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #015fc4;
+            padding-bottom: 10px;
+          }
+          .header h1 {
+            color: #015fc4;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+          }
+          .header p {
+            font-size: 14px;
+            color: #666666;
+          }
+          .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+          }
+          .info-box {
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-left: 4px solid #015fc4;
+            border-radius: 4px;
+          }
+          .info-box strong {
+            display: block;
+            color: #015fc4;
+            font-size: 11px;
+            margin-bottom: 5px;
+          }
+          .info-box span {
+            color: #000000;
+            font-size: 13px;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+          }
+          th, td {
+            border: 2px solid #333333;
+            padding: 12px;
+            text-align: left;
+            color: #000000;
+            font-size: 12px;
+          }
+          th {
+            background-color: #015fc4;
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 13px;
+          }
+          tr:nth-child(even) {
+            background-color: #f9f9f9;
+          }
+          .signature-section {
+            margin-top: 40px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+          }
+          .signature-box {
+            border: 2px solid #333333;
+            padding: 15px;
+            border-radius: 4px;
+            min-height: 120px;
+          }
+          .signature-box h3 {
+            color: #015fc4;
+            font-size: 14px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #cccccc;
+            padding-bottom: 5px;
+          }
+          .signature-box p {
+            margin: 8px 0;
+            color: #000000;
+            font-size: 12px;
+          }
+          .footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 2px solid #cccccc;
+            text-align: center;
+            color: #666666;
+            font-size: 10px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>BON DE LIVRAISON</h1>
+          <p>N° ${demande.numero}</p>
+        </div>
+
+        <div class="info-grid">
+          <div class="info-box">
+            <strong>PROJET</strong>
+            <span>${demande.projet?.nom || "N/A"}</span>
+          </div>
+          <div class="info-box">
+            <strong>DATE DE LIVRAISON</strong>
+            <span>${demande.dateLivraisonSouhaitee ? new Date(demande.dateLivraisonSouhaitee).toLocaleDateString("fr-FR") : "N/A"}</span>
+          </div>
+          <div class="info-box">
+            <strong>DEMANDEUR</strong>
+            <span>${demande.technicien?.prenom || ""} ${demande.technicien?.nom || "N/A"}</span>
+          </div>
+          <div class="info-box">
+            <strong>TYPE</strong>
+            <span>${demande.type === "materiel" ? "Matériel" : "Outillage"}</span>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Désignation</th>
+              <th>Référence</th>
+              <th>Unité</th>
+              <th>Quantité Livrée</th>
+              <th>Observation</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${demande.items?.map((item: any) => {
+              const qteLivree = item.quantiteLivree || item.quantiteValidee || item.quantiteDemandee
+              return `
+                <tr>
+                  <td>${item.article?.nom || "N/A"}</td>
+                  <td>${item.article?.reference || "N/A"}</td>
+                  <td>${item.article?.unite || "N/A"}</td>
+                  <td style="font-weight: bold; color: #015fc4;">${qteLivree}</td>
+                  <td>${item.commentaire || ""}</td>
+                </tr>
+              `
+            }).join("") || "<tr><td colspan='5'>Aucun article</td></tr>"}
+          </tbody>
+        </table>
+
+        <div class="signature-section">
+          <div class="signature-box">
+            <h3>Livreur</h3>
+            <p>Nom: _____________________________</p>
+            <p>Date: _____________________________</p>
+            <p>Signature: _____________________________</p>
+          </div>
+          <div class="signature-box">
+            <h3>Réceptionnaire</h3>
+            <p>Nom: _____________________________</p>
+            <p>Date: _____________________________</p>
+            <p>Signature: _____________________________</p>
+          </div>
+        </div>
+
+        <div class="footer">
+          <p>Document généré le ${new Date().toLocaleDateString("fr-FR")} à ${new Date().toLocaleTimeString("fr-FR")}</p>
+        </div>
+      </body>
+      </html>
+    `)
+    iframeDoc.close()
+
+    await new Promise(resolve => setTimeout(resolve, 200))
+
+    const canvas = await html2canvas(iframeDoc.body, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: '#ffffff'
+    })
+
+    document.body.removeChild(iframe)
+
+    const imgData = canvas.toDataURL('image/png')
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    })
+
+    const marginLeft = 10
+    const marginRight = 10
+    const marginTop = 10
+    const marginBottom = 10
+
+    const pdfWidth = pdf.internal.pageSize.getWidth()
+    const pdfHeight = pdf.internal.pageSize.getHeight()
+    
+    const availableWidth = pdfWidth - marginLeft - marginRight
+    const availableHeight = pdfHeight - marginTop - marginBottom
+    
+    const imgWidth = availableWidth
+    const imgHeight = (canvas.height * imgWidth) / canvas.width
+
+    let heightLeft = imgHeight
+    let position = 0
+
+    pdf.addImage(imgData, 'PNG', marginLeft, marginTop, imgWidth, imgHeight)
+    heightLeft -= availableHeight
+
+    while (heightLeft > 0) {
+      pdf.addPage()
+      position = -(imgHeight - heightLeft)
+      pdf.addImage(imgData, 'PNG', marginLeft, position + marginTop, imgWidth, imgHeight)
+      heightLeft -= availableHeight
+    }
+
+    const filename = `bon-livraison-${demande.numero}-${new Date().toISOString().split("T")[0]}.pdf`
+    pdf.save(filename)
+
+  } catch (error) {
+    console.error('Erreur lors de la génération du Bon de Livraison:', error)
+    throw new Error(`Impossible de générer le Bon de Livraison: ${error instanceof Error ? error.message : 'Erreur inconnue'}`)
+  }
+}
+
+/**
+ * Génère un Bon de Sortie Matériel
+ */
+export const generateBonSortiePDF = async (demande: any): Promise<void> => {
+  if (typeof window === 'undefined') {
+    throw new Error('La génération PDF ne peut être effectuée que côté client')
+  }
+
+  try {
+    const jsPDF = (await import('jspdf')).default
+    const html2canvas = (await import('html2canvas')).default
+
+    const iframe = document.createElement('iframe')
+    iframe.style.position = 'absolute'
+    iframe.style.left = '-9999px'
+    iframe.style.width = '800px'
+    iframe.style.height = '1200px'
+    document.body.appendChild(iframe)
+
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document
+    if (!iframeDoc) throw new Error('Impossible de créer le document iframe')
+
+    iframeDoc.open()
+    iframeDoc.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px;
+            background-color: #ffffff;
+            color: #000000;
+          }
+          .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #f97316;
+            padding-bottom: 10px;
+          }
+          .header h1 {
+            color: #f97316;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+          }
+          .header p {
+            font-size: 14px;
+            color: #666666;
+          }
+          .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+          }
+          .info-box {
+            padding: 10px;
+            background-color: #fff7ed;
+            border-left: 4px solid #f97316;
+            border-radius: 4px;
+          }
+          .info-box strong {
+            display: block;
+            color: #f97316;
+            font-size: 11px;
+            margin-bottom: 5px;
+          }
+          .info-box span {
+            color: #000000;
+            font-size: 13px;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+          }
+          th, td {
+            border: 2px solid #333333;
+            padding: 12px;
+            text-align: left;
+            color: #000000;
+            font-size: 12px;
+          }
+          th {
+            background-color: #f97316;
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 13px;
+          }
+          tr:nth-child(even) {
+            background-color: #fff7ed;
+          }
+          .signature-section {
+            margin-top: 40px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+          }
+          .signature-box {
+            border: 2px solid #333333;
+            padding: 15px;
+            border-radius: 4px;
+            min-height: 120px;
+          }
+          .signature-box h3 {
+            color: #f97316;
+            font-size: 14px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #cccccc;
+            padding-bottom: 5px;
+          }
+          .signature-box p {
+            margin: 8px 0;
+            color: #000000;
+            font-size: 12px;
+          }
+          .footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 2px solid #cccccc;
+            text-align: center;
+            color: #666666;
+            font-size: 10px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>BON DE SORTIE MATÉRIEL</h1>
+          <p>N° ${demande.numero}</p>
+        </div>
+
+        <div class="info-grid">
+          <div class="info-box">
+            <strong>PROJET</strong>
+            <span>${demande.projet?.nom || "N/A"}</span>
+          </div>
+          <div class="info-box">
+            <strong>DATE DE SORTIE</strong>
+            <span>${new Date().toLocaleDateString("fr-FR")}</span>
+          </div>
+          <div class="info-box">
+            <strong>DEMANDEUR</strong>
+            <span>${demande.technicien?.prenom || ""} ${demande.technicien?.nom || "N/A"}</span>
+          </div>
+          <div class="info-box">
+            <strong>TYPE</strong>
+            <span>${demande.type === "materiel" ? "Matériel" : "Outillage"}</span>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Désignation</th>
+              <th>Référence</th>
+              <th>Unité</th>
+              <th>Quantité Sortie</th>
+              <th>Destination</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${demande.items?.map((item: any) => {
+              const qteSortie = item.quantiteValidee || item.quantiteDemandee
+              return `
+                <tr>
+                  <td>${item.article?.nom || "N/A"}</td>
+                  <td>${item.article?.reference || "N/A"}</td>
+                  <td>${item.article?.unite || "N/A"}</td>
+                  <td style="font-weight: bold; color: #f97316;">${qteSortie}</td>
+                  <td>${demande.projet?.nom || "N/A"}</td>
+                </tr>
+              `
+            }).join("") || "<tr><td colspan='5'>Aucun article</td></tr>"}
+          </tbody>
+        </table>
+
+        <div class="signature-section">
+          <div class="signature-box">
+            <h3>Préparé par (Appro/Logistique)</h3>
+            <p>Nom: _____________________________</p>
+            <p>Date: _____________________________</p>
+            <p>Signature: _____________________________</p>
+          </div>
+          <div class="signature-box">
+            <h3>Reçu par</h3>
+            <p>Nom: _____________________________</p>
+            <p>Date: _____________________________</p>
+            <p>Signature: _____________________________</p>
+          </div>
+        </div>
+
+        <div class="footer">
+          <p>Document généré le ${new Date().toLocaleDateString("fr-FR")} à ${new Date().toLocaleTimeString("fr-FR")}</p>
+        </div>
+      </body>
+      </html>
+    `)
+    iframeDoc.close()
+
+    await new Promise(resolve => setTimeout(resolve, 200))
+
+    const canvas = await html2canvas(iframeDoc.body, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: '#ffffff'
+    })
+
+    document.body.removeChild(iframe)
+
+    const imgData = canvas.toDataURL('image/png')
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    })
+
+    const marginLeft = 10
+    const marginRight = 10
+    const marginTop = 10
+    const marginBottom = 10
+
+    const pdfWidth = pdf.internal.pageSize.getWidth()
+    const pdfHeight = pdf.internal.pageSize.getHeight()
+    
+    const availableWidth = pdfWidth - marginLeft - marginRight
+    const availableHeight = pdfHeight - marginTop - marginBottom
+    
+    const imgWidth = availableWidth
+    const imgHeight = (canvas.height * imgWidth) / canvas.width
+
+    let heightLeft = imgHeight
+    let position = 0
+
+    pdf.addImage(imgData, 'PNG', marginLeft, marginTop, imgWidth, imgHeight)
+    heightLeft -= availableHeight
+
+    while (heightLeft > 0) {
+      pdf.addPage()
+      position = -(imgHeight - heightLeft)
+      pdf.addImage(imgData, 'PNG', marginLeft, position + marginTop, imgWidth, imgHeight)
+      heightLeft -= availableHeight
+    }
+
+    const filename = `bon-sortie-${demande.numero}-${new Date().toISOString().split("T")[0]}.pdf`
+    pdf.save(filename)
+
+  } catch (error) {
+    console.error('Erreur lors de la génération du Bon de Sortie:', error)
+    throw new Error(`Impossible de générer le Bon de Sortie: ${error instanceof Error ? error.message : 'Erreur inconnue'}`)
+  }
+}
+
+/**
  * Fonction legacy pour compatibilité avec l'ancien code
  */
 export const generatePDFFromElement = async (

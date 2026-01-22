@@ -146,7 +146,7 @@ export default function EmployeDashboard() {
 
   // Calcul des statistiques selon le rôle
   useEffect(() => {
-    if (currentUser && demandes) {
+    if (currentUser) {
       const demandesForRole = getDemandesForRole()
 
       if (["conducteur_travaux", "responsable_logistique", "responsable_travaux", "charge_affaire", "responsable_appro", "responsable_livreur"].includes(currentUser.role)) {

@@ -42,7 +42,7 @@ export default function ResponsableLivreurDashboard() {
   const [detailsModalTitle, setDetailsModalTitle] = useState("")
 
   useEffect(() => {
-    if (currentUser && demandes) {
+    if (currentUser) {
       console.log(`🔍 [LIVREUR-DEBUG] Utilisateur connecté:`, {
         id: currentUser.id,
         nom: currentUser.nom,

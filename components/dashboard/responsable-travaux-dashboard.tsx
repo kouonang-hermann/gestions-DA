@@ -75,7 +75,7 @@ export default function ResponsableTravauxDashboard() {
 
   // Calcul des statistiques
   useEffect(() => {
-    if (currentUser && demandes) {
+    if (currentUser) {
       // Filtrer les demandes (matériel + outillage) qui nécessitent la validation du responsable des travaux
       // ET qui sont dans les projets assignés à l'utilisateur
       const demandesAValider = demandes.filter((d) => 

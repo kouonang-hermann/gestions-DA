@@ -7,7 +7,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Download, Loader2, CheckCircle } from "lucide-react"
 import type { Demande } from "@/types"
 import { useStore } from "@/stores/useStore"
-import { generatePurchaseRequestPDF } from "@/lib/pdf-generator"
+import { generatePurchaseRequestPDF, generateBonLivraisonPDF, generateBonSortiePDF } from "@/lib/pdf-generator"
+import { PDFTypeSelector, type PDFType } from "@/components/demandes/pdf-type-selector"
 
 interface DemandeDetailModalProps {
   isOpen: boolean
@@ -41,12 +42,22 @@ export default function DemandeDetailModal({
     }
   }, [demandeId, demandes])
 
-  // Fonction pour télécharger le PDF
-  const handleDownloadPDF = async () => {
+  // Fonction pour télécharger le PDF selon le type choisi
+  const handleDownloadPDF = async (type: PDFType) => {
     if (!demande) return
     setIsGeneratingPDF(true)
     try {
-      await generatePurchaseRequestPDF(demande)
+      switch (type) {
+        case 'demande':
+          await generatePurchaseRequestPDF(demande)
+          break
+        case 'bon_livraison':
+          await generateBonLivraisonPDF(demande)
+          break
+        case 'bon_sortie':
+          await generateBonSortiePDF(demande)
+          break
+      }
     } catch (error) {
       console.error('Erreur lors de la génération du PDF:', error)
       alert('Erreur lors de la génération du PDF. Veuillez réessayer.')
@@ -273,23 +284,11 @@ export default function DemandeDetailModal({
           {/* Boutons d'action */}
           <div className="flex justify-center gap-3 pt-4">
             {canDownload && (
-              <Button 
-                onClick={handleDownloadPDF}
-                disabled={isGeneratingPDF}
-                className="px-6 py-2 bg-[#015fc4] hover:bg-[#014a9a] text-white rounded flex items-center gap-2"
-              >
-                {isGeneratingPDF ? (
-                  <>
-                    <Loader2 className="animate-spin" size={16} />
-                    Génération...
-                  </>
-                ) : (
-                  <>
-                    <Download size={16} />
-                    Télécharger PDF
-                  </>
-                )}
-              </Button>
+              <PDFTypeSelector
+                onSelect={handleDownloadPDF}
+                isGenerating={isGeneratingPDF}
+                className="px-6 py-2"
+              />
             )}
             {canUserValidate && (
               <Button 

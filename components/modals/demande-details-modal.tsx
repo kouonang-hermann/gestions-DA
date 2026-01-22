@@ -8,7 +8,8 @@ import { Download, Loader2, CheckCircle, Save } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import type { Demande } from "@/types"
 import { useStore } from "@/stores/useStore"
-import { generatePurchaseRequestPDF } from "@/lib/pdf-generator"
+import { generatePurchaseRequestPDF, generateBonLivraisonPDF, generateBonSortiePDF } from "@/lib/pdf-generator"
+import { PDFTypeSelector, type PDFType } from "@/components/demandes/pdf-type-selector"
 
 interface DemandeDetailModalProps {
   isOpen: boolean
@@ -39,8 +40,10 @@ export default function DemandeDetailModal({
   const [prixUnitaires, setPrixUnitaires] = useState<{ [itemId: string]: string }>({})
 
   useEffect(() => {
+    console.log('🔍 [MODAL] useEffect déclenché:', { demandeId, demandesCount: demandes.length, mode })
     if (demandeId && demandes.length > 0) {
       const foundDemande = demandes.find(d => d.id === demandeId)
+      console.log('🔍 [MODAL] Demande trouvée:', foundDemande ? { id: foundDemande.id, numero: foundDemande.numero, status: foundDemande.status } : 'NON TROUVÉE')
       setDemande(foundDemande || null)
       
       // Initialiser les valeurs éditables
@@ -126,22 +129,52 @@ export default function DemandeDetailModal({
 
   const allComments = getAllComments()
 
-  // Fonction pour télécharger le PDF
-  const handleDownloadPDF = async () => {
+  // Fonction pour télécharger le PDF selon le type choisi
+  const handleDownloadPDF = async (type: PDFType) => {
+    console.log('🔍 [PDF] Début génération PDF:', { type, demandeId: demande?.id, demandeNumero: demande?.numero })
+    
+    if (!demande) {
+      console.error('❌ [PDF] Aucune demande disponible')
+      alert('Erreur: Aucune demande sélectionnée')
+      return
+    }
+    
     setIsGeneratingPDF(true)
     try {
-      await generatePurchaseRequestPDF(demande)
+      console.log('📄 [PDF] Génération du type:', type)
+      switch (type) {
+        case 'demande':
+          await generatePurchaseRequestPDF(demande)
+          console.log('✅ [PDF] Demande d\'achat générée avec succès')
+          break
+        case 'bon_livraison':
+          await generateBonLivraisonPDF(demande)
+          console.log('✅ [PDF] Bon de livraison généré avec succès')
+          break
+        case 'bon_sortie':
+          await generateBonSortiePDF(demande)
+          console.log('✅ [PDF] Bon de sortie généré avec succès')
+          break
+      }
     } catch (error) {
-      console.error('Erreur lors de la génération du PDF:', error)
+      console.error('❌ [PDF] Erreur lors de la génération du PDF:', error)
       alert('Erreur lors de la génération du PDF. Veuillez réessayer.')
     } finally {
       setIsGeneratingPDF(false)
+      console.log('🏁 [PDF] Fin génération PDF')
     }
   }
 
   // Vérifier si la demande est validée (peut être téléchargée)
   // Toutes les demandes peuvent être téléchargées sauf les brouillons
   const canDownload = demande && demande.status !== "brouillon"
+  
+  console.log('🔍 [MODAL] État du bouton PDF:', { 
+    canDownload, 
+    demandeStatus: demande?.status, 
+    isGeneratingPDF,
+    mode 
+  })
 
   // Vérifier si l'utilisateur peut valider cette demande
   const canUserValidate = canValidate && demande && currentUser && (
@@ -472,25 +505,11 @@ export default function DemandeDetailModal({
               </Button>
             )}
             {canDownload && (
-              <Button 
-                onClick={handleDownloadPDF}
-                disabled={isGeneratingPDF}
-                className="w-full sm:w-auto px-4 sm:px-6 py-3 sm:py-2 bg-[#015fc4] hover:bg-[#014a9a] text-white rounded flex items-center justify-center gap-2 min-h-[48px] text-sm sm:text-base"
-              >
-                {isGeneratingPDF ? (
-                  <>
-                    <Loader2 className="animate-spin" size={16} />
-                    <span className="hidden sm:inline">Génération...</span>
-                    <span className="sm:hidden">PDF...</span>
-                  </>
-                ) : (
-                  <>
-                    <Download size={16} />
-                    <span className="hidden sm:inline">Télécharger PDF</span>
-                    <span className="sm:hidden">PDF</span>
-                  </>
-                )}
-              </Button>
+              <PDFTypeSelector
+                onSelect={handleDownloadPDF}
+                isGenerating={isGeneratingPDF}
+                className="w-full sm:w-auto px-4 sm:px-6 py-3 sm:py-2"
+              />
             )}
             {canUserValidate && (
               <Button 

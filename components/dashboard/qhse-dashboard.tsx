@@ -70,7 +70,7 @@ export default function QHSEDashboard() {
   // Données chargées automatiquement par useDataLoader
 
   useEffect(() => {
-    if (currentUser && currentUser.projets) {
+    if (currentUser) {
       const demandesOutillage = demandes.filter(
         (d) => d.type === "outillage" && currentUser.projets.includes(d.projetId)
       )

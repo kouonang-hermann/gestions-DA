@@ -107,7 +107,7 @@ export default function ResponsableLogistiqueDashboard() {
   // Données chargées automatiquement par useDataLoader
 
   useEffect(() => {
-    if (demandes.length > 0 && currentUser) {
+    if (currentUser) {
       // Filtrer les demandes des projets où le responsable logistique travaille
       // Si pas de projets assignés, voir toutes les demandes (comportement superadmin)
       const mesDemandesLogistique = demandes.filter((d) => 

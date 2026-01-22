@@ -72,7 +72,7 @@ export default function ConducteurDashboard() {
   // Données chargées automatiquement par useDataLoader
 
   useEffect(() => {
-    if (currentUser && currentUser.projets) {
+    if (currentUser) {
       // Mes demandes personnelles (en tant que demandeur)
       const mesDemandesConducteur = demandes.filter((d) => d.technicienId === currentUser.id)
       
