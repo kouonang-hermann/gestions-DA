@@ -178,7 +178,7 @@ export default function ChargeAffaireDashboard() {
         ].includes(d.status))
       case "validees":
         // HISTORIQUE COMPLET : Uniquement les demandes validées PAR MOI
-        return demandes.filter((d) => 
+        return currentUser ? demandes.filter((d) => 
           // Vérifier que c'est MOI qui ai validé cette demande
           d.validationChargeAffaire?.userId === currentUser.id &&
           (
@@ -189,7 +189,7 @@ export default function ChargeAffaireDashboard() {
             d.status === "cloturee" ||
             d.status === "rejetee" // Inclure historique complet
           )
-        )
+        ) : []
       case "rejetees":
         // MES demandes rejetées
         return mesDemandes.filter((d) => d.status === "rejetee")
