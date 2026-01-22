@@ -111,39 +111,47 @@ export default function ChargeAffaireDashboard() {
 
   useEffect(() => {
     if (currentUser) {
-      // CORRECTION: Filtrer les demandes selon le rôle du chargé d'affaires
-      // Le chargé d'affaires voit toutes les demandes, pas seulement les siennes
-      const mesDemandesCA = demandes
+      // Mes demandes personnelles
+      const mesDemandesCA = demandes.filter((d) => d.technicienId === currentUser.id)
 
-      // HISTORIQUE COMPLET : Inclure toutes les demandes validées, même terminées ou rejetées
+      // HISTORIQUE COMPLET : Inclure uniquement les demandes validées PAR MOI
       const demandesValidees = mesDemandesCA.filter((d) => 
-        d.status === "en_attente_preparation_appro" || 
-        d.status === "en_attente_validation_logistique" || 
-        d.status === "en_attente_validation_finale_demandeur" ||
-        d.status === "confirmee_demandeur" ||
-        d.status === "cloturee" ||
-        d.status === "rejetee" // AJOUT : Inclure les demandes rejetées après validation
+        // Vérifier que c'est MOI qui ai validé cette demande
+        d.validationChargeAffaire?.userId === currentUser.id &&
+        (
+          d.status === "en_attente_preparation_appro" || 
+          d.status === "en_attente_validation_logistique" || 
+          d.status === "en_attente_validation_finale_demandeur" ||
+          d.status === "confirmee_demandeur" ||
+          d.status === "cloturee" ||
+          d.status === "rejetee" // AJOUT : Inclure les demandes rejetées après validation
+        )
       )
 
       console.log(`📊 [CHARGE-AFFAIRE-DASHBOARD] Statistiques validations pour ${currentUser.nom}:`, {
         totalValidees: demandesValidees.length,
+        demandesAvecMaSignature: demandesValidees.length,
         enCours: demandesValidees.filter(d => !["cloturee", "rejetee", "confirmee_demandeur"].includes(d.status)).length,
         terminees: demandesValidees.filter(d => ["cloturee", "confirmee_demandeur"].includes(d.status)).length,
         rejetees: demandesValidees.filter(d => d.status === "rejetee").length
       })
 
       setStats({
+        // Total = MES demandes créées
         total: mesDemandesCA.length,
-        aValider: mesDemandesCA.filter((d) => d.status === "en_attente_validation_charge_affaire").length,
-        enCours: demandes.filter((d) => 
-          d.technicienId === currentUser.id && ![
+        // À valider = Demandes à valider (rôle validateur)
+        aValider: demandes.filter((d) => d.status === "en_attente_validation_charge_affaire").length,
+        // En cours = MES demandes en cours
+        enCours: mesDemandesCA.filter((d) => ![
             "brouillon", 
             "cloturee", 
             "rejetee", 
             "archivee"
           ].includes(d.status)
         ).length,
+        // Validées = Demandes que J'AI validées
         validees: demandesValidees.length,
+        // Rejetées = MES demandes rejetées
         rejetees: mesDemandesCA.filter((d) => d.status === "rejetee").length,
       })
     }
@@ -155,8 +163,10 @@ export default function ChargeAffaireDashboard() {
   const getFilteredDemandes = (type: "total" | "aValider" | "enCours" | "validees" | "rejetees") => {
     switch (type) {
       case "total":
-        return demandes // Toutes les demandes pour le rôle de validation
+        // MES demandes personnelles
+        return mesDemandes
       case "aValider":
+        // Demandes à valider (rôle validateur)
         return demandes.filter((d) => d.status === "en_attente_validation_charge_affaire")
       case "enCours":
         // MES demandes en cours (en tant que demandeur)
@@ -167,17 +177,22 @@ export default function ChargeAffaireDashboard() {
           "archivee"
         ].includes(d.status))
       case "validees":
-        // HISTORIQUE COMPLET : Toutes les demandes validées par le chargé d'affaire
+        // HISTORIQUE COMPLET : Uniquement les demandes validées PAR MOI
         return demandes.filter((d) => 
-          d.status === "en_attente_preparation_appro" || 
-          d.status === "en_attente_validation_logistique" || 
-          d.status === "en_attente_validation_finale_demandeur" ||
-          d.status === "confirmee_demandeur" ||
-          d.status === "cloturee" ||
-          d.status === "rejetee" // Inclure historique complet
+          // Vérifier que c'est MOI qui ai validé cette demande
+          d.validationChargeAffaire?.userId === currentUser.id &&
+          (
+            d.status === "en_attente_preparation_appro" || 
+            d.status === "en_attente_validation_logistique" || 
+            d.status === "en_attente_validation_finale_demandeur" ||
+            d.status === "confirmee_demandeur" ||
+            d.status === "cloturee" ||
+            d.status === "rejetee" // Inclure historique complet
+          )
         )
       case "rejetees":
-        return demandes.filter((d) => d.status === "rejetee")
+        // MES demandes rejetées
+        return mesDemandes.filter((d) => d.status === "rejetee")
       default:
         return []
     }

@@ -178,13 +178,24 @@ export const GET = async (request: NextRequest) => {
         break
 
       case "employe":
-        // L'employé ne voit QUE ses propres demandes (pas celles des autres sur ses projets)
+        // L'employé voit :
+        // 1. Ses propres demandes (technicienId = currentUser.id)
+        // 2. Les demandes où il est assigné comme livreur (livreurAssigneId = currentUser.id)
         console.log(`👤 [API-DEMANDES] Employé ${currentUser.nom} ${currentUser.prenom}:`)
         console.log(`   - ID: ${currentUser.id}`)
-        console.log(`   - Filtre: technicienId = ${currentUser.id}`)
+        console.log(`   - Filtre: technicienId = ${currentUser.id} OU livreurAssigneId = ${currentUser.id}`)
         
         whereClause = {
-          technicienId: currentUser.id
+          OR: [
+            // Ses propres demandes
+            {
+              technicienId: currentUser.id
+            },
+            // Demandes où il est assigné comme livreur
+            {
+              livreurAssigneId: currentUser.id
+            }
+          ]
         }
         break
 

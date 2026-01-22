@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -128,6 +128,32 @@ export default function DemandeDetailModal({
   }
 
   const allComments = getAllComments()
+
+  // Calculer automatiquement le total en temps réel
+  const totalCalcule = useMemo(() => {
+    if (!demande) return 0
+    
+    let total = 0
+    demande.items.forEach(item => {
+      const qteLivree = canEdit 
+        ? parseFloat(quantitesLivrees[item.id] || "0") || 0 
+        : (item.quantiteSortie || item.quantiteRecue || 0)
+      const prix = canEdit 
+        ? parseFloat(prixUnitaires[item.id] || "0") || 0 
+        : (item.prixUnitaire || 0)
+      total += qteLivree * prix
+    })
+    
+    console.log('💰 [TOTAL] Calcul automatique:', {
+      total,
+      canEdit,
+      nbItems: demande.items.length,
+      prixSaisis: Object.keys(prixUnitaires).length,
+      qtesSaisies: Object.keys(quantitesLivrees).length
+    })
+    
+    return total
+  }, [demande, quantitesLivrees, prixUnitaires, canEdit])
 
   // Fonction pour télécharger le PDF selon le type choisi
   const handleDownloadPDF = async (type: PDFType) => {
@@ -439,24 +465,16 @@ export default function DemandeDetailModal({
                 <span className="text-lg font-bold text-gray-700">💰 Prix Total de la demande :</span>
                 <span className="text-2xl font-bold text-green-600">
                   {(() => {
-                    let total = 0
-                    demande.items.forEach(item => {
-                      const qteLivree = canEdit 
-                        ? parseFloat(quantitesLivrees[item.id] || "0") || 0 
-                        : (item.quantiteSortie || item.quantiteRecue || 0)
-                      const prix = canEdit 
-                        ? parseFloat(prixUnitaires[item.id] || "0") || 0 
-                        : (item.prixUnitaire || 0)
-                      total += qteLivree * prix
-                    })
                     // Utiliser le coût total enregistré si disponible et pas en mode édition
-                    const displayTotal = !canEdit && demande.coutTotal ? demande.coutTotal : total
+                    const displayTotal = !canEdit && demande.coutTotal ? demande.coutTotal : totalCalcule
                     return `${displayTotal.toFixed(0)} FCFA`
                   })()}
                 </span>
               </div>
-              {demande.coutTotal && !canEdit && (
+              {demande.coutTotal && !canEdit ? (
                 <p className="text-sm text-gray-500 mt-1">Coût total enregistré</p>
+              ) : canEdit && (
+                <p className="text-sm text-blue-600 mt-1">✨ Calcul automatique en temps réel</p>
               )}
             </div>
           )}

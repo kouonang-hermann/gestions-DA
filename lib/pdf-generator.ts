@@ -72,173 +72,172 @@ export const generatePurchaseRequestPDF = async (
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body { 
             font-family: Arial, sans-serif; 
-            padding: 15px;
+            padding: 20px;
             background-color: #ffffff;
             color: #000000;
           }
           .header {
             text-align: center;
-            margin-bottom: 8px;
-            border-bottom: 1px solid #333333;
-            padding-bottom: 5px;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #4CAF50;
+            padding-bottom: 10px;
           }
           .header h1 {
-            margin: 0;
-            color: #333333;
-            font-size: 14px;
+            color: #4CAF50;
+            font-size: 24px;
             font-weight: bold;
+            margin-bottom: 5px;
           }
           .header p {
-            margin: 3px 0;
+            font-size: 14px;
+            color: #666666;
+          }
+          .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+          }
+          .info-box {
+            padding: 10px;
+            background-color: #f0f9ff;
+            border-left: 4px solid #4CAF50;
+            border-radius: 4px;
+          }
+          .info-box strong {
+            display: block;
+            color: #4CAF50;
             font-size: 11px;
-            color: #000000;
+            margin-bottom: 5px;
           }
-          .info-section {
-            margin-bottom: 8px;
-            padding: 5px 8px;
-            background-color: #f5f5f5;
-            border-radius: 3px;
-          }
-          .info-row {
-            margin-bottom: 3px;
+          .info-box span {
             color: #000000;
-            font-size: 10px;
-          }
-          .info-row strong {
-            display: inline-block;
-            width: 150px;
-            color: #000000;
-            font-size: 10px;
+            font-size: 13px;
           }
           .visa-section {
-            margin: 8px 0;
-            padding: 5px;
+            margin: 20px 0;
+            padding: 15px;
             background-color: #f9f9f9;
-            border: 1px solid #dddddd;
-            border-radius: 3px;
+            border: 2px solid #4CAF50;
+            border-radius: 4px;
           }
           .visa-section h3 {
-            margin: 0 0 5px 0;
-            color: #333333;
-            font-size: 11px;
+            margin: 0 0 15px 0;
+            color: #4CAF50;
+            font-size: 16px;
             text-align: center;
             font-weight: bold;
+            border-bottom: 1px solid #cccccc;
+            padding-bottom: 10px;
           }
           .visa-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 3px;
+            margin-top: 10px;
           }
           .visa-table th,
           .visa-table td {
-            border: 1px solid #dddddd;
-            padding: 3px 5px;
+            border: 2px solid #333333;
+            padding: 8px;
             text-align: center;
             color: #000000;
-            font-size: 9px;
+            font-size: 11px;
           }
           .visa-table th {
-            background-color: #2196F3;
+            background-color: #4CAF50;
             color: #ffffff;
             font-weight: bold;
-            font-size: 9px;
+            font-size: 12px;
           }
           .visa-table tr:nth-child(even) {
-            background-color: #f5f5f5;
+            background-color: #f0f9ff;
           }
-          .status-badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: bold;
-          }
-          .status-validated { background-color: #dcfce7; color: #166534; }
-          .status-pending { background-color: #fef3c7; color: #92400e; }
-          .status-rejected { background-color: #fee2e2; color: #991b1b; }
           table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 10px;
+            margin: 20px 0;
           }
           th, td {
             border: 2px solid #333333;
-            padding: 10px;
+            padding: 12px;
             text-align: left;
             color: #000000;
-            font-size: 13px;
+            font-size: 12px;
           }
           th {
             background-color: #4CAF50;
             color: #ffffff;
             font-weight: bold;
-            font-size: 14px;
+            font-size: 13px;
           }
           tr:nth-child(even) {
-            background-color: #f9f9f9;
-          }
-          .qty-delivered { color: #2563eb; font-weight: bold; }
-          .qty-remaining { color: #ea580c; font-weight: bold; }
-          .comments-section {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #f8f9fa;
-            border: 1px solid #e5e7eb;
-            border-radius: 6px;
-          }
-          .comments-title {
-            font-weight: bold;
-            color: #374151;
-            margin-bottom: 10px;
-          }
-          .comment-item {
-            padding: 8px;
-            background-color: #ffffff;
-            border-left: 3px solid #015fc4;
-            margin-bottom: 8px;
-            font-size: 12px;
+            background-color: #f0f9ff;
           }
           .signature-section {
-            margin-top: 20px;
-            display: flex;
-            justify-content: space-between;
+            margin-top: 40px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
           }
           .signature-box {
-            width: 45%;
-            border-top: 1px solid #333333;
-            padding-top: 5px;
-            text-align: center;
+            border: 2px solid #333333;
+            padding: 15px;
+            border-radius: 4px;
+            min-height: 120px;
+          }
+          .signature-box h3 {
+            color: #4CAF50;
+            font-size: 14px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #cccccc;
+            padding-bottom: 5px;
           }
           .signature-box p {
-            margin: 3px 0;
+            margin: 8px 0;
             color: #000000;
-            font-size: 10px;
-          }
-          .signature-box p strong {
-            font-size: 11px;
+            font-size: 12px;
           }
           .footer {
-            margin-top: 15px;
-            padding-top: 8px;
-            border-top: 1px solid #dddddd;
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 2px solid #cccccc;
             text-align: center;
             color: #666666;
-            font-size: 8px;
+            font-size: 10px;
           }
         </style>
       </head>
       <body>
         <div class="header">
           <h1>DEMANDE D'ACHAT</h1>
-          <p>Demande N° ${demande.numero}</p>
+          <p>N° ${demande.numero}</p>
         </div>
 
-        <div class="info-section">
-          <div class="info-row"><strong>Type:</strong> ${demande.type === "materiel" ? "Matériel" : "Outillage"}</div>
-          <div class="info-row"><strong>Projet:</strong> ${demande.projet?.nom || "N/A"}</div>
-          <div class="info-row"><strong>Demandeur:</strong> ${demande.technicien?.nom || "N/A"} ${demande.technicien?.prenom || ""}</div>
-          <div class="info-row"><strong>Date de création:</strong> ${demande.dateCreation ? new Date(demande.dateCreation).toLocaleDateString("fr-FR") : "N/A"}</div>
-          <div class="info-row"><strong>Date de livraison:</strong> ${demande.dateLivraisonSouhaitee ? new Date(demande.dateLivraisonSouhaitee).toLocaleDateString("fr-FR") : "N/A"}</div>
+        <div class="info-grid">
+          <div class="info-box">
+            <strong>PROJET</strong>
+            <span>${demande.projet?.nom || "N/A"}</span>
+          </div>
+          <div class="info-box">
+            <strong>DATE DE CRÉATION</strong>
+            <span>${demande.dateCreation ? new Date(demande.dateCreation).toLocaleDateString("fr-FR") : "N/A"}</span>
+          </div>
+          <div class="info-box">
+            <strong>DEMANDEUR</strong>
+            <span>${demande.technicien?.prenom || ""} ${demande.technicien?.nom || "N/A"}</span>
+          </div>
+          <div class="info-box">
+            <strong>TYPE</strong>
+            <span>${demande.type === "materiel" ? "Matériel" : "Outillage"}</span>
+          </div>
+          <div class="info-box">
+            <strong>DATE DE LIVRAISON SOUHAITÉE</strong>
+            <span>${demande.dateLivraisonSouhaitee ? new Date(demande.dateLivraisonSouhaitee).toLocaleDateString("fr-FR") : "N/A"}</span>
+          </div>
+          <div class="info-box">
+            <strong>STATUT</strong>
+            <span>${getStatusLabel(demande.status)}</span>
+          </div>
         </div>
 
         <div class="visa-section">
@@ -312,12 +311,12 @@ export const generatePurchaseRequestPDF = async (
         <table>
           <thead>
             <tr>
-              <th>Article</th>
+              <th>Désignation</th>
               <th>Référence</th>
               <th>Unité</th>
-              <th>Qté Dem.</th>
-              <th>Qté Val.</th>
-              <th>Commentaire</th>
+              <th>Qté Demandée</th>
+              <th>Qté Validée</th>
+              <th>Observation</th>
             </tr>
           </thead>
           <tbody>
@@ -328,8 +327,8 @@ export const generatePurchaseRequestPDF = async (
                   <td>${item.article?.nom || "N/A"}</td>
                   <td>${item.article?.reference || "N/A"}</td>
                   <td>${item.article?.unite || "N/A"}</td>
-                  <td>${item.quantiteDemandee}</td>
-                  <td>${qteValidee}</td>
+                  <td style="font-weight: bold; color: #4CAF50;">${item.quantiteDemandee}</td>
+                  <td style="font-weight: bold; color: #015fc4;">${qteValidee}</td>
                   <td>${item.commentaire || ""}</td>
                 </tr>
               `
@@ -339,16 +338,16 @@ export const generatePurchaseRequestPDF = async (
 
         <div class="signature-section">
           <div class="signature-box">
-            <p><strong>Préparé par (Appro)</strong></p>
-            <p>Nom: _____________________</p>
-            <p>Date: _____________________</p>
-            <p>Signature: _____________________</p>
+            <h3>Préparé par (Appro/Logistique)</h3>
+            <p>Nom: _____________________________</p>
+            <p>Date: _____________________________</p>
+            <p>Signature: _____________________________</p>
           </div>
           <div class="signature-box">
-            <p><strong>Reçu par (Livreur)</strong></p>
-            <p>Nom: _____________________</p>
-            <p>Date: _____________________</p>
-            <p>Signature: _____________________</p>
+            <h3>Reçu par (Livreur)</h3>
+            <p>Nom: _____________________________</p>
+            <p>Date: _____________________________</p>
+            <p>Signature: _____________________________</p>
           </div>
         </div>
 

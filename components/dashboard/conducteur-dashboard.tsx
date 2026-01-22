@@ -85,35 +85,29 @@ export default function ConducteurDashboard() {
       )
       
       // Demandes que j'ai validées en tant que conducteur (demandes matériel dans mes projets)
-      // HISTORIQUE COMPLET : Inclut toutes les demandes validées, même terminées ou rejetées
+      // HISTORIQUE COMPLET : Uniquement les demandes avec MA signature de validation
       const demandesValideesConducteur = demandes.filter((d) => 
         d.type === "materiel" && 
         currentUser.projets.includes(d.projetId) &&
         d.technicienId !== currentUser.id && // Pas mes propres demandes
-        (
-          // Méthode 1 : Si signature de validation existe (traçabilité exacte)
-          d.validationConducteur?.userId === currentUser.id ||
-          // Méthode 2 : Basé sur les statuts (toutes demandes ayant passé l'étape conducteur)
-          (
-            !d.validationConducteur && // Pas encore de signature système
-            [
-              "en_attente_validation_responsable_travaux",
-              "en_attente_validation_charge_affaire", 
-              "en_attente_preparation_appro",
-              "en_attente_validation_logistique",
-              "en_attente_validation_finale_demandeur",
-              "confirmee_demandeur",
-              "cloturee",
-              "rejetee" // AJOUT : Inclure les demandes rejetées après validation
-            ].includes(d.status)
-          )
-        )
+        // Vérifier que c'est MOI qui ai validé cette demande (traçabilité exacte)
+        d.validationConducteur?.userId === currentUser.id &&
+        [
+          "en_attente_validation_responsable_travaux",
+          "en_attente_validation_charge_affaire", 
+          "en_attente_preparation_appro",
+          "en_attente_validation_logistique",
+          "en_attente_validation_finale_demandeur",
+          "confirmee_demandeur",
+          "cloturee",
+          "rejetee" // AJOUT : Inclure les demandes rejetées après validation
+        ].includes(d.status)
       )
 
       console.log(`📊 [CONDUCTEUR-DASHBOARD] Statistiques validations pour ${currentUser.nom}:`, {
         totalValidees: demandesValideesConducteur.length,
-        avecSignature: demandesValideesConducteur.filter(d => d.validationConducteur?.userId === currentUser.id).length,
-        parStatut: demandesValideesConducteur.filter(d => !d.validationConducteur).length
+        projets: currentUser.projets,
+        demandesAvecMaSignature: demandesValideesConducteur.length
       })
 
       setStats({
@@ -161,27 +155,24 @@ export default function ConducteurDashboard() {
         ].includes(d.status))
       case "validees":
         // Demandes que j'ai validées en tant que conducteur (HISTORIQUE COMPLET)
+        // Uniquement les demandes avec MA signature de validation
         if (!currentUser.projets) return []
         return demandes.filter((d) => 
           d.type === "materiel" && 
           currentUser.projets.includes(d.projetId) &&
           d.technicienId !== currentUser.id &&
-          (
-            d.validationConducteur?.userId === currentUser.id ||
-            (
-              !d.validationConducteur &&
-              [
-                "en_attente_validation_responsable_travaux",
-                "en_attente_validation_charge_affaire", 
-                "en_attente_preparation_appro",
-                "en_attente_validation_logistique",
-                "en_attente_validation_finale_demandeur",
-                "confirmee_demandeur",
-                "cloturee",
-                "rejetee" // Inclure historique complet
-              ].includes(d.status)
-            )
-          )
+          // Vérifier que c'est MOI qui ai validé cette demande
+          d.validationConducteur?.userId === currentUser.id &&
+          [
+            "en_attente_validation_responsable_travaux",
+            "en_attente_validation_charge_affaire", 
+            "en_attente_preparation_appro",
+            "en_attente_validation_logistique",
+            "en_attente_validation_finale_demandeur",
+            "confirmee_demandeur",
+            "cloturee",
+            "rejetee" // Inclure historique complet
+          ].includes(d.status)
         )
       case "rejetees":
         // Mes demandes rejetées (pas besoin de vérifier les projets)

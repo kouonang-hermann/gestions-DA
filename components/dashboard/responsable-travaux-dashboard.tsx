@@ -83,8 +83,10 @@ export default function ResponsableTravauxDashboard() {
         (!currentUser.projets || currentUser.projets.length === 0 || currentUser.projets.includes(d.projetId))
       )
 
-      // HISTORIQUE COMPLET : Inclure toutes les demandes validées, même terminées ou rejetées
+      // HISTORIQUE COMPLET : Inclure uniquement les demandes validées PAR MOI
       const demandesValidees = demandesAValider.filter((d) => 
+        // Vérifier que c'est MOI qui ai validé cette demande
+        d.validationResponsableTravaux?.userId === currentUser.id &&
         [
           "en_attente_validation_charge_affaire", 
           "en_attente_preparation_appro",
@@ -103,19 +105,26 @@ export default function ResponsableTravauxDashboard() {
         rejetees: demandesValidees.filter(d => d.status === "rejetee").length
       })
 
+      // Mes demandes personnelles
+      const mesDemandes = demandes.filter((d) => d.technicienId === currentUser.id)
+
       setStats({
-        total: demandesAValider.length,
+        // Total = MES demandes créées
+        total: mesDemandes.length,
+        // En attente = Demandes à valider dans mes projets (rôle validateur)
         enAttente: demandesAValider.filter((d) => d.status === "en_attente_validation_responsable_travaux").length,
-        enCours: demandes.filter((d) => 
-          d.technicienId === currentUser.id && ![
+        // En cours = MES demandes en cours
+        enCours: mesDemandes.filter((d) => ![
             "brouillon", 
             "cloturee", 
             "rejetee", 
             "archivee"
           ].includes(d.status)
         ).length,
+        // Validées = Demandes que J'AI validées
         validees: demandesValidees.length,
-        rejetees: demandesAValider.filter((d) => d.status === "rejetee").length,
+        // Rejetées = MES demandes rejetées
+        rejetees: mesDemandes.filter((d) => d.status === "rejetee").length,
       })
     }
   }, [currentUser?.id, demandes])
@@ -145,8 +154,10 @@ export default function ResponsableTravauxDashboard() {
           "brouillon", "cloturee", "rejetee", "archivee"
         ].includes(d.status))
       case "validees":
-        // HISTORIQUE COMPLET : Toutes les demandes validées par le responsable travaux
+        // HISTORIQUE COMPLET : Uniquement les demandes validées PAR MOI
         return demandesFiltered.filter((d) => 
+          // Vérifier que c'est MOI qui ai validé cette demande
+          d.validationResponsableTravaux?.userId === currentUser.id &&
           [
             "en_attente_validation_charge_affaire", 
             "en_attente_preparation_appro",
@@ -165,13 +176,9 @@ export default function ResponsableTravauxDashboard() {
   }
 
   const handleCardClick = (type: "total" | "enAttente" | "enCours" | "validees" | "rejetees", title: string) => {
-    if (type === "total") {
-      setValidatedHistoryModalOpen(true)
-    } else {
-      setUserDetailsModalType(type)
-      setUserDetailsModalTitle(title)
-      setUserDetailsModalOpen(true)
-    }
+    setUserDetailsModalType(type)
+    setUserDetailsModalTitle(title)
+    setUserDetailsModalOpen(true)
   }
 
   if (!currentUser) {

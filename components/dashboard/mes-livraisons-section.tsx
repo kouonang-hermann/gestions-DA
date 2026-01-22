@@ -16,10 +16,40 @@ export default function MesLivraisonsSection() {
 
   if (!currentUser) return null
 
+  console.log('🚚 [MES-LIVRAISONS] Utilisateur connecté:', {
+    id: currentUser.id,
+    nom: currentUser.nom,
+    prenom: currentUser.prenom,
+    role: currentUser.role
+  })
+  
+  console.log('🚚 [MES-LIVRAISONS] Total demandes dans le store:', demandes.length)
+  
+  // Filtrer toutes les demandes avec un livreurAssigneId
+  const demandesAvecLivreur = demandes.filter(d => d.livreurAssigneId)
+  console.log('🚚 [MES-LIVRAISONS] Demandes avec livreur assigné:', {
+    total: demandesAvecLivreur.length,
+    demandes: demandesAvecLivreur.map(d => ({
+      numero: d.numero,
+      status: d.status,
+      livreurAssigneId: d.livreurAssigneId,
+      estMonLivreur: d.livreurAssigneId === currentUser.id
+    }))
+  })
+
   const mesLivraisons = demandes.filter(
     (d) => d.livreurAssigneId === currentUser.id &&
     (d.status === "en_attente_reception_livreur" || d.status === "en_attente_livraison")
   )
+  
+  console.log('🚚 [MES-LIVRAISONS] Mes livraisons filtrées:', {
+    total: mesLivraisons.length,
+    demandes: mesLivraisons.map(d => ({
+      numero: d.numero,
+      status: d.status,
+      livreurAssigneId: d.livreurAssigneId
+    }))
+  })
 
   const livraisonsAReceptionner = mesLivraisons.filter(
     (d) => d.status === "en_attente_reception_livreur"
