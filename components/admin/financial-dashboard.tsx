@@ -102,7 +102,7 @@ export default function FinancialDashboard({ onClose }: FinancialDashboardProps)
     }
 
     return filtered
-  }, [demandesKey, selectedProjet, dateRange, searchTerm, demandes])
+  }, [demandesKey, selectedProjet, dateRange, searchTerm])
 
   // Calculs statistiques
   const stats = useMemo(() => {
