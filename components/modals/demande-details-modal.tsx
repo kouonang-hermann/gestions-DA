@@ -129,6 +129,9 @@ export default function DemandeDetailModal({
 
   const allComments = getAllComments()
 
+  // Créer une clé stable pour les items basée sur leurs IDs
+  const itemsKey = demande?.items.map(item => item.id).join(',') || ''
+
   // Calculer automatiquement le total en temps réel
   const totalCalcule = useMemo(() => {
     if (!demande) return 0
@@ -153,7 +156,7 @@ export default function DemandeDetailModal({
     })
     
     return total
-  }, [demande?.id, demande?.items, quantitesLivrees, prixUnitaires, canEdit])
+  }, [demande?.id, itemsKey, quantitesLivrees, prixUnitaires, canEdit])
 
   // Fonction pour télécharger le PDF selon le type choisi
   const handleDownloadPDF = async (type: PDFType) => {
