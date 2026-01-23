@@ -58,6 +58,11 @@ export default function FinancialDashboard({ onClose }: FinancialDashboardProps)
     )
   }
 
+  // Créer une clé stable pour les demandes
+  const demandesKey = useMemo(() => {
+    return demandes.map(d => d.id).join(',')
+  }, [demandes.length])
+
   // Filtrer les demandes avec coût total
   const demandesAvecCout = useMemo(() => {
     let filtered = demandes.filter(d => d.coutTotal !== undefined && d.coutTotal !== null && d.coutTotal > 0)
@@ -97,7 +102,7 @@ export default function FinancialDashboard({ onClose }: FinancialDashboardProps)
     }
 
     return filtered
-  }, [demandes, selectedProjet, dateRange, searchTerm])
+  }, [demandesKey, selectedProjet, dateRange, searchTerm, demandes])
 
   // Calculs statistiques
   const stats = useMemo(() => {
