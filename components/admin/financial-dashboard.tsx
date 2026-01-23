@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -58,13 +58,8 @@ export default function FinancialDashboard({ onClose }: FinancialDashboardProps)
     )
   }
 
-  // Créer une clé stable pour les demandes
-  const demandesKey = useMemo(() => {
-    return demandes.map(d => d.id).join(',')
-  }, [demandes.length])
-
-  // Filtrer les demandes avec coût total
-  const demandesAvecCout = useMemo(() => {
+  // Filtrer les demandes avec coût total (calcul direct sans useMemo)
+  const getDemandesAvecCout = () => {
     let filtered = demandes.filter(d => d.coutTotal !== undefined && d.coutTotal !== null && d.coutTotal > 0)
     
     // Filtre par projet
@@ -102,30 +97,30 @@ export default function FinancialDashboard({ onClose }: FinancialDashboardProps)
     }
 
     return filtered
-  }, [demandesKey, selectedProjet, dateRange, searchTerm])
+  }
 
-  // Calculs statistiques
-  const stats = useMemo(() => {
-    const totalCout = demandesAvecCout.reduce((sum, d) => sum + (d.coutTotal || 0), 0)
-    const coutMateriel = demandesAvecCout
-      .filter(d => d.type === "materiel")
-      .reduce((sum, d) => sum + (d.coutTotal || 0), 0)
-    const coutOutillage = demandesAvecCout
-      .filter(d => d.type === "outillage")
-      .reduce((sum, d) => sum + (d.coutTotal || 0), 0)
-    const moyenneCout = demandesAvecCout.length > 0 ? totalCout / demandesAvecCout.length : 0
+  const demandesAvecCout = getDemandesAvecCout()
 
-    return {
-      totalCout,
-      coutMateriel,
-      coutOutillage,
-      moyenneCout,
-      nombreDemandes: demandesAvecCout.length
-    }
-  }, [demandesAvecCout])
+  // Calculs statistiques (calcul direct)
+  const totalCout = demandesAvecCout.reduce((sum, d) => sum + (d.coutTotal || 0), 0)
+  const coutMateriel = demandesAvecCout
+    .filter(d => d.type === "materiel")
+    .reduce((sum, d) => sum + (d.coutTotal || 0), 0)
+  const coutOutillage = demandesAvecCout
+    .filter(d => d.type === "outillage")
+    .reduce((sum, d) => sum + (d.coutTotal || 0), 0)
+  const moyenneCout = demandesAvecCout.length > 0 ? totalCout / demandesAvecCout.length : 0
 
-  // Données pour le graphique par projet
-  const dataParProjet = useMemo(() => {
+  const stats = {
+    totalCout,
+    coutMateriel,
+    coutOutillage,
+    moyenneCout,
+    nombreDemandes: demandesAvecCout.length
+  }
+
+  // Données pour le graphique par projet (calcul direct)
+  const getDataParProjet = () => {
     const parProjet: { [key: string]: { nom: string, cout: number, count: number } } = {}
     
     demandesAvecCout.forEach(d => {
@@ -138,15 +133,15 @@ export default function FinancialDashboard({ onClose }: FinancialDashboardProps)
     })
 
     return Object.values(parProjet).sort((a, b) => b.cout - a.cout)
-  }, [demandesAvecCout])
+  }
 
-  // Données pour le graphique par type
-  const dataParType = useMemo(() => {
-    return [
-      { name: "Matériel", value: stats.coutMateriel, color: "#015fc4" },
-      { name: "Outillage", value: stats.coutOutillage, color: "#7c3aed" }
-    ].filter(d => d.value > 0)
-  }, [stats])
+  const dataParProjet = getDataParProjet()
+
+  // Données pour le graphique par type (calcul direct)
+  const dataParType = [
+    { name: "Matériel", value: stats.coutMateriel, color: "#015fc4" },
+    { name: "Outillage", value: stats.coutOutillage, color: "#7c3aed" }
+  ].filter(d => d.value > 0)
 
   // Formatter les prix
   const formatPrice = (price: number) => {

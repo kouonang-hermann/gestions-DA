@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useMemo } from "react"
+import { useEffect, useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -129,13 +129,8 @@ export default function DemandeDetailModal({
 
   const allComments = getAllComments()
 
-  // Créer une clé stable pour les items basée sur leurs IDs
-  const itemsKey = useMemo(() => {
-    return demande?.items.map(item => item.id).join(',') || ''
-  }, [demande?.id])
-
-  // Calculer automatiquement le total en temps réel
-  const totalCalcule = useMemo(() => {
+  // Calculer automatiquement le total en temps réel (calcul direct sans useMemo)
+  const calculerTotal = () => {
     if (!demande) return 0
     
     let total = 0
@@ -149,16 +144,10 @@ export default function DemandeDetailModal({
       total += qteLivree * prix
     })
     
-    console.log('💰 [TOTAL] Calcul automatique:', {
-      total,
-      canEdit,
-      nbItems: demande.items.length,
-      prixSaisis: Object.keys(prixUnitaires).length,
-      qtesSaisies: Object.keys(quantitesLivrees).length
-    })
-    
     return total
-  }, [demande?.id, itemsKey, quantitesLivrees, prixUnitaires, canEdit])
+  }
+
+  const totalCalcule = calculerTotal()
 
   // Fonction pour télécharger le PDF selon le type choisi
   const handleDownloadPDF = async (type: PDFType) => {
