@@ -84,19 +84,31 @@ export default function ResponsableTravauxDashboard() {
       )
 
       // HISTORIQUE COMPLET : Inclure uniquement les demandes validées PAR MOI
-      const demandesValidees = demandesAValider.filter((d) => 
+      const demandesValidees = demandesAValider.filter((d) => {
         // Vérifier que c'est MOI qui ai validé cette demande
-        d.validationResponsableTravaux?.userId === currentUser.id &&
-        [
+        // Méthode 1 : Si signature existe (après validation avec signature)
+        if (d.validationResponsableTravaux?.userId === currentUser.id) {
+          return [
+            "en_attente_validation_charge_affaire", 
+            "en_attente_preparation_appro",
+            "en_attente_validation_logistique",
+            "en_attente_validation_finale_demandeur",
+            "confirmee_demandeur",
+            "cloturee",
+            "rejetee"
+          ].includes(d.status)
+        }
+        // Méthode 2 : Basé sur statuts (si pas encore de signature)
+        // Demandes qui sont passées par le responsable travaux (statuts post-validation)
+        return !d.validationResponsableTravaux && [
           "en_attente_validation_charge_affaire", 
           "en_attente_preparation_appro",
           "en_attente_validation_logistique",
           "en_attente_validation_finale_demandeur",
           "confirmee_demandeur",
-          "cloturee",
-          "rejetee" // AJOUT : Inclure les demandes rejetées après validation
+          "cloturee"
         ].includes(d.status)
-      )
+      })
 
       console.log(`📊 [RESPONSABLE-TRAVAUX-DASHBOARD] Statistiques validations pour ${currentUser.nom}:`, {
         totalValidees: demandesValidees.length,
@@ -155,19 +167,31 @@ export default function ResponsableTravauxDashboard() {
         ].includes(d.status))
       case "validees":
         // HISTORIQUE COMPLET : Uniquement les demandes validées PAR MOI
-        return demandesFiltered.filter((d) => 
+        return demandesFiltered.filter((d) => {
           // Vérifier que c'est MOI qui ai validé cette demande
-          d.validationResponsableTravaux?.userId === currentUser.id &&
-          [
+          // Méthode 1 : Si signature existe (après validation avec signature)
+          if (d.validationResponsableTravaux?.userId === currentUser.id) {
+            return [
+              "en_attente_validation_charge_affaire", 
+              "en_attente_preparation_appro",
+              "en_attente_validation_logistique",
+              "en_attente_validation_finale_demandeur",
+              "confirmee_demandeur",
+              "cloturee",
+              "rejetee"
+            ].includes(d.status)
+          }
+          // Méthode 2 : Basé sur statuts (si pas encore de signature)
+          // Demandes qui sont passées par le responsable travaux (statuts post-validation)
+          return !d.validationResponsableTravaux && [
             "en_attente_validation_charge_affaire", 
             "en_attente_preparation_appro",
             "en_attente_validation_logistique",
             "en_attente_validation_finale_demandeur",
             "confirmee_demandeur",
-            "cloturee",
-            "rejetee" // Inclure historique complet
+            "cloturee"
           ].includes(d.status)
-        )
+        })
       case "rejetees":
         return mesDemandes.filter((d) => d.status === "rejetee")
       default:

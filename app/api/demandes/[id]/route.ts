@@ -461,7 +461,14 @@ export const DELETE = withAuth(async (request: NextRequest, currentUser: any, co
     // Superadmin peut supprimer n'importe quelle demande, quel que soit son statut
     if (currentUser.role !== "superadmin") {
       // Pour les autres utilisateurs, autoriser uniquement les demandes non validées
-      const allowedStatuses = ["brouillon", "soumise", "en_attente_validation_conducteur"]
+      const allowedStatuses = [
+        "brouillon", 
+        "soumise", 
+        "en_attente_validation_conducteur",
+        "en_attente_validation_logistique",
+        "en_attente_validation_responsable_travaux",
+        "en_attente_validation_charge_affaire"
+      ]
       if (!allowedStatuses.includes(demande.status)) {
         return NextResponse.json({ 
           success: false, 

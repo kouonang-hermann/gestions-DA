@@ -115,18 +115,29 @@ export default function ChargeAffaireDashboard() {
       const mesDemandesCA = demandes.filter((d) => d.technicienId === currentUser.id)
 
       // HISTORIQUE COMPLET : Inclure uniquement les demandes validées PAR MOI
-      const demandesValidees = mesDemandesCA.filter((d) => 
+      const demandesValidees = demandes.filter((d) => {
         // Vérifier que c'est MOI qui ai validé cette demande
-        d.validationChargeAffaire?.userId === currentUser.id &&
-        (
-          d.status === "en_attente_preparation_appro" || 
-          d.status === "en_attente_validation_logistique" || 
-          d.status === "en_attente_validation_finale_demandeur" ||
-          d.status === "confirmee_demandeur" ||
-          d.status === "cloturee" ||
-          d.status === "rejetee" // AJOUT : Inclure les demandes rejetées après validation
-        )
-      )
+        // Méthode 1 : Si signature existe (après validation avec signature)
+        if (d.validationChargeAffaire?.userId === currentUser.id) {
+          return [
+            "en_attente_preparation_appro",
+            "en_attente_validation_logistique",
+            "en_attente_validation_finale_demandeur",
+            "confirmee_demandeur",
+            "cloturee",
+            "rejetee"
+          ].includes(d.status)
+        }
+        // Méthode 2 : Basé sur statuts (si pas encore de signature)
+        // Demandes qui sont passées par le chargé d'affaire (statuts post-validation)
+        return !d.validationChargeAffaire && [
+          "en_attente_preparation_appro",
+          "en_attente_validation_logistique",
+          "en_attente_validation_finale_demandeur",
+          "confirmee_demandeur",
+          "cloturee"
+        ].includes(d.status)
+      })
 
       console.log(`📊 [CHARGE-AFFAIRE-DASHBOARD] Statistiques validations pour ${currentUser.nom}:`, {
         totalValidees: demandesValidees.length,

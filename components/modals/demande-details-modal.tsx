@@ -153,7 +153,7 @@ export default function DemandeDetailModal({
     })
     
     return total
-  }, [demande, quantitesLivrees, prixUnitaires, canEdit])
+  }, [demande?.id, demande?.items, quantitesLivrees, prixUnitaires, canEdit])
 
   // Fonction pour télécharger le PDF selon le type choisi
   const handleDownloadPDF = async (type: PDFType) => {

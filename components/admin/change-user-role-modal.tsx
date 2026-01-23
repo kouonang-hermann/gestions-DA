@@ -160,7 +160,7 @@ export default function ChangeUserRoleModal({
                 <SelectTrigger className="w-full bg-white">
                   <SelectValue placeholder="Sélectionner un nouveau rôle" />
                 </SelectTrigger>
-                <SelectContent className="max-h-[300px] overflow-y-auto z-50 bg-white border border-gray-200 shadow-lg">
+                <SelectContent className="max-h-[300px] overflow-y-auto z-[9999] bg-white border border-gray-200 shadow-lg">
                   {ROLES.filter(role => role.value !== user.role).map((role) => (
                     <SelectItem 
                       key={role.value} 

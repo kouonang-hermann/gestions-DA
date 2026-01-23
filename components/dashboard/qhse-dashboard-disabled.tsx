@@ -1,4 +1,5 @@
 // DASHBOARD QHSE DÉSACTIVÉ - Ce rôle n'existe plus dans le flow de validation
+// Ce composant est conservé uniquement pour éviter les erreurs de build
 
 "use client"
 
