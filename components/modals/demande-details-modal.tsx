@@ -130,7 +130,9 @@ export default function DemandeDetailModal({
   const allComments = getAllComments()
 
   // Créer une clé stable pour les items basée sur leurs IDs
-  const itemsKey = demande?.items.map(item => item.id).join(',') || ''
+  const itemsKey = useMemo(() => {
+    return demande?.items.map(item => item.id).join(',') || ''
+  }, [demande?.id])
 
   // Calculer automatiquement le total en temps réel
   const totalCalcule = useMemo(() => {
