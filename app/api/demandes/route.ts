@@ -333,8 +333,52 @@ export const GET = async (request: NextRequest) => {
 
     console.log(`📊 [API-DEMANDES] ${demandes.length} demande(s) trouvée(s) pour ${currentUser.role}`)
 
+    // Enrichir les demandes avec les informations des valideurs
+    const enrichedDemandes = await Promise.all(demandes.map(async (demande: any) => {
+      // Récupérer les informations des valideurs si les validations existent
+      const validationConducteur = demande.validationConducteur ? {
+        ...demande.validationConducteur,
+        user: demande.validationConducteur.userId ? await prisma.user.findUnique({
+          where: { id: demande.validationConducteur.userId },
+          select: { id: true, nom: true, prenom: true, email: true }
+        }) : null
+      } : null
+
+      const validationResponsableTravaux = demande.validationResponsableTravaux ? {
+        ...demande.validationResponsableTravaux,
+        user: demande.validationResponsableTravaux.userId ? await prisma.user.findUnique({
+          where: { id: demande.validationResponsableTravaux.userId },
+          select: { id: true, nom: true, prenom: true, email: true }
+        }) : null
+      } : null
+
+      const validationChargeAffaire = demande.validationChargeAffaire ? {
+        ...demande.validationChargeAffaire,
+        user: demande.validationChargeAffaire.userId ? await prisma.user.findUnique({
+          where: { id: demande.validationChargeAffaire.userId },
+          select: { id: true, nom: true, prenom: true, email: true }
+        }) : null
+      } : null
+
+      const validationLogistique = demande.validationLogistique ? {
+        ...demande.validationLogistique,
+        user: demande.validationLogistique.userId ? await prisma.user.findUnique({
+          where: { id: demande.validationLogistique.userId },
+          select: { id: true, nom: true, prenom: true, email: true }
+        }) : null
+      } : null
+
+      return {
+        ...demande,
+        validationConducteur,
+        validationResponsableTravaux,
+        validationChargeAffaire,
+        validationLogistique
+      }
+    }))
+
     // Filtrer les données financières pour les non-superadmin
-    const filteredDemandes = demandes.map((demande: any) => {
+    const filteredDemandes = enrichedDemandes.map((demande: any) => {
       if (currentUser.role === 'superadmin' || currentUser.role === 'responsable_logistique') {
         // Le superadmin et le responsable logistique voient tout, y compris les prix
         return demande

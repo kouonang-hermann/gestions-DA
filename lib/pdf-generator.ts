@@ -256,7 +256,7 @@ export const generatePurchaseRequestPDF = async (
               ${demande.validationConducteur ? `
               <tr>
                 <td>Conducteur Travaux</td>
-                <td>_____________________</td>
+                <td>${demande.validationConducteur.user ? `${demande.validationConducteur.user.prenom} ${demande.validationConducteur.user.nom}` : "_____________________"}</td>
                 <td>${demande.validationConducteur.date ? new Date(demande.validationConducteur.date).toLocaleDateString("fr-FR") : "_____"}</td>
                 <td>${demande.validationConducteur.date ? new Date(demande.validationConducteur.date).toLocaleTimeString("fr-FR", {hour: '2-digit', minute: '2-digit'}) : "_____"}</td>
                 <td>✓</td>
@@ -273,7 +273,7 @@ export const generatePurchaseRequestPDF = async (
               ${demande.validationResponsableTravaux ? `
               <tr>
                 <td>Responsable Travaux</td>
-                <td>_____________________</td>
+                <td>${demande.validationResponsableTravaux.user ? `${demande.validationResponsableTravaux.user.prenom} ${demande.validationResponsableTravaux.user.nom}` : "_____________________"}</td>
                 <td>${demande.validationResponsableTravaux.date ? new Date(demande.validationResponsableTravaux.date).toLocaleDateString("fr-FR") : "_____"}</td>
                 <td>${demande.validationResponsableTravaux.date ? new Date(demande.validationResponsableTravaux.date).toLocaleTimeString("fr-FR", {hour: '2-digit', minute: '2-digit'}) : "_____"}</td>
                 <td>✓</td>
@@ -290,7 +290,7 @@ export const generatePurchaseRequestPDF = async (
               ${demande.validationChargeAffaire ? `
               <tr>
                 <td>Chargé d'Affaire</td>
-                <td>_____________________</td>
+                <td>${demande.validationChargeAffaire.user ? `${demande.validationChargeAffaire.user.prenom} ${demande.validationChargeAffaire.user.nom}` : "_____________________"}</td>
                 <td>${demande.validationChargeAffaire.date ? new Date(demande.validationChargeAffaire.date).toLocaleDateString("fr-FR") : "_____"}</td>
                 <td>${demande.validationChargeAffaire.date ? new Date(demande.validationChargeAffaire.date).toLocaleTimeString("fr-FR", {hour: '2-digit', minute: '2-digit'}) : "_____"}</td>
                 <td>✓</td>
