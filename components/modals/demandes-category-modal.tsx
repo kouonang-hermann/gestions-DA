@@ -20,7 +20,10 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  Loader2
+  Loader2,
+  Filter,
+  X,
+  ArrowUpDown
 } from "lucide-react"
 import type { Demande } from "@/types"
 import DemandeDetailsModal from "@/components/modals/demande-details-modal"
@@ -46,8 +49,12 @@ export default function DemandesCategoryModal({
   categoryType,
   currentUser
 }: DemandesCategoryModalProps) {
-  const { deleteDemande, loadDemandes } = useStore()
+  const { deleteDemande, loadDemandes, users } = useStore()
   const [searchTerm, setSearchTerm] = useState("")
+  const [filterMonth, setFilterMonth] = useState<string>("")
+  const [filterUser, setFilterUser] = useState<string>("")
+  const [sortBy, setSortBy] = useState<"date" | "numero" | "statut" | "type">("date")
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
   const [selectedDemande, setSelectedDemande] = useState<Demande | null>(null)
   const [demandeDetailsOpen, setDemandeDetailsOpen] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
@@ -56,13 +63,52 @@ export default function DemandesCategoryModal({
   const [demandeToEdit, setDemandeToEdit] = useState<Demande | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  // Filtrer les demandes selon le terme de recherche
-  const filteredDemandes = demandes.filter(demande => 
+  // Filtrer et trier les demandes
+  let filteredDemandes = demandes.filter(demande => 
     demande.numero.toLowerCase().includes(searchTerm.toLowerCase()) ||
     demande.projet?.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
     demande.technicien?.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
     demande.technicien?.prenom.toLowerCase().includes(searchTerm.toLowerCase())
   )
+
+  // Appliquer le filtre par mois
+  if (filterMonth) {
+    filteredDemandes = filteredDemandes.filter((d) => {
+      const demandeDate = new Date(d.dateCreation)
+      const [year, month] = filterMonth.split("-")
+      return (
+        demandeDate.getFullYear() === parseInt(year) &&
+        demandeDate.getMonth() === parseInt(month) - 1
+      )
+    })
+  }
+  
+  // Appliquer le filtre par utilisateur
+  if (filterUser) {
+    filteredDemandes = filteredDemandes.filter((d) => d.technicienId === filterUser)
+  }
+
+  // Appliquer le tri
+  filteredDemandes = [...filteredDemandes].sort((a, b) => {
+    let comparison = 0
+    
+    switch (sortBy) {
+      case "date":
+        comparison = new Date(a.dateCreation).getTime() - new Date(b.dateCreation).getTime()
+        break
+      case "numero":
+        comparison = a.numero.localeCompare(b.numero)
+        break
+      case "statut":
+        comparison = a.status.localeCompare(b.status)
+        break
+      case "type":
+        comparison = a.type.localeCompare(b.type)
+        break
+    }
+    
+    return sortOrder === "asc" ? comparison : -comparison
+  })
 
   const getStatusColor = (status: string) => {
     const colors = {
@@ -280,6 +326,142 @@ export default function DemandesCategoryModal({
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 text-sm"
                 />
+              </div>
+            </div>
+
+            {/* Filtres et Tri */}
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-3">
+                {/* Filtre par mois */}
+                <div className="flex-1 min-w-[200px]">
+                  <label className="text-xs font-medium text-gray-700 mb-1 block">
+                    <Filter className="h-3 w-3 inline mr-1" />
+                    Filtrer par mois
+                  </label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="month"
+                      value={filterMonth}
+                      onChange={(e) => setFilterMonth(e.target.value)}
+                      className="bg-white text-sm"
+                    />
+                    {filterMonth && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setFilterMonth("")}
+                        className="px-2"
+                        title="Effacer le filtre"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Filtre par demandeur */}
+                <div className="flex-1 min-w-[200px]">
+                  <label className="text-xs font-medium text-gray-700 mb-1 block">
+                    <Filter className="h-3 w-3 inline mr-1" />
+                    Filtrer par demandeur
+                  </label>
+                  <div className="flex gap-2">
+                    <select
+                      value={filterUser}
+                      onChange={(e) => setFilterUser(e.target.value)}
+                      className="flex h-9 w-full rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                      <option value="">Tous les demandeurs</option>
+                      {users
+                        .filter(u => demandes.some(d => d.technicienId === u.id))
+                        .sort((a, b) => `${a.prenom} ${a.nom}`.localeCompare(`${b.prenom} ${b.nom}`))
+                        .map(user => (
+                          <option key={user.id} value={user.id}>
+                            {user.prenom} {user.nom}
+                          </option>
+                        ))}
+                    </select>
+                    {filterUser && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setFilterUser("")}
+                        className="px-2"
+                        title="Effacer le filtre"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Boutons de tri */}
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant={sortBy === "date" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    if (sortBy === "date") {
+                      setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+                    } else {
+                      setSortBy("date")
+                      setSortOrder("desc")
+                    }
+                  }}
+                  className="text-xs"
+                >
+                  <ArrowUpDown className="h-3 w-3 mr-1" />
+                  Date {sortBy === "date" && (sortOrder === "asc" ? "↑" : "↓")}
+                </Button>
+                <Button
+                  variant={sortBy === "numero" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    if (sortBy === "numero") {
+                      setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+                    } else {
+                      setSortBy("numero")
+                      setSortOrder("asc")
+                    }
+                  }}
+                  className="text-xs"
+                >
+                  <ArrowUpDown className="h-3 w-3 mr-1" />
+                  Numéro {sortBy === "numero" && (sortOrder === "asc" ? "↑" : "↓")}
+                </Button>
+                <Button
+                  variant={sortBy === "statut" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    if (sortBy === "statut") {
+                      setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+                    } else {
+                      setSortBy("statut")
+                      setSortOrder("asc")
+                    }
+                  }}
+                  className="text-xs"
+                >
+                  <ArrowUpDown className="h-3 w-3 mr-1" />
+                  Statut {sortBy === "statut" && (sortOrder === "asc" ? "↑" : "↓")}
+                </Button>
+                <Button
+                  variant={sortBy === "type" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    if (sortBy === "type") {
+                      setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+                    } else {
+                      setSortBy("type")
+                      setSortOrder("asc")
+                    }
+                  }}
+                  className="text-xs"
+                >
+                  <ArrowUpDown className="h-3 w-3 mr-1" />
+                  Type {sortBy === "type" && (sortOrder === "asc" ? "↑" : "↓")}
+                </Button>
               </div>
             </div>
 
