@@ -746,6 +746,18 @@ export const generateBonSortiePDF = async (demande: any): Promise<void> => {
     const jsPDF = (await import('jspdf')).default
     const html2canvas = (await import('html2canvas')).default
 
+    // Générer un numéro de bon de sortie comptabilisé par projet
+    const year = new Date().getFullYear()
+    const typePrefix = demande.type === "materiel" ? "BS-M" : "BS-O"
+    const projetCode = demande.projet?.nom ? demande.projet.nom.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, '') : "XXX"
+    
+    // Extraire le numéro séquentiel du numéro de demande (derniers 4 chiffres)
+    const demandeNumMatch = demande.numero.match(/(\d{4})(?:-\d+)?$/)
+    const sequenceNumber = demandeNumMatch ? demandeNumMatch[1] : "0001"
+    
+    // Format du bon de sortie : BS-M-2026-PRO-0001 ou BS-O-2026-PRO-0001
+    const bonSortieNumber = `${typePrefix}-${year}-${projetCode}-${sequenceNumber}`
+
     const iframe = document.createElement('iframe')
     iframe.style.position = 'absolute'
     iframe.style.left = '-9999px'
@@ -769,168 +781,231 @@ export const generateBonSortiePDF = async (demande: any): Promise<void> => {
             padding: 20px;
             background-color: #ffffff;
             color: #000000;
+            font-size: 10px;
           }
-          .header {
+          .document-header {
+            border: 2px solid #000000;
+            margin-bottom: 15px;
+          }
+          .header-row {
+            display: flex;
+            border-bottom: 1px solid #000000;
+          }
+          .header-logo {
+            width: 120px;
+            border-right: 1px solid #000000;
+            padding: 10px;
+          }
+          .header-logo img {
+            width: 100%;
+            height: auto;
+          }
+          .header-info {
+            flex: 1;
+            display: flex;
+          }
+          .header-left {
+            flex: 1;
+            background-color: #cccccc;
+            padding: 8px;
+            border-right: 1px solid #000000;
+          }
+          .header-left div {
+            margin: 2px 0;
+            font-size: 9px;
+          }
+          .header-right {
+            width: 150px;
+            background-color: #cccccc;
+            padding: 8px;
+          }
+          .header-right div {
+            margin: 2px 0;
+            font-size: 9px;
+          }
+          .title-row {
+            background-color: #ffffff;
+            padding: 10px;
             text-align: center;
-            margin-bottom: 20px;
-            border-bottom: 3px solid #f97316;
-            padding-bottom: 10px;
           }
-          .header h1 {
-            color: #f97316;
-            font-size: 24px;
+          .title-row h1 {
+            font-size: 16px;
             font-weight: bold;
             margin-bottom: 5px;
           }
-          .header p {
+          .title-row .numero {
+            color: #ff0000;
             font-size: 14px;
-            color: #666666;
+            font-weight: bold;
           }
-          .info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 20px;
+          .info-section {
+            margin: 15px 0;
+            font-size: 10px;
           }
-          .info-box {
-            padding: 10px;
-            background-color: #fff7ed;
-            border-left: 4px solid #f97316;
-            border-radius: 4px;
+          .info-row {
+            display: flex;
+            margin: 5px 0;
           }
-          .info-box strong {
-            display: block;
-            color: #f97316;
-            font-size: 11px;
-            margin-bottom: 5px;
+          .info-label {
+            width: 120px;
+            font-weight: bold;
           }
-          .info-box span {
-            color: #000000;
-            font-size: 13px;
+          .info-value {
+            flex: 1;
+            border-bottom: 1px solid #000000;
           }
           table {
             width: 100%;
             border-collapse: collapse;
-            margin: 20px 0;
+            margin: 15px 0;
           }
           th, td {
-            border: 2px solid #333333;
-            padding: 12px;
-            text-align: left;
-            color: #000000;
-            font-size: 12px;
+            border: 1px solid #000000;
+            padding: 6px 4px;
+            font-size: 9px;
           }
           th {
-            background-color: #f97316;
-            color: #ffffff;
-            font-weight: bold;
-            font-size: 13px;
-          }
-          tr:nth-child(even) {
-            background-color: #fff7ed;
-          }
-          .signature-section {
-            margin-top: 40px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-          }
-          .signature-box {
-            border: 2px solid #333333;
-            padding: 15px;
-            border-radius: 4px;
-            min-height: 120px;
-          }
-          .signature-box h3 {
-            color: #f97316;
-            font-size: 14px;
-            margin-bottom: 15px;
-            border-bottom: 1px solid #cccccc;
-            padding-bottom: 5px;
-          }
-          .signature-box p {
-            margin: 8px 0;
+            background-color: #cccccc;
             color: #000000;
-            font-size: 12px;
-          }
-          .footer {
-            margin-top: 30px;
-            padding-top: 15px;
-            border-top: 2px solid #cccccc;
+            font-weight: bold;
             text-align: center;
-            color: #666666;
+          }
+          .col-num { width: 5%; text-align: center; }
+          .col-design { width: 50%; }
+          .col-unit { width: 8%; text-align: center; }
+          .col-qty { width: 10%; text-align: center; }
+          .empty-row td {
+            height: 25px;
+          }
+          .signature-footer {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 9px;
+          }
+          .signature-item {
+            text-align: center;
+            padding: 10px;
+          }
+          .signature-item div {
+            margin: 5px 0;
+          }
+          .signature-line {
+            border-bottom: 1px solid #000000;
+            width: 150px;
+            margin: 10px auto;
+            height: 40px;
+          }
+          .footer-text {
+            text-align: center;
+            margin-top: 20px;
             font-size: 10px;
+            color: #0066cc;
+            font-weight: bold;
           }
         </style>
       </head>
       <body>
-        <div class="header">
-          <h1>BON DE SORTIE MATÉRIEL</h1>
-          <p>N° ${demande.numero}</p>
+        <div class="document-header">
+          <div class="header-row">
+            <div class="header-logo">
+              <img src="/instrumelec-logo.png" alt="InstrumElec" />
+            </div>
+            <div class="header-info">
+              <div class="header-left">
+                <div><strong>ASSURANCE - QUALITE</strong></div>
+                <div>FORMULAIRE D'ENREGISTREMENT</div>
+              </div>
+              <div class="header-right">
+                <div>Réf : DPM/01/PRO2/FE/04</div>
+                <div>VERSION : C</div>
+                <div>Date de création : 08 Juin 2013</div>
+              </div>
+            </div>
+          </div>
+          <div class="title-row">
+            <h1>Bon de Sortie Matériel</h1>
+            <div class="numero">N° ${bonSortieNumber}</div>
+          </div>
         </div>
 
-        <div class="info-grid">
-          <div class="info-box">
-            <strong>PROJET</strong>
-            <span>${demande.projet?.nom || "N/A"}</span>
+        <div class="info-section">
+          <div class="info-row">
+            <div class="info-label">Date :</div>
+            <div class="info-value">${new Date().toLocaleDateString("fr-FR")}</div>
           </div>
-          <div class="info-box">
-            <strong>DATE DE SORTIE</strong>
-            <span>${new Date().toLocaleDateString("fr-FR")}</span>
+          <div class="info-row">
+            <div class="info-label">Destination :</div>
+            <div class="info-value">${demande.technicien?.prenom || ""} ${demande.technicien?.nom || ""}</div>
           </div>
-          <div class="info-box">
-            <strong>DEMANDEUR</strong>
-            <span>${demande.technicien?.prenom || ""} ${demande.technicien?.nom || "N/A"}</span>
+          <div class="info-row">
+            <div class="info-label">Client / Projet :</div>
+            <div class="info-value">${demande.projet?.nom || ""}</div>
           </div>
-          <div class="info-box">
-            <strong>TYPE</strong>
-            <span>${demande.type === "materiel" ? "Matériel" : "Outillage"}</span>
+          <div class="info-row">
+            <div class="info-label">Code Affaire :</div>
+            <div class="info-value">${demande.numero || ""}</div>
           </div>
         </div>
 
         <table>
           <thead>
             <tr>
-              <th>Désignation</th>
-              <th>Référence</th>
-              <th>Unité</th>
-              <th>Quantité Sortie</th>
-              <th>Destination</th>
+              <th class="col-num">N°</th>
+              <th class="col-design">Désignation</th>
+              <th class="col-unit">U</th>
+              <th class="col-qty">Qte</th>
             </tr>
           </thead>
           <tbody>
-            ${demande.items?.map((item: any) => {
+            ${demande.items?.map((item: any, index: number) => {
               const qteSortie = item.quantiteValidee || item.quantiteDemandee
               return `
                 <tr>
-                  <td>${item.article?.nom || "N/A"}</td>
-                  <td>${item.article?.reference || "N/A"}</td>
-                  <td>${item.article?.unite || "N/A"}</td>
-                  <td style="font-weight: bold; color: #f97316;">${qteSortie}</td>
-                  <td>${demande.projet?.nom || "N/A"}</td>
+                  <td class="col-num">${index + 1}</td>
+                  <td class="col-design">${item.article?.nom || "N/A"}</td>
+                  <td class="col-unit">${item.article?.unite || "-"}</td>
+                  <td class="col-qty">${qteSortie}</td>
                 </tr>
               `
-            }).join("") || "<tr><td colspan='5'>Aucun article</td></tr>"}
+            }).join("") || ""}
+            ${Array.from({ length: Math.max(0, 20 - (demande.items?.length || 0)) }, (_, i) => `
+              <tr class="empty-row">
+                <td class="col-num"></td>
+                <td class="col-design"></td>
+                <td class="col-unit"></td>
+                <td class="col-qty"></td>
+              </tr>
+            `).join("")}
           </tbody>
         </table>
 
-        <div class="signature-section">
-          <div class="signature-box">
-            <h3>Préparé par (Appro/Logistique)</h3>
-            <p>Nom: ${demande.sortieAppro?.user ? `${demande.sortieAppro.user.prenom} ${demande.sortieAppro.user.nom}` : "_____________________________"}</p>
-            <p>Date: ${demande.sortieAppro?.date ? new Date(demande.sortieAppro.date).toLocaleDateString("fr-FR") : "_____________________________"}</p>
-            <p>Signature: ${demande.sortieAppro ? "✓" : "_____________________________"}</p>
+        <div class="signature-footer">
+          <div class="signature-item">
+            <div><strong>Demandeur</strong></div>
+            <div class="signature-line"></div>
           </div>
-          <div class="signature-box">
-            <h3>Reçu par</h3>
-            <p>Nom: ${demande.livreurAssigne ? `${demande.livreurAssigne.prenom} ${demande.livreurAssigne.nom}` : "_____________________________"}</p>
-            <p>Date: ${demande.dateReceptionLivreur ? new Date(demande.dateReceptionLivreur).toLocaleDateString("fr-FR") : "_____________________________"}</p>
-            <p>Signature: ${demande.dateReceptionLivreur ? "✓" : "_____________________________"}</p>
+          <div class="signature-item">
+            <div><strong>Resp Appro</strong></div>
+            <div class="signature-line"></div>
+          </div>
+          <div class="signature-item">
+            <div><strong>Magasinier</strong></div>
+            <div class="signature-line"></div>
+          </div>
+          <div class="signature-item">
+            <div><strong>Transporteur</strong></div>
+            <div class="signature-line"></div>
+          </div>
+          <div class="signature-item">
+            <div><strong>Site de Contrôle</strong></div>
+            <div class="signature-line"></div>
           </div>
         </div>
 
-        <div class="footer">
-          <p>Document généré le ${new Date().toLocaleDateString("fr-FR")} à ${new Date().toLocaleTimeString("fr-FR")}</p>
+        <div class="footer-text">
+          <strong>InstrumElec</strong><br>
+          SORTIE MAGASIN
         </div>
       </body>
       </html>
