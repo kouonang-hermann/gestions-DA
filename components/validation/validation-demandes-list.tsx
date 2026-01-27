@@ -4,8 +4,9 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
 import { useStore } from "@/stores/useStore"
-import { CheckCircle, XCircle, Eye, Package, Edit, Trash2 } from "lucide-react"
+import { CheckCircle, XCircle, Eye, Package, Edit, Trash2, Filter, ChevronLeft, ChevronRight, ArrowUpDown, X } from "lucide-react"
 import type { Demande, DemandeType } from "@/types"
 import DemandeDetailsModal from "@/components/modals/demande-details-modal"
 import CreateDemandeModal from "@/components/demandes/create-demande-modal"
@@ -16,13 +17,21 @@ interface ValidationDemandesListProps {
 }
 
 export default function ValidationDemandesList({ type, title }: ValidationDemandesListProps) {
-  const { currentUser, demandes, loadDemandes, executeAction, isLoading, error } = useStore()
+  const { currentUser, demandes, loadDemandes, executeAction, isLoading, error, projets, users } = useStore()
   const [demandesAValider, setDemandesAValider] = useState<Demande[]>([])
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
   const [selectedDemande, setSelectedDemande] = useState<Demande | null>(null)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [demandeToEdit, setDemandeToEdit] = useState<Demande | null>(null)
+  
+  // États pour filtres, tri et pagination
+  const [filterMonth, setFilterMonth] = useState<string>("")
+  const [filterUser, setFilterUser] = useState<string>("")
+  const [sortBy, setSortBy] = useState<"date" | "numero" | "statut" | "type">("date")
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
 
   useEffect(() => {
     if (currentUser) {
@@ -55,7 +64,7 @@ export default function ValidationDemandesList({ type, title }: ValidationDemand
         statusToFilter = "all_pending"
       }
       
-      const filtered = currentUser.role === "superadmin"
+      let filtered = currentUser.role === "superadmin"
         ? demandes.filter(
             (d) => (type ? d.type === type : true) && 
                    ![
@@ -72,9 +81,49 @@ export default function ValidationDemandesList({ type, title }: ValidationDemand
                    (!currentUser.projets || currentUser.projets.length === 0 || currentUser.projets.includes(d.projetId))
           )
       
+      // Appliquer le filtre par mois
+      if (filterMonth) {
+        filtered = filtered.filter((d) => {
+          const demandeDate = new Date(d.dateCreation)
+          const [year, month] = filterMonth.split("-")
+          return (
+            demandeDate.getFullYear() === parseInt(year) &&
+            demandeDate.getMonth() === parseInt(month) - 1
+          )
+        })
+      }
+      
+      // Appliquer le filtre par utilisateur
+      if (filterUser) {
+        filtered = filtered.filter((d) => d.technicienId === filterUser)
+      }
+      
+      // Appliquer le tri
+      filtered.sort((a, b) => {
+        let comparison = 0
+        
+        switch (sortBy) {
+          case "date":
+            comparison = new Date(a.dateCreation).getTime() - new Date(b.dateCreation).getTime()
+            break
+          case "numero":
+            comparison = a.numero.localeCompare(b.numero)
+            break
+          case "statut":
+            comparison = getStatusLabel(a.status).localeCompare(getStatusLabel(b.status))
+            break
+          case "type":
+            comparison = a.type.localeCompare(b.type)
+            break
+        }
+        
+        return sortOrder === "asc" ? comparison : -comparison
+      })
+      
       setDemandesAValider(filtered)
+      setCurrentPage(1) // Réinitialiser à la première page lors d'un changement de filtre
     }
-  }, [currentUser, demandes, type])
+  }, [currentUser, demandes, type, filterMonth, filterUser, sortBy, sortOrder, projets, users])
 
   const handleValidation = async (demandeId: string, action: "valider" | "rejeter") => {
     setActionLoading(demandeId)
@@ -208,10 +257,139 @@ export default function ValidationDemandesList({ type, title }: ValidationDemand
     )
   }
 
+  // Calculer la pagination
+  const totalPages = Math.ceil(demandesAValider.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const paginatedDemandes = demandesAValider.slice(startIndex, startIndex + itemsPerPage)
+  
+  const handleSort = (newSortBy: typeof sortBy) => {
+    if (sortBy === newSortBy) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+    } else {
+      setSortBy(newSortBy)
+      setSortOrder("desc")
+    }
+  }
+
   return (
     <Card className="bg-gray-50 border-gray-200">
       <CardHeader>
-        <CardTitle className="text-gray-800">{title}</CardTitle>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <CardTitle className="text-gray-800">{title}</CardTitle>
+          <div className="text-sm text-gray-600">
+            {demandesAValider.length} demande{demandesAValider.length > 1 ? "s" : ""}
+          </div>
+        </div>
+        
+        {/* Filtres et options de tri */}
+        <div className="mt-4 space-y-3">
+          {/* Filtres */}
+          <div className="flex flex-wrap gap-3">
+            {/* Filtre par mois */}
+            <div className="flex-1 min-w-[200px]">
+              <label className="text-xs font-medium text-gray-700 mb-1 block">
+                <Filter className="h-3 w-3 inline mr-1" />
+                Filtrer par mois
+              </label>
+              <div className="flex gap-2">
+                <Input
+                  type="month"
+                  value={filterMonth}
+                  onChange={(e) => setFilterMonth(e.target.value)}
+                  className="bg-white text-sm"
+                />
+                {filterMonth && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setFilterMonth("")}
+                    className="px-2"
+                    title="Effacer le filtre"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+            
+            {/* Filtre par utilisateur */}
+            <div className="flex-1 min-w-[200px]">
+              <label className="text-xs font-medium text-gray-700 mb-1 block">
+                <Filter className="h-3 w-3 inline mr-1" />
+                Filtrer par demandeur
+              </label>
+              <div className="flex gap-2">
+                <select
+                  value={filterUser}
+                  onChange={(e) => setFilterUser(e.target.value)}
+                  className="flex h-9 w-full rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  <option value="">Tous les demandeurs</option>
+                  {users
+                    .filter(u => demandes.some(d => d.technicienId === u.id))
+                    .sort((a, b) => `${a.prenom} ${a.nom}`.localeCompare(`${b.prenom} ${b.nom}`))
+                    .map(user => (
+                      <option key={user.id} value={user.id}>
+                        {user.prenom} {user.nom}
+                      </option>
+                    ))
+                  }
+                </select>
+                {filterUser && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setFilterUser("")}
+                    className="px-2"
+                    title="Effacer le filtre"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          {/* Options de tri */}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={sortBy === "date" ? "default" : "outline"}
+              size="sm"
+              onClick={() => handleSort("date")}
+              className="text-xs"
+            >
+              <ArrowUpDown className="h-3 w-3 mr-1" />
+              Date {sortBy === "date" && (sortOrder === "asc" ? "↑" : "↓")}
+            </Button>
+            <Button
+              variant={sortBy === "numero" ? "default" : "outline"}
+              size="sm"
+              onClick={() => handleSort("numero")}
+              className="text-xs"
+            >
+              <ArrowUpDown className="h-3 w-3 mr-1" />
+              Numéro {sortBy === "numero" && (sortOrder === "asc" ? "↑" : "↓")}
+            </Button>
+            <Button
+              variant={sortBy === "statut" ? "default" : "outline"}
+              size="sm"
+              onClick={() => handleSort("statut")}
+              className="text-xs"
+            >
+              <ArrowUpDown className="h-3 w-3 mr-1" />
+              Statut {sortBy === "statut" && (sortOrder === "asc" ? "↑" : "↓")}
+            </Button>
+            <Button
+              variant={sortBy === "type" ? "default" : "outline"}
+              size="sm"
+              onClick={() => handleSort("type")}
+              className="text-xs"
+            >
+              <ArrowUpDown className="h-3 w-3 mr-1" />
+              Type {sortBy === "type" && (sortOrder === "asc" ? "↑" : "↓")}
+            </Button>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         {demandesAValider.length === 0 ? (
@@ -220,8 +398,9 @@ export default function ValidationDemandesList({ type, title }: ValidationDemand
             <p>Aucune demande en attente de validation</p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {demandesAValider.map((demande) => (
+          <>
+            <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+              {paginatedDemandes.map((demande) => (
               <div
                 key={demande.id}
                 className="bg-white p-3 sm:p-4 rounded-lg border border-gray-200 hover:shadow-sm transition-shadow"
@@ -306,8 +485,36 @@ export default function ValidationDemandesList({ type, title }: ValidationDemand
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
+              ))}
+            </div>
+            
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                <div className="text-sm text-gray-600">
+                  Page {currentPage} sur {totalPages} ({demandesAValider.length} demande{demandesAValider.length > 1 ? "s" : ""})
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </CardContent>
 

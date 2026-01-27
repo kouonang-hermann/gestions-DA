@@ -46,14 +46,30 @@ export default function ClotureConfirmationModal({
   }, [isOpen, demande])
 
   const handleQuantiteChange = (itemId: string, value: string) => {
-    const numValue = parseInt(value) || 0
     const item = demande?.items?.find(i => i.id === itemId)
     
     if (!item) return
 
     const maxQuantite = item.quantiteSortie || item.quantiteValidee || item.quantiteDemandee
 
-    // Validation
+    // Permettre la saisie vide temporairement
+    if (value === "") {
+      setQuantitesRecues(prev => ({ ...prev, [itemId]: 0 }))
+      setErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors[itemId]
+        return newErrors
+      })
+      return
+    }
+
+    const numValue = parseInt(value)
+    
+    // Validation uniquement si la valeur est un nombre
+    if (isNaN(numValue)) {
+      return
+    }
+
     if (numValue < 0) {
       setErrors(prev => ({ ...prev, [itemId]: "La quantité ne peut pas être négative" }))
     } else if (numValue > maxQuantite) {

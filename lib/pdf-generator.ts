@@ -339,15 +339,15 @@ export const generatePurchaseRequestPDF = async (
         <div class="signature-section">
           <div class="signature-box">
             <h3>Préparé par (Appro/Logistique)</h3>
-            <p>Nom: _____________________________</p>
-            <p>Date: _____________________________</p>
-            <p>Signature: _____________________________</p>
+            <p>Nom: ${demande.sortieAppro?.user ? `${demande.sortieAppro.user.prenom} ${demande.sortieAppro.user.nom}` : "_____________________________"}</p>
+            <p>Date: ${demande.sortieAppro?.date ? new Date(demande.sortieAppro.date).toLocaleDateString("fr-FR") : "_____________________________"}</p>
+            <p>Signature: ${demande.sortieAppro ? "✓" : "_____________________________"}</p>
           </div>
           <div class="signature-box">
             <h3>Reçu par (Livreur)</h3>
-            <p>Nom: _____________________________</p>
-            <p>Date: _____________________________</p>
-            <p>Signature: _____________________________</p>
+            <p>Nom: ${demande.livreurAssigne ? `${demande.livreurAssigne.prenom} ${demande.livreurAssigne.nom}` : "_____________________________"}</p>
+            <p>Date: ${demande.dateReceptionLivreur ? new Date(demande.dateReceptionLivreur).toLocaleDateString("fr-FR") : "_____________________________"}</p>
+            <p>Signature: ${demande.dateReceptionLivreur ? "✓" : "_____________________________"}</p>
           </div>
         </div>
 
@@ -437,6 +437,18 @@ export const generateBonLivraisonPDF = async (demande: any): Promise<void> => {
     const jsPDF = (await import('jspdf')).default
     const html2canvas = (await import('html2canvas')).default
 
+    // Générer un numéro de bordereau de livraison comptabilisé par projet
+    const year = new Date().getFullYear()
+    const typePrefix = demande.type === "materiel" ? "BL-M" : "BL-O"
+    const projetCode = demande.projet?.nom ? demande.projet.nom.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, '') : "XXX"
+    
+    // Extraire le numéro séquentiel du numéro de demande (derniers 4 chiffres)
+    const demandeNumMatch = demande.numero.match(/(\d{4})(?:-\d+)?$/)
+    const sequenceNumber = demandeNumMatch ? demandeNumMatch[1] : "0001"
+    
+    // Format du bordereau : BL-M-2026-PRO-0001 ou BL-O-2026-PRO-0001
+    const bordereauNumber = `${typePrefix}-${year}-${projetCode}-${sequenceNumber}`
+
     const iframe = document.createElement('iframe')
     iframe.style.position = 'absolute'
     iframe.style.left = '-9999px'
@@ -457,171 +469,211 @@ export const generateBonLivraisonPDF = async (demande: any): Promise<void> => {
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body { 
             font-family: Arial, sans-serif; 
-            padding: 20px;
+            padding: 25px;
             background-color: #ffffff;
             color: #000000;
-          }
-          .header {
-            text-align: center;
-            margin-bottom: 20px;
-            border-bottom: 3px solid #015fc4;
-            padding-bottom: 10px;
-          }
-          .header h1 {
-            color: #015fc4;
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 5px;
-          }
-          .header p {
-            font-size: 14px;
-            color: #666666;
-          }
-          .info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 20px;
-          }
-          .info-box {
-            padding: 10px;
-            background-color: #f5f5f5;
-            border-left: 4px solid #015fc4;
-            border-radius: 4px;
-          }
-          .info-box strong {
-            display: block;
-            color: #015fc4;
             font-size: 11px;
-            margin-bottom: 5px;
           }
-          .info-box span {
+          .company-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #000000;
+          }
+          .logo-section {
+            width: 120px;
+          }
+          .logo-section img {
+            width: 100%;
+            height: auto;
+          }
+          .company-info {
+            flex: 1;
+            text-align: center;
+            font-size: 9px;
+            line-height: 1.5;
+          }
+          .company-info strong {
+            font-size: 10px;
+            display: block;
+            margin-bottom: 3px;
+          }
+          .document-header {
+            text-align: center;
+            margin: 20px 0;
+            position: relative;
+          }
+          .document-header h1 {
+            font-size: 18px;
+            font-weight: bold;
             color: #000000;
-            font-size: 13px;
+            margin-bottom: 10px;
+          }
+          .document-number {
+            position: absolute;
+            right: 0;
+            top: 0;
+            color: #ff0000;
+            font-size: 16px;
+            font-weight: bold;
+          }
+          .document-date {
+            text-align: right;
+            font-size: 10px;
+            margin-bottom: 15px;
+          }
+          .client-section {
+            margin-bottom: 15px;
+            font-size: 10px;
+          }
+          .client-section p {
+            margin: 3px 0;
+          }
+          .bon-commande {
+            margin: 10px 0;
+            font-size: 10px;
           }
           table {
             width: 100%;
             border-collapse: collapse;
-            margin: 20px 0;
+            margin: 15px 0;
           }
           th, td {
-            border: 2px solid #333333;
-            padding: 12px;
-            text-align: left;
-            color: #000000;
-            font-size: 12px;
+            border: 1px solid #000000;
+            padding: 6px 4px;
+            font-size: 9px;
           }
           th {
-            background-color: #015fc4;
-            color: #ffffff;
-            font-weight: bold;
-            font-size: 13px;
-          }
-          tr:nth-child(even) {
-            background-color: #f9f9f9;
-          }
-          .signature-section {
-            margin-top: 40px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-          }
-          .signature-box {
-            border: 2px solid #333333;
-            padding: 15px;
-            border-radius: 4px;
-            min-height: 120px;
-          }
-          .signature-box h3 {
-            color: #015fc4;
-            font-size: 14px;
-            margin-bottom: 15px;
-            border-bottom: 1px solid #cccccc;
-            padding-bottom: 5px;
-          }
-          .signature-box p {
-            margin: 8px 0;
+            background-color: #ffffff;
             color: #000000;
-            font-size: 12px;
-          }
-          .footer {
-            margin-top: 30px;
-            padding-top: 15px;
-            border-top: 2px solid #cccccc;
+            font-weight: bold;
             text-align: center;
-            color: #666666;
+          }
+          td {
+            min-height: 20px;
+          }
+          .col-item { width: 5%; text-align: center; }
+          .col-ref { width: 12%; }
+          .col-design { width: 38%; }
+          .col-unit { width: 8%; text-align: center; }
+          .col-qty { width: 10%; text-align: center; }
+          .col-obs { width: 27%; }
+          .empty-row td {
+            height: 25px;
+          }
+          .signature-footer {
+            margin-top: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             font-size: 10px;
+          }
+          .signature-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          }
+          .checkbox {
+            width: 14px;
+            height: 14px;
+            border: 1px solid #000000;
+            display: inline-block;
+          }
+          .company-footer {
+            text-align: right;
+            font-size: 9px;
+            font-style: italic;
+            margin-top: 15px;
           }
         </style>
       </head>
       <body>
-        <div class="header">
-          <h1>BON DE LIVRAISON</h1>
-          <p>N° ${demande.numero}</p>
+        <div class="company-header">
+          <div class="logo-section">
+            <img src="/instrumelec-logo.png" alt="InstrumElec Cameroun" />
+          </div>
+          <div class="company-info">
+            <strong>Télécons - Energie - Industrie - Tertiaire</strong>
+            <div>InstrumElec Sarl - Siège social et Direction technique</div>
+            <div>Rue Sylvani (Rue Barnabé) Akwa - B.P. 6161 Douala-Cameroun</div>
+            <div>Tél.: (+237) 33 42 71 71 - (+237) 33 42 71 72</div>
+            <div>Fax: (+237) 33 43 70 36 - Email: info@instrumelec.com</div>
+            <div>Contribuable: M1205000188GH - RCCM:A2003VB0003613</div>
+          </div>
         </div>
 
-        <div class="info-grid">
-          <div class="info-box">
-            <strong>PROJET</strong>
-            <span>${demande.projet?.nom || "N/A"}</span>
-          </div>
-          <div class="info-box">
-            <strong>DATE DE LIVRAISON</strong>
-            <span>${demande.dateLivraisonSouhaitee ? new Date(demande.dateLivraisonSouhaitee).toLocaleDateString("fr-FR") : "N/A"}</span>
-          </div>
-          <div class="info-box">
-            <strong>DEMANDEUR</strong>
-            <span>${demande.technicien?.prenom || ""} ${demande.technicien?.nom || "N/A"}</span>
-          </div>
-          <div class="info-box">
-            <strong>TYPE</strong>
-            <span>${demande.type === "materiel" ? "Matériel" : "Outillage"}</span>
-          </div>
+        <div class="document-header">
+          <h1>BORDEREAU DE LIVRAISON</h1>
+          <div class="document-number">N° ${bordereauNumber}</div>
+        </div>
+
+        <div class="document-date">
+          Douala, le ${new Date().toLocaleDateString("fr-FR")}
+        </div>
+
+        <div class="client-section">
+          <p><strong>Client :</strong> ${demande.technicien?.prenom || ""} ${demande.technicien?.nom || "N/A"}</p>
+        </div>
+
+        <div class="bon-commande">
+          <p><strong>Bon de Commande :</strong> ${demande.projet?.nom || "N/A"} du ${demande.dateCreation ? new Date(demande.dateCreation).toLocaleDateString("fr-FR") : "N/A"}</p>
         </div>
 
         <table>
           <thead>
             <tr>
-              <th>Désignation</th>
-              <th>Référence</th>
-              <th>Unité</th>
-              <th>Quantité Livrée</th>
-              <th>Observation</th>
+              <th class="col-item">Item</th>
+              <th class="col-ref">Référence</th>
+              <th class="col-design">Désignation</th>
+              <th class="col-unit">Unit</th>
+              <th class="col-qty">Quantité</th>
+              <th class="col-obs">Observations</th>
             </tr>
           </thead>
           <tbody>
-            ${demande.items?.map((item: any) => {
+            ${demande.items?.map((item: any, index: number) => {
               const qteLivree = item.quantiteLivree || item.quantiteValidee || item.quantiteDemandee
               return `
                 <tr>
-                  <td>${item.article?.nom || "N/A"}</td>
-                  <td>${item.article?.reference || "N/A"}</td>
-                  <td>${item.article?.unite || "N/A"}</td>
-                  <td style="font-weight: bold; color: #015fc4;">${qteLivree}</td>
-                  <td>${item.commentaire || ""}</td>
+                  <td class="col-item">${index + 1}</td>
+                  <td class="col-ref">${item.article?.reference || "-"}</td>
+                  <td class="col-design">${item.article?.nom || "N/A"}</td>
+                  <td class="col-unit">${item.article?.unite || "-"}</td>
+                  <td class="col-qty">${qteLivree}</td>
+                  <td class="col-obs">${item.commentaire || ""}</td>
                 </tr>
               `
-            }).join("") || "<tr><td colspan='5'>Aucun article</td></tr>"}
+            }).join("") || ""}
+            ${Array.from({ length: Math.max(0, 15 - (demande.items?.length || 0)) }, (_, i) => `
+              <tr class="empty-row">
+                <td class="col-item"></td>
+                <td class="col-ref"></td>
+                <td class="col-design"></td>
+                <td class="col-unit"></td>
+                <td class="col-qty"></td>
+                <td class="col-obs"></td>
+              </tr>
+            `).join("")}
           </tbody>
         </table>
 
-        <div class="signature-section">
-          <div class="signature-box">
-            <h3>Livreur</h3>
-            <p>Nom: _____________________________</p>
-            <p>Date: _____________________________</p>
-            <p>Signature: _____________________________</p>
+        <div class="signature-footer">
+          <div class="signature-item">
+            <span>Le client_____________</span>
           </div>
-          <div class="signature-box">
-            <h3>Réceptionnaire</h3>
-            <p>Nom: _____________________________</p>
-            <p>Date: _____________________________</p>
-            <p>Signature: _____________________________</p>
+          <div class="signature-item">
+            <span>Livraison partielle</span>
+            <span class="checkbox"></span>
           </div>
-        </div>
-
-        <div class="footer">
-          <p>Document généré le ${new Date().toLocaleDateString("fr-FR")} à ${new Date().toLocaleTimeString("fr-FR")}</p>
+          <div class="signature-item">
+            <span>Livraison complète</span>
+            <span class="checkbox"></span>
+          </div>
+          <div class="company-footer">
+            <strong>InstrumElec</strong>
+          </div>
         </div>
       </body>
       </html>
@@ -865,15 +917,15 @@ export const generateBonSortiePDF = async (demande: any): Promise<void> => {
         <div class="signature-section">
           <div class="signature-box">
             <h3>Préparé par (Appro/Logistique)</h3>
-            <p>Nom: _____________________________</p>
-            <p>Date: _____________________________</p>
-            <p>Signature: _____________________________</p>
+            <p>Nom: ${demande.sortieAppro?.user ? `${demande.sortieAppro.user.prenom} ${demande.sortieAppro.user.nom}` : "_____________________________"}</p>
+            <p>Date: ${demande.sortieAppro?.date ? new Date(demande.sortieAppro.date).toLocaleDateString("fr-FR") : "_____________________________"}</p>
+            <p>Signature: ${demande.sortieAppro ? "✓" : "_____________________________"}</p>
           </div>
           <div class="signature-box">
             <h3>Reçu par</h3>
-            <p>Nom: _____________________________</p>
-            <p>Date: _____________________________</p>
-            <p>Signature: _____________________________</p>
+            <p>Nom: ${demande.livreurAssigne ? `${demande.livreurAssigne.prenom} ${demande.livreurAssigne.nom}` : "_____________________________"}</p>
+            <p>Date: ${demande.dateReceptionLivreur ? new Date(demande.dateReceptionLivreur).toLocaleDateString("fr-FR") : "_____________________________"}</p>
+            <p>Signature: ${demande.dateReceptionLivreur ? "✓" : "_____________________________"}</p>
           </div>
         </div>
 

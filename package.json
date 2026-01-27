@@ -21,7 +21,9 @@
     "vercel-build": "prisma generate && prisma migrate deploy && next build",
     "seed:production": "node scripts/seed-production.js",
     "export:data": "node scripts/export-data.js",
-    "import:data": "node scripts/import-to-supabase.js"
+    "import:data": "node scripts/import-to-supabase.js",
+    "migrate:numbers": "tsx scripts/migrate-demande-numbers.ts",
+    "migrate:numbers-by-project": "tsx scripts/migrate-demande-numbers-by-project.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

@@ -568,7 +568,22 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel",
                             type="number"
                             min="1"
                             value={item.quantiteDemandee}
-                            onChange={(e) => updateItem(item.id, "quantiteDemandee", parseInt(e.target.value) || 1)}
+                            onChange={(e) => {
+                              const value = e.target.value
+                              if (value === "") {
+                                updateItem(item.id, "quantiteDemandee", "")
+                              } else {
+                                const num = parseInt(value)
+                                if (!isNaN(num) && num >= 0) {
+                                  updateItem(item.id, "quantiteDemandee", num)
+                                }
+                              }
+                            }}
+                            onBlur={(e) => {
+                              if (e.target.value === "" || parseInt(e.target.value) < 1) {
+                                updateItem(item.id, "quantiteDemandee", 1)
+                              }
+                            }}
                             className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                             required
                           />

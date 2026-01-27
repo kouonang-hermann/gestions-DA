@@ -116,10 +116,9 @@ export default function ChargeAffaireDashboard() {
 
       // HISTORIQUE COMPLET : Inclure uniquement les demandes validées PAR MOI
       const demandesValidees = demandes.filter((d) => {
-        // Vérifier que c'est MOI qui ai validé cette demande
-        // Méthode 1 : Si signature existe (après validation avec signature)
-        if (d.validationChargeAffaire?.userId === currentUser.id) {
-          return [
+        // Vérifier que c'est MOI qui ai validé cette demande (signature obligatoire)
+        return d.validationChargeAffaire?.userId === currentUser.id &&
+          [
             "en_attente_preparation_appro",
             "en_attente_validation_logistique",
             "en_attente_validation_finale_demandeur",
@@ -127,16 +126,6 @@ export default function ChargeAffaireDashboard() {
             "cloturee",
             "rejetee"
           ].includes(d.status)
-        }
-        // Méthode 2 : Basé sur statuts (si pas encore de signature)
-        // Demandes qui sont passées par le chargé d'affaire (statuts post-validation)
-        return !d.validationChargeAffaire && [
-          "en_attente_preparation_appro",
-          "en_attente_validation_logistique",
-          "en_attente_validation_finale_demandeur",
-          "confirmee_demandeur",
-          "cloturee"
-        ].includes(d.status)
       })
 
       console.log(`📊 [CHARGE-AFFAIRE-DASHBOARD] Statistiques validations pour ${currentUser.nom}:`, {
@@ -188,18 +177,17 @@ export default function ChargeAffaireDashboard() {
           "archivee"
         ].includes(d.status))
       case "validees":
-        // HISTORIQUE COMPLET : Uniquement les demandes validées PAR MOI
+        // HISTORIQUE COMPLET : Uniquement les demandes validées PAR MOI (signature obligatoire)
         return currentUser ? demandes.filter((d) => 
-          // Vérifier que c'est MOI qui ai validé cette demande
           d.validationChargeAffaire?.userId === currentUser.id &&
-          (
-            d.status === "en_attente_preparation_appro" || 
-            d.status === "en_attente_validation_logistique" || 
-            d.status === "en_attente_validation_finale_demandeur" ||
-            d.status === "confirmee_demandeur" ||
-            d.status === "cloturee" ||
-            d.status === "rejetee" // Inclure historique complet
-          )
+          [
+            "en_attente_preparation_appro",
+            "en_attente_validation_logistique",
+            "en_attente_validation_finale_demandeur",
+            "confirmee_demandeur",
+            "cloturee",
+            "rejetee"
+          ].includes(d.status)
         ) : []
       case "rejetees":
         // MES demandes rejetées

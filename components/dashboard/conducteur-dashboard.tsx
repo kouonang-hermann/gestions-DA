@@ -85,15 +85,13 @@ export default function ConducteurDashboard() {
       )
       
       // Demandes que j'ai validées en tant que conducteur (demandes matériel dans mes projets)
-      // HISTORIQUE COMPLET : Uniquement les demandes validées PAR MOI
       const demandesValideesConducteur = demandes.filter((d) => {
         if (d.type !== "materiel" || !currentUser.projets.includes(d.projetId) || d.technicienId === currentUser.id) {
           return false
         }
-        // Vérifier que c'est MOI qui ai validé cette demande
-        // Méthode 1 : Si signature existe (après validation avec signature)
-        if (d.validationConducteur?.userId === currentUser.id) {
-          return [
+        // Vérifier que c'est MOI qui ai validé cette demande (signature obligatoire)
+        return d.validationConducteur?.userId === currentUser.id &&
+          [
             "en_attente_validation_responsable_travaux",
             "en_attente_validation_charge_affaire",
             "en_attente_preparation_appro",
@@ -103,18 +101,6 @@ export default function ConducteurDashboard() {
             "cloturee",
             "rejetee"
           ].includes(d.status)
-        }
-        // Méthode 2 : Basé sur statuts (si pas encore de signature)
-        // Demandes qui sont passées par le conducteur (statuts post-validation)
-        return !d.validationConducteur && [
-          "en_attente_validation_responsable_travaux",
-          "en_attente_validation_charge_affaire",
-          "en_attente_preparation_appro",
-          "en_attente_validation_logistique",
-          "en_attente_validation_finale_demandeur",
-          "confirmee_demandeur",
-          "cloturee"
-        ].includes(d.status)
       })
 
       console.log(`📊 [CONDUCTEUR-DASHBOARD] Statistiques validations pour ${currentUser.nom}:`, {
@@ -167,38 +153,24 @@ export default function ConducteurDashboard() {
           "brouillon", "cloturee", "rejetee", "archivee"
         ].includes(d.status))
       case "validees":
-        // Demandes que j'ai validées en tant que conducteur (HISTORIQUE COMPLET)
+        // Demandes que j'ai validées en tant que conducteur (HISTORIQUE COMPLET - signature obligatoire)
         if (!currentUser.projets) return []
-        return demandes.filter((d) => {
-          if (d.type !== "materiel" || !currentUser.projets.includes(d.projetId) || d.technicienId === currentUser.id) {
-            return false
-          }
-          // Vérifier que c'est MOI qui ai validé cette demande
-          // Méthode 1 : Si signature existe (après validation avec signature)
-          if (d.validationConducteur?.userId === currentUser.id) {
-            return [
-              "en_attente_validation_responsable_travaux",
-              "en_attente_validation_charge_affaire",
-              "en_attente_preparation_appro",
-              "en_attente_validation_logistique",
-              "en_attente_validation_finale_demandeur",
-              "confirmee_demandeur",
-              "cloturee",
-              "rejetee"
-            ].includes(d.status)
-          }
-          // Méthode 2 : Basé sur statuts (si pas encore de signature)
-          // Demandes qui sont passées par le conducteur (statuts post-validation)
-          return !d.validationConducteur && [
+        return demandes.filter((d) => 
+          d.type === "materiel" &&
+          currentUser.projets.includes(d.projetId) &&
+          d.technicienId !== currentUser.id &&
+          d.validationConducteur?.userId === currentUser.id &&
+          [
             "en_attente_validation_responsable_travaux",
             "en_attente_validation_charge_affaire",
             "en_attente_preparation_appro",
             "en_attente_validation_logistique",
             "en_attente_validation_finale_demandeur",
             "confirmee_demandeur",
-            "cloturee"
+            "cloturee",
+            "rejetee"
           ].includes(d.status)
-        })
+        )
       case "rejetees":
         // Mes demandes rejetées (pas besoin de vérifier les projets)
         return mesDemandes.filter((d) => d.status === "rejetee")

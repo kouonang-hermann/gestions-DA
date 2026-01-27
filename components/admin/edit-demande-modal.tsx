@@ -341,7 +341,22 @@ export default function EditDemandeModal({ isOpen, onClose, demande }: EditDeman
                       type="number"
                       min="1"
                       value={item.quantiteDemandee}
-                      onChange={(e) => handleItemChange(index, "quantiteDemandee", parseInt(e.target.value) || 1)}
+                      onChange={(e) => {
+                        const value = e.target.value
+                        if (value === "") {
+                          handleItemChange(index, "quantiteDemandee", "")
+                        } else {
+                          const num = parseInt(value)
+                          if (!isNaN(num) && num >= 0) {
+                            handleItemChange(index, "quantiteDemandee", num)
+                          }
+                        }
+                      }}
+                      onBlur={(e) => {
+                        if (e.target.value === "" || parseInt(e.target.value) < 1) {
+                          handleItemChange(index, "quantiteDemandee", 1)
+                        }
+                      }}
                       className="text-sm"
                     />
                   </div>

@@ -129,16 +129,18 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
 
     // Générer un vrai numéro de demande
     const year = new Date().getFullYear()
-    const count = await prisma.demande.count({
+    const typePrefix = demande.type === "materiel" ? "DA-M" : "DA-O"
+    
+    // Compter les demandes du même type pour l'année en cours
+    const countThisYear = await prisma.demande.count({
       where: {
         numero: {
-          not: {
-            startsWith: "BROUILLON-"
-          }
+          startsWith: `${typePrefix}-${year}-`
         }
       }
     })
-    const numero = `DEM-${year}-${String(count + 1).padStart(4, "0")}`
+    
+    const numero = `${typePrefix}-${year}-${String(countThisYear + 1).padStart(4, "0")}`
 
     // Mettre à jour le brouillon
     const updatedDemande = await prisma.demande.update({

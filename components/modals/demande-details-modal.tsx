@@ -230,22 +230,56 @@ export default function DemandeDetailModal({
     try {
       // Préparer les données
       const itemsData: { itemId: string; quantiteLivree: number; prixUnitaire: number | null }[] = []
+      let hasQuantityError = false
+      let hasPriceError = false
       
       demande.items.forEach(item => {
-        const qteLivree = parseFloat(quantitesLivrees[item.id] || "0")
-        const prix = parseFloat(prixUnitaires[item.id] || "0")
+        const qteStr = quantitesLivrees[item.id] || "0"
+        const prixStr = prixUnitaires[item.id] || ""
+        
+        const qteLivree = parseFloat(qteStr)
+        const prix = prixStr ? parseFloat(prixStr) : null
+        
+        // Validation de la quantité
+        if (isNaN(qteLivree) || qteLivree < 0) {
+          console.error(`❌ Quantité invalide pour item ${item.id}: ${qteStr}`)
+          hasQuantityError = true
+        }
+        
+        // Validation du prix (optionnel mais doit être >= 0 si fourni)
+        if (prixStr && (isNaN(prix as number) || (prix as number) < 0)) {
+          console.error(`❌ Prix invalide pour item ${item.id}: ${prixStr}`)
+          hasPriceError = true
+        }
         
         itemsData.push({
           itemId: item.id,
           quantiteLivree: isNaN(qteLivree) ? 0 : qteLivree,
-          prixUnitaire: isNaN(prix) || prix <= 0 ? null : prix
+          prixUnitaire: prix !== null && !isNaN(prix) && prix >= 0 ? prix : null
         })
+        
+        console.log(`📦 Item ${item.article?.nom || item.id}: qté=${qteLivree}, prix=${prix}`)
       })
+      
+      // Afficher les erreurs de validation
+      if (hasQuantityError) {
+        alert("❌ Erreur: Certaines quantités sont invalides. Veuillez vérifier vos saisies.")
+        setIsSaving(false)
+        return
+      }
+      
+      if (hasPriceError) {
+        alert("⚠️ Attention: Certains prix sont invalides et seront ignorés.")
+      }
+      
+      console.log('📤 Envoi des données à l\'API:', itemsData)
       
       // Appeler l'API pour mettre à jour
       const success = await executeAction(demande.id, "update_quantites_prix", { items: itemsData })
       
       if (success) {
+        console.log('✅ API a retourné success=true')
+        
         // Forcer le rechargement en réinitialisant le timestamp
         useStore.setState({ lastDemandesLoad: 0 })
         
@@ -277,11 +311,26 @@ export default function DemandeDetailModal({
           })
           setQuantitesLivrees(newQtes)
           setPrixUnitaires(newPrix)
+          
+          // Message de succès détaillé
+          const itemsAvecPrix = updatedDemande.items.filter(i => i.prixUnitaire && i.prixUnitaire > 0).length
+          const totalItems = updatedDemande.items.length
+          
+          if (itemsAvecPrix === totalItems) {
+            alert(`✅ Quantités et prix enregistrés avec succès!\n💰 Coût total: ${updatedDemande.coutTotal?.toLocaleString('fr-FR')} FCFA`)
+          } else if (itemsAvecPrix > 0) {
+            alert(`✅ Quantités enregistrées avec succès!\n⚠️ Prix enregistrés pour ${itemsAvecPrix}/${totalItems} articles\n💰 Coût total: ${updatedDemande.coutTotal?.toLocaleString('fr-FR')} FCFA`)
+          } else {
+            alert(`✅ Quantités enregistrées avec succès!\n⚠️ Aucun prix n'a été enregistré. Veuillez saisir les prix.`)
+          }
+        } else {
+          console.error('❌ Demande non trouvée après rechargement')
+          alert("✅ Données enregistrées mais erreur de rechargement. Veuillez rafraîchir la page.")
         }
-        
-        alert("Quantités et prix enregistrés avec succès")
       } else {
-        alert("Erreur lors de l'enregistrement")
+        console.error('❌ API a retourné success=false')
+        const errorMsg = useStore.getState().error || "Erreur inconnue"
+        alert(`❌ Erreur lors de l'enregistrement:\n${errorMsg}`)
       }
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error)
@@ -399,10 +448,22 @@ export default function DemandeDetailModal({
                                     step="1"
                                     className="w-20 h-8 text-center mx-auto text-blue-600 font-semibold"
                                     value={quantitesLivrees[item.id] || ""}
-                                    onChange={(e) => setQuantitesLivrees(prev => ({
-                                      ...prev,
-                                      [item.id]: e.target.value
-                                    }))}
+                                    onChange={(e) => {
+                                      const value = e.target.value
+                                      setQuantitesLivrees(prev => ({
+                                        ...prev,
+                                        [item.id]: value
+                                      }))
+                                    }}
+                                    onBlur={(e) => {
+                                      const value = e.target.value
+                                      if (value === "" || parseFloat(value) < 0) {
+                                        setQuantitesLivrees(prev => ({
+                                          ...prev,
+                                          [item.id]: "0"
+                                        }))
+                                      }
+                                    }}
                                     placeholder="0"
                                   />
                                 ) : (
@@ -422,10 +483,22 @@ export default function DemandeDetailModal({
                                     step="0.01"
                                     className="w-24 h-8 text-center mx-auto text-green-600 font-semibold"
                                     value={prixUnitaires[item.id] || ""}
-                                    onChange={(e) => setPrixUnitaires(prev => ({
-                                      ...prev,
-                                      [item.id]: e.target.value
-                                    }))}
+                                    onChange={(e) => {
+                                      const value = e.target.value
+                                      setPrixUnitaires(prev => ({
+                                        ...prev,
+                                        [item.id]: value
+                                      }))
+                                    }}
+                                    onBlur={(e) => {
+                                      const value = e.target.value
+                                      if (value !== "" && parseFloat(value) < 0) {
+                                        setPrixUnitaires(prev => ({
+                                          ...prev,
+                                          [item.id]: "0"
+                                        }))
+                                      }
+                                    }}
                                     placeholder="0.00"
                                   />
                                 ) : (

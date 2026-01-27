@@ -56,19 +56,37 @@ export default function DemandePreparationModal({
   }, [demandeId, demandes])
 
   const handleQuantiteChange = (itemIndex: number, value: string) => {
-    const numValue = parseInt(value) || 0
-    setQuantites(prev => ({
-      ...prev,
-      [`item-${itemIndex}`]: numValue
-    }))
+    if (value === "") {
+      setQuantites(prev => ({
+        ...prev,
+        [`item-${itemIndex}`]: 0
+      }))
+    } else {
+      const numValue = parseInt(value)
+      if (!isNaN(numValue) && numValue >= 0) {
+        setQuantites(prev => ({
+          ...prev,
+          [`item-${itemIndex}`]: numValue
+        }))
+      }
+    }
   }
 
   const handlePrixChange = (itemIndex: number, value: string) => {
-    const numValue = parseFloat(value) || 0
-    setPrix(prev => ({
-      ...prev,
-      [`item-${itemIndex}`]: numValue
-    }))
+    if (value === "") {
+      setPrix(prev => ({
+        ...prev,
+        [`item-${itemIndex}`]: 0
+      }))
+    } else {
+      const numValue = parseFloat(value)
+      if (!isNaN(numValue) && numValue >= 0) {
+        setPrix(prev => ({
+          ...prev,
+          [`item-${itemIndex}`]: numValue
+        }))
+      }
+    }
   }
 
   const handleSave = async () => {

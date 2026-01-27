@@ -1052,12 +1052,18 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
 
         // Mettre à jour chaque item
         let coutTotal = 0
+        let itemsUpdated = 0
+        let itemsWithPrice = 0
+        
         for (const itemData of itemsToUpdate) {
           const { itemId, quantiteLivree, prixUnitaire } = itemData
           
+          console.log(`🔍 [UPDATE-QTE-PRIX] Traitement item ${itemId}:`, { quantiteLivree, prixUnitaire })
+          
           // Récupérer l'item actuel
           const currentItem = await prisma.itemDemande.findUnique({
-            where: { id: itemId }
+            where: { id: itemId },
+            include: { article: true }
           })
           
           if (!currentItem) {
@@ -1065,22 +1071,39 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
             continue
           }
 
+          // Validation des données
+          const qteToSave = typeof quantiteLivree === 'number' && quantiteLivree >= 0 ? quantiteLivree : 0
+          const prixToSave = typeof prixUnitaire === 'number' && prixUnitaire >= 0 ? prixUnitaire : null
+
+          console.log(`📝 [UPDATE-QTE-PRIX] Article: ${currentItem.article?.nom || 'N/A'}`)
+          console.log(`   - Quantité à sauvegarder: ${qteToSave}`)
+          console.log(`   - Prix à sauvegarder: ${prixToSave}`)
+
           // Mettre à jour l'item
           await prisma.itemDemande.update({
             where: { id: itemId },
             data: {
-              quantiteSortie: quantiteLivree || 0,
-              prixUnitaire: prixUnitaire || null
+              quantiteSortie: qteToSave,
+              prixUnitaire: prixToSave
             }
           })
 
+          itemsUpdated++
+
           // Calculer le coût total
-          if (prixUnitaire && quantiteLivree) {
-            coutTotal += prixUnitaire * quantiteLivree
+          if (prixToSave !== null && qteToSave > 0) {
+            coutTotal += prixToSave * qteToSave
+            itemsWithPrice++
+            console.log(`   💰 Contribution au coût: ${prixToSave} × ${qteToSave} = ${prixToSave * qteToSave}`)
           }
 
-          console.log(`✅ [UPDATE-QTE-PRIX] Item ${itemId} mis à jour: qté=${quantiteLivree}, prix=${prixUnitaire}`)
+          console.log(`✅ [UPDATE-QTE-PRIX] Item ${itemId} mis à jour avec succès`)
         }
+
+        console.log(`📊 [UPDATE-QTE-PRIX] Résumé:`)
+        console.log(`   - Items mis à jour: ${itemsUpdated}/${itemsToUpdate.length}`)
+        console.log(`   - Items avec prix: ${itemsWithPrice}`)
+        console.log(`   - Coût total: ${coutTotal} FCFA`)
 
         // Mettre à jour le coût total de la demande
         console.log(`💰 [UPDATE-QTE-PRIX] Coût total calculé: ${coutTotal}`)

@@ -470,6 +470,7 @@ export const POST = async (request: NextRequest) => {
 
     // Générer un numéro de demande unique avec retry en cas de collision
     const year = new Date().getFullYear()
+    const typePrefix = validatedData.type === "materiel" ? "DA-M" : "DA-O"
     let numero = ""
     let attempts = 0
     const maxAttempts = 5
@@ -480,14 +481,14 @@ export const POST = async (request: NextRequest) => {
         const countThisYear = await prisma.demande.count({
           where: {
             numero: {
-              startsWith: `DEM-${year}-`
+              startsWith: `${typePrefix}-${year}-`
             }
           }
         })
         
         // Générer le numéro avec le compteur + 1
         const sequenceNumber = countThisYear + 1
-        numero = `DEM-${year}-${String(sequenceNumber).padStart(4, "0")}`
+        numero = `${typePrefix}-${year}-${String(sequenceNumber).padStart(4, "0")}`
         
         // Vérifier que ce numéro n'existe pas déjà (double sécurité)
         const existing = await prisma.demande.findUnique({
@@ -502,7 +503,7 @@ export const POST = async (request: NextRequest) => {
         // Si le numéro existe déjà, ajouter un timestamp pour garantir l'unicité
         console.log(`⚠️ [CREATE-DEMANDE] Numéro ${numero} existe déjà, ajout timestamp`)
         const timestamp = Date.now().toString().slice(-4)
-        numero = `DEM-${year}-${String(sequenceNumber).padStart(4, "0")}-${timestamp}`
+        numero = `${typePrefix}-${year}-${String(sequenceNumber).padStart(4, "0")}-${timestamp}`
         break
         
       } catch (error) {
@@ -512,7 +513,7 @@ export const POST = async (request: NextRequest) => {
         if (attempts >= maxAttempts) {
           // En dernier recours, utiliser un UUID partiel
           const uuid = Math.random().toString(36).substring(2, 8).toUpperCase()
-          numero = `DEM-${year}-${uuid}`
+          numero = `${typePrefix}-${year}-${uuid}`
           console.log(`⚠️ [CREATE-DEMANDE] Utilisation d'un numéro de secours: ${numero}`)
         }
         
