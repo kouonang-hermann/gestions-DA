@@ -455,9 +455,17 @@ export default function DemandeDetailModal({
       <DialogContent className="w-[95vw] max-w-6xl max-h-[90vh] overflow-y-auto p-3 sm:p-4 md:p-6">
         {/* En-tête avec titre */}
         <DialogHeader>
-          <DialogTitle className="text-base sm:text-xl font-bold text-center bg-[#015fc4] text-white py-3 px-4 rounded-t">
-            Demande {demande.type === "materiel" ? "Matériel" : "Outillage"} de {demande.technicien ? `${demande.technicien.prenom} ${demande.technicien.nom}` : 'N/A'}
-          </DialogTitle>
+          <div className="relative">
+            <DialogTitle className="text-base sm:text-xl font-bold text-center bg-[#015fc4] text-white py-3 px-4 rounded-t">
+              Demande {demande.type === "materiel" ? "Matériel" : "Outillage"} de {demande.technicien ? `${demande.technicien.prenom} ${demande.technicien.nom}` : 'N/A'}
+            </DialogTitle>
+            {/* Affichage du livreur assigné en haut à droite */}
+            {demande.livreurAssigne && (
+              <div className="absolute top-2 right-4 bg-white text-[#015fc4] px-3 py-1 rounded-full text-xs sm:text-sm font-semibold border-2 border-white shadow-md">
+                🚚 Livreur: {demande.livreurAssigne.prenom} {demande.livreurAssigne.nom}
+              </div>
+            )}
+          </div>
         </DialogHeader>
 
         <div id="demande-details-content" className="space-y-4 mt-4">

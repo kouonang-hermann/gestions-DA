@@ -317,6 +317,9 @@ export const GET = async (request: NextRequest) => {
         technicien: {
           select: { id: true, nom: true, prenom: true, email: true }
         },
+        livreurAssigne: {
+          select: { id: true, nom: true, prenom: true, email: true }
+        },
         items: {
           include: {
             article: true,
