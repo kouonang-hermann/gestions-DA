@@ -38,6 +38,8 @@ export default function DemandeDetailModal({
   // État pour les quantités livrées et prix en mode édition
   const [quantitesLivrees, setQuantitesLivrees] = useState<{ [itemId: string]: string }>({})
   const [prixUnitaires, setPrixUnitaires] = useState<{ [itemId: string]: string }>({})
+  // État pour les quantités validées (pour les valideurs)
+  const [quantitesValidees, setQuantitesValidees] = useState<{ [itemId: string]: string }>({})
 
   useEffect(() => {
     console.log('🔍 [MODAL] useEffect déclenché:', { demandeId, demandesCount: demandes.length, mode })
@@ -50,12 +52,15 @@ export default function DemandeDetailModal({
       if (foundDemande && mode === "edit") {
         const initialQtes: { [itemId: string]: string } = {}
         const initialPrix: { [itemId: string]: string } = {}
+        const initialQtesValidees: { [itemId: string]: string } = {}
         foundDemande.items.forEach(item => {
           initialQtes[item.id] = (item.quantiteSortie || item.quantiteRecue || 0).toString()
           initialPrix[item.id] = item.prixUnitaire?.toString() || ""
+          initialQtesValidees[item.id] = (item.quantiteValidee || item.quantiteDemandee).toString()
         })
         setQuantitesLivrees(initialQtes)
         setPrixUnitaires(initialPrix)
+        setQuantitesValidees(initialQtesValidees)
       }
     } else {
       setDemande(null)
@@ -79,6 +84,15 @@ export default function DemandeDetailModal({
   const canEdit = mode === "edit" && currentUser && (
     currentUser.role === "responsable_logistique" ||
     currentUser.role === "responsable_appro" ||
+    currentUser.role === "superadmin"
+  )
+  
+  // Déterminer si on peut éditer les quantités validées (valideurs)
+  const canEditValidatedQty = mode === "edit" && currentUser && demande && (
+    (demande.status === "en_attente_validation_conducteur" && currentUser.role === "conducteur_travaux") ||
+    (demande.status === "en_attente_validation_logistique" && currentUser.role === "responsable_logistique") ||
+    (demande.status === "en_attente_validation_responsable_travaux" && currentUser.role === "responsable_travaux") ||
+    (demande.status === "en_attente_validation_charge_affaire" && currentUser.role === "charge_affaire") ||
     currentUser.role === "superadmin"
   )
   
@@ -134,16 +148,39 @@ export default function DemandeDetailModal({
     if (!demande) return 0
     
     let total = 0
-    demande.items.forEach(item => {
+    console.log('💰 [CALCUL-TOTAL] Début du calcul du coût total')
+    console.log(`   - Mode édition: ${canEdit}`)
+    console.log(`   - Nombre d'items: ${demande.items.length}`)
+    
+    demande.items.forEach((item, index) => {
+      // En mode édition, utiliser les valeurs saisies OU les valeurs enregistrées comme fallback
       const qteLivree = canEdit 
-        ? parseFloat(quantitesLivrees[item.id] || "0") || 0 
+        ? (parseFloat(quantitesLivrees[item.id]) || item.quantiteSortie || item.quantiteRecue || 0)
         : (item.quantiteSortie || item.quantiteRecue || 0)
+      
       const prix = canEdit 
-        ? parseFloat(prixUnitaires[item.id] || "0") || 0 
+        ? (parseFloat(prixUnitaires[item.id]) || item.prixUnitaire || 0)
         : (item.prixUnitaire || 0)
-      total += qteLivree * prix
+      
+      console.log(`   📦 Item ${index + 1} (${item.article?.nom || 'N/A'}):`)
+      console.log(`      - Qté livrée saisie: ${quantitesLivrees[item.id] || 'vide'}`)
+      console.log(`      - Qté livrée DB: ${item.quantiteSortie || item.quantiteRecue || 0}`)
+      console.log(`      - Qté utilisée: ${qteLivree}`)
+      console.log(`      - Prix saisi: ${prixUnitaires[item.id] || 'vide'}`)
+      console.log(`      - Prix DB: ${item.prixUnitaire || 0}`)
+      console.log(`      - Prix utilisé: ${prix}`)
+      
+      // Ne calculer que si prix ET quantité sont > 0 (comme l'API)
+      if (prix > 0 && qteLivree > 0) {
+        const contribution = qteLivree * prix
+        total += contribution
+        console.log(`      ✅ Contribution: ${qteLivree} × ${prix} = ${contribution} FCFA`)
+      } else {
+        console.log(`      ⚠️ Ignoré (prix ou quantité = 0)`)
+      }
     })
     
+    console.log(`💰 [CALCUL-TOTAL] Total calculé: ${total} FCFA`)
     return total
   }
 
@@ -219,6 +256,79 @@ export default function DemandeDetailModal({
       console.error('Erreur lors de la validation:', error)
     } finally {
       setIsValidating(false)
+    }
+  }
+  
+  // Fonction pour sauvegarder les quantités validées (pour les valideurs)
+  const handleSaveQuantitesValidees = async () => {
+    if (!demande) return
+    
+    setIsSaving(true)
+    try {
+      // Préparer les données des quantités validées
+      const itemsData: { itemId: string; quantiteValidee: number }[] = []
+      let hasError = false
+      
+      demande.items.forEach(item => {
+        const qteStr = quantitesValidees[item.id] || item.quantiteDemandee.toString()
+        const qteValidee = parseFloat(qteStr)
+        
+        // Validation de la quantité
+        if (isNaN(qteValidee) || qteValidee < 0 || qteValidee > item.quantiteDemandee) {
+          console.error(`❌ Quantité validée invalide pour item ${item.id}: ${qteStr}`)
+          hasError = true
+        }
+        
+        itemsData.push({
+          itemId: item.id,
+          quantiteValidee: isNaN(qteValidee) ? item.quantiteDemandee : qteValidee
+        })
+      })
+      
+      if (hasError) {
+        alert("❌ Erreur: Certaines quantités validées sont invalides. Veuillez vérifier vos saisies.")
+        setIsSaving(false)
+        return
+      }
+      
+      console.log('📤 Envoi des quantités validées à l\'API:', itemsData)
+      
+      // Appeler l'API pour mettre à jour les quantités validées
+      const success = await executeAction(demande.id, "update_validated_quantities", { items: itemsData })
+      
+      if (success) {
+        console.log('✅ Quantités validées enregistrées avec succès')
+        
+        // Recharger les demandes
+        await loadDemandes()
+        
+        // Attendre que le store soit mis à jour
+        await new Promise(resolve => setTimeout(resolve, 500))
+        
+        // Recharger la demande depuis le store
+        const updatedDemande = demandes.find(d => d.id === demande.id)
+        if (updatedDemande) {
+          setDemande(updatedDemande)
+          
+          // Réinitialiser les valeurs
+          const newQtesValidees: { [itemId: string]: string } = {}
+          updatedDemande.items.forEach(item => {
+            newQtesValidees[item.id] = (item.quantiteValidee || item.quantiteDemandee).toString()
+          })
+          setQuantitesValidees(newQtesValidees)
+          
+          alert(`✅ Quantités validées enregistrées avec succès!`)
+        }
+      } else {
+        console.error('❌ Erreur lors de l\'enregistrement des quantités validées')
+        const errorMsg = useStore.getState().error || "Erreur inconnue"
+        alert(`❌ Erreur lors de l\'enregistrement:\n${errorMsg}`)
+      }
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde des quantités validées:', error)
+      alert('Erreur lors de la sauvegarde. Veuillez réessayer.')
+    } finally {
+      setIsSaving(false)
     }
   }
   
@@ -432,8 +542,36 @@ export default function DemandeDetailModal({
                           </TableCell>
                           
                           {showValidatedColumn && (
-                            <TableCell className="text-center border border-gray-300 p-3 text-xs sm:text-sm font-medium">
-                              {qteValidee}
+                            <TableCell className="text-center border border-gray-300 p-1 text-xs sm:text-sm font-medium bg-purple-50">
+                              {canEditValidatedQty ? (
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  max={item.quantiteDemandee}
+                                  step="1"
+                                  className="w-20 h-8 text-center mx-auto text-purple-600 font-semibold"
+                                  value={quantitesValidees[item.id] || ""}
+                                  onChange={(e) => {
+                                    const value = e.target.value
+                                    setQuantitesValidees(prev => ({
+                                      ...prev,
+                                      [item.id]: value
+                                    }))
+                                  }}
+                                  onBlur={(e) => {
+                                    const value = e.target.value
+                                    if (value === "" || parseFloat(value) < 0) {
+                                      setQuantitesValidees(prev => ({
+                                        ...prev,
+                                        [item.id]: item.quantiteDemandee.toString()
+                                      }))
+                                    }
+                                  }}
+                                  placeholder={item.quantiteDemandee.toString()}
+                                />
+                              ) : (
+                                <span className="font-semibold text-purple-600">{qteValidee}</span>
+                              )}
                             </TableCell>
                           )}
                           
@@ -568,6 +706,27 @@ export default function DemandeDetailModal({
 
           {/* Boutons d'action */}
           <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-3 pt-4">
+            {canEditValidatedQty && (
+              <Button 
+                onClick={handleSaveQuantitesValidees}
+                disabled={isSaving}
+                className="w-full sm:w-auto px-4 sm:px-6 py-3 sm:py-2 bg-purple-600 hover:bg-purple-700 text-white rounded flex items-center justify-center gap-2 min-h-[48px] text-sm sm:text-base"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="animate-spin" size={16} />
+                    <span className="hidden sm:inline">Enregistrement...</span>
+                    <span className="sm:hidden">Enregistrement...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save size={16} />
+                    <span className="hidden sm:inline">Enregistrer Qté Validées</span>
+                    <span className="sm:hidden">Enregistrer Qté</span>
+                  </>
+                )}
+              </Button>
+            )}
             {canEdit && (
               <Button 
                 onClick={handleSaveQuantitesEtPrix}

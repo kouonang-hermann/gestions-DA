@@ -1023,6 +1023,99 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         }
         break
 
+      case "update_validated_quantities":
+        console.log(`📝 [UPDATE-VALIDATED-QTY] Mise à jour des quantités validées:`)
+        console.log(`  - Utilisateur: ${currentUser.nom} (${currentUser.role})`)
+        console.log(`  - Demande: ${demande.numero}`)
+        
+        // Vérifier les permissions - seuls les valideurs peuvent modifier les quantités validées
+        const canUpdateValidatedQty = (
+          (demande.status === "en_attente_validation_conducteur" && currentUser.role === "conducteur_travaux") ||
+          (demande.status === "en_attente_validation_logistique" && currentUser.role === "responsable_logistique") ||
+          (demande.status === "en_attente_validation_responsable_travaux" && currentUser.role === "responsable_travaux") ||
+          (demande.status === "en_attente_validation_charge_affaire" && currentUser.role === "charge_affaire") ||
+          currentUser.role === "superadmin"
+        )
+        
+        if (!canUpdateValidatedQty) {
+          console.log(`❌ [UPDATE-VALIDATED-QTY] Accès refusé - rôle ou statut incorrect`)
+          return NextResponse.json({ 
+            success: false, 
+            error: "Vous n'avez pas les permissions pour modifier les quantités validées" 
+          }, { status: 403 })
+        }
+
+        // Récupérer les items de la requête
+        const validatedItems = items
+        
+        if (!validatedItems || !Array.isArray(validatedItems)) {
+          console.log(`❌ [UPDATE-VALIDATED-QTY] Données items manquantes`)
+          return NextResponse.json({ 
+            success: false, 
+            error: "Les données des items sont requises" 
+          }, { status: 400 })
+        }
+
+        console.log(`📋 [UPDATE-VALIDATED-QTY] Items à mettre à jour:`, validatedItems)
+
+        // Mettre à jour chaque item
+        let validatedItemsUpdated = 0
+        
+        for (const itemData of validatedItems) {
+          const { itemId, quantiteValidee } = itemData
+          
+          console.log(`🔍 [UPDATE-VALIDATED-QTY] Traitement item ${itemId}:`, { quantiteValidee })
+          
+          // Récupérer l'item actuel
+          const currentItem = await prisma.itemDemande.findUnique({
+            where: { id: itemId },
+            include: { article: true }
+          })
+          
+          if (!currentItem) {
+            console.log(`⚠️ [UPDATE-VALIDATED-QTY] Item ${itemId} non trouvé, ignoré`)
+            continue
+          }
+
+          // Validation des données
+          const qteToSave = typeof quantiteValidee === 'number' && quantiteValidee >= 0 && quantiteValidee <= currentItem.quantiteDemandee 
+            ? quantiteValidee 
+            : currentItem.quantiteDemandee
+
+          console.log(`📝 [UPDATE-VALIDATED-QTY] Article: ${currentItem.article?.nom || 'N/A'}`)
+          console.log(`   - Quantité demandée: ${currentItem.quantiteDemandee}`)
+          console.log(`   - Quantité validée à sauvegarder: ${qteToSave}`)
+
+          // Mettre à jour l'item
+          await prisma.itemDemande.update({
+            where: { id: itemId },
+            data: {
+              quantiteValidee: qteToSave
+            }
+          })
+
+          validatedItemsUpdated++
+          console.log(`✅ [UPDATE-VALIDATED-QTY] Item ${itemId} mis à jour avec succès`)
+        }
+
+        console.log(`📊 [UPDATE-VALIDATED-QTY] Résumé:`)
+        console.log(`   - Items mis à jour: ${validatedItemsUpdated}/${validatedItems.length}`)
+
+        // Mettre à jour la date de modification de la demande
+        await prisma.demande.update({
+          where: { id: params.id },
+          data: {
+            dateModification: new Date()
+          }
+        })
+
+        console.log(`✅ [UPDATE-VALIDATED-QTY] Quantités validées mises à jour avec succès`)
+        
+        return NextResponse.json({ 
+          success: true, 
+          message: `${validatedItemsUpdated} quantité(s) validée(s) mise(s) à jour avec succès`
+        })
+
       case "update_quantites_prix":
         console.log(`📝 [UPDATE-QTE-PRIX] Mise à jour des quantités livrées et prix:`)
         console.log(`  - Utilisateur: ${currentUser.nom} (${currentUser.role})`)

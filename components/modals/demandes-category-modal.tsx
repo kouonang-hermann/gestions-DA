@@ -208,10 +208,27 @@ export default function DemandesCategoryModal({
       return true
     }
     
-    // Le demandeur peut modifier ses propres demandes non validées
-    const modifiableStatuses = ["brouillon", "soumise", "en_attente_validation_conducteur"]
-    if (modifiableStatuses.includes(demande.status) && demande.technicienId === currentUser?.id) {
-      return true
+    // Le demandeur peut modifier ses propres demandes UNIQUEMENT avant la première validation
+    // - Demande matériel : modifiable jusqu'à validation par le conducteur (inclus en_attente_validation_conducteur)
+    // - Demande outillage : modifiable jusqu'à validation par le responsable logistique (inclus en_attente_validation_logistique)
+    if (demande.technicienId === currentUser?.id) {
+      const modifiableStatusesMateriel = [
+        "brouillon", 
+        "soumise", 
+        "en_attente_validation_conducteur"
+      ]
+      const modifiableStatusesOutillage = [
+        "brouillon", 
+        "soumise", 
+        "en_attente_validation_logistique"
+      ]
+      
+      if (demande.type === "materiel" && modifiableStatusesMateriel.includes(demande.status)) {
+        return true
+      }
+      if (demande.type === "outillage" && modifiableStatusesOutillage.includes(demande.status)) {
+        return true
+      }
     }
     
     // Les valideurs peuvent modifier les demandes qu'ils doivent valider
@@ -250,10 +267,27 @@ export default function DemandesCategoryModal({
       return true
     }
     
-    // Le demandeur peut supprimer ses propres demandes non validées
-    const deletableStatuses = ["brouillon", "soumise", "en_attente_validation_conducteur"]
-    if (deletableStatuses.includes(demande.status) && demande.technicienId === currentUser?.id) {
-      return true
+    // Le demandeur peut supprimer ses propres demandes UNIQUEMENT avant la première validation
+    // - Demande matériel : supprimable jusqu'à validation par le conducteur (inclus en_attente_validation_conducteur)
+    // - Demande outillage : supprimable jusqu'à validation par le responsable logistique (inclus en_attente_validation_logistique)
+    if (demande.technicienId === currentUser?.id) {
+      const deletableStatusesMateriel = [
+        "brouillon", 
+        "soumise", 
+        "en_attente_validation_conducteur"
+      ]
+      const deletableStatusesOutillage = [
+        "brouillon", 
+        "soumise", 
+        "en_attente_validation_logistique"
+      ]
+      
+      if (demande.type === "materiel" && deletableStatusesMateriel.includes(demande.status)) {
+        return true
+      }
+      if (demande.type === "outillage" && deletableStatusesOutillage.includes(demande.status)) {
+        return true
+      }
     }
     
     // Les valideurs peuvent supprimer les demandes qu'ils doivent valider
