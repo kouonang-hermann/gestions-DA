@@ -18,7 +18,7 @@
 | **Super Admin** | ✅ Complet | Interface mobile dédiée | Design moderne avec navigation bottom |
 | **Employé** | ✅ Complet | Layout responsive | Grilles adaptatives + tableaux scrollables |
 | **Conducteur** | ✅ Complet | CSS universel | Automatiquement responsive |
-| **QHSE** | ✅ Complet | CSS universel | Automatiquement responsive |
+| **Livreur** | ✅ Complet | CSS universel | Automatiquement responsive |
 | **Responsable Travaux** | ✅ Complet | CSS universel | Automatiquement responsive |
 | **Appro** | ✅ Complet | CSS universel | Automatiquement responsive |
 | **Charge Affaire** | ✅ Complet | CSS universel | Automatiquement responsive |

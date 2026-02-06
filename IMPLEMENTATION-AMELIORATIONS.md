@@ -252,7 +252,7 @@ enum TypeMouvement {
    ```typescript
    describe('Workflow Demandes', () => {
      it('devrait valider demande matériel par conducteur')
-     it('devrait valider demande outillage par QHSE')
+     it('devrait valider demande outillage par logistique')
      it('devrait rejeter demande avec motif')
      it('devrait auto-valider si demandeur = validateur')
    })

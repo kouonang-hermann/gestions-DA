@@ -2,6 +2,7 @@
 
 import { useStore } from "@/stores/useStore"
 import Navbar from "./navbar"
+import { TooltipProvider } from "@/components/ui/tooltip"
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useStore()
@@ -10,9 +11,9 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   const showNavbar = isAuthenticated
   
   return (
-    <>
+    <TooltipProvider delayDuration={200}>
       {showNavbar && <Navbar />}
       {children}
-    </>
+    </TooltipProvider>
   )
 }

@@ -428,7 +428,7 @@ Chaque type suit un **workflow de validation en 10 étapes** avec des valideurs 
 1. **Logistique au lieu de Conducteur** : Responsable Logistique valide en premier pour outillage
 2. **Logistique au lieu d'Appro** : Responsable Logistique prépare les sorties d'outillage
 3. **Appro exclu** : Le Responsable Appro ne voit que les demandes de matériel
-4. **Nouveau statut** : `en_attente_validation_qhse` et `en_attente_preparation_logistique`
+4. **Nouveau statut** : `en_attente_validation_logistique` et `en_attente_preparation_logistique`
 
 ---
 
@@ -522,7 +522,7 @@ Notification → Valideur précédent
 
 | Niveau | Rôles | Quantités | Articles | Commentaires | Date besoin |
 |--------|-------|-----------|----------|--------------|-------------|
-| **Niveau 1** | Conducteur, QHSE, Resp. Travaux | ✅ | ✅ | ✅ | ✅ |
+| **Niveau 1** | Conducteur, Logistique, Resp. Travaux | ✅ | ✅ | ✅ | ✅ |
 | **Niveau 2** | Chargé Affaire | ✅ | ✅ | ✅ | ❌ |
 | **Niveau 3** | Resp. Appro | ✅ | ✅ | ✅ | ❌ |
 | **Niveau 4** | Livreur | ✅ | ❌ | ✅ | ❌ |

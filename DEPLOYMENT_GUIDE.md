@@ -47,7 +47,6 @@ Après le seed, ces comptes devraient être disponibles :
 | `admin@test.com` | `admin123` | Super Admin |
 | `employe@test.com` | `employe123` | Employé |
 | `conducteur@test.com` | `conducteur123` | Conducteur |
-| `qhse@test.com` | `qhse123` | QHSE |
 | `appro@test.com` | `appro123` | Appro |
 | `charge@test.com` | `charge123` | Chargé Affaire |
 | `logistique@test.com` | `logistique123` | Logistique |

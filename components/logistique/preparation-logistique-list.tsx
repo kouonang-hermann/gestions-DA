@@ -26,12 +26,15 @@ export default function PreparationLogistiqueList() {
   const [selectedLivreur, setSelectedLivreur] = useState<string>("")
   const [commentaire, setCommentaire] = useState<string>("")
 
+  // OPTIMISÉ: Ne charger que si les demandes ne sont pas déjà en cache
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser && demandes.length === 0) {
       loadDemandes()
+    }
+    if (currentUser && users.length === 0) {
       useStore.getState().loadUsers()
     }
-  }, [currentUser, loadDemandes])
+  }, [currentUser?.id, demandes.length, users.length]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (currentUser) {

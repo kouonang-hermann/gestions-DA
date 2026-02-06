@@ -5,7 +5,7 @@ import { useStore } from "@/stores/useStore"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { PackageX, Eye, AlertTriangle, Package } from "lucide-react"
+import { PackageX, Eye, AlertTriangle, Package, DollarSign } from "lucide-react"
 import type { Demande, DemandeType } from "@/types"
 import DemandeDetailsModal from "@/components/modals/demande-details-modal"
 
@@ -44,6 +44,29 @@ export default function SousDemandesList({ type }: SousDemandesListProps) {
   const handleViewDetails = (demande: Demande) => {
     setSelectedDemande(demande)
     setDetailsModalOpen(true)
+  }
+
+  const canSeePricesForDemande = (demande: Demande) => {
+    if (currentUser.role === "superadmin") return true
+    if (demande.type === "materiel" && currentUser.role === "responsable_appro") return true
+    if (demande.type === "outillage" && currentUser.role === "responsable_logistique") return true
+    return false
+  }
+
+  const calculerCoutRestant = (demande: Demande) => {
+    let total = 0
+    for (const item of demande.items || []) {
+      const prix = Number(item.prixUnitaire || 0)
+      if (prix <= 0) continue
+
+      const quantiteValidee = item.quantiteValidee ?? item.quantiteDemandee
+      const quantiteLivree = item.quantiteSortie ?? item.quantiteRecue ?? 0
+      const quantiteRestante = Math.max(0, Number(quantiteValidee) - Number(quantiteLivree))
+      if (quantiteRestante <= 0) continue
+
+      total += quantiteRestante * prix
+    }
+    return total
   }
 
   const totalAnomalies = sousDemandes.length + demandesRenvoyees.length
@@ -120,6 +143,15 @@ export default function SousDemandesList({ type }: SousDemandesListProps) {
                               ? "Remplacement"
                               : "Autre"}
                           </p>
+
+                          {canSeePricesForDemande(demande) && (
+                            <div className="flex items-center gap-2 mt-2">
+                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                <DollarSign className="h-3 w-3 mr-1" />
+                                Coût restant: {calculerCoutRestant(demande).toLocaleString('fr-FR')} FCFA
+                              </Badge>
+                            </div>
+                          )}
 
                           {demande.demandeParentId && (
                             <p className="text-xs text-gray-500 mt-1">

@@ -151,7 +151,6 @@ export const useStore = create<AppState>()(
             return false
           }
         } catch (error) {
-          console.error("Erreur de connexion:", error)
           set({ error: "Erreur de connexion", isLoading: false })
           return false
         }
@@ -192,17 +191,12 @@ export const useStore = create<AppState>()(
             
             set({ users: transformedUsers })
           } else {
-            // Ignorer les erreurs d'authentification temporaires
             if (result.error === "Accès non autorisé" || result.error === "Utilisateur non trouvé") {
-              console.log("⚠️ [STORE] Problème d'authentification temporaire lors du chargement des utilisateurs, ignoré")
               return
             }
-            // Seulement logger les vraies erreurs
-            console.error("❌ [STORE] Erreur API users:", result.error)
             set({ error: result.error })
           }
         } catch (error) {
-          console.error("Erreur lors du chargement des utilisateurs:", error)
           set({ error: "Erreur lors du chargement des utilisateurs" })
         }
       },
@@ -229,19 +223,9 @@ export const useStore = create<AppState>()(
               return
             }
             
-            // Logger l'erreur avec plus de détails
-            console.error("❌ [STORE] Erreur API projets:", result.error)
-            if (result.details) {
-              console.error("📋 [STORE] Détails de l'erreur:", result.details)
-            }
-            
-            // Ne pas bloquer l'application si les projets ne se chargent pas
-            // Initialiser avec un tableau vide pour éviter les erreurs
             set({ projets: [], error: result.error })
           }
         } catch (error) {
-          console.error("❌ [STORE] Erreur lors du chargement des projets:", error)
-          // Initialiser avec un tableau vide en cas d'erreur
           set({ projets: [], error: "Erreur lors du chargement des projets" })
         }
       },
@@ -255,19 +239,14 @@ export const useStore = create<AppState>()(
           return
         }
         
-        // Éviter les appels trop fréquents (moins de 2 secondes)
+        // Éviter les appels trop fréquents (moins de 10 secondes)
+        // OPTIMISÉ: Augmenté de 2s à 10s pour réduire les appels API sur Vercel
         const now = Date.now()
-        if (now - lastDemandesLoad < 2000) {
+        if (now - lastDemandesLoad < 10000) {
           return
         }
         
-        if (!currentUser) {
-          console.log("⚠️ [STORE] loadDemandes: Pas d'utilisateur connecté")
-          return
-        }
-
-        if (!token) {
-          console.log("⚠️ [STORE] loadDemandes: Pas de token disponible")
+        if (!currentUser || !token) {
           return
         }
 
@@ -284,9 +263,6 @@ export const useStore = create<AppState>()(
 
           if (!response.ok) {
             if (response.status === 401) {
-              console.error("❌ [STORE] Erreur 401: Token invalide ou expiré")
-              
-              // Déconnecter automatiquement l'utilisateur si le token est invalide
               set({ 
                 currentUser: null, 
                 token: null, 
@@ -307,7 +283,6 @@ export const useStore = create<AppState>()(
             if (response.status === 500) {
               try {
                 const errorData = await response.json()
-                console.error("❌ [STORE] Erreur 500 - Détails:", errorData)
                 throw new Error(`Erreur serveur: ${errorData.details || errorData.error || 'Erreur inconnue'}`)
               } catch (parseError) {
                 throw new Error(`Erreur HTTP: ${response.status}`)
@@ -319,22 +294,8 @@ export const useStore = create<AppState>()(
 
           const data = await response.json()
           
-          console.log(`📊 [STORE] Réponse API /api/demandes:`, {
-            success: data.success,
-            nombreDemandes: data.data?.length || 0,
-            utilisateur: currentUser.nom
-          })
-          
           if (data.success) {
             const demandes = data.data || []
-            console.log(`✅ [STORE] ${demandes.length} demandes chargées pour ${currentUser.nom} (${currentUser.role})`)
-            
-            if (demandes.length === 0) {
-              console.warn(`⚠️ [STORE] ATTENTION: Aucune demande retournée par l'API`)
-              console.warn(`   - Vérifiez que la base de données contient des demandes`)
-              console.warn(`   - Vérifiez les filtres côté serveur dans /api/demandes`)
-            }
-            
             set({ 
               demandes: demandes, 
               isLoading: false, 
@@ -347,139 +308,18 @@ export const useStore = create<AppState>()(
           }
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue'
-          console.error("❌ [STORE] Erreur lors du chargement des demandes:", errorMessage)
           
-          // Si c'est une erreur d'authentification, ne pas utiliser le fallback
-          if (errorMessage.includes('authentifié') || errorMessage.includes('Session expirée')) {
-            set({ 
-              isLoading: false, 
-              isLoadingDemandes: false,
-              error: errorMessage
-            })
-            return
-          }
-          
-          // Fallback vers des demandes de test pour le debug (uniquement pour erreurs réseau)
-          
-          const testDemandes: Demande[] = [
-            // Demande 1 : À valider par le conducteur
-            {
-              id: "demande-test-a-valider",
-              numero: "DA-DEBUG-001",
-              projetId: "projet-demo-1",
-              technicienId: "user-employe-1", // Créée par l'employé
-              type: "materiel" as const,
-              status: "en_attente_validation_conducteur" as const,
-              dateCreation: new Date(),
-              dateModification: new Date(),
-              commentaires: "Demande matériel à valider par conducteur",
-              items: [],
-              validationLogistique: undefined,
-              validationResponsableTravaux: undefined,
-              validationConducteur: undefined,
-              validationChargeAffaire: undefined,
-              sortieAppro: undefined,
-              validationLivreur: undefined,
-              validationFinale: undefined,
-              projet: undefined,
-              technicien: undefined,
-              nombreRejets: 0,
-              statusPrecedent: undefined,
-              typeDemande: "principale"
-            },
-            // Demande 2 : Déjà validée par le conducteur (statut avancé)
-            {
-              id: "demande-test-validee",
-              numero: "DA-DEBUG-002",
-              projetId: "projet-demo-1",
-              technicienId: "user-employe-2", // Créée par un autre employé
-              type: "materiel" as const,
-              status: "en_attente_validation_responsable_travaux" as const,
-              dateCreation: new Date(Date.now() - 86400000), // Hier
-              dateModification: new Date(),
-              commentaires: "Demande matériel déjà validée par conducteur",
-              items: [],
-              validationLogistique: undefined,
-              validationResponsableTravaux: undefined,
-              validationConducteur: undefined, // Sera détectée par la logique de statut
-              validationLivreur: undefined,
-              validationChargeAffaire: undefined,
-              sortieAppro: undefined,
-              validationFinale: undefined,
-              projet: undefined,
-              technicien: undefined,
-              nombreRejets: 0,
-              statusPrecedent: undefined,
-              typeDemande: "principale"
-            },
-            // Demande 3 : Demande personnelle du conducteur en cours
-            {
-              id: "demande-test-personnelle",
-              numero: "DA-DEBUG-003",
-              projetId: "projet-demo-1",
-              technicienId: "user-conducteur-1", // Créée par le conducteur lui-même
-              type: "outillage" as const,
-              status: "soumise" as const,
-              dateCreation: new Date(),
-              dateModification: new Date(),
-              commentaires: "Ma demande personnelle d'outillage",
-              items: [],
-              validationLogistique: undefined,
-              validationResponsableTravaux: undefined,
-              validationConducteur: undefined,
-              validationChargeAffaire: undefined,
-              sortieAppro: undefined,
-              validationLivreur: undefined,
-              validationFinale: undefined,
-              projet: undefined,
-              technicien: undefined,
-              nombreRejets: 0,
-              statusPrecedent: undefined,
-              typeDemande: "principale"
-            },
-            // Demande 4 : Demande clôturée (validée complètement)
-            {
-              id: "demande-test-cloturee",
-              numero: "DA-DEBUG-004",
-              projetId: "projet-demo-1",
-              technicienId: "user-employe-3", // Créée par un autre employé
-              type: "materiel" as const,
-              status: "cloturee" as const,
-              dateCreation: new Date(Date.now() - 172800000), // Il y a 2 jours
-              dateModification: new Date(),
-              commentaires: "Demande matériel complètement traitée",
-              items: [],
-              validationLogistique: undefined,
-              validationResponsableTravaux: undefined,
-              validationConducteur: undefined, // Sera détectée par la logique de statut
-              validationLivreur: undefined,
-              validationChargeAffaire: undefined,
-              sortieAppro: undefined,
-              validationFinale: undefined,
-              projet: undefined,
-              technicien: undefined,
-              nombreRejets: 0,
-              statusPrecedent: undefined,
-              typeDemande: "principale"
-            }
-          ]
-
           set({ 
-            demandes: testDemandes, 
             isLoading: false, 
-            error: "Connexion à la base de données échouée - Mode debug activé",
             isLoadingDemandes: false,
-            lastDemandesLoad: Date.now()
+            error: errorMessage
           })
         }
       },
 
       loadArticles: async (filters = {}) => {
         const { currentUser, token } = get()
-        if (!currentUser) {
-          console.warn("Tentative de chargement des articles sans utilisateur connecté")
-          return
-        }
+        if (!currentUser) return
 
         try {
           const params = new URLSearchParams()
@@ -495,19 +335,14 @@ export const useStore = create<AppState>()(
           })
 
           const contentType = response.headers.get('content-type')
-          if (!contentType || !contentType.includes('application/json')) {
-            console.warn('⚠️ [STORE] Réponse non-JSON reçue (loadArticles)')
-            return
-          }
+          if (!contentType || !contentType.includes('application/json')) return
 
           const result = await response.json()
           if (result.success) {
             set({ articles: result.data })
-          } else {
-            console.error("Erreur API articles:", result.error)
           }
         } catch (error) {
-          console.debug("Info: Articles non disponibles", error)
+          // Ignorer silencieusement
         }
       },
 
@@ -524,17 +359,14 @@ export const useStore = create<AppState>()(
       })
 
       const contentType = response.headers.get('content-type')
-      if (!contentType || !contentType.includes('application/json')) {
-        console.warn('⚠️ [STORE] Réponse non-JSON reçue (loadNotifications)')
-        return
-      }
+      if (!contentType || !contentType.includes('application/json')) return
 
       const result = await response.json()
       if (result.success) {
         set({ notifications: result.data })
       }
     } catch (error) {
-      console.debug("Info: Notifications non disponibles", error)
+      // Ignorer silencieusement
     }
   },
 
@@ -546,7 +378,7 @@ export const useStore = create<AppState>()(
     // Charger immédiatement
     loadNotifications()
 
-    // Puis toutes les 30 secondes
+    // Puis toutes les 60 secondes (optimisé pour réduire les appels API)
     const intervalId = setInterval(() => {
       const { currentUser } = get()
       if (currentUser) {
@@ -554,7 +386,7 @@ export const useStore = create<AppState>()(
       } else {
         clearInterval(intervalId)
       }
-    }, 30000) // 30 secondes
+    }, 60000) // 60 secondes
 
     return intervalId
   },
@@ -584,7 +416,7 @@ export const useStore = create<AppState>()(
             set({ history: result.data })
           }
         } catch (error) {
-          console.error("Erreur lors du chargement de l'historique:", error)
+          // Ignorer silencieusement
         }
       },
 
@@ -616,7 +448,6 @@ export const useStore = create<AppState>()(
             return false
           }
         } catch (error) {
-          console.error("Erreur création utilisateur:", error)
           set({ error: "Erreur lors de la création de l'utilisateur", isLoading: false })
           return false
         }
@@ -650,7 +481,6 @@ export const useStore = create<AppState>()(
             return false
           }
         } catch (error) {
-          console.error("Erreur création projet:", error)
           set({ error: "Erreur lors de la création du projet", isLoading: false })
           return false
         }
@@ -684,48 +514,30 @@ export const useStore = create<AppState>()(
             return false
           }
         } catch (error) {
-          console.error("Erreur création demande:", error)
           set({ error: "Erreur lors de la création de la demande", isLoading: false })
           return false
         }
       },
 
       executeAction: async (demandeId: string, action: string, data = {}) => {
-        console.log('🚀 [STORE] executeAction appelé')
-        console.log('  - demandeId:', demandeId)
-        console.log('  - action:', action)
-        console.log('  - data:', data)
-        
         const { currentUser, token, demandes } = get()
-        if (!currentUser || !token) {
-          console.log('❌ [STORE] Pas d\'utilisateur ou token')
-          return false
-        }
+        if (!currentUser || !token) return false
 
-        // Trouver la demande concernée
         const demande = demandes.find(d => d.id === demandeId)
-        if (!demande) {
-          console.error("❌ [STORE] Demande non trouvée:", demandeId)
-          return false
-        }
-
-        console.log('📋 [STORE] Demande trouvée:', demande.numero, '- Statut:', demande.status)
+        if (!demande) return false
 
         // Calculer le prochain statut avec auto-validation
         let targetStatus = null
         if (action === "valider") {
           targetStatus = get().getNextStatusWithAutoValidation(demande, demande.status, action)
-          console.log('🎯 [STORE] Target status calculé:', targetStatus)
         }
 
         try {
           const payload = {
             action,
-            targetStatus, // Envoyer le statut cible au backend
+            targetStatus,
             ...data
           }
-
-          console.log('📤 [STORE] Envoi de la requête API avec payload:', payload)
 
           const response = await fetch(`/api/demandes/${demandeId}/actions`, {
             method: "POST",
@@ -736,10 +548,7 @@ export const useStore = create<AppState>()(
             body: JSON.stringify(payload),
           })
 
-          console.log('📥 [STORE] Réponse API reçue - Status:', response.status)
-
           const result = await response.json()
-          console.log('📊 [STORE] Résultat API:', result)
 
           if (result.success) {
             // Mettre à jour la demande dans le store
@@ -762,7 +571,6 @@ export const useStore = create<AppState>()(
             return false
           }
         } catch (error) {
-          console.error("Erreur lors de l'exécution de l'action:", error)
           set({ error: "Erreur lors de l'exécution de l'action" })
           return false
         }
@@ -787,7 +595,7 @@ export const useStore = create<AppState>()(
             }))
           }
         } catch (error) {
-          console.error("Erreur lors de la mise à jour de la notification:", error)
+          // Ignorer silencieusement
         }
       },
 
@@ -836,7 +644,6 @@ export const useStore = create<AppState>()(
             return false
           }
         } catch (error) {
-          console.error("Erreur mise à jour demande:", error)
           set({ error: "Erreur lors de la mise à jour de la demande", isLoading: false })
           return false
         }
@@ -869,7 +676,6 @@ export const useStore = create<AppState>()(
             return false
           }
         } catch (error) {
-          console.error("Erreur suppression demande:", error)
           set({ error: "Erreur lors de la suppression de la demande", isLoading: false })
           return false
         }
@@ -908,7 +714,6 @@ export const useStore = create<AppState>()(
             throw new Error(result.error || "Erreur lors de l'ajout")
           }
         } catch (error) {
-          console.error("Erreur ajout utilisateur au projet:", error)
           set({ error: "Erreur lors de l'ajout de l'utilisateur au projet", isLoading: false })
           return false
         }
@@ -943,15 +748,9 @@ export const useStore = create<AppState>()(
             
             return true
           } else {
-            console.error(`❌ [STORE] Échec API:`, result.error)
-            console.error(`❌ [STORE] Détails:`, result.details)
             throw new Error(result.error || "Erreur lors de la suppression")
           }
         } catch (error) {
-          console.error("❌ [STORE] Erreur suppression utilisateur du projet:", error)
-          console.error("❌ [STORE] Type d'erreur:", error instanceof Error ? error.constructor.name : typeof error)
-          console.error("❌ [STORE] Message:", error instanceof Error ? error.message : String(error))
-          
           const errorMessage = error instanceof Error ? error.message : "Erreur lors de la suppression de l'utilisateur du projet"
           set({ error: errorMessage, isLoading: false })
           return false
@@ -988,7 +787,6 @@ export const useStore = create<AppState>()(
             throw new Error(result.error || "Erreur lors de la mise à jour du rôle")
           }
         } catch (error) {
-          console.error("Erreur mise à jour rôle utilisateur:", error)
           set({ error: "Erreur lors de la mise à jour du rôle", isLoading: false })
           return false
         }
@@ -1024,7 +822,6 @@ export const useStore = create<AppState>()(
             throw new Error(result.error || "Erreur lors de la mise à jour du projet")
           }
         } catch (error) {
-          console.error("Erreur mise à jour projet:", error)
           set({ error: "Erreur lors de la mise à jour du projet", isLoading: false })
           return false
         }
@@ -1183,7 +980,6 @@ export const useStore = create<AppState>()(
           return true
           
         } catch (error) {
-          console.error("❌ [VALIDATION] Erreur lors de la validation:", error)
           set({ error: error instanceof Error ? error.message : "Erreur lors de la validation", isLoading: false })
           return false
         }
@@ -1220,7 +1016,6 @@ export const useStore = create<AppState>()(
               )
             }))
             
-            console.log(`✅ [STORE] ${orphanedDemandes.length} demandes transférées avec succès`)
           }
           
           // TODO: En production, appeler l'API pour persister le transfert
@@ -1232,7 +1027,6 @@ export const useStore = create<AppState>()(
           return true
           
         } catch (error) {
-          console.error("❌ [STORE] Erreur lors du transfert des demandes orphelines:", error)
           return false
         }
       },
@@ -1245,12 +1039,9 @@ export const useStore = create<AppState>()(
         token: state.token,
       }),
       onRehydrateStorage: () => (state) => {
-        // Callback appelé quand l'hydratation depuis localStorage est terminée
-        console.log("🔄 [STORE] Hydratation terminée depuis localStorage")
         if (state) {
           // Validation: si currentUser est null, forcer isAuthenticated à false
           if (!state.currentUser && state.isAuthenticated) {
-            console.warn("⚠️ [STORE] État incohérent détecté: isAuthenticated=true mais currentUser=null. Correction...")
             state.isAuthenticated = false
             state.token = null
           }

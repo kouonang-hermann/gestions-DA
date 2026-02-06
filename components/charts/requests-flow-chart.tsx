@@ -32,7 +32,7 @@ export default function RequestsFlowChart({ demandes, type, title }: RequestsFlo
         month: monthName,
         requests: monthRequests.length,
         completed: monthRequests.filter(d => d.status === "cloturee").length,
-        pending: monthRequests.filter(d => ["en_attente_validation_conducteur", "en_attente_validation_responsable_travaux", "en_attente_validation_qhse", "en_attente_validation_charge_affaire", "en_attente_preparation_appro", "en_attente_validation_logistique", "en_attente_validation_finale_demandeur", "confirmee_demandeur"].includes(d.status)).length,
+        pending: monthRequests.filter(d => ["en_attente_validation_conducteur", "en_attente_validation_responsable_travaux", "en_attente_validation_charge_affaire", "en_attente_preparation_appro", "en_attente_validation_logistique", "en_attente_validation_finale_demandeur", "confirmee_demandeur"].includes(d.status)).length,
         rejected: monthRequests.filter(d => d.status === "rejetee").length
       })
     }

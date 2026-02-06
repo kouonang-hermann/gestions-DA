@@ -1,4 +1,4 @@
-# Progression de la Migration QHSE → Logistique et Logistique → Livreur
+# Progression de la Migration Logistique → Livreur
 
 **Date**: 27 décembre 2024  
 **Statut**: 75% complété
@@ -13,7 +13,7 @@
 5. ✅ `stores/useStore.ts` - Store Zustand (flows, validations, signatures)
 
 ### Scripts et Documentation
-6. ✅ `prisma/migrations/migration_qhse_to_logistique.sql` - Script SQL de migration
+6. ✅ `prisma/migrations/migration_roles.sql` - Script SQL de migration
 7. ✅ `docs/MIGRATION_GUIDE.md` - Guide de migration complet
 8. ✅ `docs/MIGRATION_STATUS.md` - État d'avancement
 9. ✅ `docs/MIGRATION_PROGRESS.md` - Ce fichier
@@ -58,11 +58,9 @@
 ## 🔄 Fichiers à renommer
 
 ### Dashboards
-- ⏳ `components/dashboard/qhse-dashboard.tsx` → `logistique-dashboard.tsx`
 - ⏳ `components/dashboard/responsable-logistique-dashboard.tsx` → `responsable-livreur-dashboard.tsx`
 
 ### Dossiers de composants
-- ⏳ `components/qhse/` → `components/logistique/`
 - ⏳ `components/logistique/` → `components/livreur/`
 
 ## 📊 Résumé des changements
@@ -70,19 +68,16 @@
 ### Rôles
 | Ancien | Nouveau |
 |--------|---------|
-| `responsable_qhse` | `responsable_logistique` |
 | `responsable_logistique` | `responsable_livreur` |
 
 ### Statuts
 | Ancien | Nouveau |
 |--------|---------|
-| `en_attente_validation_qhse` | `en_attente_validation_logistique` |
 | `en_attente_validation_logistique` | `en_attente_validation_livreur` |
 
 ### Champs de validation
 | Ancien | Nouveau |
 |--------|---------|
-| `validationQHSE` | `validationLogistique` |
 | `validationLogistique` | `validationLivreur` |
 
 ## 🎯 Prochaines étapes
@@ -92,19 +87,15 @@ Utiliser la commande grep pour identifier et modifier chaque occurrence:
 
 ```powershell
 # Rechercher toutes les occurrences
-Get-ChildItem -Recurse -Include *.ts,*.tsx | Select-String -Pattern "responsable_qhse|en_attente_validation_qhse|validationQHSE"
+Get-ChildItem -Recurse -Include *.ts,*.tsx | Select-String -Pattern "responsable_logistique|en_attente_validation_logistique|validationLogistique"
 ```
 
 ### 2. Renommer les fichiers et dossiers
 ```powershell
 # Dashboards
-Rename-Item "components/dashboard/qhse-dashboard.tsx" "logistique-dashboard.tsx"
 Rename-Item "components/dashboard/responsable-logistique-dashboard.tsx" "responsable-livreur-dashboard.tsx"
 
 # Dossiers (si existants)
-if (Test-Path "components/qhse") {
-    Rename-Item "components/qhse" "logistique"
-}
 if (Test-Path "components/logistique") {
     Rename-Item "components/logistique" "livreur"
 }
@@ -116,7 +107,7 @@ if (Test-Path "components/logistique") {
 psql -h [HOST] -U [USER] -d [DATABASE]
 
 -- Exécuter le script
-\i prisma/migrations/migration_qhse_to_logistique.sql
+\i prisma/migrations/migration_roles.sql
 ```
 
 ### 4. Compiler et tester
@@ -149,14 +140,14 @@ npm run dev
 
 ### Rechercher les occurrences restantes
 ```powershell
-# Rechercher "responsable_qhse"
-Get-ChildItem -Recurse -Include *.ts,*.tsx | Select-String -Pattern "responsable_qhse" -CaseSensitive:$false
+# Rechercher "responsable_logistique"
+Get-ChildItem -Recurse -Include *.ts,*.tsx | Select-String -Pattern "responsable_logistique" -CaseSensitive:$false
 
-# Rechercher "validationQHSE"
-Get-ChildItem -Recurse -Include *.ts,*.tsx | Select-String -Pattern "validationQHSE"
+# Rechercher "validationLogistique"
+Get-ChildItem -Recurse -Include *.ts,*.tsx | Select-String -Pattern "validationLogistique"
 
 # Compter les occurrences
-(Get-ChildItem -Recurse -Include *.ts,*.tsx | Select-String -Pattern "responsable_qhse").Count
+(Get-ChildItem -Recurse -Include *.ts,*.tsx | Select-String -Pattern "responsable_logistique").Count
 ```
 
 ### Remplacements en masse (PowerShell)
@@ -164,16 +155,16 @@ Get-ChildItem -Recurse -Include *.ts,*.tsx | Select-String -Pattern "validationQ
 # Remplacer dans un fichier spécifique
 $file = "chemin/vers/fichier.tsx"
 $content = Get-Content $file -Raw
-$content = $content -replace 'responsable_qhse', 'responsable_logistique'
-$content = $content -replace 'en_attente_validation_qhse', 'en_attente_validation_logistique'
-$content = $content -replace 'validationQHSE', 'validationLogistique'
+$content = $content -replace 'responsable_logistique', 'responsable_livreur'
+$content = $content -replace 'en_attente_validation_logistique', 'en_attente_validation_livreur'
+$content = $content -replace 'validationLogistique', 'validationLivreur'
 Set-Content -Path $file -Value $content -NoNewline
 ```
 
 ## 🔍 Workflow de test recommandé
 
 ### Test 1: Connexion et authentification
-1. Se connecter en tant que responsable_logistique (ancien QHSE)
+1. Se connecter en tant que responsable_logistique
 2. Vérifier que le dashboard s'affiche correctement
 3. Vérifier les permissions
 

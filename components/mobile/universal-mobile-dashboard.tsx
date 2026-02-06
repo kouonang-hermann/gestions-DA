@@ -68,7 +68,6 @@ export default function UniversalMobileDashboard({
       "brouillon": { label: "Brouillon", class: "status-brouillon" },
       "soumise": { label: "Soumise", class: "status-soumise" },
       "en_attente_validation_conducteur": { label: "En cours", class: "status-en-cours" },
-      "en_attente_validation_qhse": { label: "En cours", class: "status-en-cours" },
       "en_attente_validation_responsable_travaux": { label: "En cours", class: "status-en-cours" },
       "en_attente_validation_charge_affaire": { label: "En cours", class: "status-en-cours" },
       "en_attente_preparation_appro": { label: "En cours", class: "status-en-cours" },

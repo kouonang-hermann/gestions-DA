@@ -143,8 +143,8 @@ export const DELETE = async (request: NextRequest, context: { params: Promise<{ 
         commentaire: `Utilisateur ${userProjet.user.prenom} ${userProjet.user.nom} (${userProjet.user.role}) retiré du projet "${projet.nom}"${reason ? `. Raison: ${reason}` : ""}`,
         timestamp: new Date(),
         signature: `${currentUser.id}_${Date.now()}`,
-        ancienStatus: "ASSIGNED" as any,
-        nouveauStatus: "REMOVED" as any
+        ancienStatus: null,
+        nouveauStatus: null
       }
     })
 

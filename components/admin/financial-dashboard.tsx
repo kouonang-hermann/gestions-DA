@@ -31,6 +31,7 @@ import {
   Cell,
   Legend
 } from "recharts"
+import { getDemandeFinance } from "@/lib/finance-utils"
 
 interface FinancialDashboardProps {
   onClose?: () => void
@@ -60,7 +61,7 @@ export default function FinancialDashboard({ onClose }: FinancialDashboardProps)
 
   // Filtrer les demandes avec coût total (calcul direct sans useMemo)
   const getDemandesAvecCout = () => {
-    let filtered = demandes.filter(d => d.coutTotal !== undefined && d.coutTotal !== null && d.coutTotal > 0)
+    let filtered = demandes.filter(d => getDemandeFinance(d).committedAmount > 0)
     
     // Filtre par projet
     if (selectedProjet !== "all") {
@@ -102,20 +103,26 @@ export default function FinancialDashboard({ onClose }: FinancialDashboardProps)
   const demandesAvecCout = getDemandesAvecCout()
 
   // Calculs statistiques (calcul direct)
-  const totalCout = demandesAvecCout.reduce((sum, d) => sum + (d.coutTotal || 0), 0)
-  const coutMateriel = demandesAvecCout
+  const totalDepense = demandesAvecCout.reduce((sum, d) => sum + getDemandeFinance(d).spentAmount, 0)
+  const totalRestant = demandesAvecCout.reduce((sum, d) => sum + getDemandeFinance(d).remainingAmount, 0)
+  const totalEngage = totalDepense + totalRestant
+
+  const depenseMateriel = demandesAvecCout
     .filter(d => d.type === "materiel")
-    .reduce((sum, d) => sum + (d.coutTotal || 0), 0)
-  const coutOutillage = demandesAvecCout
+    .reduce((sum, d) => sum + getDemandeFinance(d).spentAmount, 0)
+  const depenseOutillage = demandesAvecCout
     .filter(d => d.type === "outillage")
-    .reduce((sum, d) => sum + (d.coutTotal || 0), 0)
-  const moyenneCout = demandesAvecCout.length > 0 ? totalCout / demandesAvecCout.length : 0
+    .reduce((sum, d) => sum + getDemandeFinance(d).spentAmount, 0)
+
+  const moyenneEngage = demandesAvecCout.length > 0 ? totalEngage / demandesAvecCout.length : 0
 
   const stats = {
-    totalCout,
-    coutMateriel,
-    coutOutillage,
-    moyenneCout,
+    totalDepense,
+    totalRestant,
+    totalEngage,
+    depenseMateriel,
+    depenseOutillage,
+    moyenneEngage,
     nombreDemandes: demandesAvecCout.length
   }
 
@@ -128,7 +135,7 @@ export default function FinancialDashboard({ onClose }: FinancialDashboardProps)
       if (!parProjet[projetNom]) {
         parProjet[projetNom] = { nom: projetNom, cout: 0, count: 0 }
       }
-      parProjet[projetNom].cout += d.coutTotal || 0
+      parProjet[projetNom].cout += getDemandeFinance(d).spentAmount
       parProjet[projetNom].count += 1
     })
 
@@ -139,8 +146,8 @@ export default function FinancialDashboard({ onClose }: FinancialDashboardProps)
 
   // Données pour le graphique par type (calcul direct)
   const dataParType = [
-    { name: "Matériel", value: stats.coutMateriel, color: "#015fc4" },
-    { name: "Outillage", value: stats.coutOutillage, color: "#7c3aed" }
+    { name: "Matériel", value: stats.depenseMateriel, color: "#015fc4" },
+    { name: "Outillage", value: stats.depenseOutillage, color: "#7c3aed" }
   ].filter(d => d.value > 0)
 
   // Formatter les prix
@@ -154,15 +161,20 @@ export default function FinancialDashboard({ onClose }: FinancialDashboardProps)
 
   // Exporter les données en CSV
   const exportCSV = () => {
-    const headers = ["Numéro", "Type", "Projet", "Demandeur", "Date", "Coût Total (FCFA)"]
-    const rows = demandesAvecCout.map(d => [
-      d.numero,
-      d.type === "materiel" ? "Matériel" : "Outillage",
-      d.projet?.nom || "N/A",
-      `${d.technicien?.prenom || ""} ${d.technicien?.nom || ""}`,
-      new Date(d.dateCreation).toLocaleDateString('fr-FR'),
-      d.coutTotal?.toString() || "0"
-    ])
+    const headers = ["Numéro", "Type", "Projet", "Demandeur", "Date", "Dépensé (FCFA)", "Restant (FCFA)", "Engagé (FCFA)"]
+    const rows = demandesAvecCout.map(d => {
+      const finance = getDemandeFinance(d)
+      return [
+        d.numero,
+        d.type === "materiel" ? "Matériel" : "Outillage",
+        d.projet?.nom || "N/A",
+        `${d.technicien?.prenom || ""} ${d.technicien?.nom || ""}`,
+        new Date(d.dateCreation).toLocaleDateString('fr-FR'),
+        finance.spentAmount.toString(),
+        finance.remainingAmount.toString(),
+        finance.committedAmount.toString(),
+      ]
+    })
 
     const csvContent = [headers, ...rows].map(row => row.join(";")).join("\n")
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
@@ -246,8 +258,8 @@ export default function FinancialDashboard({ onClose }: FinancialDashboardProps)
           <CardContent className="pt-4 p-3 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs sm:text-sm text-green-700">Coût Total</p>
-                <p className="text-lg sm:text-2xl font-bold text-green-800">{formatPrice(stats.totalCout)}</p>
+                <p className="text-xs sm:text-sm text-green-700">Dépensé</p>
+                <p className="text-lg sm:text-2xl font-bold text-green-800">{formatPrice(stats.totalDepense)}</p>
               </div>
               <DollarSign className="h-8 w-8 sm:h-10 sm:w-10 text-green-600 opacity-50" />
             </div>
@@ -258,8 +270,8 @@ export default function FinancialDashboard({ onClose }: FinancialDashboardProps)
           <CardContent className="pt-4 p-3 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs sm:text-sm text-blue-700">Matériel</p>
-                <p className="text-lg sm:text-2xl font-bold text-blue-800">{formatPrice(stats.coutMateriel)}</p>
+                <p className="text-xs sm:text-sm text-blue-700">Dépensé Matériel</p>
+                <p className="text-lg sm:text-2xl font-bold text-blue-800">{formatPrice(stats.depenseMateriel)}</p>
               </div>
               <Package className="h-8 w-8 sm:h-10 sm:w-10 text-blue-600 opacity-50" />
             </div>
@@ -270,8 +282,8 @@ export default function FinancialDashboard({ onClose }: FinancialDashboardProps)
           <CardContent className="pt-4 p-3 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs sm:text-sm text-purple-700">Outillage</p>
-                <p className="text-lg sm:text-2xl font-bold text-purple-800">{formatPrice(stats.coutOutillage)}</p>
+                <p className="text-xs sm:text-sm text-purple-700">Dépensé Outillage</p>
+                <p className="text-lg sm:text-2xl font-bold text-purple-800">{formatPrice(stats.depenseOutillage)}</p>
               </div>
               <Wrench className="h-8 w-8 sm:h-10 sm:w-10 text-purple-600 opacity-50" />
             </div>
@@ -282,8 +294,8 @@ export default function FinancialDashboard({ onClose }: FinancialDashboardProps)
           <CardContent className="pt-4 p-3 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs sm:text-sm text-amber-700">Moyenne</p>
-                <p className="text-lg sm:text-2xl font-bold text-amber-800">{formatPrice(stats.moyenneCout)}</p>
+                <p className="text-xs sm:text-sm text-amber-700">Engagé</p>
+                <p className="text-lg sm:text-2xl font-bold text-amber-800">{formatPrice(stats.totalEngage)}</p>
               </div>
               <TrendingUp className="h-8 w-8 sm:h-10 sm:w-10 text-amber-600 opacity-50" />
             </div>
@@ -298,7 +310,7 @@ export default function FinancialDashboard({ onClose }: FinancialDashboardProps)
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
-              Coûts par Projet
+              Dépenses par Projet
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -309,7 +321,7 @@ export default function FinancialDashboard({ onClose }: FinancialDashboardProps)
                   <XAxis type="number" tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
                   <YAxis type="category" dataKey="nom" width={100} tick={{ fontSize: 11 }} />
                   <Tooltip 
-                    formatter={(value: number) => [formatPrice(value), "Coût"]}
+                    formatter={(value: number) => [formatPrice(value), "Dépensé"]}
                     labelFormatter={(label) => `Projet: ${label}`}
                   />
                   <Bar dataKey="cout" fill="#015fc4" radius={[0, 4, 4, 0]} />
@@ -328,7 +340,7 @@ export default function FinancialDashboard({ onClose }: FinancialDashboardProps)
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <TrendingUp className="h-4 w-4" />
-              Répartition par Type
+              Répartition Dépenses par Type
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -401,7 +413,7 @@ export default function FinancialDashboard({ onClose }: FinancialDashboardProps)
                       </span>
                     </div>
                     <span className="font-bold text-green-700 text-sm">
-                      {formatPrice(demande.coutTotal || 0)}
+                      {formatPrice(getDemandeFinance(demande).spentAmount)}
                     </span>
                   </div>
 
@@ -409,6 +421,18 @@ export default function FinancialDashboard({ onClose }: FinancialDashboardProps)
                   {expandedDemande === demande.id && (
                     <div className="p-3 bg-white border-t">
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs mb-3">
+                        <div>
+                          <span className="text-gray-500">Dépensé:</span>
+                          <p className="font-medium text-green-700">{formatPrice(getDemandeFinance(demande).spentAmount)}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Restant:</span>
+                          <p className="font-medium text-orange-700">{formatPrice(getDemandeFinance(demande).remainingAmount)}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Engagé:</span>
+                          <p className="font-medium">{formatPrice(getDemandeFinance(demande).committedAmount)}</p>
+                        </div>
                         <div>
                           <span className="text-gray-500">Projet:</span>
                           <p className="font-medium">{demande.projet?.nom || "N/A"}</p>
@@ -433,30 +457,41 @@ export default function FinancialDashboard({ onClose }: FinancialDashboardProps)
                           <thead className="bg-gray-100">
                             <tr>
                               <th className="p-2 text-left">Article</th>
-                              <th className="p-2 text-center">Qté</th>
+                              <th className="p-2 text-center">Qté livrée</th>
+                              <th className="p-2 text-center">Qté restante</th>
                               <th className="p-2 text-right">Prix unit.</th>
-                              <th className="p-2 text-right">Total</th>
+                              <th className="p-2 text-right">Dépensé</th>
+                              <th className="p-2 text-right">Restant</th>
                             </tr>
                           </thead>
                           <tbody>
                             {demande.items.map((item) => {
-                              const quantite = item.quantiteValidee || item.quantiteDemandee
-                              const sousTotal = (item.prixUnitaire || 0) * quantite
+                              const finance = getDemandeFinance({ items: [item] })
+                              const qteValidee = item.quantiteValidee || item.quantiteDemandee
+                              const qteLivree = Array.isArray(item.livraisons) && item.livraisons.length > 0
+                                ? item.livraisons.reduce((sum, l) => sum + Number(l?.quantiteLivree || 0), 0)
+                                : (item.quantiteSortie || item.quantiteRecue || 0)
+                              const qteRestante = Math.max(0, qteValidee - qteLivree)
                               return (
                                 <tr key={item.id} className="border-t">
                                   <td className="p-2">{item.article?.nom || "N/A"}</td>
-                                  <td className="p-2 text-center">{quantite}</td>
+                                  <td className="p-2 text-center">{qteLivree}</td>
+                                  <td className="p-2 text-center">{qteRestante}</td>
                                   <td className="p-2 text-right">{item.prixUnitaire ? formatPrice(item.prixUnitaire) : "-"}</td>
-                                  <td className="p-2 text-right font-medium">{sousTotal > 0 ? formatPrice(sousTotal) : "-"}</td>
+                                  <td className="p-2 text-right font-medium">{finance.spentAmount > 0 ? formatPrice(finance.spentAmount) : "-"}</td>
+                                  <td className="p-2 text-right font-medium">{finance.remainingAmount > 0 ? formatPrice(finance.remainingAmount) : "-"}</td>
                                 </tr>
                               )
                             })}
                           </tbody>
                           <tfoot className="bg-green-50">
                             <tr>
-                              <td colSpan={3} className="p-2 text-right font-semibold">Total:</td>
+                              <td colSpan={4} className="p-2 text-right font-semibold">Total dépensé:</td>
                               <td className="p-2 text-right font-bold text-green-700">
-                                {formatPrice(demande.coutTotal || 0)}
+                                {formatPrice(getDemandeFinance(demande).spentAmount)}
+                              </td>
+                              <td className="p-2 text-right font-bold text-orange-700">
+                                {formatPrice(getDemandeFinance(demande).remainingAmount)}
                               </td>
                             </tr>
                           </tfoot>

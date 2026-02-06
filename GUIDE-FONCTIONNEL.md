@@ -21,8 +21,7 @@ Application complète de gestion des demandes de matériel et outillage pour les
 | 👤 Employé | `600000002` | `employe123` | Création demandes |
 | 👷 Conducteur Travaux | `600000003` | `conducteur123` | Validation matériel |
 | 👨‍💼 Responsable Travaux | `600000004` | `responsable123` | Validation hiérarchique |
-| 🛡️ QHSE | `600000005` | `qhse123` | Validation outillage |
-| 📦 Appro | `600000006` | `appro123` | Préparation stock |
+|  Appro | `600000006` | `appro123` | Préparation stock |
 | 💼 Chargé Affaire | `600000007` | `charge123` | Validation budgétaire |
 | 🚚 Logistique | `600000008` | `logistique123` | Validation livraison |
 
@@ -82,25 +81,6 @@ Application complète de gestion des demandes de matériel et outillage pour les
 Demande matériel soumise → Conducteur valide → Passe au Responsable Travaux
 ```
 
-### 4. 🛡️ Responsable QHSE
-**Permissions** :
-- ✅ Validation des demandes d'**outillage**
-- ✅ Rejet des demandes avec commentaire
-- ✅ Création de ses propres demandes
-- ✅ Vue des demandes de ses projets uniquement
-
-**Dashboard** :
-- Carte "En attente" : Demandes outillage à valider
-- Carte "En cours" : Ses demandes personnelles
-- Carte "Validées" : Demandes qu'il a validées
-- Liste de validation avec filtres
-- Graphiques de flux
-
-**Workflow** :
-```
-Demande outillage soumise → QHSE valide → Passe au Responsable Travaux
-```
-
 ### 5. 👨‍💼 Responsable des Travaux
 **Permissions** :
 - ✅ Validation des demandes **matériel ET outillage**
@@ -119,7 +99,7 @@ Demande outillage soumise → QHSE valide → Passe au Responsable Travaux
 **Workflow** :
 ```
 Matériel : Conducteur → Responsable Travaux → Chargé Affaire
-Outillage : QHSE → Responsable Travaux → Chargé Affaire
+Outillage : Logistique → Responsable Travaux → Chargé Affaire
 ```
 
 ### 6. 💼 Chargé d'Affaire
@@ -204,9 +184,9 @@ Appro → Logistique → Demandeur (validation finale)
    ↓ Statut: en_attente_validation_charge_affaire
    ↓ Action: Valider ou Rejeter (budget)
    
-5. PRÉPARATION APPRO (Responsable Appro)
-   ↓ Statut: en_attente_preparation_appro
-   ↓ Action: Préparer ou Rejeter (stock)
+5. PRÉPARATION LOGISTIQUE (Responsable Logistique)
+   ↓ Statut: en_attente_preparation_logistique
+   ↓ Action: Préparer ou Rejeter
    
 6. VALIDATION LOGISTIQUE (Responsable Logistique)
    ↓ Statut: en_attente_validation_logistique
@@ -226,9 +206,9 @@ Appro → Logistique → Demandeur (validation finale)
 1. CRÉATION (Employé)
    ↓ Statut: brouillon → soumise
    
-2. VALIDATION QHSE (Responsable QHSE)
-   ↓ Statut: en_attente_validation_qhse
-   ↓ Action: Valider ou Rejeter (sécurité)
+2. VALIDATION LOGISTIQUE (Responsable Logistique)
+   ↓ Statut: en_attente_validation_logistique
+   ↓ Action: Valider ou Rejeter
    
 3. VALIDATION RESPONSABLE TRAVAUX (Responsable des Travaux)
    ↓ Statut: en_attente_validation_responsable_travaux
@@ -238,9 +218,9 @@ Appro → Logistique → Demandeur (validation finale)
    ↓ Statut: en_attente_validation_charge_affaire
    ↓ Action: Valider ou Rejeter (budget)
    
-5. PRÉPARATION APPRO (Responsable Appro)
-   ↓ Statut: en_attente_preparation_appro
-   ↓ Action: Préparer ou Rejeter (stock)
+5. PRÉPARATION LOGISTIQUE (Responsable Logistique)
+   ↓ Statut: en_attente_preparation_logistique
+   ↓ Action: Préparer ou Rejeter
    
 6. VALIDATION LOGISTIQUE (Responsable Logistique)
    ↓ Statut: en_attente_validation_logistique
@@ -265,7 +245,7 @@ L'application détecte automatiquement si le demandeur a un rôle de valideur et
 
 **Cas supportés** :
 - Conducteur crée demande matériel → Saute validation conducteur
-- QHSE crée demande outillage → Saute validation QHSE
+- Logistique crée demande outillage → Saute validation logistique
 - Responsable Travaux crée demande → Saute validation responsable travaux
 - Chargé Affaire crée demande → Saute validation chargé affaire
 - Appro crée demande → Saute préparation appro
@@ -573,7 +553,6 @@ Chaque dashboard affiche des **cartes de synthèse** :
 - Employé : Bleu
 - Conducteur : Indigo
 - Responsable Travaux : Cyan
-- QHSE : Vert
 - Appro : Orange
 - Chargé Affaire : Rose
 - Logistique : Jaune

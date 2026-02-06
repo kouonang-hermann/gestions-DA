@@ -1,4 +1,4 @@
-# État de la Migration : QHSE → Logistique et Logistique → Livreur
+# État de la Migration : Logistique → Livreur
 
 **Date**: 27 décembre 2024  
 **Statut**: En cours - 60% complété
@@ -9,11 +9,8 @@
 
 | Ancien | Nouveau | Type |
 |--------|---------|------|
-| `responsable_qhse` | `responsable_logistique` | Rôle utilisateur |
 | `responsable_logistique` | `responsable_livreur` | Rôle utilisateur |
-| `en_attente_validation_qhse` | `en_attente_validation_logistique` | Statut demande |
 | `en_attente_validation_logistique` | `en_attente_validation_livreur` | Statut demande |
-| `validationQHSE` | `validationLogistique` | Champ validation |
 | `validationLogistique` | `validationLivreur` | Champ validation |
 
 ## Fichiers modifiés ✅
@@ -21,7 +18,7 @@
 ### 1. Types et configuration de base
 - ✅ `types/index.ts` - Types UserRole et DemandeStatus
 - ✅ `lib/auth.ts` - Permissions et autorisations
-- ✅ `prisma/migrations/migration_qhse_to_logistique.sql` - Script de migration SQL créé
+- ✅ `prisma/migrations/migration_roles.sql` - Script de migration SQL créé
 - ✅ `docs/MIGRATION_GUIDE.md` - Guide de migration créé
 
 ### 2. Routes API principales
@@ -30,7 +27,7 @@
 - ✅ `app/api/demandes/[id]/route.ts` - Gestion des demandes individuelles
 
 ### 3. Scripts et outils
-- ✅ `scripts/migrate-qhse-to-logistique.ps1` - Script PowerShell pour migration automatique
+- ✅ `scripts/migrate-roles.ps1` - Script PowerShell pour migration automatique
 - ✅ `docs/MIGRATION_STATUS.md` - Ce fichier
 
 ## Fichiers restants à modifier ⏳
@@ -50,7 +47,6 @@
 - ⏳ `prisma/seed.ts` - Données de seed
 
 ### Composants Dashboard (environ 6 fichiers)
-- ⏳ `components/dashboard/qhse-dashboard.tsx` → À renommer en `logistique-dashboard.tsx`
 - ⏳ `components/dashboard/responsable-logistique-dashboard.tsx` → À renommer en `responsable-livreur-dashboard.tsx`
 - ⏳ `components/dashboard/dashboard.tsx` - Routing principal
 - ⏳ `components/dashboard/employe-dashboard.tsx`
@@ -59,7 +55,6 @@
 
 ### Composants de validation (environ 5 fichiers)
 - ⏳ `components/validation/validation-demandes-list.tsx`
-- ⏳ `components/qhse/` → Dossier à renommer en `components/logistique/`
 - ⏳ `components/logistique/` → Dossier à renommer en `components/livreur/`
 - ⏳ `components/appro/sortie-preparation-list.tsx`
 - ⏳ `components/cloture/universal-closure-list.tsx`
@@ -118,7 +113,7 @@ Clôturée
 ```
 Création 
   ↓
-Responsable Logistique (en_attente_validation_logistique) ← Ancien QHSE
+Responsable Logistique (en_attente_validation_logistique)
   ↓
 Responsable Travaux (en_attente_validation_responsable_travaux)
   ↓
@@ -138,24 +133,18 @@ Clôturée
 ### Étape 1: Exécuter le script PowerShell
 ```powershell
 cd "c:\Users\Lenovo\OneDrive\Documents\gestion-demandes-materiel (7)"
-.\scripts\migrate-qhse-to-logistique.ps1
+.\scripts\migrate-roles.ps1
 ```
 
 Ce script va automatiquement mettre à jour tous les fichiers TypeScript/TSX restants.
 
 ### Étape 2: Renommer les fichiers et dossiers
 ```powershell
-# Renommer le dashboard QHSE
-Rename-Item "components/dashboard/qhse-dashboard.tsx" "logistique-dashboard.tsx"
-
 # Renommer le dashboard Logistique
 Rename-Item "components/dashboard/responsable-logistique-dashboard.tsx" "responsable-livreur-dashboard.tsx"
 
-# Renommer le dossier qhse
-Rename-Item "components/qhse" "logistique"
-
 # Renommer le dossier logistique
-Rename-Item "components/logistique" "livreur"
+ Rename-Item "components/logistique" "livreur"
 ```
 
 ### Étape 3: Exécuter le script de migration SQL
@@ -164,7 +153,7 @@ Rename-Item "components/logistique" "livreur"
 psql -h [HOST] -U [USER] -d [DATABASE]
 
 # Exécuter le script
-\i prisma/migrations/migration_qhse_to_logistique.sql
+\i prisma/migrations/migration_roles.sql
 ```
 
 ### Étape 4: Tester l'application
@@ -172,7 +161,6 @@ psql -h [HOST] -U [USER] -d [DATABASE]
 2. Vérifier qu'il n'y a pas d'erreurs TypeScript
 3. Démarrer l'application: `npm run dev`
 4. Tester chaque rôle:
-   - Connexion avec responsable_logistique (ancien QHSE)
    - Connexion avec responsable_livreur (ancien logistique)
    - Créer et valider des demandes
    - Vérifier le workflow complet
@@ -187,21 +175,15 @@ psql -h [HOST] -U [USER] -d [DATABASE]
 
 ### Rechercher les occurrences restantes
 ```powershell
-# Rechercher "qhse" (insensible à la casse)
-Get-ChildItem -Recurse -Include *.ts,*.tsx | Select-String -Pattern "qhse" -CaseSensitive:$false
-
 # Rechercher "responsable_logistique" dans les anciens contextes
 Get-ChildItem -Recurse -Include *.ts,*.tsx | Select-String -Pattern "responsable_logistique"
-
-# Rechercher "validationQHSE"
-Get-ChildItem -Recurse -Include *.ts,*.tsx | Select-String -Pattern "validationQHSE"
 ```
 
 ### Vérifier la cohérence
 ```powershell
 # Compter les occurrences
-(Get-ChildItem -Recurse -Include *.ts,*.tsx | Select-String -Pattern "responsable_qhse").Count
-(Get-ChildItem -Recurse -Include *.ts,*.tsx | Select-String -Pattern "en_attente_validation_qhse").Count
+(Get-ChildItem -Recurse -Include *.ts,*.tsx | Select-String -Pattern "responsable_logistique").Count
+(Get-ChildItem -Recurse -Include *.ts,*.tsx | Select-String -Pattern "en_attente_validation_logistique").Count
 ```
 
 ## Notes importantes

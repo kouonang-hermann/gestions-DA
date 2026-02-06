@@ -237,7 +237,7 @@ components/
 ```
 1. Création (Employé)
    ↓
-2. Validation Métier (Conducteur/QHSE)
+2. Validation Métier (Conducteur/Logistique)
    ↓
 3. Validation Responsable Travaux
    ↓

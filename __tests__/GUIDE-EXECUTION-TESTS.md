@@ -49,7 +49,7 @@ npm test demande-creation
 **Objectif :** Vérifier le workflow de validation complet
 
 **Cas testés :**
-- Validation par chaque rôle (conducteur, QHSE, responsable travaux, etc.)
+- Validation par chaque rôle (conducteur, logistique, responsable travaux, etc.)
 - Progression des statuts
 - Permissions de validation
 - Commentaires de validation

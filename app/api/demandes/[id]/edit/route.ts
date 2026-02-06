@@ -6,7 +6,7 @@ import crypto from "crypto"
 /**
  * PUT /api/demandes/[id]/edit - Modifie une demande non encore validée
  * Permet au demandeur de modifier sa demande tant qu'elle n'a pas été validée
- * Statuts autorisés : brouillon, soumise, en_attente_validation_conducteur, en_attente_validation_qhse
+ * Statuts autorisés : brouillon, soumise, en_attente_validation_conducteur, en_attente_validation_logistique
  */
 export const PUT = withAuth(async (request: NextRequest, currentUser: any, context: { params: Promise<{ id: string }> }) => {
   try {
@@ -38,7 +38,7 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
       "brouillon",
       "soumise",
       "en_attente_validation_conducteur",
-      "en_attente_validation_qhse"
+      "en_attente_validation_logistique"
     ]
 
     if (!editableStatuses.includes(demande.status)) {

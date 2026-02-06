@@ -311,41 +311,38 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
             })
           }
         }
-        
-        // Permettre aux valideurs de modifier les articles (nom, référence, quantité)
+
+        // Tracker les modifications d'items si présentes
         if (itemsModifications && (
           currentUser.role === 'conducteur_travaux' || 
           currentUser.role === 'responsable_travaux' || 
-          currentUser.role === 'responsable_qhse' ||
-          currentUser.role === 'charge_affaire'
+          currentUser.role === 'charge_affaire' ||
+          currentUser.role === 'superadmin'
         )) {
           for (const [itemId, modifications] of Object.entries(itemsModifications)) {
-            const updateData: any = {}
             const modifs = modifications as any
-            
-            // Mise à jour de l'article associé, pas de l'item directement
-            if (modifs.nom || modifs.reference || modifs.description) {
-              const item = await prisma.itemDemande.findUnique({
-                where: { id: itemId },
-                include: { article: true }
-              })
-              
-              if (item?.article) {
-                const articleUpdateData: any = {}
-                if (modifs.nom) articleUpdateData.nom = modifs.nom
-                if (modifs.reference) articleUpdateData.reference = modifs.reference
-                if (modifs.description) articleUpdateData.description = modifs.description
-                
-                if (Object.keys(articleUpdateData).length > 0) {
-                  await prisma.article.update({
-                    where: { id: item.article.id },
-                    data: articleUpdateData
-                  })
-                }
+
+            const item = await prisma.itemDemande.findUnique({
+              where: { id: itemId },
+              include: { article: true }
+            })
+
+            if (!item) continue
+
+            if (item.article) {
+              const articleUpdateData: any = {}
+              if (modifs.nom) articleUpdateData.nom = modifs.nom
+              if (modifs.reference) articleUpdateData.reference = modifs.reference
+              if (modifs.description) articleUpdateData.description = modifs.description
+
+              if (Object.keys(articleUpdateData).length > 0) {
+                await prisma.article.update({
+                  where: { id: item.article.id },
+                  data: articleUpdateData
+                })
               }
             }
-            
-            // Mise à jour de la quantité demandée sur l'item
+
             if (modifs.quantite) {
               await prisma.itemDemande.update({
                 where: { id: itemId },
@@ -1183,11 +1180,22 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
 
           itemsUpdated++
 
-          // Calculer le coût total
-          if (prixToSave !== null && qteToSave > 0) {
-            coutTotal += prixToSave * qteToSave
+          // Calculer le coût total basé sur la QUANTITÉ RESTANTE (quantité validée - quantité livrée)
+          // Cela permet de connaître le coût de ce qui reste à livrer (rupture de stock magasin)
+          const quantiteValidee = currentItem.quantiteValidee || currentItem.quantiteDemandee
+          const quantiteRestante = Math.max(0, quantiteValidee - qteToSave)
+          
+          if (prixToSave !== null && quantiteRestante > 0) {
+            const coutRestant = prixToSave * quantiteRestante
+            coutTotal += coutRestant
             itemsWithPrice++
-            console.log(`   💰 Contribution au coût: ${prixToSave} × ${qteToSave} = ${prixToSave * qteToSave}`)
+            console.log(`   💰 Calcul basé sur quantité restante:`)
+            console.log(`      - Quantité validée: ${quantiteValidee}`)
+            console.log(`      - Quantité livrée: ${qteToSave}`)
+            console.log(`      - Quantité restante: ${quantiteRestante}`)
+            console.log(`      - Coût restant: ${prixToSave} × ${quantiteRestante} = ${coutRestant} FCFA`)
+          } else if (prixToSave !== null && quantiteRestante === 0) {
+            console.log(`   ✅ Article complètement livré (quantité restante = 0)`)
           }
 
           console.log(`✅ [UPDATE-QTE-PRIX] Item ${itemId} mis à jour avec succès`)

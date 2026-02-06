@@ -122,7 +122,6 @@ export default function CreateProjectModal({ isOpen, onClose }: CreateProjectMod
       'employe': 'bg-blue-100 text-blue-800',
       'conducteur_travaux': 'bg-green-100 text-green-800', 
       'responsable_travaux': 'bg-purple-100 text-purple-800',
-      'responsable_qhse': 'bg-red-100 text-red-800',
       'charge_affaire': 'bg-yellow-100 text-yellow-800',
       'responsable_logistique': 'bg-indigo-100 text-indigo-800'
     }

@@ -248,7 +248,7 @@ Si évolution = 0 : ➡️ Stable
 
 ```
 1. Création demande → coutTotal = null
-2. Validation conducteur/QHSE → coutTotal = null
+2. Validation conducteur/logistique → coutTotal = null
 3. Validation responsable travaux → coutTotal = null
 4. Validation chargé d'affaires → budgetPrevisionnel renseigné (optionnel)
 5. Préparation appro → prixUnitaires renseignés

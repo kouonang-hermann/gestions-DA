@@ -366,7 +366,7 @@ ORDER BY h.timestamp DESC;
 
 | Niveau | Rôles | Quantités | Articles | Commentaires | Date besoin |
 |--------|-------|-----------|----------|--------------|-------------|
-| **1** | Conducteur, QHSE, Resp. Travaux | ✅ | ✅ | ✅ | ✅ |
+| **1** | Conducteur, Logistique, Resp. Travaux | ✅ | ✅ | ✅ | ✅ |
 | **2** | Chargé Affaire | ✅ | ✅ | ✅ | ❌ |
 | **3** | Resp. Appro | ✅ | ✅ | ✅ | ❌ |
 | **4** | Livreur | ✅ | ❌ | ✅ | ❌ |

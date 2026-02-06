@@ -81,10 +81,10 @@ export default function PriceEntryModal({ isOpen, onClose, demande, onPricesUpda
     setError("")
 
     try {
-      const itemsData = demande.items.map(item => ({
-        itemId: item.id,
-        prixUnitaire: parseFloat(prices[item.id])
-      }))
+      const pricesPayload: { [itemId: string]: number } = {}
+      demande.items.forEach(item => {
+        pricesPayload[item.id] = parseFloat(prices[item.id])
+      })
 
       const response = await fetch(`/api/demandes/${demande.id}/update-prices`, {
         method: "PUT",
@@ -92,7 +92,7 @@ export default function PriceEntryModal({ isOpen, onClose, demande, onPricesUpda
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,
         },
-        body: JSON.stringify({ items: itemsData }),
+        body: JSON.stringify({ prices: pricesPayload }),
       })
 
       const result = await response.json()

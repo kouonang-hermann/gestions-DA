@@ -49,7 +49,7 @@ Application Full-Stack Next.js 15.5.2
 
 7. validation_signatures
    - Signatures électroniques des valideurs
-   - Type: conducteur, qhse, charge_affaire, finale
+   - Type: conducteur, logistique, charge_affaire, finale
 
 8. sortie_signatures
    - Signatures des sorties Appro

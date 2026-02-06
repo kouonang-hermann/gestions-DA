@@ -1,71 +1,60 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { useStore } from "@/stores/useStore"
+
+// Cache global pour éviter les appels multiples entre dashboards
+// OPTIMISÉ: Augmenté de 30s à 60s pour réduire les appels API sur Vercel
+let lastGlobalLoad = 0
+const CACHE_DURATION = 60000 // 60 secondes de cache
 
 /**
  * Hook personnalisé pour le rechargement automatique des données
- * Utilisé par tous les dashboards des valideurs
+ * OPTIMISÉ: Utilise un cache global pour éviter les appels API redondants
  */
 export function useAutoReload(dashboardName: string) {
-  const { currentUser, loadDemandes, loadUsers, loadProjets } = useStore()
+  const { currentUser, loadDemandes, demandes, users, projets } = useStore()
+  const hasLoadedRef = useRef(false)
 
-  // Rechargement automatique au montage du composant
+  // Rechargement automatique au montage - UNIQUEMENT si cache expiré
   useEffect(() => {
-    const reloadAllData = async () => {
-      if (currentUser && currentUser.id && currentUser.nom) {
-        try {
-          // Recharger les données essentielles d'abord
-          await loadDemandes()
-          
-          // Charger les utilisateurs (ignorer l'erreur si pas autorisé - normal pour les employés)
-          try {
-            await loadUsers()
-          } catch (error) {
-            // Ignorer l'erreur - normal pour les employés
-          }
-          
-          // Attendre un peu plus avant de charger les projets
-          await new Promise(resolve => setTimeout(resolve, 200))
-          
-          // Charger les projets en dernier et ignorer les erreurs d'authentification
-          try {
-            await loadProjets()
-          } catch (error) {
-            // Ignorer l'erreur d'authentification temporaire
-          }
-        } catch (error) {
-          console.error(`❌ [${dashboardName}] Erreur lors du rechargement:`, error)
-        }
+    const reloadIfNeeded = async () => {
+      if (!currentUser?.id || !currentUser?.nom) return
+      
+      const now = Date.now()
+      
+      // Si données déjà en cache et pas expirées, ne pas recharger
+      if (demandes.length > 0 && now - lastGlobalLoad < CACHE_DURATION) {
+        return
+      }
+      
+      // Éviter les appels multiples pour le même composant
+      if (hasLoadedRef.current) return
+      hasLoadedRef.current = true
+      
+      try {
+        // Charger uniquement les demandes (essentiel)
+        await loadDemandes()
+        lastGlobalLoad = Date.now()
+      } catch (error) {
+        // Ignorer silencieusement
       }
     }
 
-    // Attendre un délai plus long pour s'assurer que l'utilisateur est complètement chargé
-    const timer = setTimeout(reloadAllData, 1000)
-    return () => clearTimeout(timer)
-  }, [currentUser?.id, loadDemandes, loadUsers, loadProjets, dashboardName])
+    const timer = setTimeout(reloadIfNeeded, 500)
+    return () => {
+      clearTimeout(timer)
+      hasLoadedRef.current = false
+    }
+  }, [currentUser?.id, loadDemandes, demandes.length])
 
-  // Fonction de rechargement manuel
+  // Fonction de rechargement manuel - force le rechargement
   const handleManualReload = async () => {
     try {
-      // Recharger les demandes (essentiel)
       await loadDemandes()
-      
-      // Recharger les utilisateurs (ignorer si pas autorisé)
-      try {
-        await loadUsers()
-      } catch (error) {
-        // Ignorer l'erreur
-      }
-      
-      // Recharger les projets (ignorer si erreur)
-      try {
-        await loadProjets()
-      } catch (error) {
-        // Ignorer l'erreur
-      }
+      lastGlobalLoad = Date.now()
     } catch (error) {
-      console.error(`❌ [${dashboardName}] Erreur lors du rechargement manuel:`, error)
+      // Ignorer silencieusement
     }
   }
 

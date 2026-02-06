@@ -31,7 +31,7 @@ Tous les 8 dashboards bénéficient maintenant de l'interface mobile :
 2. **✅ Dashboard Super Admin** - Interface mobile universelle
 3. **✅ Dashboard Conducteur Travaux** - Interface mobile universelle  
 4. **✅ Dashboard Responsable Travaux** - Interface mobile universelle
-5. **✅ Dashboard Responsable QHSE** - Interface mobile universelle
+5. **✅ Dashboard Responsable Livreur** - Interface mobile universelle
 6. **✅ Dashboard Responsable Appro** - Interface mobile universelle
 7. **✅ Dashboard Chargé d'Affaire** - Interface mobile universelle
 8. **✅ Dashboard Responsable Logistique** - Interface mobile universelle
@@ -54,9 +54,9 @@ Tous les 8 dashboards bénéficient maintenant de l'interface mobile :
 - **Action principale** : "Valider Demande"
 - **Actions rapides** : Valider, Projets, Équipe, Rapports
 
-#### **Responsable QHSE**
-- **Action principale** : "Valider Sécurité"
-- **Actions rapides** : Sécurité, Rapports, Normes, Formation
+#### **Responsable Livreur**
+- **Action principale** : "Réceptionner"
+- **Actions rapides** : Réceptions, Livraisons, Rapports
 
 #### **Responsable Appro**
 - **Action principale** : "Préparer Sortie"

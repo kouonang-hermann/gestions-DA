@@ -81,7 +81,7 @@ http://localhost:3000/api/seed-demandes-cloture?secret=seed-database-2024
 ```
 1. Création (brouillon)
 2. Soumission (soumise)
-3. Validation conducteur/QHSE
+3. Validation conducteur/logistique
 4. Validation responsable travaux
 5. Validation chargé d'affaire
 6. Préparation appro

@@ -442,7 +442,6 @@ export class NotificationService {
         en_attente_reception_livreur: "En attente réception livreur",
         en_attente_livraison: "En attente livraison",
         en_attente_validation_finale_demandeur: "En attente validation finale",
-        en_attente_validation_qhse: "En attente validation QHSE",
         en_attente_validation_reception_demandeur: "En attente validation réception",
         renvoyee_vers_appro: "Renvoyée vers appro",
         cloturee_partiellement: "Clôturée partiellement",

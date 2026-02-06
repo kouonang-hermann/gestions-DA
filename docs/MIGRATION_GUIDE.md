@@ -1,4 +1,4 @@
-# Guide de Migration : QHSE → Logistique et Logistique → Livreur
+# Guide de Migration : Logistique → Livreur
 
 ## Vue d'ensemble
 
@@ -8,11 +8,8 @@ Ce guide explique comment effectuer la migration complète de l'application pour
 
 | Ancien | Nouveau |
 |--------|---------|
-| **Rôle** `responsable_qhse` | `responsable_logistique` |
 | **Rôle** `responsable_logistique` | `responsable_livreur` |
-| **Statut** `en_attente_validation_qhse` | `en_attente_validation_logistique` |
 | **Statut** `en_attente_validation_logistique` | `en_attente_validation_livreur` |
-| **Champ** `validationQHSE` | `validationLogistique` |
 | **Champ** `validationLogistique` | `validationLivreur` |
 
 ## Étapes de migration
@@ -28,7 +25,7 @@ pg_dump -h [HOST] -U [USER] -d [DATABASE] > backup_avant_migration.sql
 
 ### 2. Exécution du script de migration SQL
 
-Le script `prisma/migrations/migration_qhse_to_logistique.sql` effectue automatiquement :
+Le script de migration SQL effectue automatiquement :
 
 - ✅ Backup des tables User, Demande, HistoryEntry
 - ✅ Migration des rôles utilisateurs
@@ -41,7 +38,7 @@ Le script `prisma/migrations/migration_qhse_to_logistique.sql` effectue automati
 
 ```bash
 # Environnement de test d'abord !
-psql -h [HOST] -U [USER] -d [DATABASE] -f prisma/migrations/migration_qhse_to_logistique.sql
+psql -h [HOST] -U [USER] -d [DATABASE] -f prisma/migrations/migration_roles.sql
 
 # Vérifier les résultats avant de passer en production
 ```
@@ -52,9 +49,7 @@ Après l'exécution du script, vérifiez :
 
 ```sql
 -- Vérifier qu'il ne reste plus d'anciennes valeurs
-SELECT COUNT(*) FROM "User" WHERE role = 'responsable_qhse'; -- Doit retourner 0
-SELECT COUNT(*) FROM "Demande" WHERE status = 'en_attente_validation_qhse'; -- Doit retourner 0
-SELECT COUNT(*) FROM "Demande" WHERE "validationQHSE" IS NOT NULL; -- Doit retourner 0
+SELECT COUNT(*) FROM "Demande" WHERE status = 'en_attente_validation_logistique';
 ```
 
 ### 4. Déploiement du code frontend
@@ -76,7 +71,6 @@ npm run deploy
 Testez les fonctionnalités suivantes :
 
 #### Tests utilisateurs
-- [ ] Connexion avec un utilisateur "responsable_logistique" (ancien QHSE)
 - [ ] Connexion avec un utilisateur "responsable_livreur" (ancien responsable_logistique)
 - [ ] Vérifier que les dashboards s'affichent correctement
 - [ ] Vérifier que les permissions sont correctes
@@ -135,7 +129,7 @@ Création
   ↓
 Conducteur (en_attente_validation_conducteur)
   ↓
-Responsable Logistique (en_attente_validation_logistique) ← Ancien QHSE
+Responsable Logistique (en_attente_validation_logistique)
   ↓
 Responsable Travaux (en_attente_validation_responsable_travaux)
   ↓
@@ -154,7 +148,7 @@ Clôturée
 ```
 Création 
   ↓
-Responsable Logistique (en_attente_validation_logistique) ← Ancien QHSE
+Responsable Logistique (en_attente_validation_logistique)
   ↓
 Responsable Travaux (en_attente_validation_responsable_travaux)
   ↓
@@ -177,12 +171,10 @@ Clôturée
 - ⏳ `prisma/schema.prisma` - Schéma de base de données
 
 ### Composants Dashboard
-- ⏳ `components/dashboard/qhse-dashboard.tsx` → `logistique-dashboard.tsx`
 - ⏳ `components/dashboard/responsable-logistique-dashboard.tsx` → `responsable-livreur-dashboard.tsx`
 
 ### Composants de validation
 - ⏳ `components/validation/validation-demandes-list.tsx`
-- ⏳ `components/qhse/` → `components/logistique/`
 - ⏳ `components/logistique/` → `components/livreur/`
 
 ### Routes API

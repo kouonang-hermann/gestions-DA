@@ -114,11 +114,7 @@ L'application gère **deux workflows de validation différents** selon le type d
 
 ## ⚠️ Rôles NON Impliqués
 
-### Responsable QHSE
-- **N'intervient PAS** dans le workflow de validation
-- Ni pour le matériel
-- Ni pour l'outillage
-- Rôle différent dans l'application
+Ce workflow ne fait intervenir que les rôles listés dans les sections Matériel / Outillage.
 
 ## 📊 Tableau Comparatif Complet
 

@@ -9,6 +9,7 @@ import PurchaseRequestCard from "@/components/demandes/purchase-request-card"
 import { generatePurchaseRequestPDF, generateBonLivraisonPDF, generateBonSortiePDF } from "@/lib/pdf-generator"
 import { PDFTypeSelector, type PDFType } from "@/components/demandes/pdf-type-selector"
 import { toast } from "sonner"
+import { useStore } from "@/stores/useStore"
 
 interface PurchaseRequestDetailsModalProps {
   isOpen: boolean
@@ -21,6 +22,7 @@ export default function PurchaseRequestDetailsModal({
   onClose, 
   demande 
 }: PurchaseRequestDetailsModalProps) {
+  const { users } = useStore()
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
 
   if (!demande) return null
@@ -30,7 +32,7 @@ export default function PurchaseRequestDetailsModal({
     try {
       switch (type) {
         case 'demande':
-          await generatePurchaseRequestPDF(demande)
+          await generatePurchaseRequestPDF(demande, users)
           break
         case 'bon_livraison':
           await generateBonLivraisonPDF(demande)

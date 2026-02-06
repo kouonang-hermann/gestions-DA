@@ -32,7 +32,7 @@ export function UserRequestsChart({ title, type, userRequests, className }: User
       const total = monthRequests.length
       const completed = monthRequests.filter(r => r.status === 'cloturee').length
       const pending = monthRequests.filter(r => 
-        ['en_attente_validation_conducteur', 'en_attente_validation_responsable_travaux', 'en_attente_validation_qhse', 'en_attente_validation_charge_affaire', 'en_attente_preparation_appro', 'en_attente_validation_logistique', 'en_attente_validation_finale_demandeur', 'confirmee_demandeur'].includes(r.status)
+        ['en_attente_validation_conducteur', 'en_attente_validation_responsable_travaux', 'en_attente_validation_charge_affaire', 'en_attente_preparation_appro', 'en_attente_validation_logistique', 'en_attente_validation_finale_demandeur', 'confirmee_demandeur'].includes(r.status)
       ).length
       const rejected = monthRequests.filter(r => r.status === 'rejetee').length
 

@@ -252,8 +252,7 @@ export default function UniversalMobileInjector() {
     'responsable_travaux', 
     'charge_affaire', 
     'responsable_appro', 
-    'responsable_logistique',
-    'responsable_qhse'
+    'responsable_logistique'
   ].includes(currentUser.role)
 
   if (!isMobile || !currentUser) return null

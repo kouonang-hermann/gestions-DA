@@ -40,10 +40,11 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   BarChart,
   Bar,
 } from "recharts"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import CreateDemandeModal from "@/components/demandes/create-demande-modal"
 import { UserRequestsChart } from "@/components/charts/user-requests-chart"
 import UserDetailsModal from "@/components/modals/user-details-modal"
@@ -812,67 +813,102 @@ export default function EmployeDashboard() {
           <div className="xl:col-span-3 flex flex-col justify-between space-y-3 sm:space-y-4 h-full order-2 xl:order-1">
             {/* Vue d'ensemble - Cards statistiques */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
-              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#015fc4' }} onClick={() => handleCardClick("total", "Toutes mes demandes")}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Total demandes</CardTitle>
-                  <FileText className="h-4 w-4" style={{ color: '#015fc4' }} />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold" style={{ color: '#015fc4' }}>{stats.total}</div>
-                  <p className="text-xs text-muted-foreground">Toutes mes demandes</p>
-                </CardContent>
-              </Card>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#015fc4' }} onClick={() => handleCardClick("total", "Toutes mes demandes")}> 
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">Total demandes</CardTitle>
+                      <FileText className="h-4 w-4" style={{ color: '#015fc4' }} />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold" style={{ color: '#015fc4' }}>{stats.total}</div>
+                      <p className="text-xs text-muted-foreground">Toutes mes demandes</p>
+                    </CardContent>
+                  </Card>
+                </TooltipTrigger>
+                <TooltipContent side="top" sideOffset={8}>
+                  Ouvrir la liste de toutes tes demandes
+                </TooltipContent>
+              </Tooltip>
 
-              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#f97316' }} onClick={() => handleCardClick("enCours", "Mes demandes en cours")}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">En cours</CardTitle>
-                  <Clock className="h-4 w-4" style={{ color: '#f97316' }} />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold" style={{ color: '#f97316' }}>{stats.enCours}</div>
-                  <p className="text-xs text-muted-foreground">En traitement</p>
-                </CardContent>
-              </Card>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#f97316' }} onClick={() => handleCardClick("enCours", "Mes demandes en cours")}> 
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">En cours</CardTitle>
+                      <Clock className="h-4 w-4" style={{ color: '#f97316' }} />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold" style={{ color: '#f97316' }}>{stats.enCours}</div>
+                      <p className="text-xs text-muted-foreground">En traitement</p>
+                    </CardContent>
+                  </Card>
+                </TooltipTrigger>
+                <TooltipContent side="top" sideOffset={8}>
+                  Voir tes demandes en cours de traitement
+                </TooltipContent>
+              </Tooltip>
 
-              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#22c55e' }} onClick={() => handleCardClick("validees", "Mes demandes validées")}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Validées</CardTitle>
-                  <CheckCircle className="h-4 w-4" style={{ color: '#22c55e' }} />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold" style={{ color: '#22c55e' }}>{stats.validees}</div>
-                  <p className="text-xs text-muted-foreground">Demandes validées</p>
-                </CardContent>
-              </Card>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#22c55e' }} onClick={() => handleCardClick("validees", "Mes demandes validées")}> 
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">Validées</CardTitle>
+                      <CheckCircle className="h-4 w-4" style={{ color: '#22c55e' }} />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold" style={{ color: '#22c55e' }}>{stats.validees}</div>
+                      <p className="text-xs text-muted-foreground">Demandes validées</p>
+                    </CardContent>
+                  </Card>
+                </TooltipTrigger>
+                <TooltipContent side="top" sideOffset={8}>
+                  Voir tes demandes clôturées/terminées
+                </TooltipContent>
+              </Tooltip>
 
-              <Card 
-                className={`border-l-4 cursor-pointer hover:shadow-md transition-shadow ${stats.rejetees > 0 ? 'animate-pulse' : ''}`} 
-                style={{ 
-                  borderLeftColor: '#fc2d1f',
-                  backgroundColor: stats.rejetees > 0 ? 'rgba(252, 45, 31, 0.05)' : 'white'
-                }} 
-                onClick={() => handleCardClick("rejetees", "Mes demandes rejetées")}
-              >
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Rejetées</CardTitle>
-                  <XCircle className="h-4 w-4" style={{ color: '#fc2d1f' }} />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold" style={{ color: '#fc2d1f' }}>{stats.rejetees}</div>
-                  <p className="text-xs text-muted-foreground">À revoir</p>
-                </CardContent>
-              </Card>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Card 
+                    className={`border-l-4 cursor-pointer hover:shadow-md transition-shadow ${stats.rejetees > 0 ? 'animate-pulse' : ''}`} 
+                    style={{ 
+                      borderLeftColor: '#fc2d1f',
+                      backgroundColor: stats.rejetees > 0 ? 'rgba(252, 45, 31, 0.05)' : 'white'
+                    }} 
+                    onClick={() => handleCardClick("rejetees", "Mes demandes rejetées")}
+                  >
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">Rejetées</CardTitle>
+                      <XCircle className="h-4 w-4" style={{ color: '#fc2d1f' }} />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold" style={{ color: '#fc2d1f' }}>{stats.rejetees}</div>
+                      <p className="text-xs text-muted-foreground">À revoir</p>
+                    </CardContent>
+                  </Card>
+                </TooltipTrigger>
+                <TooltipContent side="top" sideOffset={8}>
+                  Demandes rejetées (à corriger puis re-soumettre)
+                </TooltipContent>
+              </Tooltip>
 
-              <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#6b7280' }} onClick={() => handleCardClick("brouillons", "Mes brouillons")}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Brouillons</CardTitle>
-                  <Package className="h-4 w-4" style={{ color: '#6b7280' }} />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold" style={{ color: '#6b7280' }}>{stats.brouillons}</div>
-                  <p className="text-xs text-muted-foreground">En brouillon</p>
-                </CardContent>
-              </Card>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#6b7280' }} onClick={() => handleCardClick("brouillons", "Mes brouillons")}> 
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">Brouillons</CardTitle>
+                      <Package className="h-4 w-4" style={{ color: '#6b7280' }} />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold" style={{ color: '#6b7280' }}>{stats.brouillons}</div>
+                      <p className="text-xs text-muted-foreground">En brouillon</p>
+                    </CardContent>
+                  </Card>
+                </TooltipTrigger>
+                <TooltipContent side="top" sideOffset={8}>
+                  Ouvrir tes demandes enregistrées en brouillon
+                </TooltipContent>
+              </Tooltip>
             </div>
 
             {/* Section des livraisons assignées */}
@@ -972,12 +1008,11 @@ export default function EmployeDashboard() {
                         </table>
                       </div>
                     </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
 
-          {/* Colonne de droite (fine) - 1/4 de la largeur */}
           <div className="xl:col-span-1 flex flex-col justify-between space-y-3 sm:space-y-4 h-full order-1 xl:order-2">
             {/* Actions rapides */}
             <Card>
@@ -986,39 +1021,61 @@ export default function EmployeDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 gap-2">
-                  <Button 
-                    className="justify-start text-white" 
-                    style={{ backgroundColor: '#015fc4' }}
-                    size="sm"
-                    onClick={() => {
-                      setDemandeType("materiel")
-                      setCreateDemandeModalOpen(true)
-                    }}
-                  >
-                    <Package className="h-4 w-4 mr-2" />
-                    <span className="text-sm">Nouvelle demande matériel</span>
-                  </Button>
-                  <Button
-                    className="justify-start text-gray-700"
-                    style={{ backgroundColor: '#b8d1df' }}
-                    size="sm"
-                    onClick={() => {
-                      setDemandeType("outillage")
-                      setCreateDemandeModalOpen(true)
-                    }}
-                  >
-                    <Wrench className="h-4 w-4 mr-2" />
-                    <span className="text-sm">Nouvelle demande outillage</span>
-                  </Button>
-                  <Button
-                    className="justify-start text-white"
-                    style={{ backgroundColor: '#16a34a' }}
-                    size="sm"
-                    onClick={() => setUniversalClosureModalOpen(true)}
-                  >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    <span className="text-sm">Clôturer mes demandes</span>
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        className="justify-start text-white" 
+                        style={{ backgroundColor: '#015fc4' }}
+                        size="sm"
+                        onClick={() => {
+                          setDemandeType("materiel")
+                          setCreateDemandeModalOpen(true)
+                        }}
+                      >
+                        <Package className="h-4 w-4 mr-2" />
+                        <span className="text-sm">Nouvelle demande matériel</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" sideOffset={6}>
+                      Créer une nouvelle demande de matériel
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        className="justify-start text-gray-700"
+                        style={{ backgroundColor: '#b8d1df' }}
+                        size="sm"
+                        onClick={() => {
+                          setDemandeType("outillage")
+                          setCreateDemandeModalOpen(true)
+                        }}
+                      >
+                        <Wrench className="h-4 w-4 mr-2" />
+                        <span className="text-sm">Nouvelle demande outillage</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" sideOffset={6}>
+                      Créer une nouvelle demande d'outillage
+                    </TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        className="justify-start text-white"
+                        style={{ backgroundColor: '#16a34a' }}
+                        size="sm"
+                        onClick={() => setUniversalClosureModalOpen(true)}
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        <span className="text-sm">Clôturer mes demandes</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" sideOffset={6}>
+                      Confirmer la réception et clôturer les demandes prêtes
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
               </CardContent>
             </Card>
@@ -1045,7 +1102,7 @@ export default function EmployeDashboard() {
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip />
+                    <RechartsTooltip />
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="mt-2 space-y-1">
@@ -1101,7 +1158,7 @@ export default function EmployeDashboard() {
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="name" fontSize={12} />
                       <YAxis fontSize={12} />
-                      <Tooltip />
+                      <RechartsTooltip />
                       <Line type="monotone" dataKey="value" stroke="#015fc4" strokeWidth={2} />
                     </LineChart>
                   ) : (
@@ -1109,7 +1166,7 @@ export default function EmployeDashboard() {
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="name" fontSize={12} />
                       <YAxis fontSize={12} />
-                      <Tooltip />
+                      <RechartsTooltip />
                       <Bar dataKey="value" fill="#b8d1df" />
                     </BarChart>
                   )}
@@ -1118,6 +1175,7 @@ export default function EmployeDashboard() {
             </Card>
           </div>
         </div>
+      </div>
       </div>
 
       {/* Modals fonctionnels - Partagés entre mobile et desktop */}
@@ -1147,7 +1205,6 @@ export default function EmployeDashboard() {
         isOpen={universalClosureModalOpen}
         onClose={() => setUniversalClosureModalOpen(false)}
       />
-      </div>
     </>
   )
 }

@@ -444,7 +444,6 @@ export class EmailService {
       'brouillon': 'Brouillon',
       'soumise': 'Soumise',
       'en_attente_validation_conducteur': 'En attente validation conducteur',
-      'en_attente_validation_qhse': 'En attente validation QHSE',
       'en_attente_validation_responsable_travaux': 'En attente validation responsable travaux',
       'en_attente_validation_charge_affaire': 'En attente validation chargé d\'affaire',
       'en_attente_preparation_appro': 'En attente préparation appro',

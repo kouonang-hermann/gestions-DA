@@ -172,9 +172,9 @@ case "responsable_logistique":
 
 ## ⚠️ ANOMALIES DÉTECTÉES
 
-### ✅ Clarification : Rôle QHSE remplacé par Responsable Logistique
+### ✅ Clarification : Validation outillage gérée par Responsable Logistique
 
-**Confirmation** : Le rôle **QHSE** n'existe plus dans l'application et a été remplacé par **Responsable Logistique**.
+**Confirmation** : La validation des demandes d'outillage est assurée par le **Responsable Logistique**.
 
 **Dans le code** :
 ```typescript

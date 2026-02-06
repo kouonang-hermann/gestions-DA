@@ -26,7 +26,6 @@ export const PUT = async (request: NextRequest, context: { params: Promise<{ id:
       "employe",
       "conducteur_travaux", 
       "responsable_travaux",
-      "responsable_qhse",
       "charge_affaire",
       "responsable_appro",
       "responsable_logistique",

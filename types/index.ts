@@ -14,7 +14,6 @@ export type DemandeStatus =
   | "brouillon"
   | "soumise"
   | "en_attente_validation_conducteur"
-  | "en_attente_validation_qhse"
   | "en_attente_validation_logistique"
   | "en_attente_validation_responsable_travaux"
   | "en_attente_validation_charge_affaire"

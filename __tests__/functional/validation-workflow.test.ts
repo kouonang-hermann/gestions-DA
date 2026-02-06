@@ -3,7 +3,7 @@
  * 
  * Vérifie le workflow complet de validation pour chaque rôle :
  * - Conducteur des travaux (matériel)
- * - Responsable QHSE (outillage)
+ * - Responsable logistique (outillage)
  * - Responsable des travaux
  * - Chargé d'affaire
  * - Responsable appro
@@ -24,7 +24,6 @@ describe('Workflow de Validation', () => {
     users = {
       employe: createUser('employe-1', 'employe@test.com', 'employe'),
       conducteur: createUser('conducteur-1', 'conducteur@test.com', 'conducteur_travaux'),
-      qhse: createUser('qhse-1', 'qhse@test.com', 'responsable_qhse'),
       respTravaux: createUser('resp-travaux-1', 'resp-travaux@test.com', 'responsable_travaux'),
       chargeAffaire: createUser('charge-1', 'charge@test.com', 'charge_affaire'),
       appro: createUser('appro-1', 'appro@test.com', 'responsable_appro'),
@@ -42,10 +41,18 @@ describe('Workflow de Validation', () => {
       items: [
         {
           id: 'item-1',
-          designation: 'Casque de chantier',
+          articleId: 'article-1',
+          article: {
+            id: 'article-1',
+            nom: 'Casque de chantier',
+            description: '',
+            reference: 'CASQUE-CHANTIER',
+            unite: 'pièce',
+            type: 'materiel',
+            createdAt: new Date(),
+          },
           quantiteDemandee: 10,
-          unite: 'pièce',
-          dateCreation: new Date()
+          commentaire: ''
         }
       ],
       dateCreation: new Date()
@@ -62,10 +69,18 @@ describe('Workflow de Validation', () => {
       items: [
         {
           id: 'item-1',
-          designation: 'Perceuse sans fil',
+          articleId: 'article-2',
+          article: {
+            id: 'article-2',
+            nom: 'Perceuse sans fil',
+            description: '',
+            reference: 'PERCEUSE-SANS-FIL',
+            unite: 'pièce',
+            type: 'outillage',
+            createdAt: new Date(),
+          },
           quantiteDemandee: 2,
-          unite: 'pièce',
-          dateCreation: new Date()
+          commentaire: ''
         }
       ],
       dateCreation: new Date()
@@ -144,7 +159,11 @@ describe('Workflow de Validation', () => {
       demande.sortieAppro = {
         userId: users.appro.id,
         date: new Date(),
-        commentaire: 'Préparation effectuée'
+        commentaire: 'Préparation effectuée',
+        signature: `sortie_${users.appro.id}_${Date.now()}`,
+        quantitesSorties: {},
+        modifiable: true,
+        dateModificationLimite: new Date(Date.now() + 45 * 60 * 1000)
       }
       demande.dateSortie = new Date()
       
@@ -189,10 +208,10 @@ describe('Workflow de Validation', () => {
       }
       
       demande.status = 'cloturee'
-      demande.dateCloture = new Date()
+      demande.dateValidationFinale = new Date()
       
       expect(demande.status).toBe('cloturee')
-      expect(demande.dateCloture).toBeDefined()
+      expect(demande.dateValidationFinale).toBeDefined()
     })
   })
 
@@ -249,7 +268,7 @@ describe('Workflow de Validation', () => {
       
       // Seul le conducteur peut valider
       expect(canUserValidate(users.conducteur, demande, demande.status)).toBe(true)
-      expect(canUserValidate(users.qhse, demande, demande.status)).toBe(false)
+      expect(canUserValidate(users.logistique, demande, demande.status)).toBe(false)
       expect(canUserValidate(users.respTravaux, demande, demande.status)).toBe(false)
       expect(canUserValidate(users.chargeAffaire, demande, demande.status)).toBe(false)
     })
@@ -309,10 +328,11 @@ function createUser(id: string, email: string, role: string): User {
     nom: 'Test',
     prenom: 'User',
     role: role as any,
-    telephone: '0612345678',
+    phone: '0612345678',
+    isAdmin: role === 'superadmin',
+    createdAt: new Date(),
+    updatedAt: new Date(),
     projets: ['projet-1'],
-    actif: true,
-    dateCreation: new Date()
   }
 }
 
@@ -347,9 +367,8 @@ function getNextStatus(demande: Partial<Demande>, action: 'valider' | 'rejeter')
   const statusFlow: Record<string, DemandeStatus> = {
     'soumise': demande.type === 'materiel' 
       ? 'en_attente_validation_conducteur' 
-      : 'en_attente_validation_qhse',
+      : 'en_attente_validation_logistique',
     'en_attente_validation_conducteur': 'en_attente_validation_responsable_travaux',
-    'en_attente_validation_qhse': 'en_attente_validation_responsable_travaux',
     'en_attente_validation_responsable_travaux': 'en_attente_validation_charge_affaire',
     'en_attente_validation_charge_affaire': 'en_attente_preparation_appro',
     'en_attente_preparation_appro': 'en_attente_validation_logistique',

@@ -18,11 +18,12 @@ export default function ValidationFinaleList() {
   const [clotureModalOpen, setClotureModalOpen] = useState(false)
   const [selectedDemande, setSelectedDemande] = useState<Demande | null>(null)
 
+  // OPTIMISÉ: Ne charger que si les demandes ne sont pas déjà en cache
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser && demandes.length === 0) {
       loadDemandes()
     }
-  }, [currentUser]) // Supprimé loadDemandes des dépendances
+  }, [currentUser?.id, demandes.length]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (currentUser) {

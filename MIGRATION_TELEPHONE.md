@@ -91,7 +91,6 @@ Si vous avez des utilisateurs dans la base, exécutez ce SQL pour leur attribuer
 UPDATE users SET phone = '+33601020304' WHERE email = 'admin@test.com';
 UPDATE users SET phone = '+33602030405' WHERE email = 'employe@test.com';
 UPDATE users SET phone = '+33603040506' WHERE email = 'conducteur@test.com';
-UPDATE users SET phone = '+33604050607' WHERE email = 'qhse@test.com';
 UPDATE users SET phone = '+33605060708' WHERE email = 'appro@test.com';
 UPDATE users SET phone = '+33606070809' WHERE email = 'charge@test.com';
 UPDATE users SET phone = '+33607080910' WHERE email = 'logistique@test.com';

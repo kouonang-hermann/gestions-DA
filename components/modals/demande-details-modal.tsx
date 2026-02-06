@@ -29,8 +29,10 @@ export default function DemandeDetailModal({
   canValidate = false,
   onValidate
 }: DemandeDetailModalProps) {
-  const { demandes, currentUser, executeAction, loadDemandes } = useStore()
+  const { currentUser, demandes, projets, executeAction, users, loadDemandes } = useStore()
   const [demande, setDemande] = useState<Demande | null>(null)
+  const [activeDemandeId, setActiveDemandeId] = useState<string | null>(demandeId)
+  const [demandeStack, setDemandeStack] = useState<string[]>([])
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
   const [isValidating, setIsValidating] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -42,30 +44,40 @@ export default function DemandeDetailModal({
   const [quantitesValidees, setQuantitesValidees] = useState<{ [itemId: string]: string }>({})
 
   useEffect(() => {
-    console.log('🔍 [MODAL] useEffect déclenché:', { demandeId, demandesCount: demandes.length, mode })
-    if (demandeId && demandes.length > 0) {
-      const foundDemande = demandes.find(d => d.id === demandeId)
+    setActiveDemandeId(demandeId)
+    setDemandeStack([])
+  }, [demandeId])
+
+  useEffect(() => {
+    console.log('🔍 [MODAL] useEffect déclenché:', { demandeId: activeDemandeId, demandesCount: demandes.length, mode })
+    if (activeDemandeId && demandes.length > 0) {
+      const foundDemande = demandes.find(d => d.id === activeDemandeId)
       console.log('🔍 [MODAL] Demande trouvée:', foundDemande ? { id: foundDemande.id, numero: foundDemande.numero, status: foundDemande.status } : 'NON TROUVÉE')
       setDemande(foundDemande || null)
       
       // Initialiser les valeurs éditables
-      if (foundDemande && mode === "edit") {
+      if (foundDemande) {
         const initialQtes: { [itemId: string]: string } = {}
         const initialPrix: { [itemId: string]: string } = {}
         const initialQtesValidees: { [itemId: string]: string } = {}
         foundDemande.items.forEach(item => {
-          initialQtes[item.id] = (item.quantiteSortie || item.quantiteRecue || 0).toString()
-          initialPrix[item.id] = item.prixUnitaire?.toString() || ""
           initialQtesValidees[item.id] = (item.quantiteValidee || item.quantiteDemandee).toString()
         })
-        setQuantitesLivrees(initialQtes)
-        setPrixUnitaires(initialPrix)
         setQuantitesValidees(initialQtesValidees)
+
+        if (mode === "edit") {
+          foundDemande.items.forEach(item => {
+            initialQtes[item.id] = (item.quantiteSortie || item.quantiteRecue || 0).toString()
+            initialPrix[item.id] = item.prixUnitaire?.toString() || ""
+          })
+          setQuantitesLivrees(initialQtes)
+          setPrixUnitaires(initialPrix)
+        }
       }
     } else {
       setDemande(null)
     }
-  }, [demandeId, demandes, mode])
+  }, [activeDemandeId, demandes, mode])
 
   if (!demande) return null
 
@@ -81,14 +93,21 @@ export default function DemandeDetailModal({
   ].includes(demande.status)
   
   // Déterminer si on peut éditer les quantités et prix (mode edit + rôles appropriés)
-  const canEdit = mode === "edit" && currentUser && (
-    currentUser.role === "responsable_logistique" ||
-    currentUser.role === "responsable_appro" ||
+  const canSeePricesForDemande = (d: Demande) => {
+    if (currentUser?.role === "superadmin") return true
+    if (d.type === "materiel" && currentUser?.role === "responsable_appro") return true
+    if (d.type === "outillage" && currentUser?.role === "responsable_logistique") return true
+    return false
+  }
+
+  const canEdit = mode === "edit" && currentUser && demande && (
+    (currentUser.role === "responsable_appro" && demande.type === "materiel") ||
+    (currentUser.role === "responsable_logistique" && demande.type === "outillage") ||
     currentUser.role === "superadmin"
   )
   
   // Déterminer si on peut éditer les quantités validées (valideurs)
-  const canEditValidatedQty = mode === "edit" && currentUser && demande && (
+  const canEditValidatedQty = currentUser && demande && (
     (demande.status === "en_attente_validation_conducteur" && currentUser.role === "conducteur_travaux") ||
     (demande.status === "en_attente_validation_logistique" && currentUser.role === "responsable_logistique") ||
     (demande.status === "en_attente_validation_responsable_travaux" && currentUser.role === "responsable_travaux") ||
@@ -99,11 +118,12 @@ export default function DemandeDetailModal({
   // Afficher les colonnes éditables pour logistique/appro même avant préparation
   const showEditableColumns = canEdit || showDeliveryColumns
 
+  const showPriceColumns = demande ? canSeePricesForDemande(demande) && showEditableColumns : false
+
   // Déterminer si on doit afficher la colonne Qté validée
   const showValidatedColumn = ![
-    "brouillon", 
-    "soumise", 
-    "en_attente_validation_conducteur"
+    "brouillon",
+    "soumise",
   ].includes(demande.status)
 
   // Récupérer tous les commentaires des validations
@@ -143,12 +163,49 @@ export default function DemandeDetailModal({
 
   const allComments = getAllComments()
 
-  // Calculer automatiquement le total en temps réel (calcul direct sans useMemo)
+  const calculerTotalRestantPourDemande = (d: Demande) => {
+    let total = 0
+    for (const item of d.items || []) {
+      const prix = Number(item.prixUnitaire || 0)
+      if (prix <= 0) continue
+      const quantiteValidee = item.quantiteValidee || item.quantiteDemandee
+      const quantiteLivree = item.quantiteSortie || item.quantiteRecue || 0
+      const quantiteRestante = Math.max(0, quantiteValidee - quantiteLivree)
+      if (quantiteRestante <= 0) continue
+      total += quantiteRestante * prix
+    }
+    return total
+  }
+
+  const sousDemandes = demande && demande.typeDemande !== "sous_demande"
+    ? demandes.filter(d => d.demandeParentId === demande.id)
+    : []
+
+  const coutSousDemandesTotal = sousDemandes.reduce((sum, d) => sum + calculerTotalRestantPourDemande(d), 0)
+
+  const handleOpenSousDemande = (childId: string) => {
+    if (!demande) return
+    setDemandeStack(prev => [...prev, demande.id])
+    setActiveDemandeId(childId)
+  }
+
+  const handleGoBack = () => {
+    setDemandeStack(prev => {
+      if (prev.length === 0) return prev
+      const copy = [...prev]
+      const last = copy.pop()!
+      setActiveDemandeId(last)
+      return copy
+    })
+  }
+
+  // Calculer automatiquement le total en temps réel basé sur les QUANTITÉS RESTANTES
+  // Cela permet de connaître le coût de ce qui reste à livrer (rupture de stock magasin)
   const calculerTotal = () => {
     if (!demande) return 0
     
     let total = 0
-    console.log('💰 [CALCUL-TOTAL] Début du calcul du coût total')
+    console.log('💰 [CALCUL-TOTAL] Début du calcul du coût total (basé sur quantités restantes)')
     console.log(`   - Mode édition: ${canEdit}`)
     console.log(`   - Nombre d'items: ${demande.items.length}`)
     
@@ -162,25 +219,33 @@ export default function DemandeDetailModal({
         ? (parseFloat(prixUnitaires[item.id]) || item.prixUnitaire || 0)
         : (item.prixUnitaire || 0)
       
+      // Calculer la quantité restante (quantité validée - quantité livrée)
+      const quantiteValidee = item.quantiteValidee || item.quantiteDemandee
+      const quantiteRestante = Math.max(0, quantiteValidee - qteLivree)
+      
       console.log(`   📦 Item ${index + 1} (${item.article?.nom || 'N/A'}):`)
+      console.log(`      - Qté validée: ${quantiteValidee}`)
       console.log(`      - Qté livrée saisie: ${quantitesLivrees[item.id] || 'vide'}`)
       console.log(`      - Qté livrée DB: ${item.quantiteSortie || item.quantiteRecue || 0}`)
-      console.log(`      - Qté utilisée: ${qteLivree}`)
+      console.log(`      - Qté livrée utilisée: ${qteLivree}`)
+      console.log(`      - Qté restante: ${quantiteRestante}`)
       console.log(`      - Prix saisi: ${prixUnitaires[item.id] || 'vide'}`)
       console.log(`      - Prix DB: ${item.prixUnitaire || 0}`)
       console.log(`      - Prix utilisé: ${prix}`)
       
-      // Ne calculer que si prix ET quantité sont > 0 (comme l'API)
-      if (prix > 0 && qteLivree > 0) {
-        const contribution = qteLivree * prix
+      // Calculer le coût basé sur la quantité RESTANTE
+      if (prix > 0 && quantiteRestante > 0) {
+        const contribution = quantiteRestante * prix
         total += contribution
-        console.log(`      ✅ Contribution: ${qteLivree} × ${prix} = ${contribution} FCFA`)
+        console.log(`      ✅ Contribution: ${quantiteRestante} × ${prix} = ${contribution} FCFA`)
+      } else if (quantiteRestante === 0) {
+        console.log(`      ✅ Article complètement livré (quantité restante = 0)`)
       } else {
-        console.log(`      ⚠️ Ignoré (prix ou quantité = 0)`)
+        console.log(`      ⚠️ Ignoré (prix = 0 ou quantité restante = 0)`)
       }
     })
     
-    console.log(`💰 [CALCUL-TOTAL] Total calculé: ${total} FCFA`)
+    console.log(`💰 [CALCUL-TOTAL] Total calculé (coût des quantités restantes): ${total} FCFA`)
     return total
   }
 
@@ -201,7 +266,7 @@ export default function DemandeDetailModal({
       console.log('📄 [PDF] Génération du type:', type)
       switch (type) {
         case 'demande':
-          await generatePurchaseRequestPDF(demande)
+          await generatePurchaseRequestPDF(demande, users)
           console.log('✅ [PDF] Demande d\'achat générée avec succès')
           break
         case 'bon_livraison':
@@ -306,7 +371,7 @@ export default function DemandeDetailModal({
         await new Promise(resolve => setTimeout(resolve, 500))
         
         // Recharger la demande depuis le store
-        const updatedDemande = demandes.find(d => d.id === demande.id)
+        const updatedDemande = useStore.getState().demandes.find(d => d.id === demande.id)
         if (updatedDemande) {
           setDemande(updatedDemande)
           
@@ -400,7 +465,7 @@ export default function DemandeDetailModal({
         await new Promise(resolve => setTimeout(resolve, 1000))
         
         // Recharger la demande depuis le store mis à jour
-        const updatedDemande = demandes.find(d => d.id === demande.id)
+        const updatedDemande = useStore.getState().demandes.find(d => d.id === demande.id)
         if (updatedDemande) {
           console.log('📊 Demande rechargée:', updatedDemande)
           console.log('💰 Coût total:', updatedDemande.coutTotal)
@@ -459,6 +524,13 @@ export default function DemandeDetailModal({
             <DialogTitle className="text-base sm:text-xl font-bold text-center bg-[#015fc4] text-white py-3 px-4 rounded-t">
               Demande {demande.type === "materiel" ? "Matériel" : "Outillage"} de {demande.technicien ? `${demande.technicien.prenom} ${demande.technicien.nom}` : 'N/A'}
             </DialogTitle>
+            {demandeStack.length > 0 && (
+              <div className="absolute top-2 left-4">
+                <Button variant="outline" size="sm" onClick={handleGoBack}>
+                  Retour
+                </Button>
+              </div>
+            )}
             {/* Affichage du livreur assigné en haut à droite */}
             {demande.livreurAssigne && (
               <div className="absolute top-2 right-4 bg-white text-[#015fc4] px-3 py-1 rounded-full text-xs sm:text-sm font-semibold border-2 border-white shadow-md">
@@ -494,6 +566,32 @@ export default function DemandeDetailModal({
             </div>
           </div>
 
+          {demande.typeDemande !== "sous_demande" && sousDemandes.length > 0 && showPriceColumns && (
+            <div className="bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-lg border border-green-200">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div className="text-sm font-semibold text-gray-700">
+                  Coût total des sous-demandes
+                </div>
+                <div className="text-xl font-bold text-green-600">
+                  {coutSousDemandesTotal.toLocaleString('fr-FR')} FCFA
+                </div>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {sousDemandes.map((sd) => (
+                  <Button
+                    key={sd.id}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleOpenSousDemande(sd.id)}
+                    className="bg-white"
+                  >
+                    {sd.numero} ({calculerTotalRestantPourDemande(sd).toLocaleString('fr-FR')} FCFA)
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Tableau des articles avec scroll */}
           <div className="border border-gray-300 rounded">
             <div className="overflow-x-auto">
@@ -516,9 +614,11 @@ export default function DemandeDetailModal({
                             Qté livrée {canEdit && <span className="text-red-500">*</span>}
                           </TableHead>
                           <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-orange-50 text-orange-600">Qté restante</TableHead>
-                          <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-green-50 text-green-600">
-                            Prix unit. (FCFA) {canEdit && <span className="text-red-500">*</span>}
-                          </TableHead>
+                          {showPriceColumns && (
+                            <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-green-50 text-green-600">
+                              Prix unit. (FCFA) {canEdit && <span className="text-red-500">*</span>}
+                            </TableHead>
+                          )}
                         </>
                       )}
                       
@@ -621,38 +721,40 @@ export default function DemandeDetailModal({
                                   {qteRestante}
                                 </span>
                               </TableCell>
-                              <TableCell className="text-center border border-gray-300 p-1 text-xs sm:text-sm bg-green-50">
-                                {canEdit ? (
-                                  <Input
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    className="w-24 h-8 text-center mx-auto text-green-600 font-semibold"
-                                    value={prixUnitaires[item.id] || ""}
-                                    onChange={(e) => {
-                                      const value = e.target.value
-                                      setPrixUnitaires(prev => ({
-                                        ...prev,
-                                        [item.id]: value
-                                      }))
-                                    }}
-                                    onBlur={(e) => {
-                                      const value = e.target.value
-                                      if (value !== "" && parseFloat(value) < 0) {
+                              {showPriceColumns && (
+                                <TableCell className="text-center border border-gray-300 p-1 text-xs sm:text-sm bg-green-50">
+                                  {canEdit ? (
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      step="0.01"
+                                      className="w-24 h-8 text-center mx-auto text-green-600 font-semibold"
+                                      value={prixUnitaires[item.id] || ""}
+                                      onChange={(e) => {
+                                        const value = e.target.value
                                         setPrixUnitaires(prev => ({
                                           ...prev,
-                                          [item.id]: "0"
+                                          [item.id]: value
                                         }))
-                                      }
-                                    }}
-                                    placeholder="0.00"
-                                  />
-                                ) : (
-                                  <span className="font-semibold text-green-600">
-                                    {prixUnitaire ? `${parseFloat(prixUnitaire).toFixed(0)} FCFA` : '-'}
-                                  </span>
-                                )}
-                              </TableCell>
+                                      }}
+                                      onBlur={(e) => {
+                                        const value = e.target.value
+                                        if (value !== "" && parseFloat(value) < 0) {
+                                          setPrixUnitaires(prev => ({
+                                            ...prev,
+                                            [item.id]: "0"
+                                          }))
+                                        }
+                                      }}
+                                      placeholder="0.00"
+                                    />
+                                  ) : (
+                                    <span className="font-semibold text-green-600">
+                                      {prixUnitaire ? `${parseFloat(prixUnitaire).toFixed(0)} FCFA` : '-'}
+                                    </span>
+                                  )}
+                                </TableCell>
+                              )}
                             </>
                           )}
                           
@@ -672,10 +774,10 @@ export default function DemandeDetailModal({
           </div>
 
           {/* Section Prix Total */}
-          {showEditableColumns && (
+          {showPriceColumns && (
             <div className="bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-lg border border-green-200">
               <div className="flex justify-between items-center">
-                <span className="text-lg font-bold text-gray-700">💰 Prix Total de la demande :</span>
+                <span className="text-lg font-bold text-gray-700">💰 Coût restant (à acheter) :</span>
                 <span className="text-2xl font-bold text-green-600">
                   {(() => {
                     // Utiliser le coût total enregistré si disponible et pas en mode édition

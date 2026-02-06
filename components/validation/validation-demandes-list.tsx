@@ -33,16 +33,17 @@ export default function ValidationDemandesList({ type, title }: ValidationDemand
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
 
+  // OPTIMISÉ: Ne charger que si les demandes ne sont pas déjà en cache
+  // Le parent dashboard charge déjà les données, éviter les appels redondants
   useEffect(() => {
-    if (currentUser) {
-      // Si type est défini, charger uniquement ce type, sinon charger tous
+    if (currentUser && demandes.length === 0) {
       if (type) {
         loadDemandes({ type })
       } else {
         loadDemandes()
       }
     }
-  }, [currentUser, type]) // Supprimé loadDemandes des dépendances pour éviter la boucle infinie
+  }, [currentUser?.id, type, demandes.length]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (currentUser) {

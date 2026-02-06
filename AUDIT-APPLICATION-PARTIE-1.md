@@ -102,7 +102,6 @@ gestion-demandes-materiel/
   - Employé
   - Conducteur Travaux
   - Responsable Travaux
-  - Responsable QHSE
   - Responsable Appro
   - Chargé d'Affaire
   - Responsable Logistique
@@ -146,7 +145,7 @@ gestion-demandes-materiel/
 - ✅ **Auto-validation** : Rôles multiples skip étapes
 - ✅ **Validation conditionnelle** : Selon type demande
   - Matériel → Conducteur Travaux
-  - Outillage → Responsable QHSE
+  - Outillage → Responsable Logistique
 - ✅ **Modification quantités** : Lors validation
 - ✅ **Commentaires obligatoires** : Si modifications
 - ✅ **Rejet avec motif** : Justification requise
@@ -202,13 +201,7 @@ gestion-demandes-materiel/
    - Statistiques équipe
    - Gestion priorités
 
-5. ✅ **Responsable QHSE Dashboard**
-   - Demandes outillage à valider
-   - Conformité sécurité
-   - Statistiques outillage
-   - Alertes QHSE
-
-6. ✅ **Responsable Appro Dashboard**
+5. ✅ **Responsable Appro Dashboard**
    - Demandes à préparer
    - Gestion sorties stock
    - Statistiques stock

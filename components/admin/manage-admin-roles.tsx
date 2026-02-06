@@ -70,7 +70,6 @@ export default function ManageAdminRoles() {
       employe: "Employé",
       conducteur_travaux: "Conducteur de Travaux",
       responsable_travaux: "Responsable des Travaux",
-      responsable_qhse: "Responsable QHSE",
       responsable_appro: "Responsable Approvisionnements",
       charge_affaire: "Chargé d'Affaire",
       responsable_logistique: "Responsable Logistique",

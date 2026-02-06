@@ -329,6 +329,20 @@ export const GET = async (request: NextRequest) => {
               }
             }
           }
+        },
+        validationSignatures: {
+          include: {
+            user: {
+              select: { id: true, nom: true, prenom: true, email: true }
+            }
+          }
+        },
+        sortieSignature: {
+          include: {
+            user: {
+              select: { id: true, nom: true, prenom: true, email: true }
+            }
+          }
         }
       },
       orderBy: { dateCreation: 'desc' }
@@ -336,65 +350,49 @@ export const GET = async (request: NextRequest) => {
 
     console.log(`📊 [API-DEMANDES] ${demandes.length} demande(s) trouvée(s) pour ${currentUser.role}`)
 
-    // Enrichir les demandes avec les informations des valideurs
-    const enrichedDemandes = await Promise.all(demandes.map(async (demande: any) => {
-      // Récupérer les informations des valideurs si les validations existent
-      const validationConducteur = demande.validationConducteur ? {
-        ...demande.validationConducteur,
-        user: demande.validationConducteur.userId ? await prisma.user.findUnique({
-          where: { id: demande.validationConducteur.userId },
-          select: { id: true, nom: true, prenom: true, email: true }
-        }) : null
-      } : null
-
-      const validationResponsableTravaux = demande.validationResponsableTravaux ? {
-        ...demande.validationResponsableTravaux,
-        user: demande.validationResponsableTravaux.userId ? await prisma.user.findUnique({
-          where: { id: demande.validationResponsableTravaux.userId },
-          select: { id: true, nom: true, prenom: true, email: true }
-        }) : null
-      } : null
-
-      const validationChargeAffaire = demande.validationChargeAffaire ? {
-        ...demande.validationChargeAffaire,
-        user: demande.validationChargeAffaire.userId ? await prisma.user.findUnique({
-          where: { id: demande.validationChargeAffaire.userId },
-          select: { id: true, nom: true, prenom: true, email: true }
-        }) : null
-      } : null
-
-      const validationLogistique = demande.validationLogistique ? {
-        ...demande.validationLogistique,
-        user: demande.validationLogistique.userId ? await prisma.user.findUnique({
-          where: { id: demande.validationLogistique.userId },
-          select: { id: true, nom: true, prenom: true, email: true }
-        }) : null
-      } : null
+    // Enrichir les demandes avec les informations des valideurs depuis ValidationSignature
+    const enrichedDemandes = demandes.map((demande: any) => {
+      // Mapper les validationSignatures aux champs attendus par le frontend
+      const validationConducteur = demande.validationSignatures?.find((v: any) => v.type === 'conducteur') || null
+      const validationResponsableTravaux = demande.validationSignatures?.find((v: any) => v.type === 'responsable_travaux') || null
+      const validationChargeAffaire = demande.validationSignatures?.find((v: any) => v.type === 'charge_affaire') || null
+      const validationLogistique = demande.validationSignatures?.find((v: any) => v.type === 'logistique') || null
+      
+      // sortieSignature est déjà chargé depuis la relation, mais on vérifie aussi les validationSignatures pour 'appro'
+      // Car certaines demandes peuvent avoir une validation 'appro' au lieu d'une sortieSignature
+      const validationAppro = demande.validationSignatures?.find((v: any) => v.type === 'appro') || null
+      const sortieAppro = demande.sortieSignature || validationAppro || null
 
       return {
         ...demande,
         validationConducteur,
         validationResponsableTravaux,
         validationChargeAffaire,
-        validationLogistique
+        validationLogistique,
+        sortieAppro
       }
-    }))
+    })
 
-    // Filtrer les données financières pour les non-superadmin
+    const canSeePricesForDemande = (demande: any) => {
+      if (currentUser.role === "superadmin") return true
+      if (demande.type === "materiel" && currentUser.role === "responsable_appro") return true
+      if (demande.type === "outillage" && currentUser.role === "responsable_logistique") return true
+      return false
+    }
+
+    // Filtrer les données financières selon le rôle et le type de demande
     const filteredDemandes = enrichedDemandes.map((demande: any) => {
-      if (currentUser.role === 'superadmin' || currentUser.role === 'responsable_logistique') {
-        // Le superadmin et le responsable logistique voient tout, y compris les prix
+      if (canSeePricesForDemande(demande)) {
         return demande
-      } else {
-        // Les autres utilisateurs ne voient PAS les prix
-        return {
-          ...demande,
-          coutTotal: undefined, // Masquer le coût total
-          items: demande.items.map((item: any) => ({
-            ...item,
-            prixUnitaire: undefined // Masquer le prix unitaire
-          }))
-        }
+      }
+
+      return {
+        ...demande,
+        coutTotal: undefined,
+        items: demande.items.map((item: any) => ({
+          ...item,
+          prixUnitaire: undefined,
+        })),
       }
     })
 

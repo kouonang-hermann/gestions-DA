@@ -66,7 +66,6 @@ export default function ProjectHistoryModal({ isOpen, onClose, project }: Projec
       "brouillon": { label: "Brouillon", bgColor: "#f3f4f6", textColor: "#374151" },
       "soumise": { label: "Soumise", bgColor: "#dbeafe", textColor: "#1e40af" },
       "en_attente_validation_conducteur": { label: "En attente conducteur", bgColor: "#fef3c7", textColor: "#92400e" },
-      "en_attente_validation_qhse": { label: "En attente QHSE", bgColor: "#fef3c7", textColor: "#92400e" },
       "en_attente_validation_responsable_travaux": { label: "En attente resp. travaux", bgColor: "#fef3c7", textColor: "#92400e" },
       "en_attente_validation_charge_affaire": { label: "En attente chargé affaire", bgColor: "#fef3c7", textColor: "#92400e" },
       "en_attente_preparation_appro": { label: "En attente préparation", bgColor: "#fed7aa", textColor: "#c2410c" },

@@ -20,21 +20,29 @@ export const PUT = async (
   const currentUser = authResult.user
   const { id: demandeId } = await params
 
-  // Vérifier que l'utilisateur est responsable_appro
-  if (currentUser.role !== "responsable_appro") {
-    return NextResponse.json(
-      { success: false, error: "Seul le responsable approvisionnements peut renseigner les prix" },
-      { status: 403 }
-    )
-  }
-
   try {
     const body = await request.json()
-    const { prices } = body // Format: { itemId: prixUnitaire }
+    const { prices, items } = body
 
-    console.log("💰 [API-PRICES] Réception des prix:", prices)
+    const pricesFromItems: Record<string, unknown> = {}
+    if (Array.isArray(items)) {
+      for (const item of items) {
+        if (item && typeof item === 'object') {
+          const itemId = (item as any).itemId
+          const prixUnitaire = (item as any).prixUnitaire
+          if (typeof itemId === 'string') {
+            pricesFromItems[itemId] = prixUnitaire
+          }
+        }
+      }
+    }
 
-    if (!prices || typeof prices !== 'object') {
+    const effectivePrices: Record<string, unknown> =
+      prices && typeof prices === 'object' ? prices : pricesFromItems
+
+    console.log("💰 [API-PRICES] Réception des prix:", effectivePrices)
+
+    if (!effectivePrices || typeof effectivePrices !== 'object') {
       return NextResponse.json(
         { success: false, error: "Format invalide. Attendu: { prices: { itemId: prixUnitaire } }" },
         { status: 400 }
@@ -61,6 +69,19 @@ export const PUT = async (
       )
     }
 
+    // Vérifier que l'utilisateur peut renseigner les prix selon le type de demande
+    const canUpdatePrices =
+      currentUser.role === "superadmin" ||
+      (currentUser.role === "responsable_appro" && demande.type === "materiel") ||
+      (currentUser.role === "responsable_logistique" && demande.type === "outillage")
+
+    if (!canUpdatePrices) {
+      return NextResponse.json(
+        { success: false, error: "Vous n'êtes pas autorisé à renseigner les prix pour cette demande" },
+        { status: 403 }
+      )
+    }
+
     // Vérifier que l'appro est assigné au projet de la demande
     const isAssigned = demande.projet.utilisateurs.some(
       (up: any) => up.userId === currentUser.id
@@ -76,6 +97,7 @@ export const PUT = async (
     // Vérifier que la demande est au bon statut (en_attente_preparation_appro ou après)
     const allowedStatuses = [
       "en_attente_preparation_appro",
+      "en_attente_preparation_logistique",
       "en_attente_validation_logistique",
       "en_attente_validation_finale_demandeur",
       "confirmee_demandeur",
@@ -92,7 +114,7 @@ export const PUT = async (
     // Mettre à jour les prix unitaires de chaque article
     let coutTotal = 0
 
-    for (const [itemId, prixValue] of Object.entries(prices)) {
+    for (const [itemId, prixValue] of Object.entries(effectivePrices)) {
       const prixUnitaire = parseFloat(String(prixValue))
       
       if (isNaN(prixUnitaire) || prixUnitaire < 0) {
@@ -108,11 +130,15 @@ export const PUT = async (
         data: { prixUnitaire }
       })
 
-      // Trouver l'item pour calculer le coût (priorité: quantiteSortie > quantiteValidee > quantiteDemandee)
+      // Calculer le coût basé sur la QUANTITÉ RESTANTE (quantité validée - quantité livrée)
+      // Cela permet de connaître le coût de ce qui reste à livrer (rupture de stock magasin)
       const demandeItem = demande.items.find((i: any) => i.id === itemId)
       if (demandeItem) {
-        const quantite = demandeItem.quantiteSortie || demandeItem.quantiteValidee || demandeItem.quantiteDemandee
-        coutTotal += prixUnitaire * quantite
+        const quantiteValidee = demandeItem.quantiteValidee || demandeItem.quantiteDemandee
+        const quantiteLivree = demandeItem.quantiteSortie || 0
+        const quantiteRestante = Math.max(0, quantiteValidee - quantiteLivree)
+        coutTotal += prixUnitaire * quantiteRestante
+        console.log(`   💰 Item ${itemId}: Qté validée=${quantiteValidee}, Qté livrée=${quantiteLivree}, Qté restante=${quantiteRestante}, Coût=${prixUnitaire * quantiteRestante}`)
       }
     }
 
@@ -158,7 +184,7 @@ export const PUT = async (
       data: {
         demandeId,
         coutTotal,
-        itemsUpdated: Object.keys(prices).length
+        itemsUpdated: Object.keys(effectivePrices).length
       }
     })
 

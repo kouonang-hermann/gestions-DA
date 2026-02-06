@@ -24,7 +24,6 @@ const statusColors: Record<DemandeStatus, string> = {
   en_attente_reception_livreur: "bg-indigo-400",
   en_attente_livraison: "bg-indigo-500",
   en_attente_validation_finale_demandeur: "bg-indigo-600",
-  en_attente_validation_qhse: "bg-yellow-500",
   en_attente_validation_reception_demandeur: "bg-blue-500",
   renvoyee_vers_appro: "bg-orange-600",
   cloturee_partiellement: "bg-green-500",
@@ -47,7 +46,6 @@ const statusLabels: Record<DemandeStatus, string> = {
   en_attente_reception_livreur: "En attente réception livreur",
   en_attente_livraison: "En attente livraison",
   en_attente_validation_finale_demandeur: "En attente validation finale demandeur",
-  en_attente_validation_qhse: "En attente validation QHSE",
   en_attente_validation_reception_demandeur: "En attente validation réception",
   renvoyee_vers_appro: "Renvoyée vers appro",
   cloturee_partiellement: "Clôturée partiellement",
@@ -70,11 +68,12 @@ export default function DemandesList() {
   const [selectedDemande, setSelectedDemande] = useState(null)
   const [modalMode, setModalMode] = useState<"view" | "edit" | "create">("view")
 
+  // OPTIMISÉ: Ne charger que si les demandes ne sont pas déjà en cache
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser && demandes.length === 0) {
       loadDemandes()
     }
-  }, [currentUser]) // Supprimé loadDemandes des dépendances
+  }, [currentUser?.id, demandes.length]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     filterDemandes()

@@ -12,7 +12,7 @@ Toute l'application est maintenant complètement responsive et optimisée pour m
 - ✅ **Super Admin Dashboard** - Interface mobile dédiée + responsive
 - ✅ **Employé Dashboard** - Layout responsive complet
 - ✅ **Conducteur Dashboard** - CSS universel appliqué
-- ✅ **QHSE Dashboard** - CSS universel appliqué
+- ✅ **Livreur Dashboard** - CSS universel appliqué
 - ✅ **Responsable Travaux Dashboard** - CSS universel appliqué
 - ✅ **Appro Dashboard** - CSS universel appliqué
 - ✅ **Charge Affaire Dashboard** - CSS universel appliqué

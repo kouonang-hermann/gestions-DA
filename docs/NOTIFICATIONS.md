@@ -187,7 +187,7 @@ Le système détecte automatiquement les changements de statut et envoie les not
 | Statut | Action | Destinataire |
 |--------|--------|--------------|
 | `en_attente_validation_conducteur` | Notification de validation | Conducteurs de travaux |
-| `en_attente_validation_qhse` | Notification de validation | Responsables QHSE |
+| `en_attente_validation_logistique` | Notification de validation | Responsables logistique |
 | `en_attente_validation_responsable_travaux` | Notification de validation | Responsables travaux |
 | `en_attente_validation_charge_affaire` | Notification de validation | Chargés d'affaire |
 | `en_attente_validation_finale_demandeur` | Notification de clôture | Demandeur original |

@@ -87,7 +87,6 @@ export default function UniversalClosureList({ onClose }: UniversalClosureListPr
       'employe': 'Employé',
       'conducteur_travaux': 'Conducteur Travaux',
       'responsable_travaux': 'Responsable Travaux',
-      'responsable_qhse': 'Responsable QHSE',
       'responsable_appro': 'Responsable Appro',
       'charge_affaire': 'Chargé d\'Affaire',
       'responsable_logistique': 'Responsable Logistique'

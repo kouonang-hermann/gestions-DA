@@ -19,11 +19,10 @@ Le système de notifications email est maintenant **ACTIF** et s'exécute automa
 | Statut | Destinataire | Type d'email |
 |--------|-------------|--------------|
 | `en_attente_validation_conducteur` | Conducteurs de travaux du projet | Demande de validation matériel |
-| `en_attente_validation_qhse` | Responsables QHSE du projet | Demande de validation outillage |
 | `en_attente_validation_responsable_travaux` | Responsables des travaux du projet | Demande de validation |
 | `en_attente_validation_charge_affaire` | Chargés d'affaire du projet | Demande de validation |
 | `en_attente_preparation_appro` | Responsables appro du projet | Demande de préparation sortie |
-| `en_attente_validation_logistique` | Responsables logistique du projet | Demande de validation transport |
+| `en_attente_validation_logistique` | Responsables logistique du projet | Demande de validation outillage |
 | `en_attente_validation_finale_demandeur` | Demandeur original | Demande de clôture |
 | `cloturee` | Admin + superviseurs | Notification de clôture |
 | `rejetee` | Demandeur original | Notification de rejet |

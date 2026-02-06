@@ -9,8 +9,7 @@ Vous pouvez maintenant vous connecter avec votre **numéro de téléphone** :
 | 🔑 **Super Admin** | `+33601020304` | `admin123` | admin@test.com |
 | 👤 **Employé** | `+33602030405` | `employe123` | employe@test.com |
 | 👷 **Conducteur Travaux** | `+33603040506` | `conducteur123` | conducteur@test.com |
-| 🛡️ **Responsable QHSE** | `+33604050607` | `qhse123` | qhse@test.com |
-| 📦 **Responsable Appro** | `+33605060708` | `appro123` | appro@test.com |
+|  **Responsable Appro** | `+33605060708` | `appro123` | appro@test.com |
 | 💼 **Chargé d'Affaire** | `+33606070809` | `charge123` | charge@test.com |
 | 🚚 **Responsable Logistique** | `+33607080910` | `logistique123` | logistique@test.com |
 | 👨‍💼 **Responsable Travaux** | `+33600999888` | `responsable123` | responsable-travaux@test.com |

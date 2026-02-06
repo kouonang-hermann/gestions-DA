@@ -28,7 +28,7 @@ export default function DemandeDetailModal({
   canValidate = false,
   onValidate
 }: DemandeDetailModalProps) {
-  const { demandes, currentUser } = useStore()
+  const { demandes, currentUser, users } = useStore()
   const [demande, setDemande] = useState<Demande | null>(null)
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
   const [isValidating, setIsValidating] = useState(false)
@@ -49,7 +49,7 @@ export default function DemandeDetailModal({
     try {
       switch (type) {
         case 'demande':
-          await generatePurchaseRequestPDF(demande)
+          await generatePurchaseRequestPDF(demande, users)
           break
         case 'bon_livraison':
           await generateBonLivraisonPDF(demande)

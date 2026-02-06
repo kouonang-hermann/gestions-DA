@@ -25,7 +25,7 @@ Valider que toutes les interfaces sont parfaitement fonctionnelles sur mobile ap
 - [ ] **Boutons** pleine largeur sur mobile
 - [ ] **Modals** adaptés à la taille mobile
 
-#### **3. Autres Dashboards (Conducteur, QHSE, etc.)**
+#### **3. Autres Dashboards (Conducteur, Logistique, etc.)**
 - [ ] **Grilles responsive** : 1 colonne sur mobile
 - [ ] **Cards** bien espacées et lisibles
 - [ ] **Textes** taille appropriée (16px+)

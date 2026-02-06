@@ -15,10 +15,7 @@ export interface PDFOptions {
  * Génère un PDF pour une demande en utilisant un iframe isolé
  * Cette méthode est 100% compatible avec Tailwind CSS 4 et oklch
  */
-export const generatePurchaseRequestPDF = async (
-  demande: any,
-  elementId: string = 'purchase-request-card'
-): Promise<void> => {
+export async function generatePurchaseRequestPDF(demande: any, users: any[] = [], elementId: string = 'purchase-request-card'): Promise<void> {
   // Vérifier que nous sommes côté client
   if (typeof window === 'undefined') {
     throw new Error('La génération PDF ne peut être effectuée que côté client')
@@ -40,26 +37,92 @@ export const generatePurchaseRequestPDF = async (
     const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document
     if (!iframeDoc) throw new Error('Impossible de créer le document iframe')
 
-    // Formater le statut pour l'affichage
-    const getStatusLabel = (status: string) => {
-      const statusMap: Record<string, string> = {
-        'brouillon': 'Brouillon',
-        'soumise': 'Soumise',
-        'en_attente_validation_conducteur': 'En attente validation conducteur',
-        'en_attente_validation_qhse': 'En attente validation QHSE',
-        'en_attente_validation_responsable_travaux': 'En attente validation responsable travaux',
-        'en_attente_validation_charge_affaire': 'En attente validation chargé d\'affaire',
-        'en_attente_preparation_appro': 'En attente préparation appro',
-        'en_attente_validation_logistique': 'En attente validation logistique',
-        'en_attente_reception_livreur': 'En attente réception livreur',
-        'en_attente_livraison': 'En cours de livraison',
-        'en_attente_validation_finale_demandeur': 'En attente clôture demandeur',
-        'confirmee_demandeur': 'Confirmée par demandeur',
-        'cloturee': 'Clôturée',
-        'rejetee': 'Rejetée'
-      }
-      return statusMap[status] || status
+    const escapeHtml = (value: any) => {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
     }
+
+    const formatDate = (value?: any) => {
+      if (!value) return ''
+      const d = new Date(value)
+      return isNaN(d.getTime()) ? '' : d.toLocaleDateString('fr-FR')
+    }
+
+    const formatTime = (value?: any) => {
+      if (!value) return ''
+      const d = new Date(value)
+      return isNaN(d.getTime())
+        ? ''
+        : d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+    }
+
+    const demandeurFullName = `${demande.technicien?.prenom || ''} ${demande.technicien?.nom || ''}`.trim()
+    const dateSouhaitee = formatDate(demande.dateLivraisonSouhaitee)
+
+    const demandeurDate = formatDate(demande.dateCreation)
+    const demandeurHeure = formatTime(demande.dateCreation)
+
+    // Helper pour récupérer le nom d'un utilisateur par ID
+    const getUserName = (userId: string | undefined) => {
+      if (!userId) return ''
+      const user = users.find(u => u.id === userId)
+      if (!user) return ''
+      return `${user.prenom || ''} ${user.nom || ''}`.trim()
+    }
+
+    // Debug: Vérifier les données de validation
+    console.log('🔍 [PDF] Données de validation:', {
+      validationConducteur: demande.validationConducteur,
+      sortieAppro: demande.sortieAppro,
+      validationLogistique: demande.validationLogistique,
+      validationChargeAffaire: demande.validationChargeAffaire,
+      validationResponsableTravaux: demande.validationResponsableTravaux
+    })
+
+    const conducteurDate = formatDate(demande.validationConducteur?.date)
+    const conducteurHeure = formatTime(demande.validationConducteur?.date)
+    const conducteurNom = demande.validationConducteur?.user 
+      ? `${demande.validationConducteur.user.prenom || ''} ${demande.validationConducteur.user.nom || ''}`.trim()
+      : getUserName(demande.validationConducteur?.userId)
+
+    const approLogDate = formatDate(demande.sortieAppro?.date || demande.validationLogistique?.date)
+    const approLogHeure = formatTime(demande.sortieAppro?.date || demande.validationLogistique?.date)
+    const approLogNom = (demande.sortieAppro?.user || demande.validationLogistique?.user)
+      ? `${(demande.sortieAppro?.user?.prenom || demande.validationLogistique?.user?.prenom || '')} ${(demande.sortieAppro?.user?.nom || demande.validationLogistique?.user?.nom || '')}`.trim()
+      : getUserName(demande.sortieAppro?.userId || demande.validationLogistique?.userId)
+
+    const respTravauxOuCADate = formatDate(
+      demande.validationChargeAffaire?.date || demande.validationResponsableTravaux?.date
+    )
+    const respTravauxOuCAHeure = formatTime(
+      demande.validationChargeAffaire?.date || demande.validationResponsableTravaux?.date
+    )
+    const respTravauxOuCANom = (demande.validationChargeAffaire?.user || demande.validationResponsableTravaux?.user)
+      ? `${(demande.validationChargeAffaire?.user?.prenom || demande.validationResponsableTravaux?.user?.prenom || '')} ${(demande.validationChargeAffaire?.user?.nom || demande.validationResponsableTravaux?.user?.nom || '')}`.trim()
+      : getUserName(demande.validationChargeAffaire?.userId || demande.validationResponsableTravaux?.userId)
+
+    console.log('📝 [PDF] Noms extraits:', {
+      conducteurNom,
+      approLogNom,
+      respTravauxOuCANom
+    })
+
+    const visaConducteur = Boolean(demande.validationConducteur)
+    const visaApproLog = Boolean(demande.sortieAppro || demande.validationLogistique)
+    const visaRespTravauxOuCA = Boolean(demande.validationChargeAffaire || demande.validationResponsableTravaux)
+
+    const checkedMateriel = demande.type === 'materiel'
+    const checkedOutillage = demande.type === 'outillage'
+
+    const items = Array.isArray(demande.items) ? demande.items : []
+    const targetRows = 16
+    const emptyRowsCount = Math.max(0, targetRows - items.length)
+
+    const projectName = escapeHtml(demande.projet?.nom || '')
 
     // Écrire le HTML complet dans l'iframe (sans héritage de styles oklch)
     iframeDoc.open()
@@ -70,290 +133,249 @@ export const generatePurchaseRequestPDF = async (
         <meta charset="utf-8">
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { 
-            font-family: Arial, sans-serif; 
-            padding: 20px;
-            background-color: #ffffff;
+          body {
+            font-family: Arial, sans-serif;
+            background: #ffffff;
             color: #000000;
-          }
-          .header {
-            text-align: center;
-            margin-bottom: 20px;
-            border-bottom: 3px solid #4CAF50;
-            padding-bottom: 10px;
-          }
-          .header h1 {
-            color: #4CAF50;
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 5px;
-          }
-          .header p {
-            font-size: 14px;
-            color: #666666;
-          }
-          .info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 20px;
-          }
-          .info-box {
-            padding: 10px;
-            background-color: #f0f9ff;
-            border-left: 4px solid #4CAF50;
-            border-radius: 4px;
-          }
-          .info-box strong {
-            display: block;
-            color: #4CAF50;
+            width: 210mm;
+            min-height: 297mm;
+            padding: 10mm;
             font-size: 11px;
-            margin-bottom: 5px;
+            line-height: 1.25;
           }
-          .info-box span {
-            color: #000000;
-            font-size: 13px;
+
+          .row { display: flex; gap: 12px; align-items: stretch; }
+          .grow { flex: 1; }
+          .mb-10 { margin-bottom: 10px; }
+          .mb-12 { margin-bottom: 12px; }
+
+          .type-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 0 10px;
           }
-          .visa-section {
-            margin: 20px 0;
-            padding: 15px;
-            background-color: #f9f9f9;
-            border: 2px solid #4CAF50;
-            border-radius: 4px;
+          .type-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
           }
-          .visa-section h3 {
-            margin: 0 0 15px 0;
-            color: #4CAF50;
-            font-size: 16px;
+          .type-label { 
+            font-size: 11px; 
+            font-weight: normal;
+            white-space: nowrap;
+            border: 1px solid #000;
+            padding: 6px 12px;
+            min-width: 80px;
             text-align: center;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 24px;
+          }
+
+          .checkbox {
+            width: 20px;
+            height: 20px;
+            border: 1px solid #000;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
             font-weight: bold;
-            border-bottom: 1px solid #cccccc;
-            padding-bottom: 10px;
+            line-height: 1;
+            flex-shrink: 0;
           }
-          .visa-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-          }
-          .visa-table th,
-          .visa-table td {
-            border: 2px solid #333333;
-            padding: 8px;
-            text-align: center;
-            color: #000000;
+
+          .box { border: 1px solid #000; }
+
+          .section-title {
+            font-weight: bold;
+            text-align: right;
+            margin-bottom: 8px;
             font-size: 11px;
           }
-          .visa-table th {
-            background-color: #4CAF50;
-            color: #ffffff;
-            font-weight: bold;
-            font-size: 12px;
+
+          .main-content {
+            display: flex;
+            gap: 0;
           }
-          .visa-table tr:nth-child(even) {
-            background-color: #f0f9ff;
-          }
-          table {
-            width: 100%;
+
+          .left-table {
+            width: 40%;
             border-collapse: collapse;
-            margin: 20px 0;
           }
-          th, td {
-            border: 2px solid #333333;
-            padding: 12px;
-            text-align: left;
-            color: #000000;
-            font-size: 12px;
+          .left-table td {
+            border: 1px solid #000;
+            padding: 6px 10px;
+            vertical-align: middle;
+            font-size: 11px;
           }
-          th {
-            background-color: #4CAF50;
-            color: #ffffff;
+          .left-table .label-cell {
             font-weight: bold;
-            font-size: 13px;
+            width: 90px;
           }
-          tr:nth-child(even) {
-            background-color: #f0f9ff;
+
+          .right-box {
+            flex: 1;
+            border: 1px solid #000;
+            border-left: none;
+            min-height: 80px;
           }
-          .signature-section {
-            margin-top: 40px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-          }
-          .signature-box {
-            border: 2px solid #333333;
-            padding: 15px;
-            border-radius: 4px;
-            min-height: 120px;
-          }
-          .signature-box h3 {
-            color: #4CAF50;
-            font-size: 14px;
-            margin-bottom: 15px;
-            border-bottom: 1px solid #cccccc;
-            padding-bottom: 5px;
-          }
-          .signature-box p {
-            margin: 8px 0;
-            color: #000000;
-            font-size: 12px;
-          }
-          .footer {
-            margin-top: 30px;
-            padding-top: 15px;
-            border-top: 2px solid #cccccc;
+
+          .visa-table { width: 100%; border-collapse: collapse; }
+          .visa-table th, .visa-table td {
+            border: 1px solid #000;
+            padding: 8px 6px;
             text-align: center;
-            color: #666666;
+            vertical-align: middle;
+            font-size: 9px;
+          }
+          .visa-table th { font-weight: bold; }
+          .visa-left { width: 80px; font-weight: bold; text-align: left; padding-left: 10px; }
+          .visa-name { font-weight: bold; font-size: 9px; }
+
+          .items-table { width: 100%; border-collapse: collapse; }
+          .items-table th, .items-table td {
+            border: 1px solid #000;
+            padding: 8px 6px;
             font-size: 10px;
           }
+          .items-table th { text-align: center; font-weight: bold; }
+          .col-ref { width: 15%; }
+          .col-des { width: 50%; }
+          .col-unit { width: 8%; text-align: center; }
+          .col-qty { width: 8%; text-align: center; }
+          .col-date { width: 19%; text-align: center; }
+          .empty-row td { height: 28px; }
+
+          .footer { margin-top: 8px; font-weight: bold; }
         </style>
       </head>
       <body>
-        <div class="header">
-          <h1>DEMANDE D'ACHAT</h1>
-          <p>N° ${demande.numero}</p>
-        </div>
-
-        <div class="info-grid">
-          <div class="info-box">
-            <strong>PROJET</strong>
-            <span>${demande.projet?.nom || "N/A"}</span>
+        <div class="type-row">
+          <div class="type-item">
+            <div class="type-label">Matériel</div>
+            <div class="checkbox">${checkedMateriel ? 'X' : ''}</div>
           </div>
-          <div class="info-box">
-            <strong>DATE DE CRÉATION</strong>
-            <span>${demande.dateCreation ? new Date(demande.dateCreation).toLocaleDateString("fr-FR") : "N/A"}</span>
+          <div class="type-item">
+            <div class="type-label">Outillage</div>
+            <div class="checkbox">${checkedOutillage ? 'X' : ''}</div>
           </div>
-          <div class="info-box">
-            <strong>DEMANDEUR</strong>
-            <span>${demande.technicien?.prenom || ""} ${demande.technicien?.nom || "N/A"}</span>
+          <div class="type-item">
+            <div class="type-label">Main d'œuvre</div>
+            <div class="checkbox"></div>
           </div>
-          <div class="info-box">
-            <strong>TYPE</strong>
-            <span>${demande.type === "materiel" ? "Matériel" : "Outillage"}</span>
-          </div>
-          <div class="info-box">
-            <strong>DATE DE LIVRAISON SOUHAITÉE</strong>
-            <span>${demande.dateLivraisonSouhaitee ? new Date(demande.dateLivraisonSouhaitee).toLocaleDateString("fr-FR") : "N/A"}</span>
-          </div>
-          <div class="info-box">
-            <strong>STATUT</strong>
-            <span>${getStatusLabel(demande.status)}</span>
+          <div class="type-item">
+            <div class="type-label">Frais divers</div>
+            <div class="checkbox"></div>
           </div>
         </div>
 
-        <div class="visa-section">
-          <h3>Visas et Signatures</h3>
+        <div class="section-title">Motif de la demande</div>
+        
+        <div class="main-content mb-12">
+          <table class="left-table">
+            <tr>
+              <td class="label-cell">Date :</td>
+              <td>${escapeHtml(demandeurDate)}</td>
+            </tr>
+            <tr>
+              <td class="label-cell">Client :</td>
+              <td>${escapeHtml(demandeurFullName)}</td>
+            </tr>
+            <tr>
+              <td class="label-cell">Code projet :</td>
+              <td>${projectName}</td>
+            </tr>
+          </table>
+          <div class="right-box"></div>
+        </div>
+
+        <div class="mb-12">
           <table class="visa-table">
             <thead>
               <tr>
-                <th>Rôle</th>
-                <th>Nom</th>
-                <th>Date</th>
-                <th>Heure</th>
-                <th>Visa</th>
+                <th class="visa-left"></th>
+                <th>Demandeur</th>
+                <th>Conducteur des travaux</th>
+                <th>Approvisionnement et logistique</th>
+                <th>Responsable des travaux/chargé d'affaire</th>
               </tr>
             </thead>
             <tbody>
-              ${demande.validationConducteur ? `
               <tr>
-                <td>Conducteur Travaux</td>
-                <td>${demande.validationConducteur.user ? `${demande.validationConducteur.user.prenom} ${demande.validationConducteur.user.nom}` : "_____________________"}</td>
-                <td>${demande.validationConducteur.date ? new Date(demande.validationConducteur.date).toLocaleDateString("fr-FR") : "_____"}</td>
-                <td>${demande.validationConducteur.date ? new Date(demande.validationConducteur.date).toLocaleTimeString("fr-FR", {hour: '2-digit', minute: '2-digit'}) : "_____"}</td>
-                <td>✓</td>
+                <td class="visa-left">NOM</td>
+                <td class="visa-name">${escapeHtml(demandeurFullName)}</td>
+                <td class="visa-name">${escapeHtml(conducteurNom)}</td>
+                <td class="visa-name">${escapeHtml(approLogNom)}</td>
+                <td class="visa-name">${escapeHtml(respTravauxOuCANom)}</td>
               </tr>
-              ` : `
               <tr>
-                <td>Conducteur Travaux</td>
-                <td>_____________________</td>
-                <td>_____________________</td>
-                <td>_____________________</td>
-                <td></td>
+                <td class="visa-left">DATE</td>
+                <td>${escapeHtml(demandeurDate)}</td>
+                <td>${escapeHtml(conducteurDate)}</td>
+                <td>${escapeHtml(approLogDate)}</td>
+                <td>${escapeHtml(respTravauxOuCADate)}</td>
               </tr>
-              `}
-              ${demande.validationResponsableTravaux ? `
               <tr>
-                <td>Responsable Travaux</td>
-                <td>${demande.validationResponsableTravaux.user ? `${demande.validationResponsableTravaux.user.prenom} ${demande.validationResponsableTravaux.user.nom}` : "_____________________"}</td>
-                <td>${demande.validationResponsableTravaux.date ? new Date(demande.validationResponsableTravaux.date).toLocaleDateString("fr-FR") : "_____"}</td>
-                <td>${demande.validationResponsableTravaux.date ? new Date(demande.validationResponsableTravaux.date).toLocaleTimeString("fr-FR", {hour: '2-digit', minute: '2-digit'}) : "_____"}</td>
-                <td>✓</td>
+                <td class="visa-left">HEURE</td>
+                <td>${escapeHtml(demandeurHeure)}</td>
+                <td>${escapeHtml(conducteurHeure)}</td>
+                <td>${escapeHtml(approLogHeure)}</td>
+                <td>${escapeHtml(respTravauxOuCAHeure)}</td>
               </tr>
-              ` : `
               <tr>
-                <td>Responsable Travaux</td>
-                <td>_____________________</td>
-                <td>_____________________</td>
-                <td>_____________________</td>
-                <td></td>
+                <td class="visa-left">VISA</td>
+                <td>X</td>
+                <td>${visaConducteur ? 'X' : ''}</td>
+                <td>${visaApproLog ? 'X' : ''}</td>
+                <td>${visaRespTravauxOuCA ? 'X' : ''}</td>
               </tr>
-              `}
-              ${demande.validationChargeAffaire ? `
-              <tr>
-                <td>Chargé d'Affaire</td>
-                <td>${demande.validationChargeAffaire.user ? `${demande.validationChargeAffaire.user.prenom} ${demande.validationChargeAffaire.user.nom}` : "_____________________"}</td>
-                <td>${demande.validationChargeAffaire.date ? new Date(demande.validationChargeAffaire.date).toLocaleDateString("fr-FR") : "_____"}</td>
-                <td>${demande.validationChargeAffaire.date ? new Date(demande.validationChargeAffaire.date).toLocaleTimeString("fr-FR", {hour: '2-digit', minute: '2-digit'}) : "_____"}</td>
-                <td>✓</td>
-              </tr>
-              ` : `
-              <tr>
-                <td>Chargé d'Affaire</td>
-                <td>_____________________</td>
-                <td>_____________________</td>
-                <td>_____________________</td>
-                <td></td>
-              </tr>
-              `}
             </tbody>
           </table>
         </div>
 
-        <table>
-          <thead>
-            <tr>
-              <th>Désignation</th>
-              <th>Référence</th>
-              <th>Unité</th>
-              <th>Qté Demandée</th>
-              <th>Qté Validée</th>
-              <th>Observation</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${demande.items?.map((item: any) => {
-              const qteValidee = item.quantiteValidee || item.quantiteDemandee
-              return `
-                <tr>
-                  <td>${item.article?.nom || "N/A"}</td>
-                  <td>${item.article?.reference || "N/A"}</td>
-                  <td>${item.article?.unite || "N/A"}</td>
-                  <td style="font-weight: bold; color: #4CAF50;">${item.quantiteDemandee}</td>
-                  <td style="font-weight: bold; color: #015fc4;">${qteValidee}</td>
-                  <td>${item.commentaire || ""}</td>
-                </tr>
-              `
-            }).join("") || "<tr><td colspan='6'>Aucun article</td></tr>"}
-          </tbody>
-        </table>
-
-        <div class="signature-section">
-          <div class="signature-box">
-            <h3>Préparé par (Appro/Logistique)</h3>
-            <p>Nom: ${demande.sortieAppro?.user ? `${demande.sortieAppro.user.prenom} ${demande.sortieAppro.user.nom}` : "_____________________________"}</p>
-            <p>Date: ${demande.sortieAppro?.date ? new Date(demande.sortieAppro.date).toLocaleDateString("fr-FR") : "_____________________________"}</p>
-            <p>Signature: ${demande.sortieAppro ? "✓" : "_____________________________"}</p>
-          </div>
-          <div class="signature-box">
-            <h3>Reçu par (Livreur)</h3>
-            <p>Nom: ${demande.livreurAssigne ? `${demande.livreurAssigne.prenom} ${demande.livreurAssigne.nom}` : "_____________________________"}</p>
-            <p>Date: ${demande.dateReceptionLivreur ? new Date(demande.dateReceptionLivreur).toLocaleDateString("fr-FR") : "_____________________________"}</p>
-            <p>Signature: ${demande.dateReceptionLivreur ? "✓" : "_____________________________"}</p>
-          </div>
+        <div>
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th class="col-ref">Référence</th>
+                <th class="col-des">Désignation</th>
+                <th class="col-unit">Uté</th>
+                <th class="col-qty">Qté</th>
+                <th class="col-date">Date de livraison souhaitée</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${items
+                .map((item: any) => {
+                  return `
+                    <tr>
+                      <td class="col-ref">${escapeHtml(item.article?.reference || '')}</td>
+                      <td class="col-des">${escapeHtml(item.article?.nom || '')}</td>
+                      <td class="col-unit">${escapeHtml(item.article?.unite || '')}</td>
+                      <td class="col-qty">${escapeHtml(item.quantiteDemandee ?? '')}</td>
+                      <td class="col-date">${escapeHtml(dateSouhaitee)}</td>
+                    </tr>
+                  `
+                })
+                .join('')}
+              ${Array.from({ length: emptyRowsCount })
+                .map(
+                  () => `
+                    <tr class="empty-row">
+                      <td></td><td></td><td></td><td></td><td></td>
+                    </tr>
+                  `
+                )
+                .join('')}
+            </tbody>
+          </table>
         </div>
 
-        <div class="footer">
-          <p>Document généré le ${new Date().toLocaleDateString("fr-FR")} à ${new Date().toLocaleTimeString("fr-FR")}</p>
-        </div>
+        <div class="footer">Nom et visa demandeur</div>
       </body>
       </html>
     `)
@@ -542,8 +564,8 @@ export const generateBonLivraisonPDF = async (demande: any): Promise<void> => {
           }
           th, td {
             border: 1px solid #000000;
-            padding: 6px 4px;
-            font-size: 9px;
+            padding: 7px 5px;
+            font-size: 11px;
           }
           th {
             background-color: #ffffff;
@@ -781,7 +803,8 @@ export const generateBonSortiePDF = async (demande: any): Promise<void> => {
             padding: 20px;
             background-color: #ffffff;
             color: #000000;
-            font-size: 10px;
+            font-size: 12px;
+            line-height: 1.25;
           }
           .document-header {
             border: 2px solid #000000;
@@ -809,10 +832,15 @@ export const generateBonSortiePDF = async (demande: any): Promise<void> => {
             background-color: #cccccc;
             padding: 8px;
             border-right: 1px solid #000000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
           }
           .header-left div {
             margin: 2px 0;
-            font-size: 9px;
+            font-size: 10px;
           }
           .header-right {
             width: 150px;
@@ -821,7 +849,7 @@ export const generateBonSortiePDF = async (demande: any): Promise<void> => {
           }
           .header-right div {
             margin: 2px 0;
-            font-size: 9px;
+            font-size: 10px;
           }
           .title-row {
             background-color: #ffffff;
@@ -829,30 +857,35 @@ export const generateBonSortiePDF = async (demande: any): Promise<void> => {
             text-align: center;
           }
           .title-row h1 {
-            font-size: 16px;
+            font-size: 18px;
             font-weight: bold;
             margin-bottom: 5px;
           }
           .title-row .numero {
             color: #ff0000;
-            font-size: 14px;
+            font-size: 15px;
             font-weight: bold;
           }
           .info-section {
             margin: 15px 0;
-            font-size: 10px;
+            font-size: 12px;
           }
           .info-row {
             display: flex;
-            margin: 5px 0;
+            margin: 6px 0;
+            align-items: center;
           }
           .info-label {
-            width: 120px;
+            width: 140px;
             font-weight: bold;
           }
           .info-value {
             flex: 1;
             border-bottom: 1px solid #000000;
+            padding: 2px 0 6px 0;
+            min-height: 22px;
+            line-height: 1.35;
+            text-decoration: none;
           }
           table {
             width: 100%;
@@ -861,8 +894,8 @@ export const generateBonSortiePDF = async (demande: any): Promise<void> => {
           }
           th, td {
             border: 1px solid #000000;
-            padding: 6px 4px;
-            font-size: 9px;
+            padding: 7px 5px;
+            font-size: 11px;
           }
           th {
             background-color: #cccccc;
@@ -881,7 +914,7 @@ export const generateBonSortiePDF = async (demande: any): Promise<void> => {
             margin-top: 20px;
             display: flex;
             justify-content: space-between;
-            font-size: 9px;
+            font-size: 10px;
           }
           .signature-item {
             text-align: center;
@@ -924,7 +957,7 @@ export const generateBonSortiePDF = async (demande: any): Promise<void> => {
             </div>
           </div>
           <div class="title-row">
-            <h1>Bon de Sortie Matériel</h1>
+            <h1>Bon de Sortie</h1>
             <div class="numero">N° ${bonSortieNumber}</div>
           </div>
         </div>

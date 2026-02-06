@@ -1,6 +1,6 @@
 "use client"
 
-import { Bell, LogOut, Settings, Menu, X, KeyRound } from "lucide-react"
+import { Bell, LogOut, Settings, Menu, X, KeyRound, BarChart3 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useState, useEffect } from "react"
@@ -24,6 +24,7 @@ import { useStore } from "@/stores/useStore"
 import InstrumElecLogo from "@/components/ui/instrumelec-logo"
 import Link from "next/link"
 import ChangePasswordModal from "@/components/modals/change-password-modal"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 const roleLabels: Record<string, string> = {
   superadmin: "Super Administrateur",
@@ -80,44 +81,82 @@ export default function Navbar() {
         {/* Desktop Navigation */}
         <div className="hidden sm:flex items-center space-x-2 sm:space-x-4">
           {currentUser?.role === "superadmin" && (
-            <Button asChild variant="outline" size="sm" className="border-gray-300 hover:bg-gray-50 bg-transparent">
-              <Link href="/admin">
-                <Settings className="h-4 w-4 mr-2" />
-                <span className="hidden md:inline">Administration</span>
-                <span className="md:hidden">Admin</span>
-              </Link>
-            </Button>
+            <>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button asChild variant="outline" size="sm" className="border-gray-300 hover:bg-gray-50 bg-transparent">
+                    <Link href="/finance">
+                      <BarChart3 className="h-4 w-4 mr-2" />
+                      <span className="hidden md:inline">Analyse</span>
+                      <span className="md:hidden">Analyse</span>
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" sideOffset={6}>
+                  Accéder au tableau de bord financier
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button asChild variant="outline" size="sm" className="border-gray-300 hover:bg-gray-50 bg-transparent">
+                    <Link href="/admin">
+                      <Settings className="h-4 w-4 mr-2" />
+                      <span className="hidden md:inline">Administration</span>
+                      <span className="md:hidden">Admin</span>
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" sideOffset={6}>
+                  Gestion des utilisateurs, projets et paramètres
+                </TooltipContent>
+              </Tooltip>
+            </>
           )}
 
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="relative hover:bg-gray-100"
-            onClick={() => router.push('/notifications')}
-          >
-            <Bell className="h-5 w-5" />
-            {unreadCount > 0 && (
-              <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px] bg-red-500 text-white border-2 border-white animate-pulse">
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </Badge>
-            )}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="relative hover:bg-gray-100"
+                onClick={() => router.push('/notifications')}
+              >
+                <Bell className="h-5 w-5" />
+                {unreadCount > 0 && (
+                  <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px] bg-red-500 text-white border-2 border-white animate-pulse">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </Badge>
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" sideOffset={6}>
+              Notifications
+            </TooltipContent>
+          </Tooltip>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="hover:bg-gray-100">
-                <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <span className="text-sm font-medium text-blue-600">
-                      {currentUser?.prenom?.[0]}
-                      {currentUser?.nom?.[0]}
-                    </span>
-                  </div>
-                  <span className="hidden lg:block text-gray-700">
-                    {currentUser?.prenom} {currentUser?.nom}
-                  </span>
-                </div>
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="sm" className="hover:bg-gray-100">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span className="text-sm font-medium text-blue-600">
+                          {currentUser?.prenom?.[0]}
+                          {currentUser?.nom?.[0]}
+                        </span>
+                      </div>
+                      <span className="hidden lg:block text-gray-700">
+                        {currentUser?.prenom} {currentUser?.nom}
+                      </span>
+                    </div>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" sideOffset={6}>
+                  Profil et actions du compte
+                </TooltipContent>
+              </Tooltip>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-white border-gray-200">
               <DropdownMenuLabel className="text-gray-800">
@@ -218,12 +257,20 @@ export default function Navbar() {
 
                 {/* Admin Link */}
                 {currentUser?.role === "superadmin" && (
-                  <Button asChild variant="outline" className="w-full justify-start" onClick={() => setMobileMenuOpen(false)}>
-                    <Link href="/admin">
-                      <Settings className="h-4 w-4 mr-2" />
-                      Administration
-                    </Link>
-                  </Button>
+                  <>
+                    <Button asChild variant="outline" className="w-full justify-start" onClick={() => setMobileMenuOpen(false)}>
+                      <Link href="/finance">
+                        <BarChart3 className="h-4 w-4 mr-2" />
+                        Analyse
+                      </Link>
+                    </Button>
+                    <Button asChild variant="outline" className="w-full justify-start" onClick={() => setMobileMenuOpen(false)}>
+                      <Link href="/admin">
+                        <Settings className="h-4 w-4 mr-2" />
+                        Administration
+                      </Link>
+                    </Button>
+                  </>
                 )}
 
                 {/* Change Password */}
