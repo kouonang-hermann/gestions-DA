@@ -12,7 +12,6 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    console.log('🌱 Début du seeding des demandes à clôturer...')
 
     // Récupérer l'employé de test
     const employe = await prisma.user.findUnique({
@@ -204,7 +203,6 @@ export async function GET(req: NextRequest) {
     })
     demandes.push(demande3)
 
-    console.log(`✅ ${demandes.length} demandes à clôturer créées avec succès`)
 
     return NextResponse.json({
       success: true,
@@ -224,7 +222,6 @@ export async function GET(req: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Erreur lors du seeding des demandes:', error)
     return NextResponse.json({ 
       error: 'Erreur lors du seeding', 
       details: error instanceof Error ? error.message : 'Erreur inconnue'

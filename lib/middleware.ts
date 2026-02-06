@@ -9,26 +9,20 @@ export function withAuth(
 ) {
   return async (request: NextRequest, context?: any) => {
     try {
-      console.log(`🔐 [MIDDLEWARE] Vérification authentification pour ${request.method} ${request.url}`)
       
       const authHeader = request.headers.get("authorization")
-      console.log(`🔐 [MIDDLEWARE] Header Authorization: ${authHeader ? 'présent' : 'absent'}`)
       
       const user = await getCurrentUser(request)
-      console.log(`🔐 [MIDDLEWARE] Utilisateur récupéré: ${user ? `${user.nom} (${user.role})` : 'null'}`)
       
       if (!user) {
-        console.log(`❌ [MIDDLEWARE] Authentification échouée`)
         return NextResponse.json(
           { success: false, error: "Non authentifié" },
           { status: 401 }
         )
       }
 
-      console.log(`✅ [MIDDLEWARE] Authentification réussie, appel du handler`)
       return await handler(request, user, context)
     } catch (error) {
-      console.error("❌ [MIDDLEWARE] Erreur middleware auth:", error)
       return NextResponse.json(
         { success: false, error: "Erreur d'authentification" },
         { status: 500 }
@@ -64,7 +58,6 @@ export function withPermission(
 
       return await handler(request, user)
     } catch (error) {
-      console.error("Erreur middleware permission:", error)
       return NextResponse.json(
         { success: false, error: "Erreur d'authentification" },
         { status: 500 }

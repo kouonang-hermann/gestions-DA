@@ -49,7 +49,6 @@ export const GET = async (request: NextRequest, context: { params: Promise<{ id:
     })
     
   } catch (error) {
-    console.error("Erreur lors de la récupération des livraisons:", error)
     return NextResponse.json({ 
       success: false, 
       error: "Erreur serveur" 
@@ -155,7 +154,6 @@ export const POST = async (request: NextRequest, context: { params: Promise<{ id
     })
     
   } catch (error) {
-    console.error("Erreur lors de la création de la livraison:", error)
     return NextResponse.json({ 
       success: false, 
       error: "Erreur serveur" 

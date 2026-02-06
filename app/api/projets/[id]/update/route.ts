@@ -69,7 +69,6 @@ export async function PUT(
 
     // Note: L'historique pourrait être ajouté si le modèle HistoryEntry est étendu
     // Pour l'instant, on log l'action
-    console.log(`✅ Projet ${projectId} modifié par ${currentUser.id}`)
 
     return NextResponse.json({
       success: true,
@@ -77,7 +76,6 @@ export async function PUT(
       message: "Projet mis à jour avec succès",
     })
   } catch (error) {
-    console.error("Erreur lors de la mise à jour du projet:", error)
     return NextResponse.json(
       { success: false, error: "Erreur serveur" },
       { status: 500 }

@@ -48,7 +48,6 @@ export default function DetailsModal({
         setSelectedDemande(null)
       }
     } catch (error) {
-      console.error("Erreur lors de la validation:", error)
       alert("Erreur lors de la validation")
     }
   }
@@ -112,12 +111,9 @@ export default function DetailsModal({
                   size="sm"
                   onClick={(e) => {
                     e.stopPropagation()
-                    console.log("🔘 Bouton Edit cliqué pour:", user.nom, user.prenom)
                     if (onChangeUserRole) {
-                      console.log("✅ Fonction onChangeUserRole disponible, appel en cours...")
                       onChangeUserRole(user)
                     } else {
-                      console.error("❌ Fonction onChangeUserRole non disponible!")
                     }
                   }}
                   title="Modifier le rôle"

@@ -104,7 +104,6 @@ export const GET = withAuth(async (request: NextRequest, currentUser: any) => {
           statut: request.status // Mapper status vers statut pour compatibilité
         }
       } catch (mappingError) {
-        console.error('Error mapping request:', request.id, mappingError)
         return {
           ...request,
           demandeur: request.technicien,
@@ -120,13 +119,8 @@ export const GET = withAuth(async (request: NextRequest, currentUser: any) => {
     })
 
   } catch (error: any) {
-    console.error('=== DETAILED ERROR LOG ===')
-    console.error('Error name:', error.name)
-    console.error('Error message:', error.message)
-    console.error('Error stack:', error.stack)
     
     if (error.name === 'JsonWebTokenError') {
-      console.error('JWT malformed error:', error)
       return NextResponse.json(
         { 
           success: false, 

@@ -23,7 +23,6 @@ export default function MesLivraisonsSection() {
     role: currentUser.role
   })
   
-  console.log('🚚 [MES-LIVRAISONS] Total demandes dans le store:', demandes.length)
   
   // Filtrer toutes les demandes avec un livreurAssigneId
   const demandesAvecLivreur = demandes.filter(d => d.livreurAssigneId)
@@ -87,7 +86,6 @@ export default function MesLivraisonsSection() {
         alert(result.error || "Erreur lors de la confirmation")
       }
     } catch (error) {
-      console.error("Erreur:", error)
       alert("Erreur de connexion")
     } finally {
       setConfirmingReception(null)
@@ -118,7 +116,6 @@ export default function MesLivraisonsSection() {
         alert(result.error || "Erreur lors de la confirmation")
       }
     } catch (error) {
-      console.error("Erreur:", error)
       alert("Erreur de connexion")
     } finally {
       setConfirmingLivraison(null)

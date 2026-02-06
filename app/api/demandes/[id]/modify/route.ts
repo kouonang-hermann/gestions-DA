@@ -14,7 +14,6 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
     const params = await context.params
     const body = await request.json()
 
-    console.log(`🔧 [MODIFY] Tentative de modification de la demande ${params.id} par ${currentUser.role}`)
 
     // Récupérer la demande actuelle
     const demande = await prisma.demande.findUnique({
@@ -52,7 +51,6 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
     // Obtenir les permissions de modification selon le rôle
     const permissions = getModificationPermissions(currentUser.role, demande.status as DemandeStatus)
 
-    console.log(`🔑 [MODIFY] Permissions pour ${currentUser.role}:`, permissions)
 
     // Préparer les données de mise à jour
     const updateData: any = {
@@ -154,7 +152,6 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
     if (demande.statusPrecedent) {
       newStatus = demande.statusPrecedent as DemandeStatus
       updateData.statusPrecedent = null // Réinitialiser
-      console.log(`↗️ [MODIFY] Renvoi de la demande au statut: ${newStatus}`)
     }
 
     updateData.status = newStatus
@@ -216,7 +213,6 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
       transformedUsers as any
     )
 
-    console.log(`✅ [MODIFY] Demande ${demande.numero} modifiée et renvoyée: ${demande.status} → ${newStatus}`)
 
     return NextResponse.json({
       success: true,
@@ -224,7 +220,6 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
       message: "Demande modifiée et renvoyée avec succès"
     })
   } catch (error) {
-    console.error("Erreur lors de la modification de la demande:", error)
     return NextResponse.json({ success: false, error: "Erreur serveur" }, { status: 500 })
   }
 })

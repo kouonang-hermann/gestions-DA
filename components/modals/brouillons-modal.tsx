@@ -61,7 +61,6 @@ export default function BrouillonsModal({
 
   const handleEditDemande = (e: React.MouseEvent, demande: Demande) => {
     e.stopPropagation()
-    console.log('📝 Ouverture de la modale d\'édition pour le brouillon:', demande.numero)
     setDemandeToEdit(demande)
     setEditModalOpen(true)
   }
@@ -74,7 +73,6 @@ export default function BrouillonsModal({
 
   const handleDeleteDemande = (e: React.MouseEvent, demande: Demande) => {
     e.stopPropagation()
-    console.log('🗑️ Ouverture de la confirmation de suppression pour:', demande.numero)
     setDemandeToDelete(demande)
     setDeleteConfirmOpen(true)
   }
@@ -84,7 +82,6 @@ export default function BrouillonsModal({
     
     setIsDeleting(true)
     try {
-      console.log('🗑️ Suppression du brouillon:', demandeToDelete.numero)
       
       const response = await fetch(`/api/demandes/${demandeToDelete.id}`, {
         method: 'DELETE',
@@ -96,16 +93,13 @@ export default function BrouillonsModal({
       const result = await response.json()
 
       if (result.success) {
-        console.log('✅ Brouillon supprimé avec succès')
         await loadDemandes()
         setDeleteConfirmOpen(false)
         setDemandeToDelete(null)
       } else {
-        console.error('❌ Erreur lors de la suppression:', result.error)
         alert(result.error || 'Erreur lors de la suppression du brouillon')
       }
     } catch (error) {
-      console.error('❌ Erreur lors de la suppression:', error)
       alert('Erreur lors de la suppression du brouillon')
     } finally {
       setIsDeleting(false)
@@ -116,7 +110,6 @@ export default function BrouillonsModal({
     e.stopPropagation()
     setIsSubmitting(demande.id)
     try {
-      console.log('📤 Soumission du brouillon:', demande.numero)
       
       const response = await fetch(`/api/demandes/${demande.id}/submit`, {
         method: 'POST',
@@ -128,15 +121,12 @@ export default function BrouillonsModal({
       const result = await response.json()
 
       if (result.success) {
-        console.log('✅ Brouillon soumis avec succès:', result.data.numero)
         alert(`✅ Brouillon soumis avec succès!\nNouveau numéro: ${result.data.numero}`)
         await loadDemandes()
       } else {
-        console.error('❌ Erreur lors de la soumission:', result.error)
         alert(result.error || 'Erreur lors de la soumission du brouillon')
       }
     } catch (error) {
-      console.error('❌ Erreur lors de la soumission:', error)
       alert('Erreur lors de la soumission du brouillon')
     } finally {
       setIsSubmitting(null)

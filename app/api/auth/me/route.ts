@@ -18,7 +18,6 @@ export async function GET(request: NextRequest) {
       data: user,
     })
   } catch (error) {
-    console.error("Erreur lors de la récupération de l'utilisateur:", error)
     return NextResponse.json({ success: false, error: "Erreur serveur" }, { status: 500 })
   }
 }

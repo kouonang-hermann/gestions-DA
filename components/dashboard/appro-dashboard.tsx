@@ -152,13 +152,6 @@ export default function ApproDashboard() {
         "archivee"
       ].includes(d.status))
 
-      console.log(`🔍 [APPRO-DASHBOARD] Statistiques calculées:`)
-      console.log(`  - Total demandes Appro (matériel): ${demandesAppro.length}`)
-      console.log(`  - À préparer: ${demandesATraiter.length}`)
-      console.log(`  - Préparées (chez livreur): ${demandesPreparees.length}`)
-      console.log(`  - En livraison: ${demandesEnLivraison.length}`)
-      console.log(`  - Livrées: ${demandesLivrees.length}`)
-      console.log(`  - Mes demandes en cours: ${mesDemandesEnCours.length}`)
 
       setStats({
         total: demandesAppro.length,           // Total demandes matériel dans le flow Appro
@@ -189,7 +182,6 @@ export default function ApproDashboard() {
         setSelectedDemandeId(null)
       }
     } catch (error) {
-      console.error("Erreur lors de la validation:", error)
       alert("Erreur lors de la validation")
     }
   }

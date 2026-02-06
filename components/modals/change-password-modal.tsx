@@ -97,7 +97,6 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
         setError(result.error || "Erreur lors du changement de mot de passe")
       }
     } catch (err) {
-      console.error("Erreur:", err)
       setError("Erreur de connexion au serveur")
     } finally {
       setLoading(false)

@@ -10,7 +10,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Numéro de demande requis" }, { status: 400 })
     }
 
-    console.log(`🔍 [DEBUG-API] Recherche de la demande: ${numero}`)
 
     // Rechercher la demande avec toutes ses relations
     const demande = await prisma.demande.findFirst({
@@ -50,7 +49,6 @@ export async function GET(request: NextRequest) {
     })
 
     if (!demande) {
-      console.log(`❌ [DEBUG-API] Demande ${numero} non trouvée`)
       return NextResponse.json({ error: "Demande non trouvée" }, { status: 404 })
     }
 
@@ -86,7 +84,6 @@ export async function GET(request: NextRequest) {
       }
     })
   } catch (error) {
-    console.error("❌ [DEBUG-API] Erreur:", error)
     return NextResponse.json({ 
       error: "Erreur serveur", 
       details: error instanceof Error ? error.message : String(error)

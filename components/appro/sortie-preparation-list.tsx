@@ -90,7 +90,6 @@ export default function SortiePreparationList() {
         alert(error || "Erreur lors de la préparation")
       }
     } catch (err) {
-      console.error("Erreur lors de la préparation:", err)
       alert("Erreur lors de la préparation")
     } finally {
       setActionLoading(null)
@@ -105,9 +104,6 @@ export default function SortiePreparationList() {
   const handleSaveQuantites = async (quantites: { [itemId: string]: number }, prix: { [itemId: string]: number }) => {
     if (!selectedDemande) return
     
-    console.log("💾 Sauvegarde des quantités et prix pour la demande:", selectedDemande.numero)
-    console.log("  - Quantités:", quantites)
-    console.log("  - Prix:", prix)
     
     try {
       // Transformer les quantités et prix pour l'API
@@ -124,9 +120,6 @@ export default function SortiePreparationList() {
         }
       })
       
-      console.log("📦 Données à sauvegarder:")
-      console.log("  - Quantités sorties:", quantitesSorties)
-      console.log("  - Prix unitaires:", prixUnitaires)
       
       // Appeler l'API pour mettre à jour les quantités de sortie
       const responseQte = await fetch(`/api/demandes/${selectedDemande.id}/update-delivery`, {
@@ -141,7 +134,6 @@ export default function SortiePreparationList() {
       // Vérifier si la réponse est OK avant de parser le JSON
       if (!responseQte.ok) {
         const errorText = await responseQte.text()
-        console.error("❌ Erreur API update-delivery:", errorText)
         alert(`❌ Erreur quantités: ${errorText || "Impossible de sauvegarder les quantités"}`)
         return
       }
@@ -166,7 +158,6 @@ export default function SortiePreparationList() {
       // Vérifier si la réponse est OK avant de parser le JSON
       if (!responsePrix.ok) {
         const errorText = await responsePrix.text()
-        console.error("❌ Erreur API update-prices:", errorText)
         alert(`⚠️ Quantités OK mais erreur prix: ${errorText || "Impossible de sauvegarder les prix"}`)
         await loadDemandes()
         return
@@ -184,7 +175,6 @@ export default function SortiePreparationList() {
         await loadDemandes()
       }
     } catch (error) {
-      console.error("❌ Erreur lors de la sauvegarde:", error)
       alert("❌ Erreur de connexion lors de la sauvegarde")
     }
   }
@@ -525,7 +515,6 @@ export default function SortiePreparationList() {
       // Télécharger le PDF
       pdf.save(`Bon_Sortie_${demande.numero}_${new Date().toISOString().split("T")[0]}.pdf`)
     } catch (error) {
-      console.error('❌ Erreur lors de la génération du PDF:', error)
       alert('Erreur lors de la génération du PDF. Veuillez réessayer.')
     }
   }

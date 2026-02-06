@@ -34,7 +34,6 @@ export default function NotificationsRemindersPanel() {
         setError(data.error || "Erreur lors du chargement des statistiques")
       }
     } catch (err) {
-      console.error("Erreur:", err)
       setError("Erreur de connexion au serveur")
     } finally {
       setLoading(false)
@@ -68,7 +67,6 @@ export default function NotificationsRemindersPanel() {
         setError(data.error || "Erreur lors de l'envoi des rappels")
       }
     } catch (err) {
-      console.error("Erreur:", err)
       setError("Erreur de connexion au serveur")
     } finally {
       setLoading(false)

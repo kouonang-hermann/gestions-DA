@@ -30,15 +30,12 @@ export default function ClotureConfirmationModal({
 
   useEffect(() => {
     if (isOpen && demande) {
-      console.log(' [MODAL-CLOTURE] Ouverture du modal pour demande:', demande.numero)
-      console.log('  - Nombre d\'items:', demande.items?.length)
       
       // Initialiser les quantités reçues avec les quantités sorties
       const initialQuantites: { [key: string]: number } = {}
       demande.items?.forEach(item => {
         initialQuantites[item.id] = item.quantiteSortie || item.quantiteValidee || item.quantiteDemandee
       })
-      console.log('  - Quantités initiales:', initialQuantites)
       setQuantitesRecues(initialQuantites)
       setCommentaire('')
       setErrors({})
@@ -86,19 +83,13 @@ export default function ClotureConfirmationModal({
   }
 
   const handleConfirm = async () => {
-    console.log('🔒 [MODAL-CLOTURE] Tentative de confirmation')
-    console.log('  - Quantités reçues:', quantitesRecues)
-    console.log('  - Commentaire:', commentaire)
-    console.log('  - Erreurs:', errors)
     
     // Vérifier qu'il n'y a pas d'erreurs
     if (Object.keys(errors).length > 0) {
-      console.log('❌ [MODAL-CLOTURE] Erreurs détectées, annulation')
       alert("Veuillez corriger les erreurs avant de confirmer")
       return
     }
 
-    console.log('✅ [MODAL-CLOTURE] Appel de onConfirm')
     await onConfirm(quantitesRecues, commentaire)
   }
 

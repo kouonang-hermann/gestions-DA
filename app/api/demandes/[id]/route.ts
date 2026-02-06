@@ -112,7 +112,6 @@ export const GET = withAuth(async (request: NextRequest, currentUser: any, conte
       data: demande,
     })
   } catch (error) {
-    console.error("Erreur lors de la récupération de la demande:", error)
     return NextResponse.json({ success: false, error: "Erreur serveur" }, { status: 500 })
   }
 })
@@ -137,7 +136,6 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
         }, { status: 403 })
       }
 
-      console.log(`✏️ [MODIFICATION] Super admin modifie la demande ${params.id}`)
 
       // Récupérer la demande actuelle
       const demande = await prisma.demande.findUnique({
@@ -228,7 +226,6 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
         }
       })
 
-      console.log(`✅ [MODIFICATION] Demande ${demande.numero} modifiée avec succès`)
 
       return NextResponse.json({
         success: true,
@@ -265,7 +262,6 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
 
     // NOUVEAU WORKFLOW DE REJET
     if (validatedData.status === "rejetee") {
-      console.log(`🔄 [REJET] Demande ${demande.numero} rejetée par ${currentUser.role}`)
       
       // Vérifier si le nombre maximum de rejets est atteint
       if (hasReachedMaxRejections(demande.nombreRejets || 0)) {
@@ -285,7 +281,6 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
         }, { status: 400 })
       }
 
-      console.log(`↩️ [REJET] Retour au statut précédent: ${previousStatus}`)
 
       // Mettre à jour avec retour au statut précédent
       newStatus = previousStatus
@@ -301,7 +296,6 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
       const previousValidatorRole = getPreviousValidatorRole(demande.status as DemandeStatus, demande.type)
       
       if (previousValidatorRole) {
-        console.log(`📧 [REJET] Notification au valideur précédent: ${previousValidatorRole}`)
         
         // Trouver les utilisateurs avec ce rôle assignés au projet
         const usersToNotify = await prisma.user.findMany({
@@ -391,7 +385,6 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
       }
     })
 
-    console.log(`✅ [WORKFLOW] Demande ${demande.numero} mise à jour: ${demande.status} → ${newStatus}`)
 
     return NextResponse.json({
       success: true,
@@ -402,7 +395,6 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
       return NextResponse.json({ success: false, error: "Données invalides", details: error }, { status: 400 })
     }
     
-    console.error("Erreur lors de la mise à jour de la demande:", error)
     return NextResponse.json({ success: false, error: "Erreur serveur" }, { status: 500 })
   }
 })
@@ -481,11 +473,9 @@ export const DELETE = withAuth(async (request: NextRequest, currentUser: any, co
       where: { id: params.id }
     })
 
-    console.log(`🗑️ [SUPPRESSION] Demande ${demande.numero} supprimée par ${currentUser.nom}`)
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("Erreur lors de la suppression de la demande:", error)
     return NextResponse.json({ success: false, error: "Erreur serveur" }, { status: 500 })
   }
 })

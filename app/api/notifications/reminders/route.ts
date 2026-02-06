@@ -19,7 +19,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log("📬 Démarrage de l'envoi des rappels automatiques...")
 
     // Récupérer toutes les demandes en attente
     const now = new Date()
@@ -54,7 +53,6 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    console.log(`📊 ${demandesEnAttente.length} demande(s) en attente depuis plus de 24h`)
 
     // Récupérer tous les utilisateurs
     const users = await prisma.user.findMany({
@@ -83,11 +81,9 @@ export async function POST(request: NextRequest) {
         )
         rappelsEnvoyes++
       } catch (error) {
-        console.error(`❌ Erreur lors de l'envoi du rappel pour ${demande.numero}:`, error)
       }
     }
 
-    console.log(`✅ ${rappelsEnvoyes} rappel(s) envoyé(s) avec succès`)
 
     return NextResponse.json({
       success: true,
@@ -98,7 +94,6 @@ export async function POST(request: NextRequest) {
       }
     })
   } catch (error) {
-    console.error("❌ Erreur lors de l'envoi des rappels:", error)
     return NextResponse.json(
       { success: false, error: "Erreur serveur" },
       { status: 500 }
@@ -176,7 +171,6 @@ export async function GET(request: NextRequest) {
       }
     })
   } catch (error) {
-    console.error("❌ Erreur lors de la récupération des statistiques:", error)
     return NextResponse.json(
       { success: false, error: "Erreur serveur" },
       { status: 500 }

@@ -128,7 +128,6 @@ export const PUT = async (
       }
     })
 
-    console.log(`💰 [API-BUDGET] Budget prévisionnel mis à jour pour demande ${demande.numero}: ${budget} €`)
 
     return NextResponse.json({
       success: true,
@@ -140,7 +139,6 @@ export const PUT = async (
     })
 
   } catch (error) {
-    console.error("Erreur lors de la mise à jour du budget:", error)
     return NextResponse.json(
       { success: false, error: "Erreur serveur" },
       { status: 500 }

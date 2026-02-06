@@ -225,7 +225,6 @@ export default function DemandeFormModal({ isOpen, onClose, demande, mode, type 
         })
       }
     } catch (error) {
-      console.error("Erreur lors de la sauvegarde:", error)
       setError("Erreur lors de la sauvegarde de la demande")
     } finally {
       setSaving(false)

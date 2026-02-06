@@ -40,7 +40,6 @@ export const PUT = async (
     const effectivePrices: Record<string, unknown> =
       prices && typeof prices === 'object' ? prices : pricesFromItems
 
-    console.log("💰 [API-PRICES] Réception des prix:", effectivePrices)
 
     if (!effectivePrices || typeof effectivePrices !== 'object') {
       return NextResponse.json(
@@ -138,7 +137,6 @@ export const PUT = async (
         const quantiteLivree = demandeItem.quantiteSortie || 0
         const quantiteRestante = Math.max(0, quantiteValidee - quantiteLivree)
         coutTotal += prixUnitaire * quantiteRestante
-        console.log(`   💰 Item ${itemId}: Qté validée=${quantiteValidee}, Qté livrée=${quantiteLivree}, Qté restante=${quantiteRestante}, Coût=${prixUnitaire * quantiteRestante}`)
       }
     }
 
@@ -176,7 +174,6 @@ export const PUT = async (
       }
     })
 
-    console.log(`💰 [API-PRICES] Prix mis à jour pour demande ${demande.numero}. Coût total: ${coutTotal} FCFA`)
 
     return NextResponse.json({
       success: true,
@@ -189,7 +186,6 @@ export const PUT = async (
     })
 
   } catch (error) {
-    console.error("Erreur lors de la mise à jour des prix:", error)
     return NextResponse.json(
       { success: false, error: "Erreur serveur" },
       { status: 500 }

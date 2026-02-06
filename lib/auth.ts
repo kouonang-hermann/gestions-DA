@@ -138,25 +138,20 @@ export async function authenticateUser(identifier: string, password: string): Pr
     isDbOffline = false // DB accessible
     return userWithProjets
   } catch (error) {
-    console.error("Erreur lors de l'authentification:", error)
     
     // FALLBACK MODE: Si la DB n'est pas accessible, utiliser les utilisateurs de test
-    console.log("🔄 [AUTH] Mode fallback activé - Utilisation des utilisateurs de test")
     isDbOffline = true
     
     const testUser = TEST_USERS.find(u => u.phone === identifier)
     if (!testUser) {
-      console.log("❌ [AUTH] Utilisateur de test non trouvé pour:", identifier)
       return null
     }
     
     // En mode test, vérification simple du mot de passe
     if (testUser.password !== password) {
-      console.log("❌ [AUTH] Mot de passe incorrect pour l'utilisateur de test")
       return null
     }
     
-    console.log(`✅ [AUTH] Connexion réussie en mode test: ${testUser.prenom} ${testUser.nom} (${testUser.role})`)
     return testUser
   }
 }
@@ -194,7 +189,6 @@ export async function getUserById(id: string): Promise<any | null> {
 
     return userWithProjets
   } catch (error) {
-    console.error("Erreur lors de la récupération de l'utilisateur:", error)
     
     // Fallback vers les utilisateurs de test
     isDbOffline = true
@@ -210,7 +204,6 @@ export async function getUserById(id: string): Promise<any | null> {
 export async function getAllUsers(): Promise<any[]> {
   // Si on est en mode offline, utiliser les utilisateurs de test
   if (isDbOffline) {
-    console.log("📋 [AUTH] Mode fallback - Retour des utilisateurs de test")
     return TEST_USERS
   }
   
@@ -220,10 +213,8 @@ export async function getAllUsers(): Promise<any[]> {
     })
     return users
   } catch (error) {
-    console.error("Erreur lors de la récupération des utilisateurs:", error)
     // Fallback vers les utilisateurs de test
     isDbOffline = true
-    console.log("📋 [AUTH] Mode fallback activé - Retour des utilisateurs de test")
     return TEST_USERS
   }
 }
@@ -257,7 +248,6 @@ export async function getCurrentUser(request: NextRequest): Promise<User | null>
 
     return await getUserById(payload.userId)
   } catch (error) {
-    console.error("Erreur lors de la récupération de l'utilisateur courant:", error)
     return null
   }
 }
@@ -293,7 +283,6 @@ export async function requireAuth(request: NextRequest): Promise<{ success: bool
 
     return { success: true, user }
   } catch (error) {
-    console.error("Erreur d'authentification:", error)
     return { success: false, error: "Erreur d'authentification" }
   }
 }

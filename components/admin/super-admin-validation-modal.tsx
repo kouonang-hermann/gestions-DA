@@ -67,7 +67,6 @@ export default function SuperAdminValidationModal({
         setError(result.error || "Erreur lors du chargement")
       }
     } catch (error) {
-      console.error("Erreur:", error)
       setError("Erreur de connexion")
     } finally {
       setLoading(false)
@@ -130,7 +129,6 @@ export default function SuperAdminValidationModal({
         setError(result.error || "Erreur lors de la validation")
       }
     } catch (error) {
-      console.error("Erreur:", error)
       setError("Erreur de connexion")
     } finally {
       setValidating(false)

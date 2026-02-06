@@ -39,7 +39,6 @@ export default function MobileApproSection() {
         alert(error || "Erreur lors de la préparation")
       }
     } catch (err) {
-      console.error("Erreur lors de la préparation:", err)
       alert("Erreur lors de la préparation")
     } finally {
       setActionLoading(null)

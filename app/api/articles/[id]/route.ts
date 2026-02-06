@@ -53,7 +53,6 @@ export async function PUT(
       }
     })
 
-    console.log(`✅ [UPDATE-ARTICLE] Article ${updatedArticle.reference} mis à jour par ${currentUser.nom}`)
 
     return NextResponse.json({
       success: true,
@@ -61,7 +60,6 @@ export async function PUT(
       article: updatedArticle
     })
   } catch (error) {
-    console.error("❌ [UPDATE-ARTICLE] Erreur:", error)
     return NextResponse.json(
       { success: false, error: "Erreur serveur" },
       { status: 500 }

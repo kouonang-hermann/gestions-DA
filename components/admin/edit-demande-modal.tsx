@@ -167,7 +167,6 @@ export default function EditDemandeModal({ isOpen, onClose, demande }: EditDeman
       
       onClose()
     } catch (err) {
-      console.error("Erreur lors de la modification:", err)
       setError(err instanceof Error ? err.message : "Erreur lors de la modification")
     } finally {
       setIsLoading(false)

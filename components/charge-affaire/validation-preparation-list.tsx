@@ -66,7 +66,6 @@ export default function ValidationPreparationList() {
         alert(error || "Erreur lors de l'action")
       }
     } catch (err) {
-      console.error("Erreur lors de la validation:", err)
       alert("Erreur lors de l'action")
     } finally {
       setActionLoading(null)

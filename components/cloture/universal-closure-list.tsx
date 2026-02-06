@@ -48,7 +48,6 @@ export default function UniversalClosureList({ onClose }: UniversalClosureListPr
 
       if (!response.ok) {
         const errorText = await response.text()
-        console.error("❌ Erreur API clôture:", errorText)
         toast.error(errorText || "Erreur lors de la clôture")
         return
       }
@@ -65,7 +64,6 @@ export default function UniversalClosureList({ onClose }: UniversalClosureListPr
         toast.error(result.error || "Erreur lors de la clôture")
       }
     } catch (error) {
-      console.error("Erreur lors de la clôture:", error)
       toast.error("Erreur lors de la clôture de la demande")
     } finally {
       setIsLoading(false)

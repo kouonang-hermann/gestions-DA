@@ -72,21 +72,17 @@ const localUsers: User[] = [
  */
 export async function authenticateUserLocal(phone: string, password: string): Promise<User | null> {
   try {
-    console.log(`[LOCAL AUTH] Tentative de connexion pour: ${phone}`)
     
     // En mode local, on accepte n'importe quel mot de passe pour simplifier
     // Recherche par numéro de téléphone uniquement
     const user = localUsers.find(u => u.phone === phone)
     
     if (!user) {
-      console.log(`[LOCAL AUTH] Utilisateur non trouvé avec téléphone: ${phone}`)
       return null
     }
 
-    console.log(`[LOCAL AUTH] Connexion réussie pour: ${user.nom} ${user.prenom} (${user.role})`)
     return user
   } catch (error) {
-    console.error("[LOCAL AUTH] Erreur lors de l'authentification:", error)
     return null
   }
 }
@@ -99,13 +95,11 @@ export async function getUserByIdLocal(id: string): Promise<User | null> {
     const user = localUsers.find(u => u.id === id)
     
     if (!user) {
-      console.log(`[LOCAL AUTH] Utilisateur non trouvé avec ID: ${id}`)
       return null
     }
 
     return user
   } catch (error) {
-    console.error("[LOCAL AUTH] Erreur lors de la récupération de l'utilisateur:", error)
     return null
   }
 }
@@ -115,10 +109,8 @@ export async function getUserByIdLocal(id: string): Promise<User | null> {
  */
 export async function getAllUsersLocal(): Promise<User[]> {
   try {
-    console.log(`[LOCAL AUTH] Récupération de ${localUsers.length} utilisateurs`)
     return [...localUsers]
   } catch (error) {
-    console.error("[LOCAL AUTH] Erreur lors de la récupération des utilisateurs:", error)
     return []
   }
 }
@@ -132,24 +124,20 @@ export async function getCurrentUserLocal(request: NextRequest): Promise<User | 
     const token = extractTokenFromHeader(authHeader)
     
     if (!token) {
-      console.log("[LOCAL AUTH] Aucun token fourni")
       return null
     }
 
     const payload = verifyToken(token)
     if (!payload) {
-      console.log("[LOCAL AUTH] Token invalide")
       return null
     }
 
     const user = await getUserByIdLocal(payload.userId)
     if (user) {
-      console.log(`[LOCAL AUTH] Utilisateur récupéré: ${user.nom} ${user.prenom}`)
     }
     
     return user
   } catch (error) {
-    console.error("[LOCAL AUTH] Erreur lors de la récupération de l'utilisateur courant:", error)
     return null
   }
 }
@@ -163,26 +151,21 @@ export async function requireAuthLocal(request: NextRequest): Promise<{ success:
     const token = extractTokenFromHeader(authHeader)
     
     if (!token) {
-      console.log("[LOCAL AUTH] Token manquant")
       return { success: false, error: "Token manquant" }
     }
 
     const payload = verifyToken(token)
     if (!payload) {
-      console.log("[LOCAL AUTH] Token invalide")
       return { success: false, error: "Token invalide" }
     }
 
     const user = await getUserByIdLocal(payload.userId)
     if (!user) {
-      console.log(`[LOCAL AUTH] Utilisateur non trouvé avec ID: ${payload.userId}`)
       return { success: false, error: "Utilisateur non trouvé" }
     }
 
-    console.log(`[LOCAL AUTH] Authentification réussie pour: ${user.nom} ${user.prenom}`)
     return { success: true, user }
   } catch (error) {
-    console.error("[LOCAL AUTH] Erreur d'authentification:", error)
     return { success: false, error: "Erreur d'authentification" }
   }
 }
@@ -241,7 +224,6 @@ export async function addUserLocal(userData: Omit<User, 'id' | 'createdAt' | 'up
   }
   
   localUsers.push(newUser)
-  console.log(`[LOCAL AUTH] Utilisateur ajouté: ${newUser.nom} ${newUser.prenom}`)
   
   return newUser
 }
@@ -253,7 +235,6 @@ export async function updateUserLocal(userId: string, updates: Partial<User>): P
   const userIndex = localUsers.findIndex(u => u.id === userId)
   
   if (userIndex === -1) {
-    console.log(`[LOCAL AUTH] Utilisateur non trouvé pour mise à jour: ${userId}`)
     return null
   }
   
@@ -263,7 +244,6 @@ export async function updateUserLocal(userId: string, updates: Partial<User>): P
     updatedAt: new Date()
   }
   
-  console.log(`[LOCAL AUTH] Utilisateur mis à jour: ${localUsers[userIndex].nom} ${localUsers[userIndex].prenom}`)
   return localUsers[userIndex]
 }
 

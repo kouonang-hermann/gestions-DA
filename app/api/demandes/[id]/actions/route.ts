@@ -60,7 +60,6 @@ function canUserAutoValidateStep(demandeurRole: string, demandeType: string, sta
 function getNextStatusWithAutoValidation(currentStatus: DemandeStatus, userRole: string, demandeType: string, demandeurRole: string, targetStatus?: DemandeStatus): DemandeStatus | null {
   // Si un statut cible est fourni par le frontend, l'utiliser
   if (targetStatus) {
-    console.log(`🎯 [API] Utilisation du statut cible fourni: ${targetStatus}`)
     return targetStatus
   }
 
@@ -73,15 +72,11 @@ function getNextStatusWithAutoValidation(currentStatus: DemandeStatus, userRole:
   let nextIndex = currentIndex + 1
   let nextStatus = flow[nextIndex]
 
-  console.log(`🔄 [API] Calcul du prochain statut depuis ${currentStatus} → ${nextStatus}`)
-  console.log(`🔄 [API] Demandeur original: ${demandeurRole}, Valideur actuel: ${userRole}`)
 
   // CAS SPÉCIAL : Validation à l'étape chargé d'affaire - dépend du type de demande
   // IMPORTANT: Ce cas doit être traité AVANT l'auto-validation pour éviter les conflits
   if (currentStatus === "en_attente_validation_charge_affaire" && (userRole === "charge_affaire" || userRole === "superadmin")) {
     const nextStatusChargeAffaire = demandeType === "materiel" ? "en_attente_preparation_appro" : "en_attente_preparation_logistique"
-    console.log(`🎯 [API CHARGE-AFFAIRE] Type: ${demandeType} → Prochain statut: ${nextStatusChargeAffaire} (validé par ${userRole})`)
-    console.log(`✅ [API] Prochain statut déterminé (cas spécial chargé affaire): ${nextStatusChargeAffaire}`)
     return nextStatusChargeAffaire as DemandeStatus
   }
 
@@ -92,16 +87,13 @@ function getNextStatusWithAutoValidation(currentStatus: DemandeStatus, userRole:
     const canAutoValidate = canUserAutoValidateStep(demandeurRole, demandeType, nextStatus)
     
     if (canAutoValidate) {
-      console.log(`🔄 [API AUTO-VALIDATION] ${demandeurRole} peut auto-valider l'étape: ${nextStatus}, passage à l'étape suivante`)
       nextIndex++
       nextStatus = flow[nextIndex]
     } else {
-      console.log(`✋ [API] ${demandeurRole} ne peut pas auto-valider ${nextStatus}, arrêt ici`)
       break
     }
   }
 
-  console.log(`✅ [API] Prochain statut déterminé: ${nextStatus}`)
   return nextStatus
 }
 
@@ -171,8 +163,6 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
     const params = await context.params
     const { action, commentaire, quantitesSorties, quantites, itemsModifications, targetStatus, livreurAssigneId, items, quantitesRecues } = await request.json()
 
-    console.log(`🚀 [API] ${currentUser.nom} (${currentUser.role}) exécute "${action}" sur ${params.id}`)
-    console.log(`📋 [API] Payload reçu:`, { action, commentaire, targetStatus, quantitesRecues })
 
     // Récupérer la demande
     const demande = await prisma.demande.findUnique({
@@ -191,12 +181,9 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
     })
 
     if (!demande) {
-      console.log(`❌ [API] Demande ${params.id} non trouvée`)
       return NextResponse.json({ success: false, error: "Demande non trouvée" }, { status: 404 })
     }
 
-    console.log(`📋 [API] Demande trouvée: ${demande.numero}, statut=${demande.status}, demandeur=${demande.technicienId}`)
-    console.log(`📋 [API] Projet de la demande: ${demande.projetId} (${demande.projet?.nom})`)
 
     // Vérifier l'accès au projet (sauf pour le demandeur original qui peut toujours clôturer sa demande)
     const userProjet = await prisma.userProjet.findFirst({
@@ -210,23 +197,14 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
     const isSuperAdmin = currentUser.role === "superadmin"
     const isTransversalValidator = ["responsable_appro", "responsable_livreur"].includes(currentUser.role)
     
-    console.log(`🔐 [API] Vérifications d'accès:`)
-    console.log(`  - User ID: ${currentUser.id}`)
-    console.log(`  - Projet ID: ${demande.projetId}`)
-    console.log(`  - UserProjet trouvé: ${!!userProjet}`)
-    console.log(`  - Demandeur original: ${isOriginalRequester}`)
-    console.log(`  - Super admin: ${isSuperAdmin}`)
-    console.log(`  - Validateur transversal (appro/logistique): ${isTransversalValidator}`)
     
     if (!userProjet && !isOriginalRequester && !isSuperAdmin && !isTransversalValidator) {
-      console.log(`❌ [API] Accès refusé au projet ${demande.projetId}`)
       return NextResponse.json({ 
         success: false, 
         error: `Accès non autorisé à ce projet. Vous devez être assigné au projet "${demande.projet?.nom || demande.projetId}"` 
       }, { status: 403 })
     }
     
-    console.log(`✅ [API] Accès au projet autorisé`)
 
     let newStatus = demande.status
     const updates: any = {}
@@ -234,13 +212,6 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
     // Vérifier les permissions et exécuter l'action
     switch (action) {
       case "valider":
-        console.log(`🔍 [API VALIDATION] Début de la validation:`)
-        console.log(`  - Demande: ${demande.numero}`)
-        console.log(`  - Statut actuel: ${demande.status}`)
-        console.log(`  - Type: ${demande.type}`)
-        console.log(`  - Valideur: ${currentUser.nom} (${currentUser.role})`)
-        console.log(`  - Demandeur original: ${demande.technicien?.nom} (${demande.technicien?.role})`)
-        console.log(`  - Target status fourni: ${targetStatus || 'aucun'}`)
         
         // Utiliser la nouvelle logique d'auto-validation intelligente
         const nextStatus = getNextStatusWithAutoValidation(
@@ -252,11 +223,9 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         )
         
         if (!nextStatus) {
-          console.log(`❌ [API VALIDATION] Aucun prochain statut trouvé`)
           return NextResponse.json({ success: false, error: "Action non autorisée pour ce rôle et statut" }, { status: 403 })
         }
         
-        console.log(`🔄 [API VALIDATION] Transition calculée: ${demande.status} → ${nextStatus}`)
         
         // Vérifications de permissions (seulement si pas d'auto-validation)
         // IMPORTANT: Le superadmin peut valider à n'importe quelle étape
@@ -297,7 +266,6 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         
         // Log spécial si c'est un superadmin qui valide
         if (currentUser.role === "superadmin") {
-          console.log(`👑 [API VALIDATION] Validation par SUPERADMIN - bypass des vérifications de rôle`)
         }
         
         newStatus = nextStatus as any
@@ -404,19 +372,9 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         break
 
       case "valider_reception":
-        console.log(`📦 [VALIDER-RECEPTION] Vérifications détaillées:`)
-        console.log(`  - Status demande: ${demande.status}`)
-        console.log(`  - Livreur assigné ID: ${demande.livreurAssigneId}`)
-        console.log(`  - Utilisateur actuel ID: ${currentUser.id}`)
-        console.log(`  - Utilisateur actuel rôle: ${currentUser.role}`)
-        console.log(`  - Utilisateur actuel nom: ${currentUser.nom}`)
-        console.log(`  - Comparaison stricte: ${demande.livreurAssigneId === currentUser.id}`)
-        console.log(`  - Type livreurAssigneId: ${typeof demande.livreurAssigneId}`)
-        console.log(`  - Type currentUser.id: ${typeof currentUser.id}`)
         
         // Vérifier d'abord le statut
         if (demande.status !== "en_attente_reception_livreur") {
-          console.log(`❌ [VALIDER-RECEPTION] Statut incorrect: ${demande.status}`)
           return NextResponse.json({ 
             success: false, 
             error: `La demande n'est pas en attente de réception (statut actuel: ${demande.status})` 
@@ -425,9 +383,6 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         
         // Vérifier que l'utilisateur est bien le livreur assigné
         if (demande.livreurAssigneId !== currentUser.id) {
-          console.log(`❌ [VALIDER-RECEPTION] Utilisateur non autorisé`)
-          console.log(`  - Attendu: ${demande.livreurAssigneId}`)
-          console.log(`  - Reçu: ${currentUser.id}`)
           return NextResponse.json({ 
             success: false, 
             error: "Seul le livreur assigné peut valider la réception" 
@@ -435,24 +390,13 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         }
         
         // Tout est OK, valider la réception
-        console.log(`✅ [VALIDER-RECEPTION] Réception du matériel validée par ${currentUser.nom} (${currentUser.role})`)
         newStatus = "en_attente_livraison"
         break
 
       case "valider_livraison":
-        console.log(`🚚 [VALIDER-LIVRAISON] Vérifications détaillées:`)
-        console.log(`  - Status demande: ${demande.status}`)
-        console.log(`  - Livreur assigné ID: ${demande.livreurAssigneId}`)
-        console.log(`  - Utilisateur actuel ID: ${currentUser.id}`)
-        console.log(`  - Utilisateur actuel rôle: ${currentUser.role}`)
-        console.log(`  - Utilisateur actuel nom: ${currentUser.nom}`)
-        console.log(`  - Comparaison stricte: ${demande.livreurAssigneId === currentUser.id}`)
-        console.log(`  - Type livreurAssigneId: ${typeof demande.livreurAssigneId}`)
-        console.log(`  - Type currentUser.id: ${typeof currentUser.id}`)
         
         // Vérifier d'abord le statut
         if (demande.status !== "en_attente_livraison") {
-          console.log(`❌ [VALIDER-LIVRAISON] Statut incorrect: ${demande.status}`)
           return NextResponse.json({ 
             success: false, 
             error: `La demande n'est pas en attente de livraison (statut actuel: ${demande.status})` 
@@ -461,9 +405,6 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         
         // Vérifier que l'utilisateur est bien le livreur assigné
         if (demande.livreurAssigneId !== currentUser.id) {
-          console.log(`❌ [VALIDER-LIVRAISON] Utilisateur non autorisé`)
-          console.log(`  - Attendu: ${demande.livreurAssigneId}`)
-          console.log(`  - Reçu: ${currentUser.id}`)
           return NextResponse.json({ 
             success: false, 
             error: "Seul le livreur assigné peut valider la livraison" 
@@ -471,27 +412,17 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         }
         
         // Tout est OK, valider la livraison
-        console.log(`✅ [VALIDER-LIVRAISON] Livraison effective validée par ${currentUser.nom} (${currentUser.role})`)
         newStatus = "en_attente_validation_finale_demandeur"
         break
 
       case "cloturer":
-        console.log(`🔒 [API] Tentative de clôture:`)
-        console.log(`  - Statut actuel: ${demande.status}`)
-        console.log(`  - Demandeur: ${demande.technicienId}`)
-        console.log(`  - Utilisateur actuel: ${currentUser.id}`)
-        console.log(`  - Quantités reçues:`, quantitesRecues)
         
         // Action spécifique pour le demandeur - clôturer la demande après livraison
         if (demande.status === "en_attente_validation_finale_demandeur" && demande.technicienId === currentUser.id) {
-          console.log(`✅ [API] Clôture autorisée`)
           
           // Vérifier les quantités reçues et identifier les items manquants
           const itemsManquants: any[] = []
           
-          console.log(`📋 [CLOTURE] Analyse des quantités reçues:`)
-          console.log(`  - quantitesRecues reçu:`, quantitesRecues)
-          console.log(`  - Nombre d'items dans la demande: ${demande.items.length}`)
           
           if (quantitesRecues) {
             for (const item of demande.items) {
@@ -501,12 +432,6 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
               const quantiteRecue = quantitesRecues[item.id] || 0
               const quantiteManquante = quantiteValideeParChargeAffaire - quantiteRecue
               
-              console.log(`📦 [CLOTURE] Article ${item.article?.nom || 'ID: ' + item.articleId}:`)
-              console.log(`  - Item ID: ${item.id}`)
-              console.log(`  - Quantité VALIDÉE par chargé d'affaires: ${quantiteValideeParChargeAffaire}`)
-              console.log(`  - Quantité SORTIE/LIVRÉE: ${item.quantiteSortie || 'N/A'}`)
-              console.log(`  - Quantité REÇUE par demandeur: ${quantiteRecue}`)
-              console.log(`  - Quantité MANQUANTE (validée - reçue): ${quantiteManquante}`)
               
               // Mettre à jour la quantité reçue sur l'item
               await prisma.itemDemande.update({
@@ -515,7 +440,6 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
               })
               
               if (quantiteManquante > 0) {
-                console.log(`  ✅ Article ajouté aux items manquants (${quantiteManquante} unités)`)
                 itemsManquants.push({
                   articleId: item.articleId,
                   quantiteDemandee: quantiteManquante,
@@ -523,20 +447,15 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
                   commentaire: `Quantité manquante de la demande ${demande.numero} - Validée: ${quantiteValideeParChargeAffaire}, Reçue: ${quantiteRecue}`
                 })
               } else if (quantiteManquante < 0) {
-                console.log(`  ⚠️ ANOMALIE : Quantité reçue (${quantiteRecue}) > Quantité validée (${quantiteValideeParChargeAffaire}) - Pas de sous-demande`)
               } else {
-                console.log(`  ⏭️ Quantité complète reçue - Pas de sous-demande nécessaire`)
               }
             }
           } else {
-            console.log(`⚠️ [CLOTURE] Aucune quantité reçue fournie - pas de sous-demande créée`)
           }
           
-          console.log(`📊 [CLOTURE] Total items manquants: ${itemsManquants.length}`)
           
           // Créer une sous-demande si nécessaire
           if (itemsManquants.length > 0) {
-            console.log(`📋 [CLOTURE] Création d'une sous-demande avec ${itemsManquants.length} article(s) manquant(s)`)
             
             // Déterminer le statut selon le type de demande
             // - Outillage → en_attente_preparation_logistique (responsable logistique)
@@ -545,7 +464,6 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
               ? "en_attente_preparation_logistique" 
               : "en_attente_preparation_appro"
             
-            console.log(`📦 [CLOTURE] Type de demande: ${demande.type} → Statut sous-demande: ${sousDemandeStatus}`)
             
             const sousDemande = await prisma.demande.create({
               data: {
@@ -568,7 +486,6 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
               }
             })
             
-            console.log(`✅ [CLOTURE] Sous-demande créée: ${sousDemande.numero} (type: ${demande.type}, statut: ${sousDemandeStatus})`)
             
             // Ajouter une entrée dans l'historique de la demande principale
             await prisma.historyEntry.create({
@@ -611,14 +528,11 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
             }
           })
           
-          console.log(`✅ [API] Toutes les livraisons marquées comme livrées`)
           
           newStatus = "cloturee"
         } else if (demande.status !== "en_attente_validation_finale_demandeur") {
-          console.log(`❌ [API] Statut incorrect pour clôture: ${demande.status}`)
           return NextResponse.json({ success: false, error: "La demande n'est pas prête à être clôturée" }, { status: 403 })
         } else {
-          console.log(`❌ [API] Utilisateur non autorisé à clôturer`)
           return NextResponse.json({ success: false, error: "Seul le demandeur original peut clôturer sa demande" }, { status: 403 })
         }
         break
@@ -649,7 +563,6 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         
         newStatus = "archivee"
         updates.commentaire = commentaire || "Demande annulée par le demandeur"
-        console.log(`🗑️ [API] Demande ${demande.numero} annulée par ${currentUser.nom}`)
         break
 
       case "rejeter":
@@ -686,21 +599,13 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         // Effacer le motif de rejet
         updates.rejetMotif = null
         
-        console.log(`🔄 [API] Demande ${demande.numero} renvoyée par ${currentUser.nom} - nouveau statut: ${newStatus}`)
         break
 
       case "preparer_sortie":
-        console.log(`📦 [PREPARER-SORTIE] Vérifications:`)
-        console.log(`  - Status demande: ${demande.status}`)
-        console.log(`  - Role utilisateur: ${currentUser.role}`)
-        console.log(`  - Livreur assigné: ${livreurAssigneId}`)
-        console.log(`  - Status attendu: en_attente_preparation_appro`)
-        console.log(`  - Role attendu: responsable_appro`)
         
         if (demande.status === ("en_attente_preparation_appro" as any) && currentUser.role === "responsable_appro") {
           // Vérifier que le livreur est assigné
           if (!livreurAssigneId) {
-            console.log(`❌ [PREPARER-SORTIE] Aucun livreur assigné`)
             return NextResponse.json({ 
               success: false, 
               error: "Vous devez choisir un livreur avant de valider la préparation" 
@@ -713,7 +618,6 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
           })
 
           if (!livreur) {
-            console.log(`❌ [PREPARER-SORTIE] Livreur ${livreurAssigneId} non trouvé`)
             return NextResponse.json({ 
               success: false, 
               error: "Le livreur sélectionné n'existe pas" 
@@ -721,15 +625,11 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
           }
 
           const nextStatus = getNextStatus(demande.status, currentUser.role, demande.type)
-          console.log(`  - Next status calculé: ${nextStatus}`)
           
           if (!nextStatus) {
-            console.log(`❌ [PREPARER-SORTIE] Impossible de déterminer le prochain statut`)
             return NextResponse.json({ success: false, error: "Impossible de déterminer le prochain statut de la demande" }, { status: 403 })
           }
           
-          console.log(`✅ [PREPARER-SORTIE] Préparation de sortie validée, transition: ${demande.status} → ${nextStatus}`)
-          console.log(`✅ [PREPARER-SORTIE] Livreur assigné: ${livreur.prenom} ${livreur.nom} (${livreur.role})`)
           
           newStatus = nextStatus as any
           
@@ -749,7 +649,6 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
             }
           })
           
-          console.log(`✅ [PREPARER-SORTIE] Sortie signature créée`)
 
           // NOUVEAU : Créer automatiquement une livraison complète (système de livraisons multiples)
           // Cela permet la compatibilité avec l'ancien système tout en supportant le nouveau
@@ -774,15 +673,10 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
             }
           })
           
-          console.log(`✅ [PREPARER-SORTIE] Livraison complète créée automatiquement`)
 
           // Envoyer notification au livreur assigné
           await notificationService.notifyLivreurAssigne(demande.id, livreurAssigneId, currentUser.id)
-          console.log(`✅ [PREPARER-SORTIE] Notification envoyée au livreur`)
         } else {
-          console.log(`❌ [PREPARER-SORTIE] Conditions non remplies:`)
-          console.log(`  - Status correct: ${demande.status === "en_attente_preparation_appro"}`)
-          console.log(`  - Role correct: ${currentUser.role === "responsable_appro"}`)
           return NextResponse.json({ 
             success: false, 
             error: `Action non autorisée. Status: ${demande.status}, Role: ${currentUser.role}` 
@@ -791,17 +685,10 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         break
 
       case "preparer_sortie_logistique":
-        console.log(`📦 [PREPARER-SORTIE-LOGISTIQUE] Vérifications:`)
-        console.log(`  - Status demande: ${demande.status}`)
-        console.log(`  - Role utilisateur: ${currentUser.role}`)
-        console.log(`  - Livreur assigné: ${livreurAssigneId}`)
-        console.log(`  - Status attendu: en_attente_preparation_logistique`)
-        console.log(`  - Role attendu: responsable_logistique`)
         
         if (demande.status === ("en_attente_preparation_logistique" as any) && currentUser.role === "responsable_logistique") {
           // Vérifier que le livreur est assigné
           if (!livreurAssigneId) {
-            console.log(`❌ [PREPARER-SORTIE-LOGISTIQUE] Aucun livreur assigné`)
             return NextResponse.json({ 
               success: false, 
               error: "Vous devez choisir un livreur avant de valider la préparation" 
@@ -814,7 +701,6 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
           })
 
           if (!livreurLogistique) {
-            console.log(`❌ [PREPARER-SORTIE-LOGISTIQUE] Livreur ${livreurAssigneId} non trouvé`)
             return NextResponse.json({ 
               success: false, 
               error: "Le livreur sélectionné n'existe pas" 
@@ -822,15 +708,11 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
           }
 
           const nextStatusLogistique = getNextStatus(demande.status, currentUser.role, demande.type)
-          console.log(`  - Next status calculé: ${nextStatusLogistique}`)
           
           if (!nextStatusLogistique) {
-            console.log(`❌ [PREPARER-SORTIE-LOGISTIQUE] Impossible de déterminer le prochain statut`)
             return NextResponse.json({ success: false, error: "Impossible de déterminer le prochain statut de la demande" }, { status: 403 })
           }
           
-          console.log(`✅ [PREPARER-SORTIE-LOGISTIQUE] Préparation de sortie validée, transition: ${demande.status} → ${nextStatusLogistique}`)
-          console.log(`✅ [PREPARER-SORTIE-LOGISTIQUE] Livreur assigné: ${livreurLogistique.prenom} ${livreurLogistique.nom} (${livreurLogistique.role})`)
           
           newStatus = nextStatusLogistique as any
           
@@ -850,7 +732,6 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
             }
           })
           
-          console.log(`✅ [PREPARER-SORTIE-LOGISTIQUE] Sortie signature créée`)
 
           // Créer automatiquement une livraison complète
           const itemsLogistique = await prisma.itemDemande.findMany({
@@ -874,15 +755,10 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
             }
           })
           
-          console.log(`✅ [PREPARER-SORTIE-LOGISTIQUE] Livraison complète créée automatiquement`)
 
           // Envoyer notification au livreur assigné
           await notificationService.notifyLivreurAssigne(demande.id, livreurAssigneId, currentUser.id)
-          console.log(`✅ [PREPARER-SORTIE-LOGISTIQUE] Notification envoyée au livreur`)
         } else {
-          console.log(`❌ [PREPARER-SORTIE-LOGISTIQUE] Conditions non remplies:`)
-          console.log(`  - Status correct: ${demande.status === "en_attente_preparation_logistique"}`)
-          console.log(`  - Role correct: ${currentUser.role === "responsable_logistique"}`)
           return NextResponse.json({ 
             success: false, 
             error: `Action non autorisée. Status: ${demande.status}, Role: ${currentUser.role}` 
@@ -891,30 +767,19 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         break
 
       case "confirmer_reception_livreur":
-        console.log(`📦 [RECEPTION-LIVREUR] Vérifications:`)
-        console.log(`  - Status demande: ${demande.status}`)
-        console.log(`  - Role utilisateur: ${currentUser.role}`)
-        console.log(`  - Livreur assigné: ${demande.livreurAssigneId}`)
         
         if (demande.status === "en_attente_reception_livreur" && demande.livreurAssigneId === currentUser.id) {
           const nextStatus = getNextStatus(demande.status, currentUser.role, demande.type)
-          console.log(`  - Next status calculé: ${nextStatus}`)
           
           if (!nextStatus) {
-            console.log(`❌ [RECEPTION-LIVREUR] Impossible de déterminer le prochain statut`)
             return NextResponse.json({ success: false, error: "Impossible de déterminer le prochain statut de la demande" }, { status: 403 })
           }
           
-          console.log(`✅ [RECEPTION-LIVREUR] Réception confirmée, transition: ${demande.status} → ${nextStatus}`)
           
           newStatus = nextStatus as any
           updates.dateReceptionLivreur = new Date()
           
-          console.log(`✅ [RECEPTION-LIVREUR] Date de réception enregistrée`)
         } else {
-          console.log(`❌ [RECEPTION-LIVREUR] Conditions non remplies:`)
-          console.log(`  - Status correct: ${demande.status === "en_attente_reception_livreur"}`)
-          console.log(`  - Livreur assigné correct: ${demande.livreurAssigneId === currentUser.id}`)
           return NextResponse.json({ 
             success: false, 
             error: `Action non autorisée. Seul le livreur assigné peut confirmer la réception.` 
@@ -923,21 +788,14 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         break
 
       case "confirmer_livraison":
-        console.log(`🚚 [LIVRAISON] Vérifications:`)
-        console.log(`  - Status demande: ${demande.status}`)
-        console.log(`  - Role utilisateur: ${currentUser.role}`)
-        console.log(`  - Livreur assigné: ${demande.livreurAssigneId}`)
         
         if (demande.status === "en_attente_livraison" && demande.livreurAssigneId === currentUser.id) {
           const nextStatus = getNextStatus(demande.status, currentUser.role, demande.type)
-          console.log(`  - Next status calculé: ${nextStatus}`)
           
           if (!nextStatus) {
-            console.log(`❌ [LIVRAISON] Impossible de déterminer le prochain statut`)
             return NextResponse.json({ success: false, error: "Impossible de déterminer le prochain statut de la demande" }, { status: 403 })
           }
           
-          console.log(`✅ [LIVRAISON] Livraison confirmée, transition: ${demande.status} → ${nextStatus}`)
           
           newStatus = nextStatus as any
           updates.dateLivraison = new Date()
@@ -951,11 +809,7 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
             currentUser.id
           )
           
-          console.log(`✅ [LIVRAISON] Date de livraison enregistrée et demandeur notifié`)
         } else {
-          console.log(`❌ [LIVRAISON] Conditions non remplies:`)
-          console.log(`  - Status correct: ${demande.status === "en_attente_livraison"}`)
-          console.log(`  - Livreur assigné correct: ${demande.livreurAssigneId === currentUser.id}`)
           return NextResponse.json({ 
             success: false, 
             error: `Action non autorisée. Seul le livreur assigné peut confirmer la livraison.` 
@@ -978,13 +832,8 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         break
 
       case "superadmin_validation":
-        console.log(`👑 [SUPERADMIN-VALIDATION] Validation super admin:`)
-        console.log(`  - Utilisateur: ${currentUser.nom} (${currentUser.role})`)
-        console.log(`  - Statut actuel: ${demande.status}`)
-        console.log(`  - Statut cible: ${targetStatus}`)
         
         if (currentUser.role !== "superadmin") {
-          console.log(`❌ [SUPERADMIN-VALIDATION] Accès refusé - rôle insuffisant`)
           return NextResponse.json({ 
             success: false, 
             error: "Seul le super admin peut utiliser cette action" 
@@ -992,20 +841,17 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         }
 
         if (!targetStatus) {
-          console.log(`❌ [SUPERADMIN-VALIDATION] Statut cible manquant`)
           return NextResponse.json({ 
             success: false, 
             error: "Le statut cible est requis pour la validation super admin" 
           }, { status: 400 })
         }
 
-        console.log(`✅ [SUPERADMIN-VALIDATION] Validation autorisée, transition: ${demande.status} → ${targetStatus}`)
         
         newStatus = targetStatus as any
         
         // Notifier les validateurs concernés si demandé
         if (action === "superadmin_validation") {
-          console.log(`📧 [SUPERADMIN-VALIDATION] Envoi des notifications aux validateurs`)
           
           // Notifier l'ancien validateur que le super admin a pris le relais
           await notificationService.notifyDemandeStatusChange(
@@ -1016,14 +862,10 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
             currentUser.id
           )
           
-          console.log(`✅ [SUPERADMIN-VALIDATION] Notifications envoyées`)
         }
         break
 
       case "update_validated_quantities":
-        console.log(`📝 [UPDATE-VALIDATED-QTY] Mise à jour des quantités validées:`)
-        console.log(`  - Utilisateur: ${currentUser.nom} (${currentUser.role})`)
-        console.log(`  - Demande: ${demande.numero}`)
         
         // Vérifier les permissions - seuls les valideurs peuvent modifier les quantités validées
         const canUpdateValidatedQty = (
@@ -1035,7 +877,6 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         )
         
         if (!canUpdateValidatedQty) {
-          console.log(`❌ [UPDATE-VALIDATED-QTY] Accès refusé - rôle ou statut incorrect`)
           return NextResponse.json({ 
             success: false, 
             error: "Vous n'avez pas les permissions pour modifier les quantités validées" 
@@ -1046,14 +887,12 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         const validatedItems = items
         
         if (!validatedItems || !Array.isArray(validatedItems)) {
-          console.log(`❌ [UPDATE-VALIDATED-QTY] Données items manquantes`)
           return NextResponse.json({ 
             success: false, 
             error: "Les données des items sont requises" 
           }, { status: 400 })
         }
 
-        console.log(`📋 [UPDATE-VALIDATED-QTY] Items à mettre à jour:`, validatedItems)
 
         // Mettre à jour chaque item
         let validatedItemsUpdated = 0
@@ -1061,7 +900,6 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         for (const itemData of validatedItems) {
           const { itemId, quantiteValidee } = itemData
           
-          console.log(`🔍 [UPDATE-VALIDATED-QTY] Traitement item ${itemId}:`, { quantiteValidee })
           
           // Récupérer l'item actuel
           const currentItem = await prisma.itemDemande.findUnique({
@@ -1070,7 +908,6 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
           })
           
           if (!currentItem) {
-            console.log(`⚠️ [UPDATE-VALIDATED-QTY] Item ${itemId} non trouvé, ignoré`)
             continue
           }
 
@@ -1079,9 +916,6 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
             ? quantiteValidee 
             : currentItem.quantiteDemandee
 
-          console.log(`📝 [UPDATE-VALIDATED-QTY] Article: ${currentItem.article?.nom || 'N/A'}`)
-          console.log(`   - Quantité demandée: ${currentItem.quantiteDemandee}`)
-          console.log(`   - Quantité validée à sauvegarder: ${qteToSave}`)
 
           // Mettre à jour l'item
           await prisma.itemDemande.update({
@@ -1092,11 +926,8 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
           })
 
           validatedItemsUpdated++
-          console.log(`✅ [UPDATE-VALIDATED-QTY] Item ${itemId} mis à jour avec succès`)
         }
 
-        console.log(`📊 [UPDATE-VALIDATED-QTY] Résumé:`)
-        console.log(`   - Items mis à jour: ${validatedItemsUpdated}/${validatedItems.length}`)
 
         // Mettre à jour la date de modification de la demande
         await prisma.demande.update({
@@ -1106,7 +937,6 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
           }
         })
 
-        console.log(`✅ [UPDATE-VALIDATED-QTY] Quantités validées mises à jour avec succès`)
         
         return NextResponse.json({ 
           success: true, 
@@ -1114,13 +944,9 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         })
 
       case "update_quantites_prix":
-        console.log(`📝 [UPDATE-QTE-PRIX] Mise à jour des quantités livrées et prix:`)
-        console.log(`  - Utilisateur: ${currentUser.nom} (${currentUser.role})`)
-        console.log(`  - Demande: ${demande.numero}`)
         
         // Vérifier les permissions
         if (!["responsable_logistique", "responsable_appro", "superadmin"].includes(currentUser.role)) {
-          console.log(`❌ [UPDATE-QTE-PRIX] Accès refusé - rôle insuffisant`)
           return NextResponse.json({ 
             success: false, 
             error: "Seuls les responsables logistique, appro ou super admin peuvent modifier ces données" 
@@ -1131,14 +957,12 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         const itemsToUpdate = items
         
         if (!itemsToUpdate || !Array.isArray(itemsToUpdate)) {
-          console.log(`❌ [UPDATE-QTE-PRIX] Données items manquantes`)
           return NextResponse.json({ 
             success: false, 
             error: "Les données des items sont requises" 
           }, { status: 400 })
         }
 
-        console.log(`📋 [UPDATE-QTE-PRIX] Items à mettre à jour:`, itemsToUpdate)
 
         // Mettre à jour chaque item
         let coutTotal = 0
@@ -1148,7 +972,6 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         for (const itemData of itemsToUpdate) {
           const { itemId, quantiteLivree, prixUnitaire } = itemData
           
-          console.log(`🔍 [UPDATE-QTE-PRIX] Traitement item ${itemId}:`, { quantiteLivree, prixUnitaire })
           
           // Récupérer l'item actuel
           const currentItem = await prisma.itemDemande.findUnique({
@@ -1157,7 +980,6 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
           })
           
           if (!currentItem) {
-            console.log(`⚠️ [UPDATE-QTE-PRIX] Item ${itemId} non trouvé, ignoré`)
             continue
           }
 
@@ -1165,9 +987,6 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
           const qteToSave = typeof quantiteLivree === 'number' && quantiteLivree >= 0 ? quantiteLivree : 0
           const prixToSave = typeof prixUnitaire === 'number' && prixUnitaire >= 0 ? prixUnitaire : null
 
-          console.log(`📝 [UPDATE-QTE-PRIX] Article: ${currentItem.article?.nom || 'N/A'}`)
-          console.log(`   - Quantité à sauvegarder: ${qteToSave}`)
-          console.log(`   - Prix à sauvegarder: ${prixToSave}`)
 
           // Mettre à jour l'item
           await prisma.itemDemande.update({
@@ -1189,25 +1008,13 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
             const coutRestant = prixToSave * quantiteRestante
             coutTotal += coutRestant
             itemsWithPrice++
-            console.log(`   💰 Calcul basé sur quantité restante:`)
-            console.log(`      - Quantité validée: ${quantiteValidee}`)
-            console.log(`      - Quantité livrée: ${qteToSave}`)
-            console.log(`      - Quantité restante: ${quantiteRestante}`)
-            console.log(`      - Coût restant: ${prixToSave} × ${quantiteRestante} = ${coutRestant} FCFA`)
           } else if (prixToSave !== null && quantiteRestante === 0) {
-            console.log(`   ✅ Article complètement livré (quantité restante = 0)`)
           }
 
-          console.log(`✅ [UPDATE-QTE-PRIX] Item ${itemId} mis à jour avec succès`)
         }
 
-        console.log(`📊 [UPDATE-QTE-PRIX] Résumé:`)
-        console.log(`   - Items mis à jour: ${itemsUpdated}/${itemsToUpdate.length}`)
-        console.log(`   - Items avec prix: ${itemsWithPrice}`)
-        console.log(`   - Coût total: ${coutTotal} FCFA`)
 
         // Mettre à jour le coût total de la demande
-        console.log(`💰 [UPDATE-QTE-PRIX] Coût total calculé: ${coutTotal}`)
 
         // Mettre à jour la demande avec le coût total
         const updatedDemandeWithPrices = await prisma.demande.update({
@@ -1242,7 +1049,6 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
           }
         })
 
-        console.log(`✅ [UPDATE-QTE-PRIX] Mise à jour terminée avec coût total: ${coutTotal}`)
         
         // Retourner directement la réponse avec les données mises à jour
         return NextResponse.json({ 
@@ -1256,11 +1062,6 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
     }
 
     // Mettre à jour la demande
-    console.log(`💾 [API] Mise à jour de la demande dans la base de données:`)
-    console.log(`  - ID: ${params.id}`)
-    console.log(`  - Ancien statut: ${demande.status}`)
-    console.log(`  - Nouveau statut: ${newStatus}`)
-    console.log(`  - Updates supplémentaires:`, updates)
     
     const updatedDemande = await prisma.demande.update({
       where: { id: params.id },
@@ -1282,7 +1083,6 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
       }
     })
     
-    console.log(`✅ [API] Demande mise à jour avec succès, statut final: ${updatedDemande.status}`)
 
     // Créer une entrée d'historique
     await prisma.historyEntry.create({
@@ -1312,7 +1112,6 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
 
     // 📧 ENVOYER LES NOTIFICATIONS EMAIL
     try {
-      console.log(`📧 [API] Envoi des notifications email pour changement de statut: ${demande.status} → ${newStatus}`)
       
       // Récupérer tous les utilisateurs pour les notifications
       const allUsers = await prisma.user.findMany({
@@ -1339,10 +1138,8 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
         usersWithProjetIds as any
       )
       
-      console.log(`✅ [API] Notifications email envoyées avec succès`)
     } catch (emailError) {
       // Ne pas bloquer la réponse si l'envoi d'email échoue
-      console.error(`⚠️ [API] Erreur lors de l'envoi des emails (non bloquant):`, emailError)
     }
 
     return NextResponse.json({
@@ -1352,7 +1149,6 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
       }
     })
   } catch (error) {
-    console.error("Erreur lors de l'exécution de l'action:", error)
     return NextResponse.json({ success: false, error: "Erreur serveur" }, { status: 500 })
   }
 })

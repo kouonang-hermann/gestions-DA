@@ -34,7 +34,6 @@ export const useNotifications = (): UseNotificationsReturn => {
     try {
       await notificationService.handleStatusChange(demande, oldStatus, newStatus, users)
     } catch (error) {
-      console.error('Erreur lors de l\'envoi des notifications:', error)
     }
   }, [])
 
@@ -47,7 +46,6 @@ export const useNotifications = (): UseNotificationsReturn => {
       const { emailService } = await import('@/services/emailService')
       await emailService.notifyValidationRequest(validator, demande, requester)
     } catch (error) {
-      console.error('Erreur lors de l\'envoi de la notification de validation:', error)
     }
   }, [])
 
@@ -59,7 +57,6 @@ export const useNotifications = (): UseNotificationsReturn => {
       const { emailService } = await import('@/services/emailService')
       await emailService.notifyClosureRequest(requester, demande)
     } catch (error) {
-      console.error('Erreur lors de l\'envoi de la notification de clôture:', error)
     }
   }, [])
 
@@ -83,14 +80,12 @@ export const triggerStatusChangeNotifications = async (
 ) => {
   const demande = demandes.find(d => d.id === demandeId)
   if (!demande) {
-    console.warn(`Demande ${demandeId} non trouvée pour les notifications`)
     return
   }
 
   try {
     await notificationService.handleStatusChange(demande, oldStatus, newStatus, users)
   } catch (error) {
-    console.error('Erreur lors du déclenchement des notifications:', error)
   }
 }
 
@@ -101,7 +96,6 @@ export const sendAutomaticReminders = async (users: User[], demandes: Demande[])
   try {
     await notificationService.sendReminders(users, demandes)
   } catch (error) {
-    console.error('Erreur lors de l\'envoi des rappels:', error)
   }
 }
 

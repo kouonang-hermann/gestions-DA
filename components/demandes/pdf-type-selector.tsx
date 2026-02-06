@@ -27,22 +27,17 @@ export function PDFTypeSelector({
 }: PDFTypeSelectorProps) {
   const [isOpen, setIsOpen] = React.useState(false)
   
-  console.log('🔍 [PDFTypeSelector] Rendu du composant:', { isGenerating, disabled, isOpen })
   
   const handleSelect = (type: PDFType) => {
-    console.log('🔍 [PDFTypeSelector] Item cliqué:', type)
     setIsOpen(false)
     onSelect(type)
   }
   
   const handleButtonClick = (e: React.MouseEvent) => {
-    console.log('🔍 [PDFTypeSelector] Bouton cliqué - Event:', e.type)
-    console.log('🔍 [PDFTypeSelector] État actuel isOpen:', isOpen)
   }
   
   return (
     <DropdownMenu open={isOpen} onOpenChange={(open) => {
-      console.log('🔍 [PDFTypeSelector] Dropdown onOpenChange:', open)
       setIsOpen(open)
     }}>
       <DropdownMenuTrigger asChild>
@@ -71,7 +66,6 @@ export function PDFTypeSelector({
           onClick={() => handleSelect('demande')}
           className="cursor-pointer"
           onSelect={(e) => {
-            console.log('🔍 [PDFTypeSelector] onSelect demande triggered')
             e.preventDefault()
             handleSelect('demande')
           }}
@@ -83,7 +77,6 @@ export function PDFTypeSelector({
           onClick={() => handleSelect('bon_sortie')}
           className="cursor-pointer"
           onSelect={(e) => {
-            console.log('🔍 [PDFTypeSelector] onSelect bon_sortie triggered')
             e.preventDefault()
             handleSelect('bon_sortie')
           }}
@@ -95,7 +88,6 @@ export function PDFTypeSelector({
           onClick={() => handleSelect('bon_livraison')}
           className="cursor-pointer"
           onSelect={(e) => {
-            console.log('🔍 [PDFTypeSelector] onSelect bon_livraison triggered')
             e.preventDefault()
             handleSelect('bon_livraison')
           }}

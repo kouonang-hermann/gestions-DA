@@ -89,14 +89,12 @@ export async function POST(
 
     // Note: L'historique pourrait être ajouté si le modèle HistoryEntry est étendu
     // Pour l'instant, on log l'action
-    console.log(`✅ Utilisateur ${userId} ajouté au projet ${projectId} par ${currentUser.id}`)
 
     return NextResponse.json({
       success: true,
       message: "Utilisateur ajouté au projet avec succès",
     })
   } catch (error) {
-    console.error("Erreur lors de l'ajout de l'utilisateur au projet:", error)
     return NextResponse.json(
       { success: false, error: "Erreur serveur" },
       { status: 500 }

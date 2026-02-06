@@ -111,7 +111,6 @@ export default function CreateUserModal({ isOpen, onClose }: CreateUserModalProp
         setError(currentError || "Erreur lors de la création de l'utilisateur")
       }
     } catch (err) {
-      console.error("Erreur création utilisateur:", err)
       setError("Erreur lors de la création de l'utilisateur")
     }
   }

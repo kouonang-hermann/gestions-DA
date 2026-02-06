@@ -22,15 +22,10 @@ export default function MesDemandesACloturer() {
 
   useEffect(() => {
     if (currentUser && demandes) {
-      console.log(`🔍 [CLÔTURE] Filtrage pour ${currentUser.nom} (${currentUser.role}):`)
-      console.log(`  - ID utilisateur: ${currentUser.id}`)
-      console.log(`  - Total demandes: ${demandes.length}`)
       
       // Afficher toutes les demandes de l'utilisateur avec leurs statuts
       const mesDemandesAll = demandes.filter(d => d.technicienId === currentUser.id)
-      console.log(`  - Demandes de l'utilisateur: ${mesDemandesAll.length}`)
       mesDemandesAll.forEach(d => {
-        console.log(`    • ${d.numero}: statut="${d.status}", type=${d.type}`)
       })
       
       // Filtrer les demandes que l'utilisateur peut clôturer
@@ -43,11 +38,8 @@ export default function MesDemandesACloturer() {
         }
       )
       
-      console.log(`  - Demandes à clôturer trouvées: ${mesDemandesACloturer.length}`)
       if (mesDemandesACloturer.length > 0) {
-        console.log(`  - IDs des demandes à clôturer:`, mesDemandesACloturer.map(d => d.numero))
       } else {
-        console.log(`  ⚠️ Aucune demande avec statut "confirmee_demandeur" ou "en_attente_validation_finale_demandeur"`)
       }
       
       setDemandesACloturer(mesDemandesACloturer)
@@ -55,24 +47,17 @@ export default function MesDemandesACloturer() {
   }, [currentUser, demandes])
 
   const handleOpenClotureModal = (demande: Demande) => {
-    console.log('🎯 [MES-DEMANDES-A-CLOTURER] Ouverture du modal de clôture pour:', demande.numero)
     setSelectedDemande(demande)
     setClotureModalOpen(true)
   }
 
   const handleConfirmCloture = async (quantitesRecues: { [itemId: string]: number }, commentaire: string) => {
-    console.log('🔄 [MES-DEMANDES-A-CLOTURER] handleConfirmCloture appelé')
-    console.log('  - Demande sélectionnée:', selectedDemande?.numero)
-    console.log('  - Quantités reçues:', quantitesRecues)
-    console.log('  - Commentaire:', commentaire)
     
     if (!selectedDemande) {
-      console.log('❌ [MES-DEMANDES-A-CLOTURER] Pas de demande sélectionnée')
       return
     }
 
     setActionLoading(selectedDemande.id)
-    console.log('⏳ [MES-DEMANDES-A-CLOTURER] Appel de executeAction...')
 
     try {
       const success = await executeAction(selectedDemande.id, "cloturer", { 
@@ -80,23 +65,18 @@ export default function MesDemandesACloturer() {
         commentaire 
       })
       
-      console.log('📊 [MES-DEMANDES-A-CLOTURER] Résultat executeAction:', success)
       
       if (success) {
-        console.log('✅ [MES-DEMANDES-A-CLOTURER] Clôture réussie, rechargement des demandes')
         await loadDemandes()
         setClotureModalOpen(false)
         setSelectedDemande(null)
       } else {
-        console.log('❌ [MES-DEMANDES-A-CLOTURER] Échec de la clôture')
         alert("Erreur lors de la clôture")
       }
     } catch (error) {
-      console.error("❌ [MES-DEMANDES-A-CLOTURER] Exception lors de la clôture:", error)
       alert("Erreur lors de la clôture")
     } finally {
       setActionLoading(null)
-      console.log('🏁 [MES-DEMANDES-A-CLOTURER] Fin du processus de clôture')
     }
   }
 

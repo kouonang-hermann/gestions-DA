@@ -72,7 +72,6 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel",
             : "",
         })
         setHasDraft(false)
-        console.log("📝 Demande existante chargée pour modification")
         return
       }
       
@@ -83,9 +82,7 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel",
           const draft = JSON.parse(savedDraft)
           setFormData(draft)
           setHasDraft(true)
-          console.log("📝 Brouillon restauré depuis localStorage")
         } catch (e) {
-          console.error("Erreur lors de la restauration du brouillon:", e)
           setFormData({
             projetId: "",
             type: type,
@@ -114,7 +111,6 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel",
     if (isOpen && (formData.projetId || formData.items.length > 0 || formData.commentaires)) {
       localStorage.setItem(DRAFT_KEY, JSON.stringify(formData))
       setHasDraft(true)
-      console.log("💾 Brouillon sauvegardé automatiquement")
     }
   }, [formData, isOpen, DRAFT_KEY])
 
@@ -200,7 +196,6 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel",
     // Si on est en mode édition, mettre à jour la demande
     if (isEditMode && existingDemande) {
       try {
-        console.log(`📝 [EDIT-MODE] Début de la modification de la demande ${existingDemande.numero}`)
         
         // Mettre à jour les données de la demande
         const response = await fetch(`/api/demandes/${existingDemande.id}/update-items`, {
@@ -230,20 +225,17 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel",
 
         if (!response.ok) {
           const errorData = await response.json()
-          console.error(`❌ [EDIT-MODE] Erreur update-items:`, errorData)
           setError(errorData.error || "Erreur lors de la mise à jour de la demande")
           return
         }
 
         const updateResult = await response.json()
-        console.log(`✅ [EDIT-MODE] Demande mise à jour avec succès:`, updateResult.data)
 
         // Recharger les demandes et fermer la modale
         await loadDemandes()
         alert("✅ Demande modifiée avec succès !")
         onClose()
       } catch (error) {
-        console.error("❌ [EDIT-MODE] Erreur globale:", error)
         setError("Erreur lors de la modification de la demande")
       }
       return
@@ -276,7 +268,6 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel",
     if (success) {
       // Supprimer le brouillon après création réussie
       localStorage.removeItem(DRAFT_KEY)
-      console.log("✅ Brouillon supprimé après création réussie")
       onClose()
     }
   }
@@ -292,7 +283,6 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel",
         dateLivraisonSouhaitee: "",
       })
       setHasDraft(false)
-      console.log("🗑️ Brouillon supprimé")
     }
   }
 
@@ -423,12 +413,10 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel",
                             const result = await response.json()
                             if (result.success) {
                               setUploadedFiles(prev => [...prev, ...result.files])
-                              console.log('✅ Fichiers téléversés:', result.files)
                             } else {
                               alert(result.error || 'Erreur lors du téléversement')
                             }
                           } catch (error) {
-                            console.error('Erreur upload:', error)
                             alert('Erreur lors du téléversement des fichiers')
                           } finally {
                             setUploadingFiles(false)

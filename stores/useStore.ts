@@ -370,23 +370,24 @@ export const useStore = create<AppState>()(
     }
   },
 
-  // Polling automatique des notifications (toutes les 30 secondes)
+  // Polling automatique des notifications
+  // OPTIMISÉ: Intervalle augmenté à 120s pour réduire les appels API sur Vercel
   startNotificationPolling: () => {
     const { currentUser, loadNotifications } = get()
-    if (!currentUser) return
+    if (!currentUser?.id) return
 
     // Charger immédiatement
     loadNotifications()
 
-    // Puis toutes les 60 secondes (optimisé pour réduire les appels API)
+    // Puis toutes les 120 secondes (optimisé pour réduire les appels API)
     const intervalId = setInterval(() => {
       const { currentUser } = get()
-      if (currentUser) {
+      if (currentUser?.id) {
         loadNotifications()
       } else {
         clearInterval(intervalId)
       }
-    }, 60000) // 60 secondes
+    }, 120000) // 120 secondes (2 minutes)
 
     return intervalId
   },

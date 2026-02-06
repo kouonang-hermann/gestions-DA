@@ -53,12 +53,10 @@ export default function ManageAdminRoles() {
         // En cas d'erreur, restaurer l'état précédent
         setLocalUsers(users)
         const result = await response.json()
-        console.error("Erreur lors de la mise à jour:", result.error)
       }
     } catch (error) {
       // En cas d'erreur réseau, restaurer l'état précédent
       setLocalUsers(users)
-      console.error("Erreur réseau:", error)
     } finally {
       setUpdatingUser(null)
     }

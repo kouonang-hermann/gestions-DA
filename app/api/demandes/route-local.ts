@@ -174,16 +174,13 @@ function getNextStatus(currentStatus: DemandeStatus, userRole: string): DemandeS
  * GET /api/demandes - Récupère les demandes selon le rôle (mode local)
  */
 export const GET = async (request: NextRequest) => {
-  console.log("[LOCAL API] GET /api/demandes - Début")
   
   const authResult = await requireAuthLocal(request)
   if (!authResult.success) {
-    console.log("[LOCAL API] Authentification échouée:", authResult.error)
     return NextResponse.json({ success: false, error: authResult.error }, { status: 401 })
   }
 
   const currentUser = authResult.user!
-  console.log(`[LOCAL API] Utilisateur authentifié: ${currentUser.nom} ${currentUser.prenom} (${currentUser.role})`)
 
   try {
     const { searchParams } = new URL(request.url)
@@ -191,7 +188,6 @@ export const GET = async (request: NextRequest) => {
     const status = searchParams.get("status")
     const type = searchParams.get("type")
 
-    console.log(`[LOCAL API] Filtres: projetId=${projetId}, status=${status}, type=${type}`)
 
     // Filtrer les demandes selon le rôle
     let filteredDemandes = [...localDemandes]
@@ -199,7 +195,6 @@ export const GET = async (request: NextRequest) => {
     switch (currentUser.role) {
       case "superadmin":
         // Voit toutes les demandes
-        console.log("[LOCAL API] SuperAdmin - Accès à toutes les demandes")
         break
 
       case "employe":
@@ -208,7 +203,6 @@ export const GET = async (request: NextRequest) => {
           demande.technicienId === currentUser.id || 
           currentUser.projets.includes(demande.projetId)
         )
-        console.log(`[LOCAL API] Employé - ${filteredDemandes.length} demandes accessibles`)
         break
 
       case "conducteur_travaux":
@@ -217,7 +211,6 @@ export const GET = async (request: NextRequest) => {
           demande.type === "materiel" && 
           currentUser.projets.includes(demande.projetId)
         )
-        console.log(`[LOCAL API] Conducteur - ${filteredDemandes.length} demandes matériel`)
         break
 
       case "responsable_logistique":
@@ -226,7 +219,6 @@ export const GET = async (request: NextRequest) => {
           demande.type === "outillage" && 
           currentUser.projets.includes(demande.projetId)
         )
-        console.log(`[LOCAL API] QHSE - ${filteredDemandes.length} demandes outillage`)
         break
 
       case "responsable_travaux":
@@ -237,12 +229,10 @@ export const GET = async (request: NextRequest) => {
         filteredDemandes = localDemandes.filter(demande =>
           currentUser.projets.includes(demande.projetId)
         )
-        console.log(`[LOCAL API] ${currentUser.role} - ${filteredDemandes.length} demandes de projets`)
         break
 
       default:
         filteredDemandes = []
-        console.log(`[LOCAL API] Rôle non reconnu: ${currentUser.role}`)
     }
 
     // Appliquer les filtres supplémentaires
@@ -256,7 +246,6 @@ export const GET = async (request: NextRequest) => {
       filteredDemandes = filteredDemandes.filter(d => d.type === type)
     }
 
-    console.log(`[LOCAL API] Résultat final: ${filteredDemandes.length} demandes`)
 
     return NextResponse.json({
       success: true,
@@ -264,7 +253,6 @@ export const GET = async (request: NextRequest) => {
     })
 
   } catch (error) {
-    console.error("[LOCAL API] Erreur lors de la récupération des demandes:", error)
     return NextResponse.json({
       success: false,
       error: "Erreur lors de la récupération des demandes"
@@ -276,7 +264,6 @@ export const GET = async (request: NextRequest) => {
  * POST /api/demandes - Crée une nouvelle demande (mode local)
  */
 export const POST = async (request: NextRequest) => {
-  console.log("[LOCAL API] POST /api/demandes - Début")
   
   const authResult = await requireAuthLocal(request)
   if (!authResult.success) {
@@ -294,7 +281,6 @@ export const POST = async (request: NextRequest) => {
 
   try {
     const body = await request.json()
-    console.log("[LOCAL API] Données reçues:", body)
 
     // Créer une nouvelle demande
     const newDemande: Demande = {
@@ -317,7 +303,6 @@ export const POST = async (request: NextRequest) => {
     }
 
     localDemandes.push(newDemande)
-    console.log(`[LOCAL API] Demande créée: ${newDemande.numero}`)
 
     return NextResponse.json({
       success: true,
@@ -325,7 +310,6 @@ export const POST = async (request: NextRequest) => {
     })
 
   } catch (error) {
-    console.error("[LOCAL API] Erreur lors de la création de la demande:", error)
     return NextResponse.json({
       success: false,
       error: "Erreur lors de la création de la demande"

@@ -38,13 +38,9 @@ export default function PreparationLogistiqueList() {
 
   useEffect(() => {
     if (currentUser) {
-      console.log(`🔍 [PREPARATION-LOGISTIQUE] Filtrage pour ${currentUser.nom} (${currentUser.role}):`)
-      console.log(`  - Total demandes: ${demandes.length}`)
-      console.log(`  - Projets utilisateur:`, currentUser.projets)
       
       // Afficher toutes les demandes avec leurs détails
       demandes.forEach(d => {
-        console.log(`  • ${d.numero}: type=${d.type}, status=${d.status}, projetId=${d.projetId}`)
       })
       
       const filtered = demandes.filter((d) => 
@@ -54,11 +50,8 @@ export default function PreparationLogistiqueList() {
         (!currentUser.projets || currentUser.projets.length === 0 || currentUser.projets.includes(d.projetId))
       )
       
-      console.log(`  - Demandes à préparer (outillage + en_attente_preparation_logistique): ${filtered.length}`)
       if (filtered.length > 0) {
-        console.log(`  - IDs des demandes à préparer:`, filtered.map(d => d.numero))
       } else {
-        console.log(`  ⚠️ Aucune demande d'outillage avec statut "en_attente_preparation_logistique"`)
       }
       
       setDemandesAPreparer(filtered)
@@ -102,7 +95,6 @@ export default function PreparationLogistiqueList() {
         alert(error || "Erreur lors de la préparation")
       }
     } catch (err) {
-      console.error("Erreur lors de la préparation:", err)
       alert("Erreur lors de la préparation")
     } finally {
       setActionLoading(null)
@@ -312,7 +304,6 @@ export default function PreparationLogistiqueList() {
 
       pdf.save(`Bon_Sortie_Outillage_${demande.numero}_${new Date().toISOString().split("T")[0]}.pdf`)
     } catch (error) {
-      console.error('❌ Erreur lors de la génération du PDF:', error)
       alert('Erreur lors de la génération du PDF. Veuillez réessayer.')
     }
   }

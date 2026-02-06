@@ -31,7 +31,6 @@ export default function MesDemandesEnAttente() {
                d.status === "en_attente_validation_conducteur"
       )
       
-      console.log(`📋 [MES-DEMANDES-EN-ATTENTE] ${filtered.length} demande(s) en attente de validation conducteur`)
       setDemandesEnAttente(filtered)
     }
   }, [currentUser, demandes])
@@ -54,7 +53,6 @@ export default function MesDemandesEnAttente() {
         alert(error || "Erreur lors de l'annulation")
       }
     } catch (err) {
-      console.error("Erreur lors de l'annulation:", err)
       alert("Erreur lors de l'annulation")
     } finally {
       setActionLoading(null)

@@ -97,7 +97,6 @@ export default function DemandePreparationModal({
       await onSave(quantites, prix)
       onClose()
     } catch (error) {
-      console.error("Erreur lors de la sauvegarde:", error)
       alert("Erreur lors de la sauvegarde des quantités et prix")
     } finally {
       setIsSaving(false)
@@ -127,7 +126,6 @@ export default function DemandePreparationModal({
   const { totalDemande, totalLivraison, totalPrix } = getTotalQuantites()
   const isAppro = currentUser?.role === "responsable_appro"
   
-  console.log("🔍 [PREPARATION MODAL] Rôle utilisateur:", currentUser?.role, "| isAppro:", isAppro)
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

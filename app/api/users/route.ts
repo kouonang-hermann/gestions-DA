@@ -49,7 +49,6 @@ export const GET = async (request: NextRequest) => {
       data: users,
     })
   } catch (error) {
-    console.error("Erreur lors de la récupération des utilisateurs:", error)
     return NextResponse.json({ success: false, error: "Erreur serveur" }, { status: 500 })
   }
 }
@@ -143,7 +142,6 @@ export const POST = async (request: NextRequest) => {
       return NextResponse.json({ success: false, error: "Données invalides", details: error }, { status: 400 })
     }
     
-    console.error("Erreur lors de la création de l'utilisateur:", error)
     return NextResponse.json({ success: false, error: "Erreur serveur" }, { status: 500 })
   }
 }

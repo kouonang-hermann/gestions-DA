@@ -194,7 +194,6 @@ export default function DemandesCategoryModal({
         toast.error("Erreur lors de la suppression de la demande")
       }
     } catch (error) {
-      console.error("Erreur suppression:", error)
       toast.error("Erreur lors de la suppression de la demande")
     } finally {
       setIsDeleting(false)

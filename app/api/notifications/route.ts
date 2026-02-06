@@ -41,7 +41,6 @@ export async function GET(request: NextRequest) {
       data: userNotifications,
     })
   } catch (error) {
-    console.error("Erreur lors de la récupération des notifications:", error)
     return NextResponse.json({ success: false, error: "Erreur serveur" }, { status: 500 })
   }
 }
@@ -91,7 +90,6 @@ export async function POST(request: NextRequest) {
       { status: 201 },
     )
   } catch (error) {
-    console.error("Erreur lors de la création de la notification:", error)
     return NextResponse.json({ success: false, error: "Erreur serveur" }, { status: 500 })
   }
 }

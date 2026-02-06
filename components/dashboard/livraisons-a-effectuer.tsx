@@ -40,7 +40,6 @@ export default function LivraisonsAEffectuer() {
         alert(error || "Erreur lors de la validation de la réception")
       }
     } catch (err) {
-      console.error("Erreur lors de la validation:", err)
       alert("Erreur lors de la validation de la réception")
     } finally {
       setActionLoading(null)
@@ -61,7 +60,6 @@ export default function LivraisonsAEffectuer() {
         alert("Livraison validée avec succès. Le demandeur doit maintenant valider la réception.")
       }
     } catch (err) {
-      console.error("Erreur lors de la validation:", err)
       alert("Erreur lors de la validation de la livraison")
     } finally {
       setActionLoading(null)

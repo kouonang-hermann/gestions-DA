@@ -38,7 +38,6 @@ export default function DemandeClotureCard({ demande, onCloture }: DemandeClotur
         alert("Erreur lors de la clôture de la demande")
       }
     } catch (error) {
-      console.error("Erreur lors de la clôture:", error)
       alert("Erreur lors de la clôture de la demande")
     } finally {
       setIsLoading(false)

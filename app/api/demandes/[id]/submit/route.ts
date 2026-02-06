@@ -165,14 +165,12 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
       }
     })
 
-    console.log(`📤 [API] Brouillon ${demande.numero} soumis → ${updatedDemande.numero} (statut: ${initialStatus}) par ${currentUser.nom}`)
 
     return NextResponse.json({
       success: true,
       data: updatedDemande,
     })
   } catch (error) {
-    console.error("Erreur lors de la soumission du brouillon:", error)
     return NextResponse.json({ 
       success: false, 
       error: "Erreur lors de la soumission du brouillon" 

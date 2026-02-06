@@ -61,7 +61,6 @@ export default function RemoveUserFromProjectModal({
         alert(`Erreur: ${result.error}`)
       }
     } catch (error) {
-      console.error("Erreur lors du chargement des utilisateurs:", error)
       alert("Erreur lors du chargement des utilisateurs")
     } finally {
       setLoadingUsers(false)
@@ -95,7 +94,6 @@ export default function RemoveUserFromProjectModal({
         alert(`Erreur: ${result.error}`)
       }
     } catch (error) {
-      console.error("Erreur lors du retrait de l'utilisateur:", error)
       alert("Erreur lors du retrait de l'utilisateur")
     } finally {
       setIsLoading(false)

@@ -147,14 +147,12 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
       }
     })
 
-    console.log(`✅ [API] Demande ${demande.numero} modifiée par ${currentUser.nom}`)
 
     return NextResponse.json({
       success: true,
       data: updatedDemande,
     })
   } catch (error) {
-    console.error("Erreur lors de la modification de la demande:", error)
     return NextResponse.json({ success: false, error: "Erreur serveur" }, { status: 500 })
   }
 })

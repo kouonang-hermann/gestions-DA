@@ -28,7 +28,6 @@ export async function GET(req: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Erreur de connexion DB:', error)
     return NextResponse.json({ 
       success: false,
       database_connected: false,

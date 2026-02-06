@@ -45,7 +45,6 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
       data: updatedNotification,
     })
   } catch (error) {
-    console.error("Erreur lors de la mise à jour de la notification:", error)
     return NextResponse.json({ success: false, error: "Erreur serveur" }, { status: 500 })
   }
 }

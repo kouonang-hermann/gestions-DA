@@ -77,7 +77,6 @@ export async function PUT(
 
     // Note: L'historique pourrait être ajouté si le modèle HistoryEntry est étendu
     // Pour l'instant, on log l'action
-    console.log(`✅ Rôle de l'utilisateur ${userId} modifié de ${user.role} vers ${newRole} par ${currentUser.id}`)
 
     return NextResponse.json({
       success: true,
@@ -93,7 +92,6 @@ export async function PUT(
       message: "Rôle mis à jour avec succès",
     })
   } catch (error) {
-    console.error("Erreur lors de la mise à jour du rôle:", error)
     return NextResponse.json(
       { success: false, error: "Erreur serveur" },
       { status: 500 }

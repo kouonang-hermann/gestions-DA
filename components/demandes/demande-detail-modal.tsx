@@ -59,7 +59,6 @@ export default function DemandeDetailModal({
           break
       }
     } catch (error) {
-      console.error('Erreur lors de la génération du PDF:', error)
       alert('Erreur lors de la génération du PDF. Veuillez réessayer.')
     } finally {
       setIsGeneratingPDF(false)
@@ -86,7 +85,6 @@ export default function DemandeDetailModal({
       await onValidate(demande.id)
       onClose()
     } catch (error) {
-      console.error('Erreur lors de la validation:', error)
     } finally {
       setIsValidating(false)
     }

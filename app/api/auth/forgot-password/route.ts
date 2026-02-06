@@ -6,7 +6,6 @@ export async function POST(req: NextRequest) {
   try {
     const { nom, telephone } = await req.json();
 
-    console.log('🔍 [FORGOT-PASSWORD] Recherche utilisateur:', { nom, telephone });
 
     // Validation des données
     if (!nom || !telephone) {
@@ -28,14 +27,12 @@ export async function POST(req: NextRequest) {
     });
 
     if (!user) {
-      console.log('❌ [FORGOT-PASSWORD] Aucun utilisateur trouvé');
       return NextResponse.json(
         { success: false, error: 'Aucun utilisateur trouvé avec ces informations' },
         { status: 404 }
       );
     }
 
-    console.log('✅ [FORGOT-PASSWORD] Utilisateur trouvé:', user.nom);
 
     // Générer un nouveau mot de passe temporaire
     const newPassword = generateTemporaryPassword();
@@ -53,7 +50,6 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    console.log('✅ [FORGOT-PASSWORD] Mot de passe réinitialisé pour:', user.nom);
 
     // Retourner le nouveau mot de passe
     return NextResponse.json({
@@ -63,7 +59,6 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ [FORGOT-PASSWORD] Erreur:', error);
     return NextResponse.json(
       { success: false, error: 'Une erreur est survenue lors de la récupération du mot de passe' },
       { status: 500 }

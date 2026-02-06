@@ -196,7 +196,6 @@ export const DELETE = async (request: NextRequest, context: { params: Promise<{ 
     })
 
   } catch (error) {
-    console.error("Erreur lors de la suppression de l'article:", error)
     return NextResponse.json({ 
       success: false, 
       error: "Erreur serveur lors de la suppression de l'article" 
@@ -277,7 +276,6 @@ export const GET = async (request: NextRequest, context: { params: Promise<{ id:
     })
 
   } catch (error) {
-    console.error("Erreur lors de la récupération des informations:", error)
     return NextResponse.json({ 
       success: false, 
       error: "Erreur serveur" 

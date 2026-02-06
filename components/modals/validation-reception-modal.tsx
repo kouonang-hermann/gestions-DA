@@ -139,7 +139,6 @@ export default function ValidationReceptionModal({
       await onValidate(data)
       onClose()
     } catch (error) {
-      console.error("Erreur lors de la validation:", error)
       alert("Erreur lors de la validation de réception")
     } finally {
       setIsLoading(false)

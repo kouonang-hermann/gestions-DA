@@ -109,7 +109,6 @@ export default function DataPersistenceStatus() {
       }
 
     } catch (error) {
-      console.error('Erreur lors des tests:', error)
       results.error = error
     }
 

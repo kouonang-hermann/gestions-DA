@@ -40,7 +40,6 @@ export async function GET(
       data: userWithoutPassword
     })
   } catch (error) {
-    console.error("Erreur lors de la récupération de l'utilisateur:", error)
     return NextResponse.json({ success: false, error: "Erreur serveur" }, { status: 500 })
   }
 }
@@ -98,7 +97,6 @@ export async function PUT(
       data: userWithoutPassword
     })
   } catch (error) {
-    console.error("Erreur lors de la mise à jour de l'utilisateur:", error)
     return NextResponse.json({ success: false, error: "Erreur serveur" }, { status: 500 })
   }
 }
@@ -137,7 +135,6 @@ export async function DELETE(
       message: "Utilisateur supprimé avec succès"
     })
   } catch (error) {
-    console.error("Erreur lors de la suppression de l'utilisateur:", error)
     return NextResponse.json({ success: false, error: "Erreur serveur" }, { status: 500 })
   }
 }

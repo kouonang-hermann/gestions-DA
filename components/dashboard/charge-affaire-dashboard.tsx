@@ -222,7 +222,6 @@ export default function ChargeAffaireDashboard() {
         await deleteDemande(demande.id)
         alert("Demande supprimée avec succès")
       } catch (error) {
-        console.error("Erreur lors de la suppression:", error)
         alert("Erreur lors de la suppression de la demande")
       }
     }

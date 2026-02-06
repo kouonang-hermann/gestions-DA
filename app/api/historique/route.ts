@@ -103,7 +103,6 @@ export async function GET(request: NextRequest) {
       data: historyEntries,
     })
   } catch (error) {
-    console.error("Erreur lors de la récupération de l'historique:", error)
     return NextResponse.json({ success: false, error: "Erreur serveur" }, { status: 500 })
   }
 }
@@ -161,7 +160,6 @@ export async function POST(request: NextRequest) {
       { status: 201 },
     )
   } catch (error) {
-    console.error("Erreur lors de l'ajout à l'historique:", error)
     return NextResponse.json({ success: false, error: "Erreur serveur" }, { status: 500 })
   }
 }

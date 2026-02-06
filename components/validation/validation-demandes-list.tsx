@@ -152,7 +152,6 @@ export default function ValidationDemandesList({ type, title }: ValidationDemand
         alert(error || "Erreur lors de l'action")
       }
     } catch (err) {
-      console.error("Erreur lors de la validation:", err)
       alert("Erreur lors de l'action")
     } finally {
       setActionLoading(null)
@@ -180,7 +179,6 @@ export default function ValidationDemandesList({ type, title }: ValidationDemand
         setSelectedDemande(null)
       }
     } catch (error) {
-      console.error("Erreur lors de la validation:", error)
     } finally {
       setActionLoading(null)
     }
@@ -223,7 +221,6 @@ export default function ValidationDemandesList({ type, title }: ValidationDemand
           loadDemandes()
         }
       } catch (error) {
-        console.error("Erreur lors de la suppression:", error)
         alert("Erreur lors de la suppression de la demande")
       }
     }

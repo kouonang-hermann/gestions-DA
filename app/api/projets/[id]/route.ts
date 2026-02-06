@@ -52,7 +52,6 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
       data: projet,
     })
   } catch (error) {
-    console.error("Erreur lors de la récupération du projet:", error)
     return NextResponse.json({ success: false, error: "Erreur serveur" }, { status: 500 })
   }
 }
@@ -106,7 +105,6 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
       data: updatedProjet,
     })
   } catch (error) {
-    console.error("Erreur lors de la mise à jour du projet:", error)
     return NextResponse.json({ success: false, error: "Erreur serveur" }, { status: 500 })
   }
 }

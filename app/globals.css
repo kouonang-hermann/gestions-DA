@@ -3,6 +3,10 @@
 @import '../styles/universal-mobile-responsive.css';
 @import '../styles/desktop-fixes.css';
 @import '../styles/responsive-fix.css';
+@import '../styles/mobile-dashboard.css';
+@import '../styles/mobile-dashboard-new.css';
+@import '../styles/universal-mobile-injector.css';
+@import '../styles/close-buttons-fix.css';
 
 @custom-variant dark (&:is(.dark *));
 

@@ -442,7 +442,6 @@ export async function generatePurchaseRequestPDF(demande: any, users: any[] = []
     pdf.save(filename)
 
   } catch (error) {
-    console.error('Erreur lors de la génération du PDF:', error)
     throw new Error(`Impossible de générer le PDF: ${error instanceof Error ? error.message : 'Erreur inconnue'}`)
   }
 }
@@ -751,7 +750,6 @@ export const generateBonLivraisonPDF = async (demande: any): Promise<void> => {
     pdf.save(filename)
 
   } catch (error) {
-    console.error('Erreur lors de la génération du Bon de Livraison:', error)
     throw new Error(`Impossible de générer le Bon de Livraison: ${error instanceof Error ? error.message : 'Erreur inconnue'}`)
   }
 }
@@ -1094,7 +1092,6 @@ export const generateBonSortiePDF = async (demande: any): Promise<void> => {
     pdf.save(filename)
 
   } catch (error) {
-    console.error('Erreur lors de la génération du Bon de Sortie:', error)
     throw new Error(`Impossible de générer le Bon de Sortie: ${error instanceof Error ? error.message : 'Erreur inconnue'}`)
   }
 }
@@ -1106,6 +1103,5 @@ export const generatePDFFromElement = async (
   element: HTMLElement,
   options: PDFOptions = {}
 ): Promise<void> => {
-  console.warn('generatePDFFromElement est obsolète, utilisez generatePurchaseRequestPDF')
   throw new Error('Utilisez generatePurchaseRequestPDF à la place')
 }

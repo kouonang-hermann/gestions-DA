@@ -62,7 +62,6 @@ export const PATCH = withAuth(async (request: NextRequest, currentUser: any, con
     })
 
   } catch (error) {
-    console.error("Erreur lors de la mise à jour du statut admin:", error)
     return NextResponse.json(
       { success: false, error: "Erreur interne du serveur" },
       { status: 500 }

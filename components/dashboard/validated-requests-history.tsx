@@ -73,7 +73,6 @@ export default function ValidatedRequestsHistory({ isOpen, onClose }: ValidatedR
         setError(`Erreur lors du chargement de l'historique: ${response.statusText}`)
       }
     } catch (error) {
-      console.error('Erreur lors du chargement de l\'historique:', error)
     } finally {
       setIsLoading(false)
     }

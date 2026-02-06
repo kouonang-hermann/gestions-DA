@@ -13,7 +13,6 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    console.log('🌱 Début du seeding...')
 
     // Hash des mots de passe de test
     const testPasswordHashes = {
@@ -145,7 +144,6 @@ export async function GET(req: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Erreur lors du seeding:', error)
     return NextResponse.json({ 
       error: 'Erreur lors du seeding', 
       details: error instanceof Error ? error.message : 'Erreur inconnue'

@@ -141,14 +141,12 @@ export const PATCH = withAuth(async (request: NextRequest, currentUser: any, con
       }
     })
 
-    console.log(`✅ [API] Demande ${demande.numero} modifiée par ${currentUser.nom}`)
 
     return NextResponse.json({
       success: true,
       data: updatedDemande,
     })
   } catch (error) {
-    console.error("Erreur lors de la mise à jour de la demande:", error)
     return NextResponse.json({ success: false, error: "Erreur serveur" }, { status: 500 })
   }
 })

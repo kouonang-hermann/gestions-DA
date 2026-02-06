@@ -49,10 +49,8 @@ export default function DemandeDetailModal({
   }, [demandeId])
 
   useEffect(() => {
-    console.log('🔍 [MODAL] useEffect déclenché:', { demandeId: activeDemandeId, demandesCount: demandes.length, mode })
     if (activeDemandeId && demandes.length > 0) {
       const foundDemande = demandes.find(d => d.id === activeDemandeId)
-      console.log('🔍 [MODAL] Demande trouvée:', foundDemande ? { id: foundDemande.id, numero: foundDemande.numero, status: foundDemande.status } : 'NON TROUVÉE')
       setDemande(foundDemande || null)
       
       // Initialiser les valeurs éditables
@@ -205,9 +203,6 @@ export default function DemandeDetailModal({
     if (!demande) return 0
     
     let total = 0
-    console.log('💰 [CALCUL-TOTAL] Début du calcul du coût total (basé sur quantités restantes)')
-    console.log(`   - Mode édition: ${canEdit}`)
-    console.log(`   - Nombre d'items: ${demande.items.length}`)
     
     demande.items.forEach((item, index) => {
       // En mode édition, utiliser les valeurs saisies OU les valeurs enregistrées comme fallback
@@ -223,29 +218,16 @@ export default function DemandeDetailModal({
       const quantiteValidee = item.quantiteValidee || item.quantiteDemandee
       const quantiteRestante = Math.max(0, quantiteValidee - qteLivree)
       
-      console.log(`   📦 Item ${index + 1} (${item.article?.nom || 'N/A'}):`)
-      console.log(`      - Qté validée: ${quantiteValidee}`)
-      console.log(`      - Qté livrée saisie: ${quantitesLivrees[item.id] || 'vide'}`)
-      console.log(`      - Qté livrée DB: ${item.quantiteSortie || item.quantiteRecue || 0}`)
-      console.log(`      - Qté livrée utilisée: ${qteLivree}`)
-      console.log(`      - Qté restante: ${quantiteRestante}`)
-      console.log(`      - Prix saisi: ${prixUnitaires[item.id] || 'vide'}`)
-      console.log(`      - Prix DB: ${item.prixUnitaire || 0}`)
-      console.log(`      - Prix utilisé: ${prix}`)
       
       // Calculer le coût basé sur la quantité RESTANTE
       if (prix > 0 && quantiteRestante > 0) {
         const contribution = quantiteRestante * prix
         total += contribution
-        console.log(`      ✅ Contribution: ${quantiteRestante} × ${prix} = ${contribution} FCFA`)
       } else if (quantiteRestante === 0) {
-        console.log(`      ✅ Article complètement livré (quantité restante = 0)`)
       } else {
-        console.log(`      ⚠️ Ignoré (prix = 0 ou quantité restante = 0)`)
       }
     })
     
-    console.log(`💰 [CALCUL-TOTAL] Total calculé (coût des quantités restantes): ${total} FCFA`)
     return total
   }
 
@@ -253,37 +235,29 @@ export default function DemandeDetailModal({
 
   // Fonction pour télécharger le PDF selon le type choisi
   const handleDownloadPDF = async (type: PDFType) => {
-    console.log('🔍 [PDF] Début génération PDF:', { type, demandeId: demande?.id, demandeNumero: demande?.numero })
     
     if (!demande) {
-      console.error('❌ [PDF] Aucune demande disponible')
       alert('Erreur: Aucune demande sélectionnée')
       return
     }
     
     setIsGeneratingPDF(true)
     try {
-      console.log('📄 [PDF] Génération du type:', type)
       switch (type) {
         case 'demande':
           await generatePurchaseRequestPDF(demande, users)
-          console.log('✅ [PDF] Demande d\'achat générée avec succès')
           break
         case 'bon_livraison':
           await generateBonLivraisonPDF(demande)
-          console.log('✅ [PDF] Bon de livraison généré avec succès')
           break
         case 'bon_sortie':
           await generateBonSortiePDF(demande)
-          console.log('✅ [PDF] Bon de sortie généré avec succès')
           break
       }
     } catch (error) {
-      console.error('❌ [PDF] Erreur lors de la génération du PDF:', error)
       alert('Erreur lors de la génération du PDF. Veuillez réessayer.')
     } finally {
       setIsGeneratingPDF(false)
-      console.log('🏁 [PDF] Fin génération PDF')
     }
   }
 
@@ -318,7 +292,6 @@ export default function DemandeDetailModal({
       await onValidate(demande.id)
       onClose()
     } catch (error) {
-      console.error('Erreur lors de la validation:', error)
     } finally {
       setIsValidating(false)
     }
@@ -340,7 +313,6 @@ export default function DemandeDetailModal({
         
         // Validation de la quantité
         if (isNaN(qteValidee) || qteValidee < 0 || qteValidee > item.quantiteDemandee) {
-          console.error(`❌ Quantité validée invalide pour item ${item.id}: ${qteStr}`)
           hasError = true
         }
         
@@ -356,13 +328,11 @@ export default function DemandeDetailModal({
         return
       }
       
-      console.log('📤 Envoi des quantités validées à l\'API:', itemsData)
       
       // Appeler l'API pour mettre à jour les quantités validées
       const success = await executeAction(demande.id, "update_validated_quantities", { items: itemsData })
       
       if (success) {
-        console.log('✅ Quantités validées enregistrées avec succès')
         
         // Recharger les demandes
         await loadDemandes()
@@ -385,12 +355,10 @@ export default function DemandeDetailModal({
           alert(`✅ Quantités validées enregistrées avec succès!`)
         }
       } else {
-        console.error('❌ Erreur lors de l\'enregistrement des quantités validées')
         const errorMsg = useStore.getState().error || "Erreur inconnue"
         alert(`❌ Erreur lors de l\'enregistrement:\n${errorMsg}`)
       }
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde des quantités validées:', error)
       alert('Erreur lors de la sauvegarde. Veuillez réessayer.')
     } finally {
       setIsSaving(false)
@@ -417,13 +385,11 @@ export default function DemandeDetailModal({
         
         // Validation de la quantité
         if (isNaN(qteLivree) || qteLivree < 0) {
-          console.error(`❌ Quantité invalide pour item ${item.id}: ${qteStr}`)
           hasQuantityError = true
         }
         
         // Validation du prix (optionnel mais doit être >= 0 si fourni)
         if (prixStr && (isNaN(prix as number) || (prix as number) < 0)) {
-          console.error(`❌ Prix invalide pour item ${item.id}: ${prixStr}`)
           hasPriceError = true
         }
         
@@ -433,7 +399,6 @@ export default function DemandeDetailModal({
           prixUnitaire: prix !== null && !isNaN(prix) && prix >= 0 ? prix : null
         })
         
-        console.log(`📦 Item ${item.article?.nom || item.id}: qté=${qteLivree}, prix=${prix}`)
       })
       
       // Afficher les erreurs de validation
@@ -447,13 +412,11 @@ export default function DemandeDetailModal({
         alert("⚠️ Attention: Certains prix sont invalides et seront ignorés.")
       }
       
-      console.log('📤 Envoi des données à l\'API:', itemsData)
       
       // Appeler l'API pour mettre à jour
       const success = await executeAction(demande.id, "update_quantites_prix", { items: itemsData })
       
       if (success) {
-        console.log('✅ API a retourné success=true')
         
         // Forcer le rechargement en réinitialisant le timestamp
         useStore.setState({ lastDemandesLoad: 0 })
@@ -467,8 +430,6 @@ export default function DemandeDetailModal({
         // Recharger la demande depuis le store mis à jour
         const updatedDemande = useStore.getState().demandes.find(d => d.id === demande.id)
         if (updatedDemande) {
-          console.log('📊 Demande rechargée:', updatedDemande)
-          console.log('💰 Coût total:', updatedDemande.coutTotal)
           console.log('📦 Items avec prix:', updatedDemande.items.map(i => ({ 
             id: i.id, 
             prixUnitaire: i.prixUnitaire,
@@ -499,16 +460,13 @@ export default function DemandeDetailModal({
             alert(`✅ Quantités enregistrées avec succès!\n⚠️ Aucun prix n'a été enregistré. Veuillez saisir les prix.`)
           }
         } else {
-          console.error('❌ Demande non trouvée après rechargement')
           alert("✅ Données enregistrées mais erreur de rechargement. Veuillez rafraîchir la page.")
         }
       } else {
-        console.error('❌ API a retourné success=false')
         const errorMsg = useStore.getState().error || "Erreur inconnue"
         alert(`❌ Erreur lors de l'enregistrement:\n${errorMsg}`)
       }
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde:', error)
       alert('Erreur lors de la sauvegarde. Veuillez réessayer.')
     } finally {
       setIsSaving(false)

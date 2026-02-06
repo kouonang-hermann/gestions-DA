@@ -107,7 +107,6 @@ export default function PriceEntryModal({ isOpen, onClose, demande, onPricesUpda
         setError(result.error || "Erreur lors de la mise à jour des prix")
       }
     } catch (err) {
-      console.error("Erreur lors de la mise à jour des prix:", err)
       setError("Erreur de connexion au serveur")
     } finally {
       setIsLoading(false)

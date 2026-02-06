@@ -26,7 +26,6 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    console.log("🔧 [MIGRATION] Début de la migration des demandes bloquées")
 
     // Trouver toutes les demandes d'outillage bloquées en "en_attente_validation_logistique"
     // qui ont déjà une date de réception livreur (preuve que le livreur a confirmé)
@@ -54,7 +53,6 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    console.log(`📊 [MIGRATION] ${demandesBloqueesAvecReception.length} demandes trouvées avec réception confirmée`)
 
     if (demandesBloqueesAvecReception.length === 0) {
       return NextResponse.json({
@@ -76,7 +74,6 @@ export async function POST(request: NextRequest) {
           }
         })
 
-        console.log(`✅ [MIGRATION] Demande ${demande.numero} migrée vers en_attente_livraison`)
         
         results.push({
           id: demande.id,
@@ -91,7 +88,6 @@ export async function POST(request: NextRequest) {
           success: true
         })
       } catch (error) {
-        console.error(`❌ [MIGRATION] Erreur pour demande ${demande.numero}:`, error)
         results.push({
           id: demande.id,
           numero: demande.numero,
@@ -102,7 +98,6 @@ export async function POST(request: NextRequest) {
     }
 
     const successCount = results.filter(r => r.success).length
-    console.log(`✅ [MIGRATION] Migration terminée: ${successCount}/${demandesBloqueesAvecReception.length} demandes migrées`)
 
     return NextResponse.json({
       success: true,
@@ -113,7 +108,6 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error("❌ [MIGRATION] Erreur lors de la migration:", error)
     return NextResponse.json({ 
       success: false, 
       error: error instanceof Error ? error.message : "Erreur serveur" 
@@ -185,7 +179,6 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error("❌ [MIGRATION-PREVIEW] Erreur:", error)
     return NextResponse.json({ 
       success: false, 
       error: error instanceof Error ? error.message : "Erreur serveur" 

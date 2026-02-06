@@ -46,7 +46,6 @@ export default function PreparationOutillageList() {
         (!currentUser.projets || currentUser.projets.length === 0 || currentUser.projets.includes(d.projetId))
       )
       
-      console.log(`📦 [PREPARATION-OUTILLAGE] Demandes à préparer:`, filtered.length)
       setDemandesAPreparer(filtered)
     }
   }, [currentUser, demandes])
@@ -97,7 +96,6 @@ export default function PreparationOutillageList() {
         alert(error || "Erreur lors de la mise à jour des prix")
       }
     } catch (err) {
-      console.error("Erreur lors de la mise à jour des prix:", err)
       alert("Erreur lors de la mise à jour des prix")
     } finally {
       setActionLoading(null)
@@ -127,7 +125,6 @@ export default function PreparationOutillageList() {
         alert(error || "Erreur lors de la validation")
       }
     } catch (err) {
-      console.error("Erreur lors de la validation:", err)
       alert("Erreur lors de la validation")
     } finally {
       setActionLoading(null)

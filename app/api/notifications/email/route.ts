@@ -21,7 +21,6 @@ export async function POST(request: NextRequest) {
     const emailEnabled = process.env.ENABLE_EMAIL_NOTIFICATIONS !== 'false'
     
     if (!emailEnabled) {
-      console.log("📧 [EMAIL] Notifications email désactivées")
       return NextResponse.json({
         success: true,
         message: "Notifications email désactivées"
@@ -30,10 +29,6 @@ export async function POST(request: NextRequest) {
 
     // TODO: Intégrer un vrai service d'email (SendGrid, Resend, etc.)
     // Pour l'instant, on simule l'envoi
-    console.log("📧 [EMAIL] Envoi d'email simulé:")
-    console.log(`  - Destinataire: ${to}`)
-    console.log(`  - Sujet: ${subject}`)
-    console.log(`  - Type: ${type}`)
 
     // Simulation d'envoi réussi
     return NextResponse.json({
@@ -47,7 +42,6 @@ export async function POST(request: NextRequest) {
       }
     })
   } catch (error) {
-    console.error("❌ [EMAIL] Erreur lors de l'envoi de l'email:", error)
     return NextResponse.json(
       { success: false, error: "Erreur lors de l'envoi de l'email" },
       { status: 500 }

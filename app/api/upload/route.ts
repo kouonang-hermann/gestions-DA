@@ -76,7 +76,6 @@ async function handler(request: NextRequest, currentUser: any) {
       // Ajouter l'URL du fichier à la liste
       uploadedFiles.push(`/uploads/${fileName}`)
       
-      console.log(`✅ [UPLOAD] Fichier téléversé: ${fileName} (${(buffer.length / 1024).toFixed(2)} KB)`)
     }
 
     return NextResponse.json({
@@ -86,7 +85,6 @@ async function handler(request: NextRequest, currentUser: any) {
     })
 
   } catch (error) {
-    console.error('❌ [UPLOAD] Erreur lors du téléversement:', error)
     return NextResponse.json(
       { 
         success: false, 

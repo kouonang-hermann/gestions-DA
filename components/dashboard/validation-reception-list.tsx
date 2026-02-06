@@ -63,7 +63,6 @@ export default function ValidationReceptionList() {
       // Recharger les demandes
       window.location.reload()
     } catch (error) {
-      console.error("Erreur lors de la validation de réception:", error)
       alert("Erreur lors de la validation de réception")
     } finally {
       setIsLoading(false)

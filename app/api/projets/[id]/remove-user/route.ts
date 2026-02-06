@@ -200,9 +200,6 @@ export const DELETE = async (request: NextRequest, context: { params: Promise<{ 
     })
 
   } catch (error) {
-    console.error("❌ [API] Erreur lors du retrait de l'utilisateur du projet:", error)
-    console.error("❌ [API] Stack trace:", error instanceof Error ? error.stack : "N/A")
-    console.error("❌ [API] Message:", error instanceof Error ? error.message : String(error))
     
     return NextResponse.json({ 
       success: false, 
@@ -293,7 +290,6 @@ export const GET = async (request: NextRequest, context: { params: Promise<{ id:
     })
 
   } catch (error) {
-    console.error("Erreur lors de la récupération des données:", error)
     return NextResponse.json({ 
       success: false, 
       error: "Erreur serveur" 

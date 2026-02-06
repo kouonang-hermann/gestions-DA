@@ -127,7 +127,6 @@ export const PUT = async (request: NextRequest, context: { params: Promise<{ id:
     })
 
   } catch (error) {
-    console.error("Erreur lors de la modification du rôle:", error)
     return NextResponse.json({ 
       success: false, 
       error: "Erreur serveur lors de la modification du rôle" 
@@ -175,7 +174,6 @@ export const GET = async (request: NextRequest, context: { params: Promise<{ id:
     })
 
   } catch (error) {
-    console.error("Erreur lors de la récupération de l'historique:", error)
     return NextResponse.json({ 
       success: false, 
       error: "Erreur serveur" 

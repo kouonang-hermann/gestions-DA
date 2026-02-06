@@ -95,7 +95,6 @@ export default function ChangeUserRoleModal({
         alert(`Erreur: ${result.error}`)
       }
     } catch (error) {
-      console.error("Erreur lors de la modification du rôle:", error)
       alert("Erreur lors de la modification du rôle")
     } finally {
       setIsLoading(false)

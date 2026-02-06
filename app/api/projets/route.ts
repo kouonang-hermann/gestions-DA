@@ -77,7 +77,6 @@ export const GET = async (request: NextRequest) => {
       data: projets,
     })
   } catch (error) {
-    console.error("❌ [API PROJETS] Erreur détaillée:", error)
     
     // Retourner une erreur plus détaillée en développement
     const errorMessage = error instanceof Error ? error.message : "Erreur serveur"
@@ -230,7 +229,6 @@ export const POST = async (request: NextRequest) => {
       return NextResponse.json({ success: false, error: "Données invalides", details: error }, { status: 400 })
     }
     
-    console.error("Erreur lors de la création du projet:", error)
     return NextResponse.json({ success: false, error: "Erreur serveur" }, { status: 500 })
   }
 }

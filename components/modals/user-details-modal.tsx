@@ -144,7 +144,6 @@ export default function UserDetailsModal({ isOpen, onClose, title, data, type }:
         alert("Erreur lors de la clôture de la demande")
       }
     } catch (error) {
-      console.error("Erreur lors de la clôture:", error)
       alert("Erreur lors de la clôture de la demande")
     } finally {
       setClotureLoading(null)
@@ -164,7 +163,6 @@ export default function UserDetailsModal({ isOpen, onClose, title, data, type }:
         alert("Erreur lors du renvoi de la demande")
       }
     } catch (error) {
-      console.error("Erreur lors du renvoi:", error)
       alert("Erreur lors du renvoi de la demande")
     } finally {
       setClotureLoading(null)
@@ -199,7 +197,6 @@ export default function UserDetailsModal({ isOpen, onClose, title, data, type }:
         alert("Erreur lors de la suppression de la demande")
       }
     } catch (error) {
-      console.error("Erreur suppression:", error)
       alert("Erreur lors de la suppression de la demande")
     }
   }

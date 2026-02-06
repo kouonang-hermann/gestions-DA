@@ -45,7 +45,6 @@ export default function MobileLivraisonsSection() {
         alert(error || "Erreur lors de la validation de la réception")
       }
     } catch (err) {
-      console.error("Erreur lors de la validation:", err)
       alert("Erreur lors de la validation de la réception")
     } finally {
       setActionLoading(null)
@@ -62,7 +61,6 @@ export default function MobileLivraisonsSection() {
         alert(error || "Erreur lors de la validation de la livraison")
       }
     } catch (err) {
-      console.error("Erreur lors de la validation:", err)
       alert("Erreur lors de la validation de la livraison")
     } finally {
       setActionLoading(null)

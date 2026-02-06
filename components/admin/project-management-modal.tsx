@@ -93,7 +93,6 @@ export default function ProjectManagementModal({ isOpen, onClose }: ProjectManag
         // Recharger les données pour refléter les changements
         loadUsers()
       } else {
-        console.error(`❌ [COMPONENT] Échec du retrait de l'utilisateur`)
         // Afficher un message d'erreur à l'utilisateur
         alert("Erreur lors du retrait de l'utilisateur du projet. Consultez la console pour plus de détails.")
       }

@@ -21,7 +21,6 @@ import DemandesCategoryModal from "@/components/modals/demandes-category-modal"
 import { useAutoReload } from "@/hooks/useAutoReload"
 
 export default function ResponsableLivreurDashboard() {
-  console.log("🚀 [DASHBOARD] ResponsableLivreurDashboard chargé !")
   
   const { currentUser, demandes, isLoading } = useStore()
   const { handleManualReload } = useAutoReload("RESPONSABLE-LIVREUR")
@@ -49,7 +48,6 @@ export default function ResponsableLivreurDashboard() {
         role: currentUser.role
       })
       
-      console.log(`🔍 [LIVREUR-DEBUG] Total demandes dans le store:`, demandes.length)
       
       // Demandes où je suis assigné comme livreur
       const mesLivraisons = demandes.filter((d) => d.livreurAssigneId === currentUser.id)
@@ -84,7 +82,6 @@ export default function ResponsableLivreurDashboard() {
         mesDemandesEnCours: mesDemandesEnCours.length,
       }
 
-      console.log("📊 [LIVREUR-STATS] Statistiques calculées:", newStats)
       
       setStats(newStats)
     } else {

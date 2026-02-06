@@ -55,7 +55,6 @@ export default function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordM
         setError(result.error || 'Aucun utilisateur trouvé avec ces informations');
       }
     } catch (err) {
-      console.error('Erreur lors de la récupération du mot de passe:', err);
       setError('Une erreur est survenue. Veuillez réessayer.');
     } finally {
       setIsLoading(false);

@@ -242,7 +242,6 @@ export default function UniversalMobileInjector() {
         handleCardClick('enCours', 'Mes demandes en cours')
         break
       default:
-        console.log('Action non implémentée:', action)
     }
   }
 

@@ -32,7 +32,6 @@ export async function POST(
     const params = await context.params
     const demandeId = params.id
 
-    console.log("📦 [UPDATE-DELIVERY] Réception des quantités:", quantitesSorties)
 
     // Vérifier que la demande existe
     const demande = await prisma.demande.findUnique({
@@ -59,14 +58,12 @@ export async function POST(
       }
     }
 
-    console.log(`✅ [UPDATE-DELIVERY] Quantités livrées mises à jour pour la demande ${demande.numero}`)
 
     return NextResponse.json({
       success: true,
       message: "Quantités livrées enregistrées avec succès"
     })
   } catch (error) {
-    console.error("❌ [UPDATE-DELIVERY] Erreur:", error)
     return NextResponse.json(
       { success: false, error: "Erreur serveur" },
       { status: 500 }

@@ -50,7 +50,6 @@ export default function MobileValidationSection() {
         alert(error || "Erreur lors de la validation")
       }
     } catch (err) {
-      console.error("Erreur lors de la validation:", err)
       alert("Erreur lors de la validation")
     } finally {
       setActionLoading(null)
@@ -70,7 +69,6 @@ export default function MobileValidationSection() {
         alert(error || "Erreur lors du rejet")
       }
     } catch (err) {
-      console.error("Erreur lors du rejet:", err)
       alert("Erreur lors du rejet")
     } finally {
       setActionLoading(null)

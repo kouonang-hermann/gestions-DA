@@ -9,7 +9,6 @@ import crypto from "crypto"
  * La demande saute automatiquement les étapes de validation où le créateur pourrait valider
  */
 function getInitialStatus(type: "materiel" | "outillage", creatorRole: string): string {
-  console.log(`🎬 [INITIAL-STATUS] Type: ${type}, Créateur: ${creatorRole}`)
   
   // Flow complet pour chaque type avec les rôles valideurs
   const flows = {
@@ -93,18 +92,15 @@ function getInitialStatus(type: "materiel" | "outillage", creatorRole: string): 
   const flow = flows[type]
   const stepsToSkip = skipRules[creatorRole]?.[type] || []
   
-  console.log(`📋 [INITIAL-STATUS] Type: ${type}, Étapes à sauter pour ${creatorRole}:`, stepsToSkip)
   
   // Trouver la première étape qui n'est pas dans la liste des étapes à sauter
   for (const step of flow) {
     if (!stepsToSkip.includes(step.status)) {
-      console.log(`✅ [INITIAL-STATUS] Statut initial déterminé: ${step.status}`)
       return step.status
     }
   }
   
   // Si toutes les étapes sont sautées, aller à la validation finale
-  console.log(`⚠️ [INITIAL-STATUS] Toutes les étapes sautées, va à validation finale`)
   return "en_attente_validation_finale_demandeur"
 }
 
@@ -181,9 +177,6 @@ export const GET = async (request: NextRequest) => {
         // L'employé voit :
         // 1. Ses propres demandes (technicienId = currentUser.id)
         // 2. Les demandes où il est assigné comme livreur (livreurAssigneId = currentUser.id)
-        console.log(`👤 [API-DEMANDES] Employé ${currentUser.nom} ${currentUser.prenom}:`)
-        console.log(`   - ID: ${currentUser.id}`)
-        console.log(`   - Filtre: technicienId = ${currentUser.id} OU livreurAssigneId = ${currentUser.id}`)
         
         whereClause = {
           OR: [
@@ -348,7 +341,6 @@ export const GET = async (request: NextRequest) => {
       orderBy: { dateCreation: 'desc' }
     })
 
-    console.log(`📊 [API-DEMANDES] ${demandes.length} demande(s) trouvée(s) pour ${currentUser.role}`)
 
     // Enrichir les demandes avec les informations des valideurs depuis ValidationSignature
     const enrichedDemandes = demandes.map((demande: any) => {
@@ -401,11 +393,7 @@ export const GET = async (request: NextRequest) => {
       data: filteredDemandes,
     })
   } catch (error) {
-    console.error("❌ [API-DEMANDES] Erreur lors de la récupération des demandes:")
-    console.error("   Type:", error instanceof Error ? error.constructor.name : typeof error)
-    console.error("   Message:", error instanceof Error ? error.message : String(error))
     if (error instanceof Error && error.stack) {
-      console.error("   Stack:", error.stack)
     }
     
     // Retourner plus de détails pour le debugging
@@ -497,25 +485,21 @@ export const POST = async (request: NextRequest) => {
         })
         
         if (!existing) {
-          console.log(`✅ [CREATE-DEMANDE] Numéro unique généré: ${numero}`)
           break // Numéro unique trouvé
         }
         
         // Si le numéro existe déjà, ajouter un timestamp pour garantir l'unicité
-        console.log(`⚠️ [CREATE-DEMANDE] Numéro ${numero} existe déjà, ajout timestamp`)
         const timestamp = Date.now().toString().slice(-4)
         numero = `${typePrefix}-${year}-${String(sequenceNumber).padStart(4, "0")}-${timestamp}`
         break
         
       } catch (error) {
         attempts++
-        console.error(`❌ [CREATE-DEMANDE] Tentative ${attempts}/${maxAttempts} échouée:`, error)
         
         if (attempts >= maxAttempts) {
           // En dernier recours, utiliser un UUID partiel
           const uuid = Math.random().toString(36).substring(2, 8).toUpperCase()
           numero = `${typePrefix}-${year}-${uuid}`
-          console.log(`⚠️ [CREATE-DEMANDE] Utilisation d'un numéro de secours: ${numero}`)
         }
         
         // Attendre un peu avant de réessayer
@@ -683,7 +667,6 @@ export const POST = async (request: NextRequest) => {
       return NextResponse.json({ success: false, error: "Données invalides", details: error }, { status: 400 })
     }
     
-    console.error("Erreur lors de la création de la demande:", error)
     return NextResponse.json({ success: false, error: "Erreur serveur" }, { status: 500 })
   }
 }

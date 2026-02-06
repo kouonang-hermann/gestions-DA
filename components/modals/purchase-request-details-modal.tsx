@@ -43,7 +43,6 @@ export default function PurchaseRequestDetailsModal({
       }
       toast.success("PDF téléchargé avec succès!")
     } catch (error) {
-      console.error("Erreur lors de la génération du PDF:", error)
       const errorMessage = error instanceof Error ? error.message : "Erreur lors de la génération du PDF"
       toast.error(errorMessage)
     } finally {

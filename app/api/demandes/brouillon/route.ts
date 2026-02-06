@@ -98,14 +98,12 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any) => {
       }
     })
 
-    console.log(`✅ [API] Brouillon ${brouillon.numero} créé par ${currentUser.nom}`)
 
     return NextResponse.json({
       success: true,
       data: brouillon,
     })
   } catch (error) {
-    console.error("Erreur lors de la création du brouillon:", error)
     return NextResponse.json({ 
       success: false, 
       error: "Erreur lors de la sauvegarde du brouillon" 
