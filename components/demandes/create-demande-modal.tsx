@@ -6,8 +6,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useStore } from "@/stores/useStore"
-import { Plus, Trash2, Save, Loader2, Copy, Upload, FileSpreadsheet, X } from 'lucide-react'
+import { Plus, Trash2, Save, Loader2, Copy, Upload, FileSpreadsheet, X, Download } from 'lucide-react'
 import type { DemandeType, ItemDemande } from "@/types"
+import { downloadExcelTemplate, parseExcelFile, validateExcelItems } from '@/lib/excel-utils'
 
 interface CreateDemandeModalProps {
   isOpen: boolean
@@ -44,6 +45,7 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel",
   const [hasDraft, setHasDraft] = useState(false)
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([])
   const [uploadingFiles, setUploadingFiles] = useState(false)
+  const [importingExcel, setImportingExcel] = useState(false)
 
   // Charger le brouillon depuis localStorage au montage
   useEffect(() => {
@@ -296,6 +298,61 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel",
 
   const unites = ["pièce", "kg", "m", "m²", "m³", "L", "sac", "barre", "rouleau", "boîte", "paquet"]
 
+  // Fonction pour télécharger le template Excel
+  const handleDownloadTemplate = () => {
+    try {
+      downloadExcelTemplate()
+    } catch (error) {
+      alert('Erreur lors du téléchargement du template')
+    }
+  }
+
+  // Fonction pour importer depuis Excel
+  const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setImportingExcel(true)
+    setError('')
+
+    try {
+      // Parser le fichier Excel
+      const items = await parseExcelFile(file)
+
+      // Valider les items
+      const validation = validateExcelItems(items)
+      if (!validation.isValid) {
+        setError(`Erreur dans le fichier Excel:\n${validation.errors.join('\n')}`)
+        setImportingExcel(false)
+        return
+      }
+
+      // Convertir les items Excel en items de formulaire
+      const newItems = items.map(item => ({
+        id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        nom: item.nom,
+        description: item.description,
+        reference: item.reference,
+        unite: item.unite || 'pièce',
+        quantiteDemandee: item.quantite,
+        commentaire: '',
+      }))
+
+      // Ajouter aux items existants
+      setFormData(prev => ({
+        ...prev,
+        items: [...prev.items, ...newItems]
+      }))
+
+      alert(`✅ ${newItems.length} article(s) importé(s) avec succès !`)
+    } catch (error: any) {
+      setError(error.message || 'Erreur lors de l\'import du fichier Excel')
+    } finally {
+      setImportingExcel(false)
+      e.target.value = '' // Reset input
+    }
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-[95vw] max-w-6xl max-h-[90vh] overflow-y-auto p-3 sm:p-6">
@@ -464,7 +521,43 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel",
           {/* Articles */}
           <Card>
             <CardHeader>
-              <CardTitle>Articles demandés ({formData.items.length})</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>Articles demandés ({formData.items.length})</CardTitle>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDownloadTemplate}
+                    className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Télécharger template Excel
+                  </Button>
+                  <label className="cursor-pointer">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={importingExcel}
+                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      asChild
+                    >
+                      <span>
+                        <Upload className="h-4 w-4 mr-2" />
+                        {importingExcel ? 'Import en cours...' : 'Importer depuis Excel'}
+                      </span>
+                    </Button>
+                    <input
+                      type="file"
+                      accept=".xlsx,.xls"
+                      className="hidden"
+                      disabled={importingExcel}
+                      onChange={handleImportExcel}
+                    />
+                  </label>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {formData.items.length === 0 ? (

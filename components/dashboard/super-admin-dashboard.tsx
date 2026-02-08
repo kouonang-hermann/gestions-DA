@@ -641,7 +641,7 @@ export default function SuperAdminDashboard() {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button 
-                        className="justify-start text-white" 
+                        className="w-full justify-center text-white" 
                         style={{ backgroundColor: '#015fc4' }}
                         size="sm"
                         onClick={() => {
@@ -649,8 +649,8 @@ export default function SuperAdminDashboard() {
                           setCreateDemandeModalOpen(true)
                         }}
                       >
-                        <Package className="h-4 w-4 mr-1" />
-                        <span className="text-xs">DA-Matériel</span>
+                        <Package className="h-4 w-4 mr-2" />
+                        DA-Matériel
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="top" sideOffset={6}>
@@ -661,7 +661,7 @@ export default function SuperAdminDashboard() {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
-                        className="justify-start text-gray-700"
+                        className="w-full justify-center text-gray-700"
                         style={{ backgroundColor: '#b8d1df' }}
                         size="sm"
                         onClick={() => {
@@ -669,8 +669,8 @@ export default function SuperAdminDashboard() {
                           setCreateDemandeModalOpen(true)
                         }}
                       >
-                        <Wrench className="h-4 w-4 mr-1" />
-                        <span className="text-xs">DA-Outillage</span>
+                        <Wrench className="h-4 w-4 mr-2" />
+                        DA-Outillage
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="top" sideOffset={6}>
@@ -681,13 +681,13 @@ export default function SuperAdminDashboard() {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button 
-                        className="justify-start bg-transparent" 
+                        className="w-full justify-center" 
                         variant="outline" 
                         size="sm"
                         onClick={() => setCreateProjectModalOpen(true)}
                       >
-                        <Plus className="h-4 w-4 mr-1" />
-                        <span className="text-xs">Nouveau Projet</span>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Nouveau Projet
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="top" sideOffset={6}>
@@ -698,13 +698,13 @@ export default function SuperAdminDashboard() {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button 
-                        className="justify-start bg-transparent" 
+                        className="w-full justify-center" 
                         variant="outline" 
                         size="sm"
                         onClick={() => setCreateUserModalOpen(true)}
                       >
-                        <Users className="h-4 w-4 mr-1" />
-                        <span className="text-xs">Nouvel Utilisateur</span>
+                        <Users className="h-4 w-4 mr-2" />
+                        Nouvel Utilisateur
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="top" sideOffset={6}>
@@ -714,9 +714,14 @@ export default function SuperAdminDashboard() {
 
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button className="justify-start bg-transparent" variant="outline" size="sm">
-                        <BarChart3 className="h-4 w-4 mr-1" />
-                        <span className="text-xs">Rapport</span>
+                      <Button 
+                        className="w-full justify-center" 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setValidatedHistoryModalOpen(true)}
+                      >
+                        <BarChart3 className="h-4 w-4 mr-2" />
+                        Rapport
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="top" sideOffset={6}>
@@ -727,16 +732,17 @@ export default function SuperAdminDashboard() {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
-                        className="justify-start text-white"
+                        className="w-full justify-center text-white"
                         style={{ backgroundColor: '#fc2d1f' }}
                         size="sm"
+                        onClick={() => setFinancialModalOpen(true)}
                       >
-                        <CreditCard className="h-4 w-4 mr-1" />
-                        <span className="text-xs">DA-Paiement</span>
+                        <CreditCard className="h-4 w-4 mr-2" />
+                        DA-Paiement
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="top" sideOffset={6}>
-                      Accéder aux actions de paiement (à configurer)
+                      Accéder au tableau de bord financier
                     </TooltipContent>
                   </Tooltip>
                 </div>
