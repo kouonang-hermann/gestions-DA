@@ -63,6 +63,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { VisuallyHidden } from "@/components/ui/visually-hidden"
 import FinancialDashboard from "@/components/admin/financial-dashboard"
 import ChangeUserRoleModal from "@/components/admin/change-user-role-modal"
+import AnalyticsModal from "@/components/analytics/analytics-modal"
 import type { User as UserType } from "@/types"
 
 export default function SuperAdminDashboard() {
@@ -127,6 +128,9 @@ export default function SuperAdminDashboard() {
   
   // Modale changement de rôle utilisateur
   const [changeRoleModalOpen, setChangeRoleModalOpen] = useState(false)
+  
+  // Modale analyse des quantités restantes
+  const [analyticsModalOpen, setAnalyticsModalOpen] = useState(false)
   const [selectedUserForRoleChange, setSelectedUserForRoleChange] = useState<UserType | null>(null)
 
   // États pour les filtres financiers
@@ -461,17 +465,15 @@ export default function SuperAdminDashboard() {
                 onClick={() => setValidatedHistoryModalOpen(true)}
               >
                 <BarChart3 className="mobile-action-icon" />
-                Rapport
+                Historique
               </Button>
               
               <Button 
                 className="mobile-action-button mobile-action-danger"
-                onClick={() => {
-                  // Action pour DA-Paiement
-                }}
+                onClick={() => setAnalyticsModalOpen(true)}
               >
-                <CreditCard className="mobile-action-icon" />
-                DA-Paiement
+                <TrendingUp className="mobile-action-icon" />
+                Analyse
               </Button>
             </div>
           </div>
@@ -521,6 +523,10 @@ export default function SuperAdminDashboard() {
         <ValidatedRequestsHistory
           isOpen={validatedHistoryModalOpen}
           onClose={() => setValidatedHistoryModalOpen(false)}
+        />
+        <AnalyticsModal
+          isOpen={analyticsModalOpen}
+          onClose={() => setAnalyticsModalOpen(false)}
         />
         </div>
       </>
@@ -721,11 +727,11 @@ export default function SuperAdminDashboard() {
                         onClick={() => setValidatedHistoryModalOpen(true)}
                       >
                         <BarChart3 className="h-4 w-4 mr-2" />
-                        Rapport
+                        Historique
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="top" sideOffset={6}>
-                      Ouvrir l'historique et les rapports des demandes
+                      Ouvrir l'historique des demandes validées
                     </TooltipContent>
                   </Tooltip>
 
@@ -735,14 +741,14 @@ export default function SuperAdminDashboard() {
                         className="w-full justify-center text-white"
                         style={{ backgroundColor: '#fc2d1f' }}
                         size="sm"
-                        onClick={() => setFinancialModalOpen(true)}
+                        onClick={() => setAnalyticsModalOpen(true)}
                       >
-                        <CreditCard className="h-4 w-4 mr-2" />
-                        DA-Paiement
+                        <TrendingUp className="h-4 w-4 mr-2" />
+                        Analyse
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="top" sideOffset={6}>
-                      Accéder au tableau de bord financier
+                      Analyse des quantités restantes (Vue Direction)
                     </TooltipContent>
                   </Tooltip>
                 </div>
@@ -988,6 +994,12 @@ export default function SuperAdminDashboard() {
             title={enCoursModalTitle}
             demandes={getMesDemandesEnCours()}
             currentUser={currentUser}
+          />
+
+          {/* Modale d'analyse des quantités restantes */}
+          <AnalyticsModal
+            isOpen={analyticsModalOpen}
+            onClose={() => setAnalyticsModalOpen(false)}
           />
       </div>
     </div>

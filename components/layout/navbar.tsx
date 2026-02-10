@@ -137,26 +137,19 @@ export default function Navbar() {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="sm" className="hover:bg-gray-100">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-medium text-blue-600">
-                          {currentUser?.prenom?.[0]}
-                          {currentUser?.nom?.[0]}
-                        </span>
-                      </div>
-                      <span className="hidden lg:block text-gray-700">
-                        {currentUser?.prenom} {currentUser?.nom}
-                      </span>
-                    </div>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" sideOffset={6}>
-                  Profil et actions du compte
-                </TooltipContent>
-              </Tooltip>
+              <Button variant="ghost" size="sm" className="hover:bg-gray-100">
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <span className="text-sm font-medium text-blue-600">
+                      {currentUser?.prenom?.[0]}
+                      {currentUser?.nom?.[0]}
+                    </span>
+                  </div>
+                  <span className="hidden lg:block text-gray-700">
+                    {currentUser?.prenom} {currentUser?.nom}
+                  </span>
+                </div>
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-white border-gray-200">
               <DropdownMenuLabel className="text-gray-800">

@@ -18,6 +18,7 @@
 - [Workflow de l'Application](#-workflow-de-lapplication)
 - [Rôles et Permissions](#-rôles-et-permissions)
 - [Fonctionnalités](#-fonctionnalités-principales)
+- [Tableaux Analytiques](#-tableaux-analytiques-vue-direction)
 - [API Endpoints](#-api-endpoints)
 - [Sécurité](#-sécurité)
 - [Scripts Disponibles](#-scripts-disponibles)
@@ -38,6 +39,7 @@ INSTRUMELEC est une application de gestion des demandes de matériel et outillag
 - ✅ **Filtrer par projet** pour une visibilité ciblée
 - ✅ **Clôturer** les demandes après confirmation de livraison
 - ✅ **Tableau de bord financier** pour le suivi budgétaire (Super Admin)
+- ✅ **Tableaux analytiques** pour suivi des quantités restantes et blocages (Vue Direction)
 - ✅ **Gestion des utilisateurs** avec attribution de rôles et projets
 
 ### Pourquoi cette application ?
@@ -564,6 +566,186 @@ Notification → Valideur précédent
 
 ---
 
+## 📊 Tableaux Analytiques (Vue Direction)
+
+### Vue d'ensemble
+
+Les tableaux analytiques permettent au **Super Admin** et au **Chargé d'Affaires** de suivre en temps réel les quantités non livrées et d'identifier les blocages dans le processus d'approvisionnement.
+
+**Accès** : Dashboard Super Admin → Bouton **"Analyse"** (rouge) dans les Actions Rapides
+
+### Les 3 Tableaux Complémentaires
+
+#### 📊 TABLEAU 1 : Synthèse Projets Bloqués
+
+**Objectif** : Vue macro des projets avec du matériel/outillage non livré
+
+**Colonnes** :
+- Projet
+- Nombre d'articles restants
+- Quantité totale restante
+- Coût total restant (FCFA)
+
+**Utilisation** :
+- Identifier les projets à risque budgétaire (coût restant élevé)
+- Prioriser les actions sur les projets bloqués logistiquement
+- Suivre l'évolution des blocages par projet
+
+**Calculs** :
+```
+Quantité restante = Quantité demandée - Quantité livrée totale
+Coût restant = Quantité restante × Prix unitaire
+```
+
+---
+
+#### 📋 TABLEAU 2 : Détail Articles Restants
+
+**Objectif** : Liste exhaustive des articles non encore livrés
+
+**Colonnes** :
+- Projet
+- N° Demande
+- Type (Matériel/Outillage)
+- Référence article
+- Désignation
+- Unité
+- Quantité demandée
+- Quantité livrée
+- Quantité restante
+- Prix unitaire
+- Coût restant
+
+**Utilisation** :
+- Identifier les articles spécifiques manquants
+- Relancer les fournisseurs pour articles critiques
+- Planifier les approvisionnements prioritaires
+
+**Filtrage** :
+- Exclut les demandes en brouillon, rejetées ou archivées
+- Affiche uniquement les articles avec quantité restante > 0
+
+---
+
+#### ⚠️ TABLEAU 3 : Articles Non Valorisés
+
+**Objectif** : Détecter les blocages processus (articles sans prix)
+
+**Colonnes** :
+- Projet
+- Type demande
+- Nombre d'articles non valorisés
+- Jours sans valorisation (MAX)
+
+**Utilisation** :
+- Identifier les articles bloquant le processus (prix manquant)
+- Alerter le Responsable Appro/Logistique
+- Suivre le vieillissement des demandes non valorisées
+
+**Alertes** :
+- 🔴 **> 7 jours** : ALERTE ROUGE - Escalade immédiate
+- 🟠 **3-7 jours** : ATTENTION - Relance nécessaire
+- 🟢 **< 3 jours** : Normal - Processus en cours
+
+**Calcul** :
+```
+Jours sans valorisation = Date du jour - Date passage en préparation
+```
+
+---
+
+### Fonctionnalités
+
+#### Export Excel
+
+**Export individuel** :
+- Bouton "Exporter" sur chaque tableau
+- Fichier nommé avec date : `projets-bloques-2026-02-10.xlsx`
+
+**Export global** :
+- Bouton "Exporter Tout"
+- 1 fichier Excel avec 3 feuilles (1 par tableau)
+- Fichier : `analytics-complet-2026-02-10.xlsx`
+
+#### Cartes de Synthèse
+
+En haut de la modale, 4 indicateurs clés :
+- **Projets impactés** : Nombre de projets avec quantités restantes
+- **Articles restants** : Total d'articles non livrés
+- **Coût total restant** : Somme globale en FCFA
+- **Jours max sans valorisation** : Pire cas détecté
+
+---
+
+### Données Techniques
+
+#### Champs Base de Données
+
+**ItemDemande** :
+- `quantiteLivreeTotal` : Quantité livrée cumulée (mise à jour automatique)
+
+**Demande** :
+- `datePassageAppro` : Date passage au statut préparation appro
+- `datePassageLogistique` : Date passage au statut préparation logistique
+
+#### Mise à Jour Automatique
+
+**Lors d'une livraison** :
+```typescript
+// Transaction atomique
+quantiteLivreeTotal += quantiteLivree
+```
+
+**Lors d'un changement de statut** :
+```typescript
+// Si passage à "en_attente_preparation_appro"
+datePassageAppro = new Date()
+
+// Si passage à "en_attente_preparation_logistique"
+datePassageLogistique = new Date()
+```
+
+---
+
+### Permissions
+
+| Rôle | Accès Analytics |
+|------|-----------------|
+| Super Admin | ✅ Complet |
+| Chargé d'Affaires | ✅ Complet |
+| Autres rôles | ❌ Aucun |
+
+---
+
+### Cas d'Usage
+
+**Scénario 1 : Réunion Direction**
+```
+1. Ouvrir Analytics
+2. Consulter TABLEAU 1 (vue macro)
+3. Identifier projet avec coût restant > 1M FCFA
+4. Exporter pour présentation
+5. Décider actions prioritaires
+```
+
+**Scénario 2 : Relance Fournisseurs**
+```
+1. Consulter TABLEAU 2 (détail articles)
+2. Filtrer par projet
+3. Identifier articles critiques (coût élevé)
+4. Exporter liste pour email fournisseur
+```
+
+**Scénario 3 : Déblocage Processus**
+```
+1. Consulter TABLEAU 3 (non valorisés)
+2. Identifier articles > 7 jours
+3. Alerter Responsable Appro
+4. Suivre résolution quotidiennement
+```
+
+---
+
 ## API Endpoints
 
 ### Authentification
@@ -597,6 +779,15 @@ Notification → Valideur précédent
 ### Notifications
 - `GET /api/notifications` - Liste des notifications
 - `PUT /api/notifications/[id]/read` - Marquer comme lue
+
+### Analytics (Super Admin & Chargé d'Affaires)
+- `GET /api/analytics/projets-bloques` - Synthèse des projets avec quantités restantes
+- `GET /api/analytics/articles-restants` - Détail des articles non livrés
+- `GET /api/analytics/articles-non-valorises` - Articles sans prix (blocages processus)
+
+### Livraisons
+- `POST /api/demandes/[id]/livraisons` - Créer une livraison partielle ou totale
+- `GET /api/demandes/[id]/livraisons` - Liste des livraisons d'une demande
 
 ---
 
@@ -683,7 +874,12 @@ Notification → Valideur précédent
 - 📉 **Statistiques par période** (jour, semaine, mois)
 - 🎯 **Répartition par statut** (pie charts)
 - 📈 **Tendances** et évolutions
-- 📋 **Export de données** (prévu)
+- � **Tableaux analytiques** (Vue Direction)
+  - **Synthèse Projets Bloqués** : Vue macro des projets avec quantités/coûts restants
+  - **Détail Articles Restants** : Liste complète des articles non livrés par projet
+  - **Articles Non Valorisés** : Détection des blocages processus (articles sans prix)
+- 📋 **Export Excel** pour tous les tableaux analytiques
+- 🔄 **Calculs en temps réel** basés sur les livraisons effectives
 
 ---
 
@@ -731,6 +927,11 @@ L'application utilise une palette cohérente :
 - ✅ **Modification de projet** avec gestion utilisateurs
 - ✅ **Logs de debug** détaillés pour troubleshooting
 - ✅ **Système de cache** pour optimiser les appels API
+- ✅ **Tableaux analytiques** avec 3 vues complémentaires (Février 2026)
+- ✅ **Tracking quantités livrées** avec champ `quantiteLivreeTotal`
+- ✅ **Dates de passage** aux statuts de préparation (appro/logistique)
+- ✅ **Export Excel** natif pour tous les tableaux analytiques
+- ✅ **Import/Export Excel** pour création de demandes en masse
 
 ---
 
@@ -764,6 +965,6 @@ L'application utilise une palette cohérente :
 
 ---
 
-**Version** : 4.0 - Nouveau Flow Outillage  
-**Dernière mise à jour** : Janvier 2026  
+**Version** : 4.1 - Analytics & Tableaux de Bord Direction  
+**Dernière mise à jour** : Février 2026  
 **Développé par** : InstrumElec Team

@@ -101,34 +101,51 @@ export const POST = async (request: NextRequest, context: { params: Promise<{ id
       }, { status: 400 })
     }
     
-    // Créer la livraison
-    const livraison = await prisma.livraison.create({
-      data: {
-        id: crypto.randomUUID(),
-        demandeId: demande.id,
-        livreurId: livreurId || currentUser.id,
-        commentaire,
-        statut: "prete",
-        items: {
-          create: items.map((item: any) => ({
-            id: crypto.randomUUID(),
-            itemDemandeId: item.itemDemandeId,
-            quantiteLivree: item.quantiteLivree
-          }))
-        }
-      },
-      include: { 
-        items: {
-          include: {
-            itemDemande: {
-              include: { article: true }
-            }
+    // Créer la livraison avec transaction pour mettre à jour les quantités livrées
+    const livraison = await prisma.$transaction(async (tx) => {
+      // 1. Créer la livraison
+      const newLivraison = await tx.livraison.create({
+        data: {
+          id: crypto.randomUUID(),
+          demandeId: demande.id,
+          livreurId: livreurId || currentUser.id,
+          commentaire,
+          statut: "prete",
+          items: {
+            create: items.map((item: any) => ({
+              id: crypto.randomUUID(),
+              itemDemandeId: item.itemDemandeId,
+              quantiteLivree: item.quantiteLivree
+            }))
           }
         },
-        livreur: {
-          select: { id: true, nom: true, prenom: true }
+        include: { 
+          items: {
+            include: {
+              itemDemande: {
+                include: { article: true }
+              }
+            }
+          },
+          livreur: {
+            select: { id: true, nom: true, prenom: true }
+          }
         }
+      })
+
+      // 2. Mettre à jour quantiteLivreeTotal pour chaque ItemDemande
+      for (const item of items) {
+        await tx.itemDemande.update({
+          where: { id: item.itemDemandeId },
+          data: {
+            quantiteLivreeTotal: {
+              increment: item.quantiteLivree
+            }
+          }
+        })
       }
+
+      return newLivraison
     })
     
     // Vérifier si c'est une livraison complète

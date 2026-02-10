@@ -25,28 +25,30 @@ model Article {
 }
 
 model Demande {
-  id                     String                  @id
-  numero                 String                  @unique
-  projetId               String
-  technicienId           String
-  type                   DemandeType
-  status                 DemandeStatus           @default(brouillon)
-  dateCreation           DateTime                @default(now())
-  dateModification       DateTime
-  dateSortie             DateTime?
-  dateValidationFinale   DateTime?
-  dateLivraisonSouhaitee DateTime?
-  commentaires           String?
-  rejetMotif             String?
-  coutTotal              Float?
-  dateEngagement         DateTime?
-  budgetPrevisionnel     Float?
-  dateLivraison          DateTime?
-  dateReceptionLivreur   DateTime?
-  livreurAssigneId       String?
-  nombreRejets           Int                     @default(0)
-  statusPrecedent        DemandeStatus?
-  fichiersJoints         String[]                @default([])
+  id                       String                  @id
+  numero                   String                  @unique
+  projetId                 String
+  technicienId             String
+  type                     DemandeType
+  status                   DemandeStatus           @default(brouillon)
+  dateCreation             DateTime                @default(now())
+  dateModification         DateTime
+  dateSortie               DateTime?
+  dateValidationFinale     DateTime?
+  dateLivraisonSouhaitee   DateTime?
+  commentaires             String?
+  rejetMotif               String?
+  coutTotal                Float?
+  dateEngagement           DateTime?
+  budgetPrevisionnel       Float?
+  dateLivraison            DateTime?
+  dateReceptionLivreur     DateTime?
+  livreurAssigneId         String?
+  nombreRejets             Int                     @default(0)
+  statusPrecedent          DemandeStatus?
+  fichiersJoints           String[]                @default([])
+  datePassageAppro         DateTime?
+  datePassageLogistique    DateTime?
   livreurAssigne         User?                   @relation("demandes_livreurAssigneIdTousers", fields: [livreurAssigneId], references: [id])
   projet                 Projet                  @relation(fields: [projetId], references: [id], onDelete: Cascade)
   technicien             User                    @relation("demandes_technicienIdTousers", fields: [technicienId], references: [id])
@@ -77,18 +79,19 @@ model HistoryEntry {
 }
 
 model ItemDemande {
-  id               String            @id
-  demandeId        String
-  articleId        String
-  quantiteDemandee Int
-  quantiteValidee  Int?
-  quantiteSortie   Int?
-  quantiteRecue    Int?
-  commentaire      String?
-  prixUnitaire     Float?
-  article          Article           @relation(fields: [articleId], references: [id])
-  demande          Demande           @relation(fields: [demandeId], references: [id], onDelete: Cascade)
-  livraisons       ItemLivraison[]
+  id                  String            @id
+  demandeId           String
+  articleId           String
+  quantiteDemandee    Int
+  quantiteValidee     Int?
+  quantiteSortie      Int?
+  quantiteRecue       Int?
+  quantiteLivreeTotal Int               @default(0)
+  commentaire         String?
+  prixUnitaire        Float?
+  article             Article           @relation(fields: [articleId], references: [id])
+  demande             Demande           @relation(fields: [demandeId], references: [id], onDelete: Cascade)
+  livraisons          ItemLivraison[]
 
   @@map("item_demandes")
 }
@@ -261,4 +264,48 @@ enum UserRole {
   responsable_appro
   charge_affaire
   responsable_livreur
+}
+
+// ============================================================================
+// ANALYTICS & NOTIFICATIONS AUTOMATIQUES
+// ============================================================================
+
+model DailyAnalyticsSnapshot {
+  id               String            @id @default(uuid())
+  date             DateTime          @unique @db.Date
+  tableau1         Json
+  tableau3         Json
+  metadata         Json?
+  createdAt        DateTime          @default(now())
+  notificationLogs NotificationLog[]
+
+  @@map("daily_analytics_snapshots")
+}
+
+model NotificationLog {
+  id           String                 @id @default(uuid())
+  snapshotId   String?
+  channel      NotificationChannel
+  recipient    String
+  status       NotificationStatus
+  errorMessage String?
+  sentAt       DateTime?
+  createdAt    DateTime               @default(now())
+  retryCount   Int                    @default(0)
+  snapshot     DailyAnalyticsSnapshot? @relation(fields: [snapshotId], references: [id], onDelete: SetNull)
+
+  @@map("notification_logs")
+}
+
+enum NotificationChannel {
+  email
+  whatsapp
+  sms
+}
+
+enum NotificationStatus {
+  pending
+  sent
+  failed
+  retrying
 }

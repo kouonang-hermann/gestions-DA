@@ -1062,6 +1062,13 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
     }
 
     // Mettre à jour la demande
+    // Ajouter les dates de passage aux statuts de préparation (pour analytics)
+    if (newStatus === "en_attente_preparation_appro" && demande.status !== "en_attente_preparation_appro") {
+      updates.datePassageAppro = new Date()
+    }
+    if (newStatus === "en_attente_preparation_logistique" && demande.status !== "en_attente_preparation_logistique") {
+      updates.datePassageLogistique = new Date()
+    }
     
     const updatedDemande = await prisma.demande.update({
       where: { id: params.id },
