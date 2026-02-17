@@ -47,7 +47,7 @@ export default function FinancePage() {
   const [projetsBloques, setProjetsBloques] = useState<any[]>([])
   const [totauxProjets, setTotauxProjets] = useState<any>(null)
   
-  const [articlesRestants, setArticlesRestants] = useState<any[]>([])
+  const [projetsArticlesRestants, setProjetsArticlesRestants] = useState<any[]>([])
   const [totalGlobalArticles, setTotalGlobalArticles] = useState<any>(null)
   
   const [articlesNonValorises, setArticlesNonValorises] = useState<any[]>([])
@@ -66,29 +66,49 @@ export default function FinancePage() {
     setAnalyticsError("")
 
     try {
+      // Récupérer le token d'authentification
+      const token = localStorage.getItem("token")
+      const headers: HeadersInit = {}
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`
+      }
+
       const [resProjets, resArticles, resNonValorises] = await Promise.all([
-        fetch("/api/analytics/projets-bloques"),
-        fetch("/api/analytics/articles-restants"),
-        fetch("/api/analytics/articles-non-valorises")
+        fetch("/api/analytics/projets-bloques", { headers }),
+        fetch("/api/analytics/articles-restants", { headers }),
+        fetch("/api/analytics/articles-non-valorises", { headers })
       ])
 
       const dataProjets = await resProjets.json()
       const dataArticles = await resArticles.json()
       const dataNonValorises = await resNonValorises.json()
 
+      console.log("📊 [ANALYTICS] Réponse API projets-bloques:", dataProjets)
+      console.log("📊 [ANALYTICS] Réponse API articles-restants:", dataArticles)
+      console.log("📊 [ANALYTICS] Réponse API articles-non-valorises:", dataNonValorises)
+
       if (dataProjets.success) {
+        console.log("✅ [ANALYTICS] Projets bloqués:", dataProjets.data.projets.length)
         setProjetsBloques(dataProjets.data.projets)
         setTotauxProjets(dataProjets.data.totaux)
+      } else {
+        console.error("❌ [ANALYTICS] Erreur projets-bloques:", dataProjets.error)
       }
 
       if (dataArticles.success) {
-        setArticlesRestants(dataArticles.data.articles)
+        console.log("✅ [ANALYTICS] Projets avec articles restants:", dataArticles.data.projets.length)
+        setProjetsArticlesRestants(dataArticles.data.projets)
         setTotalGlobalArticles(dataArticles.data.totalGlobal)
+      } else {
+        console.error("❌ [ANALYTICS] Erreur articles-restants:", dataArticles.error)
       }
 
       if (dataNonValorises.success) {
+        console.log("✅ [ANALYTICS] Articles non valorisés:", dataNonValorises.data.synthese.length)
         setArticlesNonValorises(dataNonValorises.data.synthese)
         setTotauxNonValorises(dataNonValorises.data.totaux)
+      } else {
+        console.error("❌ [ANALYTICS] Erreur articles-non-valorises:", dataNonValorises.error)
       }
 
     } catch (err: any) {
@@ -111,17 +131,18 @@ export default function FinancePage() {
   const exportProjetsBloques = () => {
     const data = projetsBloques.map(p => ({
       "Projet": p.projetNom,
-      "Nombre d'articles restants": p.nombreArticlesRestants,
-      "Quantité totale restante": p.quantiteTotaleRestante,
-      "Coût total restant (FCFA)": p.coutTotalRestant
+      "Coût du projet (FCFA)": p.coutTotalRestant,
+      "Commentaire": p.nombreArticlesNonValorises > 0 
+        ? `${p.nombreArticlesNonValorises} article${p.nombreArticlesNonValorises > 1 ? 's' : ''} non valorisé${p.nombreArticlesNonValorises > 1 ? 's' : ''}`
+        : "Tous les articles sont valorisés"
     }))
 
     if (totauxProjets) {
+      const totalNonValorises = projetsBloques.reduce((sum, p) => sum + (p.nombreArticlesNonValorises || 0), 0)
       data.push({
         "Projet": "TOTAL",
-        "Nombre d'articles restants": totauxProjets.nombreArticlesRestantsGlobal,
-        "Quantité totale restante": totauxProjets.quantiteTotaleRestanteGlobale,
-        "Coût total restant (FCFA)": totauxProjets.coutTotalRestantGlobal
+        "Coût du projet (FCFA)": totauxProjets.coutTotalRestantGlobal,
+        "Commentaire": `${totalNonValorises} articles non valorisés au total`
       })
     }
 
@@ -133,33 +154,61 @@ export default function FinancePage() {
 
   // Export Excel - Tableau 2
   const exportArticlesRestants = () => {
-    const data = articlesRestants.map(a => ({
-      "Projet": a.projetNom,
-      "N° Demande": a.demandeNumero,
-      "Type": a.demandeType === "materiel" ? "Matériel" : "Outillage",
-      "Référence article": a.articleReference || "-",
-      "Désignation": a.articleDesignation,
-      "Unité": a.articleUnite,
-      "Quantité demandée": a.quantiteDemandee,
-      "Quantité livrée": a.quantiteLivree,
-      "Quantité restante": a.quantiteRestante,
-      "Prix unitaire (FCFA)": a.prixUnitaire || 0,
-      "Coût restant (FCFA)": a.coutRestant
-    }))
+    const data: any[] = []
 
-    if (totalGlobalArticles) {
+    projetsArticlesRestants.forEach(projet => {
+      // Ajouter le nom du projet comme séparateur
       data.push({
-        "Projet": "TOTAL GLOBAL",
-        "N° Demande": "",
-        "Type": "",
-        "Référence article": "",
+        "N° Demande": `PROJET: ${projet.projetNom}`,
         "Désignation": "",
         "Unité": "",
-        "Quantité demandée": 0,
-        "Quantité livrée": 0,
-        "Quantité restante": totalGlobalArticles.quantiteTotale,
-        "Prix unitaire (FCFA)": 0,
-        "Coût restant (FCFA)": totalGlobalArticles.coutTotal
+        "Quantités non livrées": "",
+        "Prix unitaire (FCFA)": "",
+        "Prix total (FCFA)": ""
+      })
+
+      // Ajouter les articles du projet
+      projet.articles.forEach((article: any) => {
+        data.push({
+          "N° Demande": article.demandeNumero,
+          "Désignation": article.articleDesignation,
+          "Unité": article.articleUnite,
+          "Quantités non livrées": article.quantiteRestante,
+          "Prix unitaire (FCFA)": article.prixUnitaire || 0,
+          "Prix total (FCFA)": article.coutRestant
+        })
+      })
+
+      // Ajouter le sous-total du projet
+      data.push({
+        "N° Demande": "SOUS-TOTAL",
+        "Désignation": "",
+        "Unité": "",
+        "Quantités non livrées": projet.totalQuantiteRestante,
+        "Prix unitaire (FCFA)": "",
+        "Prix total (FCFA)": projet.totalCoutRestant
+      })
+
+      // Ligne vide pour séparer les projets
+      data.push({
+        "N° Demande": "",
+        "Désignation": "",
+        "Unité": "",
+        "Quantités non livrées": "",
+        "Prix unitaire (FCFA)": "",
+        "Prix total (FCFA)": ""
+      })
+    })
+
+    // Ajouter le total global
+    if (totalGlobalArticles) {
+      data.push({
+        "N° Demande": "TOTAL GLOBAL",
+        "Désignation": "",
+        "Unité": "",
+        "Quantités non livrées": totalGlobalArticles.quantiteTotale,
+        "Prix unitaire (FCFA)": "",
+        "Prix total (FCFA)": totalGlobalArticles.coutTotal
       })
     }
 
@@ -394,7 +443,7 @@ export default function FinancePage() {
                       TABLEAU 1: Projets Bloqués ({projetsBloques.length})
                     </TabsTrigger>
                     <TabsTrigger value="articles-restants">
-                      TABLEAU 2: Articles Restants ({articlesRestants.length})
+                      TABLEAU 2: Articles Restants ({projetsArticlesRestants.reduce((sum, p) => sum + p.articles.length, 0)})
                     </TabsTrigger>
                     <TabsTrigger value="non-valorises">
                       TABLEAU 3: Non Valorisés ({articlesNonValorises.length})
@@ -413,32 +462,41 @@ export default function FinancePage() {
                       </CardHeader>
                       <CardContent className="p-0">
                         <div className="overflow-x-auto">
-                          <table className="w-full text-sm">
+                          <table className="w-full text-sm table-fixed">
+                            <colgroup>
+                              <col className="w-[35%]" />
+                              <col className="w-[25%]" />
+                              <col className="w-[40%]" />
+                            </colgroup>
                             <thead className="bg-gray-50 border-b">
                               <tr>
                                 <th className="px-4 py-3 text-left font-medium text-gray-600">Projet</th>
-                                <th className="px-4 py-3 text-center font-medium text-gray-600">Nb articles restants</th>
-                                <th className="px-4 py-3 text-center font-medium text-gray-600">Qté totale restante</th>
-                                <th className="px-4 py-3 text-right font-medium text-gray-600">Coût total restant</th>
+                                <th className="px-4 py-3 text-right font-medium text-gray-600">Coût du projet</th>
+                                <th className="px-4 py-3 text-left font-medium text-gray-600">Commentaire</th>
                               </tr>
                             </thead>
                             <tbody>
                               {projetsBloques.length === 0 ? (
                                 <tr>
-                                  <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
+                                  <td colSpan={3} className="px-4 py-8 text-center text-gray-500">
                                     Aucun projet bloqué - Toutes les demandes sont livrées !
                                   </td>
                                 </tr>
                               ) : (
                                 projetsBloques.map((projet) => (
                                   <tr key={projet.projetId} className="border-b hover:bg-gray-50">
-                                    <td className="px-4 py-3 font-medium">{projet.projetNom}</td>
-                                    <td className="px-4 py-3 text-center">
-                                      <Badge variant="destructive">{projet.nombreArticlesRestants}</Badge>
-                                    </td>
-                                    <td className="px-4 py-3 text-center">{projet.quantiteTotaleRestante}</td>
-                                    <td className="px-4 py-3 text-right font-medium text-red-600">
+                                    <td className="px-4 py-3 font-medium truncate" title={projet.projetNom}>{projet.projetNom}</td>
+                                    <td className="px-4 py-3 text-right font-medium text-red-600 whitespace-nowrap">
                                       {formatMontant(projet.coutTotalRestant)}
+                                    </td>
+                                    <td className="px-4 py-3 text-sm text-gray-600">
+                                      {projet.nombreArticlesNonValorises > 0 ? (
+                                        <span className="text-orange-600 font-medium">
+                                          ⚠️ {projet.nombreArticlesNonValorises} article{projet.nombreArticlesNonValorises > 1 ? 's' : ''} non valorisé{projet.nombreArticlesNonValorises > 1 ? 's' : ''}
+                                        </span>
+                                      ) : (
+                                        <span className="text-green-600">✓ Tous les articles sont valorisés</span>
+                                      )}
                                     </td>
                                   </tr>
                                 ))
@@ -446,10 +504,11 @@ export default function FinancePage() {
                               {projetsBloques.length > 0 && (
                                 <tr className="bg-gray-100 font-bold">
                                   <td className="px-4 py-3">TOTAL</td>
-                                  <td className="px-4 py-3 text-center">{totauxProjets?.nombreArticlesRestantsGlobal}</td>
-                                  <td className="px-4 py-3 text-center">{totauxProjets?.quantiteTotaleRestanteGlobale}</td>
-                                  <td className="px-4 py-3 text-right text-red-600">
+                                  <td className="px-4 py-3 text-right text-red-600 whitespace-nowrap">
                                     {formatMontant(totauxProjets?.coutTotalRestantGlobal || 0)}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-600">
+                                    {projetsBloques.reduce((sum, p) => sum + (p.nombreArticlesNonValorises || 0), 0)} articles non valorisés au total
                                   </td>
                                 </tr>
                               )}
@@ -462,77 +521,110 @@ export default function FinancePage() {
 
                   {/* TABLEAU 2 : Détail Articles Restants */}
                   <TabsContent value="articles-restants" className="mt-4">
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between py-3">
-                        <CardTitle className="text-base">Détail des articles restants</CardTitle>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-base font-semibold">Détail des articles restants</h3>
                         <Button variant="outline" size="sm" onClick={exportArticlesRestants}>
                           <Download className="h-4 w-4 mr-2" />
                           Excel
                         </Button>
-                      </CardHeader>
-                      <CardContent className="p-0">
-                        <div className="overflow-x-auto max-h-[500px]">
-                          <table className="w-full text-sm">
-                            <thead className="bg-gray-50 border-b sticky top-0">
-                              <tr>
-                                <th className="px-3 py-2 text-left font-medium text-gray-600">Projet</th>
-                                <th className="px-3 py-2 text-left font-medium text-gray-600">N° Demande</th>
-                                <th className="px-3 py-2 text-left font-medium text-gray-600">Référence</th>
-                                <th className="px-3 py-2 text-left font-medium text-gray-600">Désignation</th>
-                                <th className="px-3 py-2 text-center font-medium text-gray-600">Demandé</th>
-                                <th className="px-3 py-2 text-center font-medium text-gray-600">Livré</th>
-                                <th className="px-3 py-2 text-center font-medium text-gray-600">Restant</th>
-                                <th className="px-3 py-2 text-right font-medium text-gray-600">Prix U.</th>
-                                <th className="px-3 py-2 text-right font-medium text-gray-600">Coût restant</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {articlesRestants.length === 0 ? (
-                                <tr>
-                                  <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
-                                    Aucun article restant - Toutes les demandes sont complètement livrées !
-                                  </td>
-                                </tr>
-                              ) : (
-                                articlesRestants.map((article, index) => (
-                                  <tr key={`${article.demandeId}-${article.articleId}-${index}`} className="border-b hover:bg-gray-50">
-                                    <td className="px-3 py-2 text-xs">{article.projetNom}</td>
-                                    <td className="px-3 py-2">
-                                      <Badge variant="outline" className="text-xs">
-                                        {article.demandeNumero}
-                                      </Badge>
-                                    </td>
-                                    <td className="px-3 py-2 text-xs text-gray-500">{article.articleReference || "-"}</td>
-                                    <td className="px-3 py-2 text-xs max-w-[200px] truncate" title={article.articleDesignation}>
-                                      {article.articleDesignation}
-                                    </td>
-                                    <td className="px-3 py-2 text-center">{article.quantiteDemandee}</td>
-                                    <td className="px-3 py-2 text-center text-green-600">{article.quantiteLivree}</td>
-                                    <td className="px-3 py-2 text-center">
-                                      <Badge variant="destructive">{article.quantiteRestante}</Badge>
-                                    </td>
-                                    <td className="px-3 py-2 text-right text-xs">
-                                      {article.prixUnitaire ? formatMontant(article.prixUnitaire) : "-"}
-                                    </td>
-                                    <td className="px-3 py-2 text-right font-medium text-red-600">
-                                      {formatMontant(article.coutRestant)}
-                                    </td>
-                                  </tr>
-                                ))
-                              )}
-                            </tbody>
-                          </table>
-                        </div>
-                        {articlesRestants.length > 0 && (
-                          <div className="bg-gray-100 px-4 py-3 flex justify-between items-center border-t">
-                            <span className="font-medium">Total global</span>
-                            <span className="font-bold text-red-600">
-                              {formatMontant(totalGlobalArticles?.coutTotal || 0)}
-                            </span>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
+                      </div>
+
+                      {projetsArticlesRestants.length === 0 ? (
+                        <Card>
+                          <CardContent className="p-8 text-center text-gray-500">
+                            Aucun article restant - Toutes les demandes sont complètement livrées !
+                          </CardContent>
+                        </Card>
+                      ) : (
+                        <>
+                          {projetsArticlesRestants.map((projet) => (
+                            <Card key={projet.projetId}>
+                              <CardHeader className="py-3 bg-blue-50 border-b">
+                                <div className="flex justify-between items-center">
+                                  <CardTitle className="text-sm font-bold text-blue-900">
+                                    📁 {projet.projetNom}
+                                  </CardTitle>
+                                  <div className="text-xs text-blue-700">
+                                    {projet.articles.length} article{projet.articles.length > 1 ? 's' : ''}
+                                  </div>
+                                </div>
+                              </CardHeader>
+                              <CardContent className="p-0">
+                                <div className="overflow-x-auto">
+                                  <table className="w-full text-sm">
+                                    <thead className="bg-gray-50 border-b">
+                                      <tr>
+                                        <th className="px-4 py-2 text-left font-medium text-gray-600">N° Demande</th>
+                                        <th className="px-4 py-2 text-left font-medium text-gray-600">Désignation</th>
+                                        <th className="px-4 py-2 text-center font-medium text-gray-600">Unité</th>
+                                        <th className="px-4 py-2 text-center font-medium text-gray-600">Qtés non livrées</th>
+                                        <th className="px-4 py-2 text-right font-medium text-gray-600">Prix unitaire</th>
+                                        <th className="px-4 py-2 text-right font-medium text-gray-600">Prix total</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {projet.articles.map((article: any, index: number) => (
+                                        <tr key={`${article.demandeId}-${article.articleId}-${index}`} className="border-b hover:bg-gray-50">
+                                          <td className="px-4 py-2">
+                                            <Badge variant="outline" className="text-xs">
+                                              {article.demandeNumero}
+                                            </Badge>
+                                          </td>
+                                          <td className="px-4 py-2 max-w-[300px] truncate" title={article.articleDesignation}>
+                                            {article.articleDesignation}
+                                          </td>
+                                          <td className="px-4 py-2 text-center text-gray-600">{article.articleUnite}</td>
+                                          <td className="px-4 py-2 text-center">
+                                            <Badge variant="destructive">{article.quantiteRestante}</Badge>
+                                          </td>
+                                          <td className="px-4 py-2 text-right text-xs">
+                                            {article.prixUnitaire ? formatMontant(article.prixUnitaire) : (
+                                              <span className="text-orange-600">⚠️ Non valorisé</span>
+                                            )}
+                                          </td>
+                                          <td className="px-4 py-2 text-right font-medium text-red-600">
+                                            {formatMontant(article.coutRestant)}
+                                          </td>
+                                        </tr>
+                                      ))}
+                                      <tr className="bg-blue-50 font-bold">
+                                        <td className="px-4 py-2" colSpan={3}>SOUS-TOTAL {projet.projetNom}</td>
+                                        <td className="px-4 py-2 text-center">{projet.totalQuantiteRestante}</td>
+                                        <td className="px-4 py-2"></td>
+                                        <td className="px-4 py-2 text-right text-red-600">
+                                          {formatMontant(projet.totalCoutRestant)}
+                                        </td>
+                                      </tr>
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+
+                          {/* Total Global */}
+                          <Card className="bg-gray-100 border-2 border-gray-300">
+                            <CardContent className="p-4">
+                              <div className="flex justify-between items-center">
+                                <div>
+                                  <div className="font-bold text-lg">TOTAL GLOBAL</div>
+                                  <div className="text-sm text-gray-600">
+                                    {totalGlobalArticles?.nombreProjets} projet{totalGlobalArticles?.nombreProjets > 1 ? 's' : ''} • {totalGlobalArticles?.nombreArticles} article{totalGlobalArticles?.nombreArticles > 1 ? 's' : ''}
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-sm text-gray-600">Quantité totale: {totalGlobalArticles?.quantiteTotale}</div>
+                                  <div className="font-bold text-xl text-red-600">
+                                    {formatMontant(totalGlobalArticles?.coutTotal || 0)}
+                                  </div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </>
+                      )}
+                    </div>
                   </TabsContent>
 
                   {/* TABLEAU 3 : Articles Non Valorisés */}

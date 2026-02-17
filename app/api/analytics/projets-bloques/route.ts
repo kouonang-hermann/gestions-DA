@@ -64,6 +64,7 @@ export async function GET(request: NextRequest) {
       nombreArticlesRestants: number
       quantiteTotaleRestante: number
       coutTotalRestant: number
+      nombreArticlesNonValorises: number
     }>()
 
     for (const demande of demandes) {
@@ -76,7 +77,8 @@ export async function GET(request: NextRequest) {
           projetNom,
           nombreArticlesRestants: 0,
           quantiteTotaleRestante: 0,
-          coutTotalRestant: 0
+          coutTotalRestant: 0,
+          nombreArticlesNonValorises: 0
         })
       }
 
@@ -88,6 +90,11 @@ export async function GET(request: NextRequest) {
         if (quantiteRestante > 0) {
           projetData.nombreArticlesRestants += 1
           projetData.quantiteTotaleRestante += quantiteRestante
+          
+          // Compter les articles non valorisés (sans prix unitaire)
+          if (item.prixUnitaire === null) {
+            projetData.nombreArticlesNonValorises += 1
+          }
           
           // Calculer le coût restant (si prix unitaire disponible)
           // IMPORTANT : Même logique que TABLEAU 2 pour garantir la cohérence

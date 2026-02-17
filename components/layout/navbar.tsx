@@ -1,6 +1,6 @@
 "use client"
 
-import { Bell, LogOut, Settings, Menu, X, KeyRound, BarChart3 } from "lucide-react"
+import { Bell, LogOut, Settings, Menu, X, KeyRound, BarChart3, FileText, DollarSign, Laptop, Calendar, UserX, ClipboardList, FileBarChart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useState, useEffect } from "react"
@@ -24,6 +24,7 @@ import { useStore } from "@/stores/useStore"
 import InstrumElecLogo from "@/components/ui/instrumelec-logo"
 import Link from "next/link"
 import ChangePasswordModal from "@/components/modals/change-password-modal"
+import { CongesModal } from "@/components/conges/conges-modal"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 const roleLabels: Record<string, string> = {
@@ -36,12 +37,15 @@ const roleLabels: Record<string, string> = {
   responsable_appro: "Responsable Approvisionnements",
   charge_affaire: "Chargé d'Affaire",
   responsable_livreur: "Responsable Livreur",
+  responsable_rh: "Responsable RH",
+  directeur_general: "Directeur Général",
 }
 
 export default function Navbar() {
   const { currentUser, logout, notifications, startNotificationPolling, stopNotificationPolling } = useStore()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false)
+  const [congesModalOpen, setCongesModalOpen] = useState(false)
   const router = useRouter()
 
   // Démarrer le polling des notifications au montage du composant
@@ -79,16 +83,121 @@ export default function Navbar() {
         </div>
 
         {/* Desktop Navigation */}
-        <div className="hidden sm:flex items-center space-x-2 sm:space-x-4">
+        <div className="hidden sm:flex items-center gap-2 overflow-x-auto max-w-[calc(100vw-400px)] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+          {/* Boutons pour tous les utilisateurs */}
+          {currentUser && (
+            <>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button asChild variant="outline" size="sm" className="border-gray-300 hover:bg-gray-50 bg-white whitespace-nowrap flex-shrink-0">
+                    <Link href="/da">
+                      <FileText className="h-4 w-4 mr-1" />
+                      <span>DA</span>
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" sideOffset={6}>
+                  Demandes d'achat
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button asChild variant="outline" size="sm" className="border-gray-300 hover:bg-gray-50 bg-white whitespace-nowrap flex-shrink-0">
+                    <Link href="/d-paye">
+                      <DollarSign className="h-4 w-4 mr-1" />
+                      <span>D-paye</span>
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" sideOffset={6}>
+                  Demandes de paye
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button asChild variant="outline" size="sm" className="border-gray-300 hover:bg-gray-50 bg-white whitespace-nowrap flex-shrink-0">
+                    <Link href="/dit">
+                      <Laptop className="h-4 w-4 mr-1" />
+                      <span>DIT</span>
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" sideOffset={6}>
+                  Demandes IT
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="border-gray-300 hover:bg-gray-50 bg-white whitespace-nowrap flex-shrink-0"
+                    onClick={() => setCongesModalOpen(true)}
+                  >
+                    <Calendar className="h-4 w-4 mr-1" />
+                    <span>D-congés</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" sideOffset={6}>
+                  Demandes de congés
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button asChild variant="outline" size="sm" className="border-gray-300 hover:bg-gray-50 bg-white whitespace-nowrap flex-shrink-0">
+                    <Link href="/d-absence">
+                      <UserX className="h-4 w-4 mr-1" />
+                      <span>D-absence</span>
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" sideOffset={6}>
+                  Demandes d'absence
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button asChild variant="outline" size="sm" className="border-gray-300 hover:bg-gray-50 bg-white whitespace-nowrap flex-shrink-0">
+                    <Link href="/rapport-journalier">
+                      <ClipboardList className="h-4 w-4 mr-1" />
+                      <span>Rapport J.</span>
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" sideOffset={6}>
+                  Rapport journalier
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button asChild variant="outline" size="sm" className="border-gray-300 hover:bg-gray-50 bg-white whitespace-nowrap flex-shrink-0">
+                    <Link href="/rapport-mensuel">
+                      <FileBarChart className="h-4 w-4 mr-1" />
+                      <span>Rapport M.</span>
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" sideOffset={6}>
+                  Rapport mensuel
+                </TooltipContent>
+              </Tooltip>
+            </>
+          )}
+
           {currentUser?.role === "superadmin" && (
             <>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button asChild variant="outline" size="sm" className="border-gray-300 hover:bg-gray-50 bg-transparent">
+                  <Button asChild variant="outline" size="sm" className="border-gray-300 hover:bg-gray-50 bg-white whitespace-nowrap flex-shrink-0">
                     <Link href="/finance">
-                      <BarChart3 className="h-4 w-4 mr-2" />
-                      <span className="hidden md:inline">Analyse</span>
-                      <span className="md:hidden">Analyse</span>
+                      <BarChart3 className="h-4 w-4 mr-1" />
+                      <span>Analyse</span>
                     </Link>
                   </Button>
                 </TooltipTrigger>
@@ -99,11 +208,10 @@ export default function Navbar() {
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button asChild variant="outline" size="sm" className="border-gray-300 hover:bg-gray-50 bg-transparent">
+                  <Button asChild variant="outline" size="sm" className="border-gray-300 hover:bg-gray-50 bg-white whitespace-nowrap flex-shrink-0">
                     <Link href="/admin">
-                      <Settings className="h-4 w-4 mr-2" />
-                      <span className="hidden md:inline">Administration</span>
-                      <span className="md:hidden">Admin</span>
+                      <Settings className="h-4 w-4 mr-1" />
+                      <span>Admin</span>
                     </Link>
                   </Button>
                 </TooltipTrigger>
@@ -248,6 +356,54 @@ export default function Navbar() {
                   </div>
                 </div>
 
+                {/* Boutons pour tous les utilisateurs */}
+                {currentUser && (
+                  <>
+                    <Button asChild variant="outline" className="w-full justify-start" onClick={() => setMobileMenuOpen(false)}>
+                      <Link href="/da">
+                        <FileText className="h-4 w-4 mr-2" />
+                        DA
+                      </Link>
+                    </Button>
+                    <Button asChild variant="outline" className="w-full justify-start" onClick={() => setMobileMenuOpen(false)}>
+                      <Link href="/d-paye">
+                        <DollarSign className="h-4 w-4 mr-2" />
+                        D-paye
+                      </Link>
+                    </Button>
+                    <Button asChild variant="outline" className="w-full justify-start" onClick={() => setMobileMenuOpen(false)}>
+                      <Link href="/dit">
+                        <Laptop className="h-4 w-4 mr-2" />
+                        DIT
+                      </Link>
+                    </Button>
+                    <Button asChild variant="outline" className="w-full justify-start" onClick={() => setMobileMenuOpen(false)}>
+                      <Link href="/d-conges">
+                        <Calendar className="h-4 w-4 mr-2" />
+                        D-congés
+                      </Link>
+                    </Button>
+                    <Button asChild variant="outline" className="w-full justify-start" onClick={() => setMobileMenuOpen(false)}>
+                      <Link href="/d-absence">
+                        <UserX className="h-4 w-4 mr-2" />
+                        D-absence
+                      </Link>
+                    </Button>
+                    <Button asChild variant="outline" className="w-full justify-start" onClick={() => setMobileMenuOpen(false)}>
+                      <Link href="/rapport-journalier">
+                        <ClipboardList className="h-4 w-4 mr-2" />
+                        Rapport journalier
+                      </Link>
+                    </Button>
+                    <Button asChild variant="outline" className="w-full justify-start" onClick={() => setMobileMenuOpen(false)}>
+                      <Link href="/rapport-mensuel">
+                        <FileBarChart className="h-4 w-4 mr-2" />
+                        Rapport mensuel
+                      </Link>
+                    </Button>
+                  </>
+                )}
+
                 {/* Admin Link */}
                 {currentUser?.role === "superadmin" && (
                   <>
@@ -301,6 +457,12 @@ export default function Navbar() {
       <ChangePasswordModal
         isOpen={changePasswordModalOpen}
         onClose={() => setChangePasswordModalOpen(false)}
+      />
+
+      {/* Modal de gestion des congés */}
+      <CongesModal
+        open={congesModalOpen}
+        onOpenChange={setCongesModalOpen}
       />
     </nav>
   )

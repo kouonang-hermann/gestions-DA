@@ -9,49 +9,49 @@ datasource db {
 }
 
 model Article {
-  id            String          @id
-  nom           String
-  description   String
-  reference     String?
-  unite         String
-  type          DemandeType
-  stock         Int?
-  prixUnitaire  Float?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime
-  items         ItemDemande[]
+  id           String        @id
+  nom          String
+  description  String
+  reference    String?
+  unite        String
+  type         DemandeType
+  stock        Int?
+  prixUnitaire Float?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime
+  items        ItemDemande[]
 
   @@map("articles")
 }
 
 model Demande {
-  id                       String                  @id
-  numero                   String                  @unique
-  projetId                 String
-  technicienId             String
-  type                     DemandeType
-  status                   DemandeStatus           @default(brouillon)
-  dateCreation             DateTime                @default(now())
-  dateModification         DateTime
-  dateSortie               DateTime?
-  dateValidationFinale     DateTime?
-  dateLivraisonSouhaitee   DateTime?
-  commentaires             String?
-  rejetMotif               String?
-  coutTotal                Float?
-  dateEngagement           DateTime?
-  budgetPrevisionnel       Float?
-  dateLivraison            DateTime?
-  dateReceptionLivreur     DateTime?
-  livreurAssigneId         String?
-  nombreRejets             Int                     @default(0)
-  statusPrecedent          DemandeStatus?
-  fichiersJoints           String[]                @default([])
-  datePassageAppro         DateTime?
-  datePassageLogistique    DateTime?
-  livreurAssigne         User?                   @relation("demandes_livreurAssigneIdTousers", fields: [livreurAssigneId], references: [id])
-  projet                 Projet                  @relation(fields: [projetId], references: [id], onDelete: Cascade)
-  technicien             User                    @relation("demandes_technicienIdTousers", fields: [technicienId], references: [id])
+  id                     String                @id
+  numero                 String                @unique
+  projetId               String
+  technicienId           String
+  type                   DemandeType
+  status                 DemandeStatus         @default(brouillon)
+  dateCreation           DateTime              @default(now())
+  dateModification       DateTime
+  dateSortie             DateTime?
+  dateValidationFinale   DateTime?
+  dateLivraisonSouhaitee DateTime?
+  commentaires           String?
+  rejetMotif             String?
+  coutTotal              Float?
+  dateEngagement         DateTime?
+  budgetPrevisionnel     Float?
+  dateLivraison          DateTime?
+  dateReceptionLivreur   DateTime?
+  livreurAssigneId       String?
+  nombreRejets           Int                   @default(0)
+  statusPrecedent        DemandeStatus?
+  fichiersJoints         String[]              @default([])
+  datePassageAppro       DateTime?
+  datePassageLogistique  DateTime?
+  livreurAssigne         User?                 @relation("demandes_livreurAssigneIdTousers", fields: [livreurAssigneId], references: [id])
+  projet                 Projet                @relation(fields: [projetId], references: [id], onDelete: Cascade)
+  technicien             User                  @relation("demandes_technicienIdTousers", fields: [technicienId], references: [id])
   history                HistoryEntry[]
   items                  ItemDemande[]
   livraisons             Livraison[]
@@ -79,79 +79,79 @@ model HistoryEntry {
 }
 
 model ItemDemande {
-  id                  String            @id
+  id                  String          @id
   demandeId           String
   articleId           String
   quantiteDemandee    Int
   quantiteValidee     Int?
   quantiteSortie      Int?
   quantiteRecue       Int?
-  quantiteLivreeTotal Int               @default(0)
   commentaire         String?
   prixUnitaire        Float?
-  article             Article           @relation(fields: [articleId], references: [id])
-  demande             Demande           @relation(fields: [demandeId], references: [id], onDelete: Cascade)
+  quantiteLivreeTotal Int             @default(0)
+  article             Article         @relation(fields: [articleId], references: [id])
+  demande             Demande         @relation(fields: [demandeId], references: [id], onDelete: Cascade)
   livraisons          ItemLivraison[]
 
   @@map("item_demandes")
 }
 
 model ItemLivraison {
-  id             String        @id
+  id             String      @id
   livraisonId    String
   itemDemandeId  String
   quantiteLivree Int
-  itemDemande    ItemDemande   @relation(fields: [itemDemandeId], references: [id], onDelete: Cascade)
-  livraison      Livraison     @relation(fields: [livraisonId], references: [id], onDelete: Cascade)
+  itemDemande    ItemDemande @relation(fields: [itemDemandeId], references: [id], onDelete: Cascade)
+  livraison      Livraison   @relation(fields: [livraisonId], references: [id], onDelete: Cascade)
 
   @@map("item_livraisons")
 }
 
 model Livraison {
-  id              String            @id
-  demandeId       String
-  livreurId       String
-  dateCreation    DateTime          @default(now())
-  dateLivraison   DateTime?
-  commentaire     String?
-  statut          LivraisonStatut   @default(en_preparation)
-  items           ItemLivraison[]
-  demande         Demande           @relation(fields: [demandeId], references: [id], onDelete: Cascade)
-  livreur         User              @relation(fields: [livreurId], references: [id])
+  id            String          @id
+  demandeId     String
+  livreurId     String
+  dateCreation  DateTime        @default(now())
+  dateLivraison DateTime?
+  commentaire   String?
+  statut        LivraisonStatut @default(en_preparation)
+  items         ItemLivraison[]
+  demande       Demande         @relation(fields: [demandeId], references: [id], onDelete: Cascade)
+  livreur       User            @relation(fields: [livreurId], references: [id])
 
   @@map("livraisons")
 }
 
 model Notification {
-  id        String    @id
+  id        String   @id
   userId    String
   titre     String
   message   String
-  lu        Boolean   @default(false)
-  createdAt DateTime  @default(now())
+  lu        Boolean  @default(false)
+  createdAt DateTime @default(now())
   demandeId String?
   projetId  String?
-  demande   Demande?  @relation(fields: [demandeId], references: [id], onDelete: Cascade)
-  projet    Projet?   @relation(fields: [projetId], references: [id], onDelete: Cascade)
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  demande   Demande? @relation(fields: [demandeId], references: [id], onDelete: Cascade)
+  projet    Projet?  @relation(fields: [projetId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
 }
 
 model Projet {
-  id            String          @id
+  id            String         @id
   nom           String
   description   String
   dateDebut     DateTime
   dateFin       DateTime?
-  actif         Boolean         @default(true)
-  createdAt     DateTime        @default(now())
+  actif         Boolean        @default(true)
+  createdAt     DateTime       @default(now())
   updatedAt     DateTime
   createdBy     String
   budget        Float?
   demandes      Demande[]
   notifications Notification[]
-  createdByUser User            @relation(fields: [createdBy], references: [id])
+  createdByUser User           @relation(fields: [createdBy], references: [id])
   utilisateurs  UserProjet[]
 
   @@map("projets")
@@ -174,36 +174,41 @@ model SortieSignature {
 }
 
 model UserProjet {
-  id       String  @id
+  id       String @id
   userId   String
   projetId String
-  projet   Projet  @relation(fields: [projetId], references: [id], onDelete: Cascade)
-  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projet   Projet @relation(fields: [projetId], references: [id], onDelete: Cascade)
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, projetId])
   @@map("user_projets")
 }
 
 model User {
-  id                      String                  @id
-  nom                     String
-  prenom                  String
-  email                   String?                 @unique
-  password                String
-  role                    UserRole
-  isAdmin                 Boolean                 @default(false)
-  createdAt               DateTime                @default(now())
-  updatedAt               DateTime
-  phone                   String                  @unique @db.VarChar(20)
-  demandesLivreur         Demande[]               @relation("demandes_livreurAssigneIdTousers")
-  demandesTechnicien      Demande[]               @relation("demandes_technicienIdTousers")
-  historyEntries          HistoryEntry[]
-  livraisons              Livraison[]
-  notifications           Notification[]
-  projetsCreated          Projet[]
-  sortieSignatures        SortieSignature[]
-  projets                 UserProjet[]
-  validationSignatures    ValidationSignature[]
+  id                        String                @id
+  nom                       String
+  prenom                    String
+  email                     String?               @unique
+  password                  String
+  role                      UserRole
+  isAdmin                   Boolean               @default(false)
+  createdAt                 DateTime              @default(now())
+  updatedAt                 DateTime
+  phone                     String                @unique @db.VarChar(20)
+  matricule                 String?
+  service                   String?
+  anciennete                String?
+  demandesLivreur           Demande[]             @relation("demandes_livreurAssigneIdTousers")
+  demandesTechnicien        Demande[]             @relation("demandes_technicienIdTousers")
+  demandesCongesEmploye     DemandeConge[]        @relation("DemandesCongesEmploye")
+  demandesCongesResponsable DemandeConge[]        @relation("DemandesCongesResponsable")
+  historyEntries            HistoryEntry[]
+  livraisons                Livraison[]
+  notifications             Notification[]
+  projetsCreated            Projet[]
+  sortieSignatures          SortieSignature[]
+  projets                   UserProjet[]
+  validationSignatures      ValidationSignature[]
 
   @@map("users")
 }
@@ -221,6 +226,72 @@ model ValidationSignature {
 
   @@unique([demandeId, type])
   @@map("validation_signatures")
+}
+
+model DailyAnalyticsSnapshot {
+  id               String            @id @default(uuid())
+  date             DateTime          @unique @db.Date
+  tableau1         Json
+  tableau3         Json
+  metadata         Json?
+  createdAt        DateTime          @default(now())
+  notificationLogs NotificationLog[]
+
+  @@map("daily_analytics_snapshots")
+}
+
+model NotificationLog {
+  id           String                  @id @default(uuid())
+  snapshotId   String?
+  channel      NotificationChannel
+  recipient    String
+  status       NotificationStatus
+  errorMessage String?
+  sentAt       DateTime?
+  createdAt    DateTime                @default(now())
+  retryCount   Int                     @default(0)
+  snapshot     DailyAnalyticsSnapshot? @relation(fields: [snapshotId], references: [id])
+
+  @@map("notification_logs")
+}
+
+model DemandeConge {
+  id                   String      @id @default(cuid())
+  numero               String      @unique
+  employeId            String
+  matricule            String
+  anciennete           String
+  responsableId        String
+  responsableNom       String
+  responsableTel       String
+  responsableEmail     String
+  typeConge            TypeConge
+  autresPrecision      String?
+  dateDebut            DateTime
+  dateFin              DateTime
+  nombreJours          Int
+  resteJours           Int?
+  contactPersonnelNom  String
+  contactPersonnelTel  String
+  contactAutreNom      String?
+  contactAutreTel      String?
+  status               CongeStatus @default(brouillon)
+  signatureEmploye     Json?
+  signatureResponsable Json?
+  signatureRH          Json?
+  signatureDG          Json?
+  dateDebutFinale      DateTime?
+  dateFinFinale        DateTime?
+  nombreJoursFinal     Int?
+  dateCreation         DateTime    @default(now())
+  dateModification     DateTime    @updatedAt
+  dateSoumission       DateTime?
+  dateValidation       DateTime?
+  rejetMotif           String?
+  employe              User        @relation("DemandesCongesEmploye", fields: [employeId], references: [id], onDelete: Cascade)
+  responsable          User        @relation("DemandesCongesResponsable", fields: [responsableId], references: [id])
+
+  @@map("demandes_conges")
 }
 
 enum DemandeStatus {
@@ -264,37 +335,8 @@ enum UserRole {
   responsable_appro
   charge_affaire
   responsable_livreur
-}
-
-// ============================================================================
-// ANALYTICS & NOTIFICATIONS AUTOMATIQUES
-// ============================================================================
-
-model DailyAnalyticsSnapshot {
-  id               String            @id @default(uuid())
-  date             DateTime          @unique @db.Date
-  tableau1         Json
-  tableau3         Json
-  metadata         Json?
-  createdAt        DateTime          @default(now())
-  notificationLogs NotificationLog[]
-
-  @@map("daily_analytics_snapshots")
-}
-
-model NotificationLog {
-  id           String                 @id @default(uuid())
-  snapshotId   String?
-  channel      NotificationChannel
-  recipient    String
-  status       NotificationStatus
-  errorMessage String?
-  sentAt       DateTime?
-  createdAt    DateTime               @default(now())
-  retryCount   Int                    @default(0)
-  snapshot     DailyAnalyticsSnapshot? @relation(fields: [snapshotId], references: [id], onDelete: SetNull)
-
-  @@map("notification_logs")
+  responsable_rh
+  directeur_general
 }
 
 enum NotificationChannel {
@@ -308,4 +350,23 @@ enum NotificationStatus {
   sent
   failed
   retrying
+}
+
+enum TypeConge {
+  annuel
+  maladie
+  parental
+  recuperation
+  autres
+}
+
+enum CongeStatus {
+  brouillon
+  soumise
+  en_attente_validation_hierarchique
+  en_attente_validation_rh
+  en_attente_visa_dg
+  approuvee
+  rejetee
+  annulee
 }

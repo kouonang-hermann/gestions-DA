@@ -84,25 +84,45 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // Construire la liste des articles restants
-    const articlesRestants: Array<{
+    // Construire la structure groupée par projet
+    const projetsMap = new Map<string, {
       projetId: string
       projetNom: string
-      demandeId: string
-      demandeNumero: string
-      demandeType: string
-      articleId: string
-      articleReference: string | null
-      articleDesignation: string
-      articleUnite: string
-      quantiteDemandee: number
-      quantiteLivree: number
-      quantiteRestante: number
-      prixUnitaire: number | null
-      coutRestant: number
-    }> = []
+      articles: Array<{
+        demandeId: string
+        demandeNumero: string
+        demandeType: string
+        articleId: string
+        articleReference: string | null
+        articleDesignation: string
+        articleUnite: string
+        quantiteDemandee: number
+        quantiteLivree: number
+        quantiteRestante: number
+        prixUnitaire: number | null
+        coutRestant: number
+      }>
+      totalQuantiteRestante: number
+      totalCoutRestant: number
+    }>()
 
     for (const demande of demandes) {
+      const projetId = demande.projetId
+      const projetNom = demande.projet?.nom || "Projet inconnu"
+
+      // Initialiser le projet s'il n'existe pas
+      if (!projetsMap.has(projetId)) {
+        projetsMap.set(projetId, {
+          projetId,
+          projetNom,
+          articles: [],
+          totalQuantiteRestante: 0,
+          totalCoutRestant: 0
+        })
+      }
+
+      const projetData = projetsMap.get(projetId)!
+
       for (const item of demande.items) {
         const quantiteLivree = item.quantiteLivreeTotal || 0
         const quantiteRestante = item.quantiteDemandee - quantiteLivree
@@ -113,9 +133,7 @@ export async function GET(request: NextRequest) {
             ? quantiteRestante * item.prixUnitaire 
             : 0
 
-          articlesRestants.push({
-            projetId: demande.projetId,
-            projetNom: demande.projet?.nom || "Projet inconnu",
+          projetData.articles.push({
             demandeId: demande.id,
             demandeNumero: demande.numero,
             demandeType: demande.type,
@@ -129,48 +147,30 @@ export async function GET(request: NextRequest) {
             prixUnitaire: item.prixUnitaire,
             coutRestant
           })
+
+          projetData.totalQuantiteRestante += quantiteRestante
+          projetData.totalCoutRestant += coutRestant
         }
       }
     }
 
-    // Calculer les totaux par projet
-    const totauxParProjet = new Map<string, {
-      projetId: string
-      projetNom: string
-      nombreArticles: number
-      quantiteTotale: number
-      coutTotal: number
-    }>()
-
-    for (const article of articlesRestants) {
-      if (!totauxParProjet.has(article.projetId)) {
-        totauxParProjet.set(article.projetId, {
-          projetId: article.projetId,
-          projetNom: article.projetNom,
-          nombreArticles: 0,
-          quantiteTotale: 0,
-          coutTotal: 0
-        })
-      }
-      
-      const totaux = totauxParProjet.get(article.projetId)!
-      totaux.nombreArticles += 1
-      totaux.quantiteTotale += article.quantiteRestante
-      totaux.coutTotal += article.coutRestant
-    }
+    // Convertir en tableau et filtrer les projets sans articles restants
+    const projetsAvecArticles = Array.from(projetsMap.values())
+      .filter(p => p.articles.length > 0)
+      .sort((a, b) => b.totalCoutRestant - a.totalCoutRestant)
 
     // Calculer le total global
     const totalGlobal = {
-      nombreArticles: articlesRestants.length,
-      quantiteTotale: articlesRestants.reduce((sum, a) => sum + a.quantiteRestante, 0),
-      coutTotal: articlesRestants.reduce((sum, a) => sum + a.coutRestant, 0)
+      nombreProjets: projetsAvecArticles.length,
+      nombreArticles: projetsAvecArticles.reduce((sum, p) => sum + p.articles.length, 0),
+      quantiteTotale: projetsAvecArticles.reduce((sum, p) => sum + p.totalQuantiteRestante, 0),
+      coutTotal: projetsAvecArticles.reduce((sum, p) => sum + p.totalCoutRestant, 0)
     }
 
     return NextResponse.json({
       success: true,
       data: {
-        articles: articlesRestants,
-        totauxParProjet: Array.from(totauxParProjet.values()),
+        projets: projetsAvecArticles,
         totalGlobal
       }
     })
