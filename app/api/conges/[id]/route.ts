@@ -119,6 +119,118 @@ export async function PATCH(
     let updateData: any = {}
 
     switch (action) {
+      case "valider":
+        // Validation simplifiée selon le rôle
+        let newStatus = demande.status
+        let signatureField: any = {}
+
+        if (demande.status === "en_attente_validation_hierarchique") {
+          // Responsable hiérarchique valide
+          if (demande.responsableId !== currentUser.id && currentUser.role !== "superadmin") {
+            return NextResponse.json({ 
+              success: false, 
+              error: "Non autorisé - Vous n'êtes pas le responsable hiérarchique de cette demande" 
+            }, { status: 403 })
+          }
+          newStatus = "en_attente_validation_rh"
+          signatureField = {
+            signatureResponsable: {
+              userId: currentUser.id,
+              date: new Date(),
+              signature: `signature_${currentUser.id}_${Date.now()}`,
+              commentaire: commentaire || null
+            }
+          }
+        } else if (demande.status === "en_attente_validation_rh") {
+          // RH valide
+          if (currentUser.role !== "responsable_rh" && currentUser.role !== "superadmin") {
+            return NextResponse.json({ 
+              success: false, 
+              error: "Non autorisé - Vous devez être Responsable RH" 
+            }, { status: 403 })
+          }
+          newStatus = "en_attente_visa_dg"
+          signatureField = {
+            signatureRH: {
+              userId: currentUser.id,
+              date: new Date(),
+              signature: `signature_${currentUser.id}_${Date.now()}`,
+              commentaire: commentaire || null
+            }
+          }
+        } else if (demande.status === "en_attente_visa_dg") {
+          // DG valide
+          if ((currentUser.role as string) !== "directeur_general" && currentUser.role !== "superadmin") {
+            return NextResponse.json({ 
+              success: false, 
+              error: "Non autorisé - Vous devez être Directeur Général" 
+            }, { status: 403 })
+          }
+          newStatus = "approuvee"
+          signatureField = {
+            signatureDG: {
+              userId: currentUser.id,
+              date: new Date(),
+              signature: `signature_${currentUser.id}_${Date.now()}`,
+              commentaire: commentaire || null
+            },
+            dateValidation: new Date()
+          }
+        } else {
+          return NextResponse.json({ 
+            success: false, 
+            error: "Cette demande ne peut pas être validée dans son état actuel" 
+          }, { status: 400 })
+        }
+
+        updateData = {
+          status: newStatus,
+          dateDebutFinale: demande.dateDebutFinale || demande.dateDebut,
+          dateFinFinale: demande.dateFinFinale || demande.dateFin,
+          nombreJoursFinal: demande.nombreJoursFinal || demande.nombreJours,
+          ...signatureField
+        }
+        break
+
+      case "rejeter":
+        // Rejet possible à toutes les étapes
+        if (!commentaire || commentaire.trim() === "") {
+          return NextResponse.json({ 
+            success: false, 
+            error: "Le motif du rejet est obligatoire" 
+          }, { status: 400 })
+        }
+
+        // Vérifier les permissions selon le statut
+        if (demande.status === "en_attente_validation_hierarchique") {
+          if (demande.responsableId !== currentUser.id && currentUser.role !== "superadmin") {
+            return NextResponse.json({ 
+              success: false, 
+              error: "Non autorisé" 
+            }, { status: 403 })
+          }
+        } else if (demande.status === "en_attente_validation_rh") {
+          if (currentUser.role !== "responsable_rh" && currentUser.role !== "superadmin") {
+            return NextResponse.json({ 
+              success: false, 
+              error: "Non autorisé" 
+            }, { status: 403 })
+          }
+        } else if (demande.status === "en_attente_visa_dg") {
+          if ((currentUser.role as string) !== "directeur_general" && currentUser.role !== "superadmin") {
+            return NextResponse.json({ 
+              success: false, 
+              error: "Non autorisé" 
+            }, { status: 403 })
+          }
+        }
+
+        updateData = {
+          status: "rejetee",
+          rejetMotif: commentaire
+        }
+        break
+
       case "soumettre":
         // L'employé soumet sa demande
         if (demande.employeId !== currentUser.id) {
@@ -129,7 +241,7 @@ export async function PATCH(
         }
 
         updateData = {
-          status: "soumise",
+          status: "en_attente_validation_hierarchique",
           dateSoumission: new Date(),
           signatureEmploye: {
             userId: currentUser.id,

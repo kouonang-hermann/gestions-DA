@@ -14,11 +14,13 @@ import { getCurrentUser } from "@/lib/auth"
  * - Jours sans valorisation (MAX)
  * 
  * Règles :
- * - Le point de départ du calcul est la date à laquelle la demande est passée au statut :
- *   "En attente préparation appro" OU "En attente préparation logistique"
- * - Jours sans valorisation = Date du jour − Date de passage à ce statut
+ * - Un article est "non valorisé" si :
+ *   1. Il a une quantité restante (quantiteValidee - quantiteSortie > 0)
+ *   2. Cette quantité restante n'a pas de prix (prixUnitaire IS NULL)
+ * - Le point de départ du calcul est la date de validation appro/logistique
+ *   (datePassageAppro ou datePassageLogistique)
+ * - Jours sans valorisation = Date du jour − Date de validation
  * - Pour chaque projet et type de demande, on prend le MAX des jours
- * - Un article est "non valorisé" si prixUnitaire IS NULL
  */
 export async function GET(request: NextRequest) {
   try {
@@ -31,18 +33,12 @@ export async function GET(request: NextRequest) {
       }, { status: 401 })
     }
 
-    // Récupérer les demandes qui sont passées par les statuts de préparation
-    // et qui ont encore des articles non valorisés
+    // Récupérer toutes les demandes actives qui ont des articles non valorisés
     const demandes = await prisma.demande.findMany({
       where: {
         status: {
           notIn: ["brouillon", "rejetee", "archivee"]
-        },
-        // Demandes qui ont une date de passage appro ou logistique
-        OR: [
-          { datePassageAppro: { not: null } },
-          { datePassageLogistique: { not: null } }
-        ]
+        }
       },
       include: {
         projet: {
@@ -54,11 +50,15 @@ export async function GET(request: NextRequest) {
         items: {
           select: {
             id: true,
+            quantiteDemandee: true,
+            quantiteLivreeTotal: true,
             prixUnitaire: true
           }
         }
       }
     })
+
+    console.log(`🔍 [ARTICLES NON VALORISÉS] Total demandes trouvées: ${demandes.length}`)
 
     // Agréger par projet et type
     const aggregationMap = new Map<string, {
@@ -73,20 +73,32 @@ export async function GET(request: NextRequest) {
     const now = new Date()
 
     for (const demande of demandes) {
-      // Compter les articles non valorisés (prixUnitaire IS NULL)
-      const articlesNonValorises = demande.items.filter(item => item.prixUnitaire === null)
+      // Compter les articles non valorisés :
+      // - Quantité restante > 0 (quantiteDemandee - quantiteLivreeTotal)
+      // - Prix unitaire non renseigné (prixUnitaire IS NULL)
+      // IMPORTANT: Utilise les mêmes champs que les Tableaux 1 & 2 pour cohérence
+      const articlesNonValorises = demande.items.filter(item => {
+        const quantiteDemandee = item.quantiteDemandee || 0
+        const quantiteLivree = item.quantiteLivreeTotal || 0
+        const quantiteRestante = quantiteDemandee - quantiteLivree
+        
+        return quantiteRestante > 0 && item.prixUnitaire === null
+      })
+      
+      console.log(`📦 [${demande.numero}] Items: ${demande.items.length}, Non valorisés: ${articlesNonValorises.length}, DateAppro: ${demande.datePassageAppro}, DateLog: ${demande.datePassageLogistique}`)
       
       if (articlesNonValorises.length === 0) continue
 
-      // Déterminer la date de passage au statut de préparation
+      // Déterminer la date de référence pour le calcul
+      // Priorité : date de passage > date de création
       const datePassage = demande.type === "materiel" 
         ? demande.datePassageAppro 
         : demande.datePassageLogistique
-
-      if (!datePassage) continue
+      
+      const dateReference = datePassage || demande.dateCreation
 
       // Calculer les jours sans valorisation
-      const diffTime = now.getTime() - new Date(datePassage).getTime()
+      const diffTime = now.getTime() - new Date(dateReference).getTime()
       const joursSansValorisation = Math.floor(diffTime / (1000 * 60 * 60 * 24))
 
       // Clé d'agrégation : projetId + type
@@ -138,16 +150,22 @@ export async function GET(request: NextRequest) {
     }> = []
 
     for (const demande of demandes) {
-      const articlesNonValorises = demande.items.filter(item => item.prixUnitaire === null)
+      const articlesNonValorises = demande.items.filter(item => {
+        const quantiteDemandee = item.quantiteDemandee || 0
+        const quantiteLivree = item.quantiteLivreeTotal || 0
+        const quantiteRestante = quantiteDemandee - quantiteLivree
+        
+        return quantiteRestante > 0 && item.prixUnitaire === null
+      })
       if (articlesNonValorises.length === 0) continue
 
       const datePassage = demande.type === "materiel" 
         ? demande.datePassageAppro 
         : demande.datePassageLogistique
 
-      if (!datePassage) continue
+      const dateReference = datePassage || demande.dateCreation
 
-      const diffTime = now.getTime() - new Date(datePassage).getTime()
+      const diffTime = now.getTime() - new Date(dateReference).getTime()
       const joursSansValorisation = Math.floor(diffTime / (1000 * 60 * 60 * 24))
 
       detailParDemande.push({

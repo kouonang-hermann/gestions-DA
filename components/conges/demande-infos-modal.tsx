@@ -5,10 +5,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Combobox, ComboboxOption } from "@/components/ui/combobox"
 import { DemandeInfos } from "./nouvelle-demande-modal"
 import { Loader2 } from "lucide-react"
+import { useStore } from "@/stores/useStore"
 
 interface DemandeInfosModalProps {
   open: boolean
@@ -48,7 +47,7 @@ export function DemandeInfosModal({ open, onOpenChange, onValidate }: DemandeInf
   const loadResponsables = async () => {
     setLoadingResponsables(true)
     try {
-      const token = localStorage.getItem("token")
+      const token = useStore.getState().token
       const response = await fetch("/api/users/responsables", {
         headers: {
           ...(token && { Authorization: `Bearer ${token}` })
@@ -57,6 +56,8 @@ export function DemandeInfosModal({ open, onOpenChange, onValidate }: DemandeInf
       const data = await response.json()
       if (data.success) {
         setResponsables(data.data)
+      } else {
+        console.error("Erreur API responsables:", data.error)
       }
     } catch (error) {
       console.error("Erreur lors du chargement des responsables:", error)
@@ -65,7 +66,8 @@ export function DemandeInfosModal({ open, onOpenChange, onValidate }: DemandeInf
     }
   }
 
-  const handleResponsableChange = (value: string) => {
+  const handleResponsableChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value
     setResponsableId(value)
     const responsable = responsables.find(r => r.id === value)
     setSelectedResponsable(responsable || null)
@@ -153,18 +155,19 @@ export function DemandeInfosModal({ open, onOpenChange, onValidate }: DemandeInf
                 <span className="text-sm text-gray-500">Chargement...</span>
               </div>
             ) : (
-              <Combobox
-                options={responsables.map((resp) => ({
-                  value: resp.id,
-                  label: `${resp.prenom} ${resp.nom}`,
-                  subtitle: resp.role
-                }))}
+              <select
+                id="responsable"
                 value={responsableId}
-                onValueChange={handleResponsableChange}
-                placeholder="Sélectionner un responsable"
-                searchPlaceholder="Rechercher un responsable..."
-                emptyText="Aucun responsable trouvé"
-              />
+                onChange={handleResponsableChange}
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="">Sélectionner un responsable</option>
+                {responsables.map((resp) => (
+                  <option key={resp.id} value={resp.id}>
+                    {resp.prenom} {resp.nom} - {resp.role}
+                  </option>
+                ))}
+              </select>
             )}
             
             {/* Affichage auto des infos du responsable */}
@@ -182,18 +185,19 @@ export function DemandeInfosModal({ open, onOpenChange, onValidate }: DemandeInf
             <Label htmlFor="typeConge">
               Type de congé <span className="text-red-500">*</span>
             </Label>
-            <Select value={typeConge} onValueChange={setTypeConge}>
-              <SelectTrigger id="typeConge">
-                <SelectValue placeholder="Sélectionner un type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="annuel">Congés annuel</SelectItem>
-                <SelectItem value="maladie">Congés maladie</SelectItem>
-                <SelectItem value="parental">Congés de parental</SelectItem>
-                <SelectItem value="recuperation">Congés pour récupération</SelectItem>
-                <SelectItem value="autres">Autres</SelectItem>
-              </SelectContent>
-            </Select>
+            <select
+              id="typeConge"
+              value={typeConge}
+              onChange={(e) => setTypeConge(e.target.value)}
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <option value="">Sélectionner un type</option>
+              <option value="annuel">Congés annuel</option>
+              <option value="maladie">Congés maladie</option>
+              <option value="parental">Congés de parental</option>
+              <option value="recuperation">Congés pour récupération</option>
+              <option value="autres">Autres</option>
+            </select>
           </div>
 
           {/* Précision si "Autres" */}

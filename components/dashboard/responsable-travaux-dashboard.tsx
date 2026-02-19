@@ -38,6 +38,7 @@ import {
   Bar,
 } from "recharts"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { DecideurButton } from "@/components/shared/decideur-button"
 import ValidationDemandesList from "@/components/validation/validation-demandes-list"
 import DemandeDetailsModal from "@/components/modals/demande-details-modal"
 import CreateDemandeModal from "@/components/demandes/create-demande-modal"
@@ -47,6 +48,8 @@ import UniversalClosureModal from "@/components/modals/universal-closure-modal"
 import UserDetailsModal from "@/components/modals/user-details-modal"
 import ValidatedRequestsHistory from "@/components/dashboard/validated-requests-history"
 import LivraisonsAEffectuer from "@/components/dashboard/livraisons-a-effectuer"
+import MesLivraisonsSection from "@/components/dashboard/mes-livraisons-section"
+import LivraisonsCard from "@/components/dashboard/livraisons-card"
 import { useAutoReload } from "@/hooks/useAutoReload"
 import type { Demande } from "@/types"
 
@@ -375,10 +378,16 @@ export default function ResponsableTravauxDashboard() {
                   Voir tes demandes rejetées
                 </TooltipContent>
               </Tooltip>
+
+              {/* Carte Livraisons - Affichée uniquement si l'utilisateur est assigné comme livreur */}
+              <LivraisonsCard />
             </div>
 
             {/* Livraisons à effectuer */}
             <LivraisonsAEffectuer />
+
+            {/* Section des livraisons assignées */}
+            <MesLivraisonsSection />
 
             {/* Liste des demandes à valider */}
             <ValidationDemandesList type="materiel" title="Demandes de matériel à valider" />
@@ -453,6 +462,8 @@ export default function ResponsableTravauxDashboard() {
                       Confirmer la réception et clôturer les demandes prêtes
                     </TooltipContent>
                   </Tooltip>
+
+                  <DecideurButton />
                 </div>
               </CardContent>
             </Card>

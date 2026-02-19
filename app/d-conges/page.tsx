@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { ArrowLeft, Calendar, Plus, Filter, FileText, CheckCircle, XCircle, Clock } from "lucide-react"
+import { ArrowLeft, Calendar, Plus, Filter, FileText, CheckCircle, XCircle, Clock, Download, Eye } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -9,26 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useRouter } from "next/navigation"
 import { useStore } from "@/stores/useStore"
 import { NouvelleDemandeModal } from "@/components/conges/nouvelle-demande-modal"
-
-interface DemandeConge {
-  id: string
-  numero: string
-  typeConge: string
-  dateDebut: string
-  dateFin: string
-  nombreJours: number
-  status: string
-  dateCreation: string
-  employe: {
-    nom: string
-    prenom: string
-    service?: string
-  }
-  responsable: {
-    nom: string
-    prenom: string
-  }
-}
+import { generateCongePDF } from "@/lib/conge-pdf-generator"
+import DemandeCongeDetailsModal from "@/components/conges/demande-conge-details-modal"
+import type { DemandeConge } from "@/types"
 
 export default function DCongesPage() {
   const router = useRouter()
@@ -38,6 +21,9 @@ export default function DCongesPage() {
   const [filterStatus, setFilterStatus] = useState<string>("all")
   const [filterType, setFilterType] = useState<string>("all")
   const [nouvelleDemandeOpen, setNouvelleDemandeOpen] = useState(false)
+  const [selectedDemande, setSelectedDemande] = useState<DemandeConge | null>(null)
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false)
+  const [downloadingId, setDownloadingId] = useState<string | null>(null)
 
   useEffect(() => {
     loadDemandes()
@@ -46,7 +32,7 @@ export default function DCongesPage() {
   const loadDemandes = async () => {
     setLoading(true)
     try {
-      const token = localStorage.getItem("token")
+      const token = useStore.getState().token
       const response = await fetch("/api/conges", {
         headers: {
           ...(token && { Authorization: `Bearer ${token}` })
@@ -104,6 +90,23 @@ export default function DCongesPage() {
     enAttente: demandes.filter(d => d.status.includes("attente")).length,
     approuvees: demandes.filter(d => d.status === "approuvee").length,
     rejetees: demandes.filter(d => d.status === "rejetee").length
+  }
+
+  const handleDownloadPDF = async (demande: DemandeConge) => {
+    setDownloadingId(demande.id)
+    try {
+      await generateCongePDF(demande as any)
+    } catch (error) {
+      console.error('Erreur téléchargement PDF:', error)
+      alert('Erreur lors de la génération du PDF')
+    } finally {
+      setDownloadingId(null)
+    }
+  }
+
+  const handleViewDetails = (demande: DemandeConge) => {
+    setSelectedDemande(demande)
+    setDetailsModalOpen(true)
   }
 
   return (
@@ -284,14 +287,16 @@ export default function DCongesPage() {
                         <p className="text-gray-500">{demande.nombreJours} jour(s)</p>
                       </div>
 
-                      <div>
-                        <p className="text-gray-600">Responsable</p>
-                        <p className="font-medium">
-                          {demande.responsable.prenom} {demande.responsable.nom}
-                        </p>
-                      </div>
+                      {demande.responsable && (
+                        <div>
+                          <p className="text-gray-600">Responsable</p>
+                          <p className="font-medium">
+                            {demande.responsable.prenom} {demande.responsable.nom}
+                          </p>
+                        </div>
+                      )}
 
-                      {currentUser?.role !== "employe" && (
+                      {currentUser?.role !== "employe" && demande.employe && (
                         <div>
                           <p className="text-gray-600">Employé</p>
                           <p className="font-medium">
@@ -302,6 +307,27 @@ export default function DCongesPage() {
                           )}
                         </div>
                       )}
+                    </div>
+
+                    <div className="flex gap-2 mt-4 pt-4 border-t">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleViewDetails(demande)}
+                        className="flex-1"
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        Voir détails
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => handleDownloadPDF(demande)}
+                        disabled={downloadingId === demande.id}
+                        className="flex-1 bg-blue-600 hover:bg-blue-700"
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        {downloadingId === demande.id ? 'Téléchargement...' : 'Télécharger PDF'}
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -319,6 +345,15 @@ export default function DCongesPage() {
             loadDemandes() // Recharger après création
           }
         }}
+      />
+
+      <DemandeCongeDetailsModal
+        isOpen={detailsModalOpen}
+        onClose={() => {
+          setDetailsModalOpen(false)
+          setSelectedDemande(null)
+        }}
+        demande={selectedDemande}
       />
     </div>
   )

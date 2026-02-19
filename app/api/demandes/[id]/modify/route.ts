@@ -69,6 +69,30 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
 
     // Mettre à jour les items (articles et quantités)
     if (body.items && Array.isArray(body.items)) {
+      // ✅ CORRECTION BUG : Récupérer les données existantes AVANT suppression
+      const existingItems = await prisma.itemDemande.findMany({
+        where: { demandeId: params.id },
+        select: {
+          articleId: true,
+          prixUnitaire: true,
+          quantiteLivreeTotal: true,
+          quantiteValidee: true,
+          quantiteSortie: true,
+          quantiteRecue: true
+        }
+      })
+
+      // Créer un map des données par articleId pour préservation
+      const existingDataMap = new Map(
+        existingItems.map(item => [item.articleId, {
+          prixUnitaire: item.prixUnitaire,
+          quantiteLivreeTotal: item.quantiteLivreeTotal,
+          quantiteValidee: item.quantiteValidee,
+          quantiteSortie: item.quantiteSortie,
+          quantiteRecue: item.quantiteRecue
+        }])
+      )
+
       // Vérifications préalables et préparation des données
       const newArticles: any[] = []
       const processedItems: any[] = []
@@ -112,10 +136,19 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
           }
         }
         
+        // ✅ CORRECTION BUG : Préserver les données existantes (prix, livraisons, etc.)
+        const existingData = existingDataMap.get(articleId)
+        
         processedItems.push({
           articleId,
           quantiteDemandee: item.quantiteDemandee,
           commentaire: item.commentaire || null,
+          // Préserver les données financières et de livraison
+          prixUnitaire: existingData?.prixUnitaire || null,
+          quantiteLivreeTotal: existingData?.quantiteLivreeTotal || 0,
+          quantiteValidee: existingData?.quantiteValidee || null,
+          quantiteSortie: existingData?.quantiteSortie || null,
+          quantiteRecue: existingData?.quantiteRecue || null
         })
       }
 

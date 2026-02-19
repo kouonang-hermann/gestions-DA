@@ -475,7 +475,7 @@ export default function DemandeDetailModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] max-w-6xl max-h-[90vh] overflow-y-auto p-3 sm:p-4 md:p-6">
+      <DialogContent className="w-[95vw] max-w-6xl max-h-[90vh] overflow-y-auto p-3 sm:p-4 md:p-6" showCloseButton={false}>
         {/* En-tête avec titre */}
         <DialogHeader>
           <div className="relative">

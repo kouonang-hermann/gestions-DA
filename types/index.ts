@@ -7,6 +7,8 @@ export type UserRole =
   | "responsable_appro"
   | "charge_affaire"
   | "responsable_livreur"
+  | "responsable_rh"
+  | "directeur_general"
 
 export type DemandeType = "materiel" | "outillage"
 
@@ -77,6 +79,7 @@ export interface ItemDemande {
   quantiteValidee?: number
   quantiteSortie?: number
   quantiteRecue?: number
+  quantiteLivreeTotal?: number // Total des quantités livrées (source de vérité pour les livraisons)
   commentaire?: string
   prixUnitaire?: number // Prix unitaire saisi par le responsable appro
   livraisons?: Array<{ quantiteLivree: number }> // Livraisons associées à cet item
@@ -91,6 +94,44 @@ export interface ValidationReception {
   statut: "acceptee_totale" | "acceptee_partielle" | "refusee_totale"
   commentaireGeneral?: string
   items: ValidationItem[]
+}
+
+export interface DemandeConge {
+  id: string
+  numero: string
+  employeId: string
+  matricule: string
+  anciennete: string
+  responsableId: string
+  responsableNom: string
+  responsableTel: string
+  responsableEmail: string
+  typeConge: string
+  autresPrecision?: string
+  dateDebut: string
+  dateFin: string
+  nombreJours: number
+  resteJours?: number
+  contactPersonnelNom: string
+  contactPersonnelTel: string
+  contactAutreNom?: string
+  contactAutreTel?: string
+  status: string
+  dateCreation: string
+  dateSoumission?: string
+  dateValidation?: string
+  rejetMotif?: string
+  employe?: {
+    nom: string
+    prenom: string
+    email: string
+    phone?: string
+    service?: string
+  }
+  responsable?: {
+    nom: string
+    prenom: string
+  }
 }
 
 export interface ValidationItem {

@@ -13,6 +13,7 @@ import {
   XCircle, 
   Plus,
   FileText,
+  Truck,
   Users,
   FolderOpen,
   Settings,
@@ -24,7 +25,8 @@ import {
   Activity,
   Edit,
   Trash2,
-  Eye
+  Eye,
+  X
 } from 'lucide-react'
 import {
   PieChart,
@@ -41,6 +43,7 @@ import {
   Bar,
 } from "recharts"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { DecideurButton } from "@/components/shared/decideur-button"
 import CreateDemandeModal from "@/components/demandes/create-demande-modal"
 import ValidationPreparationList from "@/components/charge-affaire/validation-preparation-list"
 import ValidationDemandesList from "@/components/validation/validation-demandes-list"
@@ -49,6 +52,8 @@ import UserDetailsModal from "@/components/modals/user-details-modal"
 import MesDemandesACloturer from "@/components/demandes/mes-demandes-a-cloturer"
 import UniversalClosureModal from "@/components/modals/universal-closure-modal"
 import ValidatedRequestsHistory from "@/components/dashboard/validated-requests-history"
+import MesLivraisonsSection from "@/components/dashboard/mes-livraisons-section"
+import LivraisonsCard from "@/components/dashboard/livraisons-card"
 import { useAutoReload } from "@/hooks/useAutoReload"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
@@ -401,7 +406,13 @@ export default function ChargeAffaireDashboard() {
                   Voir tes demandes rejetées
                 </TooltipContent>
               </Tooltip>
+
+              {/* Carte Livraisons - Affichée uniquement si l'utilisateur est assigné comme livreur */}
+              <LivraisonsCard />
             </div>
+
+            {/* Section des livraisons assignées */}
+            <MesLivraisonsSection />
 
             {/* Liste des demandes à valider */}
             <ValidationDemandesList type="materiel" title="Demandes de matériel à valider" />
@@ -794,6 +805,8 @@ export default function ChargeAffaireDashboard() {
                       Confirmer la réception et clôturer les demandes prêtes
                     </TooltipContent>
                   </Tooltip>
+
+                  <DecideurButton />
                 </div>
               </CardContent>
             </Card>
@@ -903,9 +916,19 @@ export default function ChargeAffaireDashboard() {
       />
       {/* Modale personnalisée pour les détails des demandes */}
       <Dialog open={detailsModalOpen} onOpenChange={setDetailsModalOpen}>
-        <DialogContent className="w-[95vw] max-w-4xl max-h-[80vh] p-4 sm:p-6">
+        <DialogContent className="w-[95vw] max-w-4xl max-h-[80vh] p-4 sm:p-6" showCloseButton={false}>
           <DialogHeader>
-            <DialogTitle>{detailsModalTitle}</DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle>{detailsModalTitle}</DialogTitle>
+              <Button
+                onClick={() => setDetailsModalOpen(false)}
+                className="absolute top-4 right-4 rounded-full p-2 min-w-[40px] min-h-[40px] flex items-center justify-center text-red-600 hover:text-white hover:bg-red-600 transition-all focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none z-50 border border-red-600"
+                variant="ghost"
+                size="sm"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
           </DialogHeader>
           
           <div className="space-y-4 overflow-y-auto" style={{maxHeight: 'calc(80vh - 120px)'}}>

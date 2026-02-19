@@ -1,8 +1,10 @@
 "use client"
 
 import { useState } from "react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { DemandeInfosModal } from "./demande-infos-modal"
 import { ContactsUrgenceModal } from "./contacts-urgence-modal"
+import { useStore } from "@/stores/useStore"
 
 interface NouvelleDemandeModalProps {
   open: boolean
@@ -41,7 +43,7 @@ export function NouvelleDemandeModal({ open, onOpenChange }: NouvelleDemandeModa
 
     // Soumettre la demande
     try {
-      const token = localStorage.getItem("token")
+      const token = useStore.getState().token
       const response = await fetch("/api/conges", {
         method: "POST",
         headers: {
@@ -57,13 +59,31 @@ export function NouvelleDemandeModal({ open, onOpenChange }: NouvelleDemandeModa
       const data = await response.json()
 
       if (data.success) {
-        // Réinitialiser et fermer
-        setStep("infos")
-        setDemandeInfos(null)
-        onOpenChange(false)
-        
-        // Afficher un message de succès
-        alert(`✅ Demande de congé créée avec succès!\nNuméro: ${data.data.numero}`)
+        // Soumettre automatiquement la demande
+        const submitResponse = await fetch(`/api/conges/${data.data.id}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
+          },
+          body: JSON.stringify({
+            action: "soumettre"
+          })
+        })
+
+        const submitData = await submitResponse.json()
+
+        if (submitData.success) {
+          // Réinitialiser et fermer
+          setStep("infos")
+          setDemandeInfos(null)
+          onOpenChange(false)
+          
+          // Afficher un message de succès
+          alert(`✅ Demande de congé soumise avec succès!\nNuméro: ${data.data.numero}\n\nVotre demande a été envoyée à votre responsable hiérarchique pour validation.`)
+        } else {
+          alert(`❌ Erreur lors de la soumission: ${submitData.error}`)
+        }
       } else {
         alert(`❌ Erreur: ${data.error}`)
       }

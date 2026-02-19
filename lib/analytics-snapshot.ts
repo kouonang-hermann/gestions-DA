@@ -160,11 +160,7 @@ export async function generateTableau3Data(): Promise<Tableau3Data> {
     where: {
       status: {
         notIn: ["brouillon", "rejetee", "archivee"]
-      },
-      OR: [
-        { datePassageAppro: { not: null } },
-        { datePassageLogistique: { not: null } }
-      ]
+      }
     },
     include: {
       projet: {
@@ -176,6 +172,8 @@ export async function generateTableau3Data(): Promise<Tableau3Data> {
       items: {
         select: {
           id: true,
+          quantiteValidee: true,
+          quantiteSortie: true,
           prixUnitaire: true
         }
       }
@@ -186,7 +184,13 @@ export async function generateTableau3Data(): Promise<Tableau3Data> {
   const now = new Date()
 
   for (const demande of demandes) {
-    const articlesNonValorises = demande.items.filter(item => item.prixUnitaire === null)
+    const articlesNonValorises = demande.items.filter(item => {
+      const quantiteValidee = item.quantiteValidee || 0
+      const quantiteSortie = item.quantiteSortie || 0
+      const quantiteRestante = quantiteValidee - quantiteSortie
+      
+      return quantiteRestante > 0 && item.prixUnitaire === null
+    })
     
     if (articlesNonValorises.length === 0) continue
 
@@ -194,9 +198,9 @@ export async function generateTableau3Data(): Promise<Tableau3Data> {
       ? demande.datePassageAppro 
       : demande.datePassageLogistique
 
-    if (!datePassage) continue
+    const dateReference = datePassage || demande.dateCreation
 
-    const diffTime = now.getTime() - new Date(datePassage).getTime()
+    const diffTime = now.getTime() - new Date(dateReference).getTime()
     const joursSansValorisation = Math.floor(diffTime / (1000 * 60 * 60 * 24))
 
     const key = `${demande.projetId}-${demande.type}`

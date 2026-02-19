@@ -28,6 +28,7 @@ import {
   User,
   Archive,
   CreditCard,
+  Gavel,
   Smartphone
 } from 'lucide-react'
 import {
@@ -51,6 +52,7 @@ import UserDetailsModal from "@/components/modals/user-details-modal"
 import MesDemandesACloturer from "@/components/demandes/mes-demandes-a-cloturer"
 import MesDemandesEnAttente from "@/components/demandes/mes-demandes-en-attente"
 import MesLivraisonsSection from "@/components/dashboard/mes-livraisons-section"
+import LivraisonsCard from "@/components/dashboard/livraisons-card"
 import ValidatedRequestsHistory from "@/components/dashboard/validated-requests-history"
 import ValidationReceptionList from "@/components/dashboard/validation-reception-list"
 import ValidatedDemandesModal from "@/components/modals/validated-demandes-modal"
@@ -909,6 +911,10 @@ export default function EmployeDashboard() {
                   Ouvrir tes demandes enregistrées en brouillon
                 </TooltipContent>
               </Tooltip>
+
+              {/* Carte Livraisons - Affichée uniquement si l'utilisateur est assigné comme livreur */}
+              <LivraisonsCard />
+
             </div>
 
             {/* Section des livraisons assignées */}
@@ -1074,6 +1080,23 @@ export default function EmployeDashboard() {
                     </TooltipTrigger>
                     <TooltipContent side="top" sideOffset={6}>
                       Confirmer la réception et clôturer les demandes prêtes
+                    </TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        className="justify-start text-white"
+                        style={{ backgroundColor: '#8b5cf6' }}
+                        size="sm"
+                        onClick={() => window.location.href = '/decideur'}
+                      >
+                        <Gavel className="h-4 w-4 mr-2" />
+                        <span className="text-sm">Décider</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" sideOffset={6}>
+                      Traiter les demandes de congés, absences et paiements
                     </TooltipContent>
                   </Tooltip>
                 </div>

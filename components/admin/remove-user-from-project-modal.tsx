@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { AlertTriangle, UserMinus, Users, AlertCircle, CheckCircle, XCircle } from "lucide-react"
+import { useStore } from "@/stores/useStore"
 import type { User, Projet } from "@/types"
 
 interface ProjectUser extends User {
@@ -46,10 +47,11 @@ export default function RemoveUserFromProjectModal({
     
     setLoadingUsers(true)
     try {
+      const token = useStore.getState().token
       const response = await fetch(`/api/projets/${projet.id}/remove-user`, {
         method: "GET",
         headers: {
-          "Authorization": `Bearer ${localStorage.getItem("token")}`,
+          ...(token && { "Authorization": `Bearer ${token}` }),
         },
       })
 
@@ -72,11 +74,12 @@ export default function RemoveUserFromProjectModal({
 
     setIsLoading(true)
     try {
+      const token = useStore.getState().token
       const response = await fetch(`/api/projets/${projet.id}/remove-user`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("token")}`,
+          ...(token && { "Authorization": `Bearer ${token}` }),
         },
         body: JSON.stringify({
           userId: selectedUser.id,

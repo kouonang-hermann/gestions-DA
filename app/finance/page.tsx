@@ -23,7 +23,7 @@ import {
   TrendingDown
 } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { getDemandeFinance } from "@/lib/finance-utils"
+import { getDemandeFinance, getTotalRemainingCost } from "@/lib/finance-utils"
 import * as XLSX from "xlsx"
 
 export default function FinancePage() {
@@ -31,6 +31,8 @@ export default function FinancePage() {
   const { currentUser, projets, demandes, articles, isLoading, loadProjets, loadDemandes, loadArticles } = useStore()
 
   // États pour les filtres financiers
+  // CORRECTION : Initialiser à "all" pour afficher toutes les données par défaut
+  // Cohérence avec les tableaux analytiques (API) qui n'ont pas de filtres
   const [financePeriode, setFinancePeriode] = useState<"all" | "month" | "quarter" | "year">("all")
   const [financeType, setFinanceType] = useState<"all" | "materiel" | "outillage">("all")
   const [financeStatut, setFinanceStatut] = useState<"all" | "chiffrees" | "non_chiffrees">("all")
@@ -67,7 +69,7 @@ export default function FinancePage() {
 
     try {
       // Récupérer le token d'authentification
-      const token = localStorage.getItem("token")
+      const token = useStore.getState().token
       const headers: HeadersInit = {}
       if (token) {
         headers["Authorization"] = `Bearer ${token}`
@@ -745,6 +747,26 @@ export default function FinancePage() {
           </CardContent>
         </Card>
 
+        {/* Indicateur visuel des filtres actifs */}
+        {(financePeriode !== "all" || financeType !== "all" || financeStatut !== "all") && (
+          <Card className="mb-4 bg-blue-50 border-blue-200">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-blue-600" />
+                <p className="text-sm text-blue-800 font-medium">
+                  Filtres actifs :
+                  {financePeriode !== "all" && ` Période: ${financePeriode === "month" ? "Mois en cours" : financePeriode === "quarter" ? "Trimestre en cours" : "Année en cours"}`}
+                  {financeStatut !== "all" && ` • Statut: ${financeStatut === "chiffrees" ? "Chiffrées" : "Non chiffrées"}`}
+                  {financeType !== "all" && ` • Type: ${financeType === "materiel" ? "Matériel" : "Outillage"}`}
+                </p>
+              </div>
+              <p className="text-xs text-blue-600 mt-2">
+                Certaines demandes peuvent être masquées par les filtres. Sélectionnez "Tout" pour voir toutes les données.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Tableau des coûts par projet */}
         {/* NOTE: Les coûts affichés représentent les QUANTITÉS RESTANTES à livrer (quantité validée - quantité livrée) */}
         {/* Cela permet de connaître le coût de ce qui reste à livrer suite aux ruptures de stock magasin */}
@@ -784,7 +806,12 @@ export default function FinancePage() {
               return (
                 <div>
                   <div className="flex justify-between items-center mb-4">
-                    <span className="text-sm text-gray-500">{demandesFiltrees.length} demande(s) filtrée(s)</span>
+                    <span className="text-sm text-gray-500">
+                      {demandesFiltrees.length} demande(s) affichée(s)
+                      {demandesFiltrees.length < demandes.length && (
+                        <span className="text-orange-600 font-medium"> sur {demandes.length} au total</span>
+                      )}
+                    </span>
                   </div>
                   <div className="overflow-x-auto border rounded-lg">
                     <table className="w-full text-sm">
@@ -794,18 +821,19 @@ export default function FinancePage() {
                           <th className="text-center p-3 font-medium text-gray-600">Demandes</th>
                           <th className="text-center p-3 font-medium text-gray-600">Matériel</th>
                           <th className="text-center p-3 font-medium text-gray-600">Outillage</th>
-                          <th className="text-right p-3 font-medium text-gray-600">Dépensé Total</th>
+                          <th className="text-right p-3 font-medium text-gray-600">Coût Restant Total</th>
                         </tr>
                       </thead>
                       <tbody>
                         {projets.map(projet => {
                           const projetDemandes = demandesFiltrees.filter(d => d.projetId === projet.id)
+                          
                           const depenseMateriel = projetDemandes
                             .filter(d => d.type === 'materiel')
-                            .reduce((sum, d) => sum + getDemandeFinance(d).spentAmount, 0)
+                            .reduce((sum, d) => sum + getTotalRemainingCost(d), 0)
                           const depenseOutillage = projetDemandes
                             .filter(d => d.type === 'outillage')
-                            .reduce((sum, d) => sum + getDemandeFinance(d).spentAmount, 0)
+                            .reduce((sum, d) => sum + getTotalRemainingCost(d), 0)
                           const depenseTotal = depenseMateriel + depenseOutillage
                           
                           if (projetDemandes.length === 0) return null
@@ -850,13 +878,13 @@ export default function FinancePage() {
                           <td className="p-3">TOTAL</td>
                           <td className="p-3 text-center">{demandesFiltrees.length}</td>
                           <td className="p-3 text-center text-blue-700">
-                            {demandesFiltrees.filter(d => d.type === 'materiel').reduce((sum, d) => sum + getDemandeFinance(d).spentAmount, 0).toLocaleString('fr-FR')} FCFA
+                            {demandesFiltrees.filter(d => d.type === 'materiel').reduce((sum, d) => sum + getTotalRemainingCost(d), 0).toLocaleString('fr-FR')} FCFA
                           </td>
                           <td className="p-3 text-center text-purple-700">
-                            {demandesFiltrees.filter(d => d.type === 'outillage').reduce((sum, d) => sum + getDemandeFinance(d).spentAmount, 0).toLocaleString('fr-FR')} FCFA
+                            {demandesFiltrees.filter(d => d.type === 'outillage').reduce((sum, d) => sum + getTotalRemainingCost(d), 0).toLocaleString('fr-FR')} FCFA
                           </td>
                           <td className="p-3 text-right text-green-800">
-                            {demandesFiltrees.reduce((sum, d) => sum + getDemandeFinance(d).spentAmount, 0).toLocaleString('fr-FR')} FCFA
+                            {demandesFiltrees.reduce((sum, d) => sum + getTotalRemainingCost(d), 0).toLocaleString('fr-FR')} FCFA
                           </td>
                         </tr>
                       </tfoot>
@@ -996,17 +1024,17 @@ export default function FinancePage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Package className="h-5 w-5 text-blue-600" />
-                Répartition des dépenses par type
+                Répartition par type (Coûts restants)
               </CardTitle>
             </CardHeader>
             <CardContent>
               {(() => {
                 const depenseMateriel = demandes
                   .filter(d => d.type === 'materiel')
-                  .reduce((sum, d) => sum + getDemandeFinance(d).spentAmount, 0)
+                  .reduce((sum, d) => sum + getTotalRemainingCost(d), 0)
                 const depenseOutillage = demandes
                   .filter(d => d.type === 'outillage')
-                  .reduce((sum, d) => sum + getDemandeFinance(d).spentAmount, 0)
+                  .reduce((sum, d) => sum + getTotalRemainingCost(d), 0)
                 const total = depenseMateriel + depenseOutillage
                 const pctMateriel = total > 0 ? Math.round((depenseMateriel / total) * 100) : 0
                 const pctOutillage = total > 0 ? Math.round((depenseOutillage / total) * 100) : 0
@@ -1059,7 +1087,7 @@ export default function FinancePage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FolderOpen className="h-5 w-5 text-green-600" />
-                Top 5 projets par dépenses
+                Top 5 projets par coûts restants
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -1068,7 +1096,7 @@ export default function FinancePage() {
                   .map(p => ({
                     id: p.id,
                     name: p.nom,
-                    cout: demandes.filter(d => d.projetId === p.id).reduce((sum, d) => sum + getDemandeFinance(d).spentAmount, 0),
+                    cout: demandes.filter(d => d.projetId === p.id).reduce((sum, d) => sum + getTotalRemainingCost(d), 0),
                     nbDemandes: demandes.filter(d => d.projetId === p.id).length
                   }))
                   .sort((a, b) => b.cout - a.cout)
@@ -1130,7 +1158,7 @@ export default function FinancePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Activity className="h-5 w-5 text-purple-600" />
-              Indicateurs de Performance (Dépensé)
+              Indicateurs de Performance (Coûts restants)
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -1152,11 +1180,11 @@ export default function FinancePage() {
                 : 0
               
               const coutMoyenMateriel = demandesChiffrees.filter(d => d.type === 'materiel').length > 0
-                ? Math.round(demandesChiffrees.filter(d => d.type === 'materiel').reduce((sum, d) => sum + getDemandeFinance(d).spentAmount, 0) / demandesChiffrees.filter(d => d.type === 'materiel').length)
+                ? Math.round(demandesChiffrees.filter(d => d.type === 'materiel').reduce((sum, d) => sum + getTotalRemainingCost(d), 0) / demandesChiffrees.filter(d => d.type === 'materiel').length)
                 : 0
               
               const coutMoyenOutillage = demandesChiffrees.filter(d => d.type === 'outillage').length > 0
-                ? Math.round(demandesChiffrees.filter(d => d.type === 'outillage').reduce((sum, d) => sum + getDemandeFinance(d).spentAmount, 0) / demandesChiffrees.filter(d => d.type === 'outillage').length)
+                ? Math.round(demandesChiffrees.filter(d => d.type === 'outillage').reduce((sum, d) => sum + getTotalRemainingCost(d), 0) / demandesChiffrees.filter(d => d.type === 'outillage').length)
                 : 0
               
               return (
@@ -1172,12 +1200,12 @@ export default function FinancePage() {
                     <p className="text-xs text-gray-500">{demandesValidees.length}/{demandes.length}</p>
                   </div>
                   <div className="bg-white p-4 rounded-lg border-l-4 border-purple-500">
-                    <p className="text-xs text-gray-600 mb-1">Dépensé Moy. Matériel</p>
+                    <p className="text-xs text-gray-600 mb-1">Coût Restant Moy. Matériel</p>
                     <p className="text-xl font-bold text-purple-700">{coutMoyenMateriel.toLocaleString('fr-FR')} FCFA</p>
                     <p className="text-xs text-gray-500">par demande</p>
                   </div>
                   <div className="bg-white p-4 rounded-lg border-l-4 border-cyan-500">
-                    <p className="text-xs text-gray-600 mb-1">Dépensé Moy. Outillage</p>
+                    <p className="text-xs text-gray-600 mb-1">Coût Restant Moy. Outillage</p>
                     <p className="text-xl font-bold text-cyan-700">{coutMoyenOutillage.toLocaleString('fr-FR')} FCFA</p>
                     <p className="text-xs text-gray-500">par demande</p>
                   </div>
@@ -1219,10 +1247,10 @@ export default function FinancePage() {
                 
                 const depenseMateriel = demandesMois
                   .filter(d => d.type === 'materiel')
-                  .reduce((sum, d) => sum + getDemandeFinance(d).spentAmount, 0)
+                  .reduce((sum, d) => sum + getTotalRemainingCost(d), 0)
                 const depenseOutillage = demandesMois
                   .filter(d => d.type === 'outillage')
-                  .reduce((sum, d) => sum + getDemandeFinance(d).spentAmount, 0)
+                  .reduce((sum, d) => sum + getTotalRemainingCost(d), 0)
                 const depenseTotal = depenseMateriel + depenseOutillage
                 
                 return {

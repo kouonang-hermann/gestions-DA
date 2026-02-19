@@ -59,7 +59,9 @@ const ROLE_VALIDATION_STATUS: Record<UserRole, DemandeStatus[]> = {
   responsable_travaux: ["en_attente_validation_responsable_travaux"],
   charge_affaire: ["en_attente_validation_charge_affaire"],
   responsable_appro: ["en_attente_preparation_appro"],
-  responsable_livreur: ["en_attente_reception_livreur", "en_attente_livraison"]
+  responsable_livreur: ["en_attente_reception_livreur", "en_attente_livraison"],
+  responsable_rh: [], // Gère les congés (système séparé)
+  directeur_general: [] // Gère les congés (système séparé)
 }
 
 /**
@@ -200,7 +202,9 @@ export function generateRejectionNotificationMessage(
     responsable_travaux: "Responsable des Travaux",
     charge_affaire: "Chargé d'Affaire",
     responsable_appro: "Responsable Appro",
-    responsable_livreur: "Responsable Livreur"
+    responsable_livreur: "Responsable Livreur",
+    responsable_rh: "Responsable RH",
+    directeur_general: "Directeur Général"
   }
 
   return `La demande ${demandeNumero} a été rejetée par ${roleLabels[rejecteurRole]}. Motif: ${motif}. Vous pouvez la modifier et la renvoyer.`

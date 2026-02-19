@@ -382,9 +382,9 @@ export default function AnalyticsModal({ isOpen, onClose }: AnalyticsModalProps)
                     </Button>
                   </CardHeader>
                   <CardContent className="p-0">
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
                       <table className="w-full text-sm">
-                        <thead className="bg-gray-50 border-b">
+                        <thead className="bg-gray-50 border-b sticky top-0 z-10">
                           <tr>
                             <th className="px-4 py-3 text-left font-medium text-gray-600">Projet</th>
                             <th className="px-4 py-3 text-center font-medium text-gray-600">Nb articles restants</th>
@@ -441,9 +441,9 @@ export default function AnalyticsModal({ isOpen, onClose }: AnalyticsModalProps)
                     </Button>
                   </CardHeader>
                   <CardContent className="p-0">
-                    <div className="overflow-x-auto max-h-[400px]">
+                    <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
                       <table className="w-full text-sm">
-                        <thead className="bg-gray-50 border-b sticky top-0">
+                        <thead className="bg-gray-50 border-b sticky top-0 z-10">
                           <tr>
                             <th className="px-3 py-2 text-left font-medium text-gray-600">Projet</th>
                             <th className="px-3 py-2 text-left font-medium text-gray-600">N° Demande</th>
@@ -516,9 +516,9 @@ export default function AnalyticsModal({ isOpen, onClose }: AnalyticsModalProps)
                     </Button>
                   </CardHeader>
                   <CardContent className="p-0">
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
                       <table className="w-full text-sm">
-                        <thead className="bg-gray-50 border-b">
+                        <thead className="bg-gray-50 border-b sticky top-0 z-10">
                           <tr>
                             <th className="px-4 py-3 text-left font-medium text-gray-600">Projet</th>
                             <th className="px-4 py-3 text-center font-medium text-gray-600">Type demande</th>

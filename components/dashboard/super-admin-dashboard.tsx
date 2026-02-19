@@ -10,26 +10,32 @@ import { Switch } from "@/components/ui/switch"
 import { Input } from "@/components/ui/input"
 import { useStore } from "@/stores/useStore"
 import { 
-  Users, 
-  FolderOpen, 
-  FileText, 
-  Clock, 
-  Plus, 
-  BarChart3, 
-  TrendingUp, 
-  Settings, 
-  CreditCard, 
-  Wrench, 
   Package, 
-  Search, 
-  ChevronLeft, 
-  ChevronRight, 
+  Clock, 
+  CheckCircle, 
+  XCircle, 
+  Plus, 
+  FileText, 
+  Truck,
+  Users,
+  FolderOpen,
+  Settings,
+  Search,
+  Wrench,
+  BarChart3,
+  TrendingUp,
+  Eye,
+  Edit,
+  Trash2,
+  X,
   Activity,
   Bell,
   Home,
   User,
-  DollarSign
-} from "lucide-react"
+  DollarSign,
+  ChevronLeft,
+  ChevronRight
+} from 'lucide-react'
 import {
   PieChart,
   Pie,
@@ -44,11 +50,8 @@ import {
   BarChart,
   Bar,
 } from "recharts"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { DecideurButton } from "@/components/shared/decideur-button"
 import CreateUserModal from "@/components/admin/create-user-modal"
 import CreateProjectModal from "@/components/admin/create-project-modal"
 import ProjectManagementModal from "@/components/admin/project-management-modal"
@@ -57,6 +60,8 @@ import DetailsModal from "@/components/modals/details-modal"
 import ValidatedRequestsHistory from "@/components/dashboard/validated-requests-history"
 import ManageAdminRoles from "../admin/manage-admin-roles"
 import SharedDemandesSection from "@/components/dashboard/shared-demandes-section"
+import MesLivraisonsSection from "@/components/dashboard/mes-livraisons-section"
+import LivraisonsCard from "@/components/dashboard/livraisons-card"
 import ValidationDemandesList from "@/components/validation/validation-demandes-list"
 import DemandesCategoryModal from "@/components/modals/demandes-category-modal"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -629,7 +634,13 @@ export default function SuperAdminDashboard() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Composant partagé pour les demandes en cours (sans clôture pour super admin) */}
               <SharedDemandesSection onCardClick={handleCardClick} hideClotureSection={true} />
+
+              {/* Carte Livraisons - Affichée uniquement si l'utilisateur est assigné comme livreur */}
+              <LivraisonsCard />
             </div>
+
+            {/* Section des livraisons assignées */}
+            <MesLivraisonsSection />
 
             {/* Section de validation pour le super admin - Matériel ET Outillage */}
             <ValidationDemandesList title="Demandes à valider" />
@@ -751,6 +762,10 @@ export default function SuperAdminDashboard() {
                       Analyse des quantités restantes (Vue Direction)
                     </TooltipContent>
                   </Tooltip>
+
+                  <div className="col-span-2">
+                    <DecideurButton className="w-full" />
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -885,22 +900,42 @@ export default function SuperAdminDashboard() {
 
           {/* Modale Tableau de Bord Financier */}
           <Dialog open={financialModalOpen} onOpenChange={setFinancialModalOpen}>
-            <DialogContent className="w-[95vw] max-w-6xl max-h-[90vh] overflow-y-auto p-3 sm:p-6">
-              <VisuallyHidden>
-                <DialogTitle>Tableau de Bord Financier</DialogTitle>
-              </VisuallyHidden>
+            <DialogContent className="w-[95vw] max-w-6xl max-h-[90vh] overflow-y-auto p-3 sm:p-6" showCloseButton={false}>
+              <DialogHeader>
+                <div className="flex items-center justify-between">
+                  <DialogTitle>Tableau de Bord Financier</DialogTitle>
+                  <Button
+                    onClick={() => setFinancialModalOpen(false)}
+                    className="absolute top-4 right-4 rounded-full p-2 min-w-[40px] min-h-[40px] flex items-center justify-center text-red-600 hover:text-white hover:bg-red-600 transition-all focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none z-50 border border-red-600"
+                    variant="ghost"
+                    size="sm"
+                  >
+                    <X className="h-5 w-5" />
+                  </Button>
+                </div>
+              </DialogHeader>
               <FinancialDashboard onClose={() => setFinancialModalOpen(false)} />
             </DialogContent>
           </Dialog>
 
           {/* Modale Gestion des Rôles Admin */}
           <Dialog open={adminRolesModalOpen} onOpenChange={setAdminRolesModalOpen}>
-            <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] p-4 sm:p-6">
+            <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] p-4 sm:p-6" showCloseButton={false}>
               <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
+                <div className="flex items-center justify-between">
+                  <DialogTitle className="flex items-center gap-2">
                   <Settings className="h-5 w-5 text-purple-600" />
                   Gestion des Rôles Administrateur
-                </DialogTitle>
+                  </DialogTitle>
+                  <Button
+                    onClick={() => setAdminRolesModalOpen(false)}
+                    className="absolute top-4 right-4 rounded-full p-2 min-w-[40px] min-h-[40px] flex items-center justify-center text-red-600 hover:text-white hover:bg-red-600 transition-all focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none z-50 border border-red-600"
+                    variant="ghost"
+                    size="sm"
+                  >
+                    <X className="h-5 w-5" />
+                  </Button>
+                </div>
               </DialogHeader>
               <div className="space-y-4 overflow-y-auto" style={{maxHeight: 'calc(90vh - 120px)'}}>
                 <div className="relative">

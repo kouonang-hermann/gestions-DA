@@ -19,12 +19,10 @@ export type DemandeFinance = {
 }
 
 export function getItemDeliveredQuantity(item: ItemDemande): number {
-  const livraisons = Array.isArray(item.livraisons) ? item.livraisons : []
-  if (livraisons.length > 0) {
-    return livraisons.reduce((sum, l) => sum + Number(l?.quantiteLivree || 0), 0)
-  }
-
-  return Number(item.quantiteSortie ?? item.quantiteRecue ?? 0)
+  // CORRECTION : Utiliser quantiteLivreeTotal qui est la source de vérité
+  // pour les livraisons réelles (mis à jour par l'API livraisons)
+  // Cohérence avec les tableaux analytiques qui utilisent quantiteLivreeTotal
+  return Number(item.quantiteLivreeTotal ?? 0)
 }
 
 export function getItemValidatedQuantity(item: ItemDemande): number {
@@ -32,9 +30,12 @@ export function getItemValidatedQuantity(item: ItemDemande): number {
 }
 
 export function getItemRemainingQuantity(item: ItemDemande): number {
-  const validated = getItemValidatedQuantity(item)
-  const delivered = getItemDeliveredQuantity(item)
-  return Math.max(0, validated - delivered)
+  // CORRECTION : Utiliser quantiteDemandee - quantiteLivreeTotal
+  // au lieu de quantiteValidee - quantiteSortie/quantiteRecue
+  // Cohérence avec les 3 tableaux analytiques (API)
+  const demanded = Number(item.quantiteDemandee ?? 0)
+  const delivered = Number(item.quantiteLivreeTotal ?? 0)
+  return Math.max(0, demanded - delivered)
 }
 
 export function getItemUnitPrice(item: ItemDemande): number {
@@ -82,4 +83,34 @@ export function getDemandeFinance(demande: Pick<Demande, "items">): DemandeFinan
     committedAmount: spentAmount + remainingAmount,
     hasAnyPrice,
   }
+}
+
+/**
+ * Calcule le coût total des quantités restantes pour une demande
+ * INCLUANT tous les articles avec quantités restantes, même non valorisés
+ * 
+ * Cette fonction utilise la même logique que le tableau "Synthèse des projets bloqués":
+ * - Pour chaque article avec quantité restante > 0
+ * - Si prix unitaire existe: ajoute (quantité_restante * prix_unitaire)
+ * - Si prix unitaire null: contribue 0 au coût total
+ * 
+ * Différence avec remainingAmount:
+ * - remainingAmount: Somme uniquement des articles valorisés
+ * - getTotalRemainingCost: Prend en compte TOUS les articles restants
+ */
+export function getTotalRemainingCost(demande: Pick<Demande, "items">): number {
+  const items = Array.isArray(demande.items) ? demande.items : []
+  let totalCost = 0
+
+  for (const item of items) {
+    const remainingQty = getItemRemainingQuantity(item)
+    
+    if (remainingQty > 0) {
+      const unitPrice = getItemUnitPrice(item)
+      // Même si unitPrice est 0 (non valorisé), on l'inclut dans le calcul
+      totalCost += remainingQty * unitPrice
+    }
+  }
+
+  return totalCost
 }

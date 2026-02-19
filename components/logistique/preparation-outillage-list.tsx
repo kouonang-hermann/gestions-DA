@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
-import { Package, Truck, Clock, CheckCircle, AlertCircle, User, Eye, DollarSign } from "lucide-react"
+import { Package, Truck, Clock, CheckCircle, AlertCircle, User, Eye, DollarSign, X } from "lucide-react"
 import type { Demande } from "@/types"
 import DemandeDetailsModal from "@/components/modals/demande-details-modal"
 
@@ -273,14 +273,23 @@ export default function PreparationOutillageList() {
 
       {/* Modal de préparation */}
       <Dialog open={preparationModalOpen} onOpenChange={setPreparationModalOpen}>
-        <DialogContent>
+        <DialogContent showCloseButton={false}>
           <DialogHeader>
-            <DialogTitle>Valider et assigner un livreur</DialogTitle>
-            <DialogDescription>
-              Sélectionnez un livreur pour cette demande d'outillage
-            </DialogDescription>
+            <div className="flex items-center justify-between">
+              <DialogTitle>Valider et assigner un livreur</DialogTitle>
+              <Button
+                onClick={() => setPreparationModalOpen(false)}
+                className="absolute top-4 right-4 rounded-full p-2 min-w-[40px] min-h-[40px] flex items-center justify-center text-red-600 hover:text-white hover:bg-red-600 transition-all focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none z-50 border border-red-600"
+                variant="ghost"
+                size="sm"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
           </DialogHeader>
-          
+          <DialogDescription>
+            Sélectionnez un livreur pour cette demande d'outillage
+          </DialogDescription>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="livreur">Livreur *</Label>
@@ -328,13 +337,23 @@ export default function PreparationOutillageList() {
 
       {/* Modal de saisie des prix */}
       <Dialog open={prixModalOpen} onOpenChange={setPrixModalOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl" showCloseButton={false}>
           <DialogHeader>
-            <DialogTitle>Saisir les prix unitaires</DialogTitle>
-            <DialogDescription>
-              Demande: {selectedDemande?.numero}
-            </DialogDescription>
+            <div className="flex items-center justify-between">
+              <DialogTitle>Saisir les prix unitaires</DialogTitle>
+              <Button
+                onClick={() => setPrixModalOpen(false)}
+                className="absolute top-4 right-4 rounded-full p-2 min-w-[40px] min-h-[40px] flex items-center justify-center text-red-600 hover:text-white hover:bg-red-600 transition-all focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none z-50 border border-red-600"
+                variant="ghost"
+                size="sm"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
           </DialogHeader>
+          <DialogDescription>
+            Demande: {selectedDemande?.numero}
+          </DialogDescription>
           
           <div className="space-y-4 py-4 max-h-96 overflow-y-auto">
             {selectedDemande?.items.map((item) => (

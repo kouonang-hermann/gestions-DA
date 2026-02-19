@@ -10,16 +10,20 @@ import {
   Package, 
   Clock, 
   CheckCircle, 
-  Truck, 
-  Plus,
-  FileText,
+  XCircle, 
+  Plus, 
+  FileText, 
+  Truck,
   Users,
   FolderOpen,
   Settings,
   Search,
   Wrench,
   BarChart3,
-  TrendingUp
+  TrendingUp,
+  Eye,
+  Edit,
+  X
 } from 'lucide-react'
 import {
   PieChart,
@@ -36,6 +40,7 @@ import {
   Bar,
 } from "recharts"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { DecideurButton } from "@/components/shared/decideur-button"
 import SortiePreparationList from "@/components/appro/sortie-preparation-list"
 import CreateDemandeModal from "@/components/demandes/create-demande-modal"
 import { UserRequestsChart } from "@/components/charts/user-requests-chart"
@@ -43,12 +48,13 @@ import UserDetailsModal from "@/components/modals/user-details-modal"
 import MesDemandesACloturer from "@/components/demandes/mes-demandes-a-cloturer"
 import UniversalClosureModal from "@/components/modals/universal-closure-modal"
 import LivraisonsAEffectuer from "@/components/dashboard/livraisons-a-effectuer"
+import MesLivraisonsSection from "@/components/dashboard/mes-livraisons-section"
+import LivraisonsCard from "@/components/dashboard/livraisons-card"
 import SousDemandesList from "@/components/dashboard/sous-demandes-list"
 import { useAutoReload } from "@/hooks/useAutoReload"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import DemandeDetailModal from "@/components/demandes/demande-detail-modal"
-import { Eye } from 'lucide-react'
 
 export default function ApproDashboard() {
   const { currentUser, demandes, projets, users, isLoading, executeAction, loadDemandes } = useStore()
@@ -420,11 +426,17 @@ export default function ApproDashboard() {
                   Voir les demandes livrées (validation finale / clôturées)
                 </TooltipContent>
               </Tooltip>
+
+              {/* Carte Livraisons - Affichée uniquement si l'utilisateur est assigné comme livreur */}
+              <LivraisonsCard />
             </div>
 
 
             {/* Livraisons à effectuer */}
             <LivraisonsAEffectuer />
+
+            {/* Section des livraisons assignées */}
+            <MesLivraisonsSection />
 
             {/* Anomalies de livraison - Sous-demandes et demandes renvoyées (matériel uniquement) */}
             <SousDemandesList type="materiel" />
@@ -501,6 +513,8 @@ export default function ApproDashboard() {
                       Confirmer la réception et clôturer les demandes prêtes
                     </TooltipContent>
                   </Tooltip>
+
+                  <DecideurButton />
                 </div>
               </CardContent>
             </Card>
@@ -610,9 +624,19 @@ export default function ApproDashboard() {
       />
       {/* Modale de détails des demandes */}
       <Dialog open={detailsModalOpen} onOpenChange={setDetailsModalOpen}>
-        <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] p-4 sm:p-6">
+        <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] p-4 sm:p-6" showCloseButton={false}>
           <DialogHeader>
-            <DialogTitle className="text-lg sm:text-xl">{detailsModalTitle}</DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-lg sm:text-xl">{detailsModalTitle}</DialogTitle>
+              <Button
+                onClick={() => setDetailsModalOpen(false)}
+                className="absolute top-4 right-4 rounded-full p-2 min-w-[40px] min-h-[40px] flex items-center justify-center text-red-600 hover:text-white hover:bg-red-600 transition-all focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none z-50 border border-red-600"
+                variant="ghost"
+                size="sm"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
           </DialogHeader>
           
           <div className="space-y-3 sm:space-y-4 overflow-y-auto" style={{maxHeight: 'calc(85vh - 120px)'}}>
