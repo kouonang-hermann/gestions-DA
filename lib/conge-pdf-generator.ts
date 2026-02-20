@@ -456,7 +456,8 @@ export async function generateCongePDF(demande: CongeData): Promise<void> {
     pdf.addImage(imgData, 'PNG', marginLeft, marginTop, imgWidth, imgHeight)
     heightLeft -= availableHeight
 
-    while (heightLeft > 0) {
+    // Utiliser un seuil de 5mm pour éviter les pages blanches avec juste quelques pixels
+    while (heightLeft > 5) {
       pdf.addPage()
       position = -(imgHeight - heightLeft)
       pdf.addImage(imgData, 'PNG', marginLeft, position + marginTop, imgWidth, imgHeight)

@@ -16,39 +16,10 @@ export default function MesLivraisonsSection() {
 
   if (!currentUser) return null
 
-  console.log('🚚 [MES-LIVRAISONS] Utilisateur connecté:', {
-    id: currentUser.id,
-    nom: currentUser.nom,
-    prenom: currentUser.prenom,
-    role: currentUser.role
-  })
-  
-  
-  // Filtrer toutes les demandes avec un livreurAssigneId
-  const demandesAvecLivreur = demandes.filter(d => d.livreurAssigneId)
-  console.log('🚚 [MES-LIVRAISONS] Demandes avec livreur assigné:', {
-    total: demandesAvecLivreur.length,
-    demandes: demandesAvecLivreur.map(d => ({
-      numero: d.numero,
-      status: d.status,
-      livreurAssigneId: d.livreurAssigneId,
-      estMonLivreur: d.livreurAssigneId === currentUser.id
-    }))
-  })
-
   const mesLivraisons = demandes.filter(
     (d) => d.livreurAssigneId === currentUser.id &&
     (d.status === "en_attente_reception_livreur" || d.status === "en_attente_livraison")
   )
-  
-  console.log('🚚 [MES-LIVRAISONS] Mes livraisons filtrées:', {
-    total: mesLivraisons.length,
-    demandes: mesLivraisons.map(d => ({
-      numero: d.numero,
-      status: d.status,
-      livreurAssigneId: d.livreurAssigneId
-    }))
-  })
 
   const livraisonsAReceptionner = mesLivraisons.filter(
     (d) => d.status === "en_attente_reception_livreur"
@@ -141,25 +112,29 @@ export default function MesLivraisonsSection() {
 
   return (
     <>
-      <div className="space-y-4">
+      <div id="mes-livraisons-section" className="space-y-4">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Package className="w-5 h-5 text-indigo-600" />
-              Mes livraisons à effectuer
+              <Truck className="w-5 h-5 text-indigo-600" />
+              Mes livraisons
             </CardTitle>
             <CardDescription>
-              {mesLivraisons.length} livraison{mesLivraisons.length > 1 ? "s" : ""} assignée{mesLivraisons.length > 1 ? "s" : ""}
+              {livraisonsAReceptionner.length > 0 && `${livraisonsAReceptionner.length} à réceptionner`}
+              {livraisonsAReceptionner.length > 0 && livraisonsAEffectuer.length > 0 && " • "}
+              {livraisonsAEffectuer.length > 0 && `${livraisonsAEffectuer.length} à livrer`}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="space-y-6">
               {livraisonsAReceptionner.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                    <Package className="w-4 h-4" />
-                    Matériel à réceptionner ({livraisonsAReceptionner.length})
-                  </h3>
+                  <div className="flex items-center gap-2 mb-3 pb-2 border-b">
+                    <Package className="w-4 h-4 text-indigo-600" />
+                    <h3 className="text-sm font-semibold text-indigo-600">
+                      Matériel à réceptionner ({livraisonsAReceptionner.length})
+                    </h3>
+                  </div>
                   <div className="space-y-2">
                     {livraisonsAReceptionner.map((demande) => (
                       <div
@@ -208,10 +183,12 @@ export default function MesLivraisonsSection() {
 
               {livraisonsAEffectuer.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                    <Truck className="w-4 h-4" />
-                    Livraisons à effectuer ({livraisonsAEffectuer.length})
-                  </h3>
+                  <div className="flex items-center gap-2 mb-3 pb-2 border-b">
+                    <Truck className="w-4 h-4 text-green-600" />
+                    <h3 className="text-sm font-semibold text-green-600">
+                      Livraisons à effectuer ({livraisonsAEffectuer.length})
+                    </h3>
+                  </div>
                   <div className="space-y-2">
                     {livraisonsAEffectuer.map((demande) => (
                       <div

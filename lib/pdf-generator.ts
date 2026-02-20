@@ -428,7 +428,8 @@ export async function generatePurchaseRequestPDF(demande: any, users: any[] = []
     heightLeft -= availableHeight
 
     // Ajouter des pages supplémentaires si nécessaire
-    while (heightLeft > 0) {
+    // Utiliser un seuil de 5mm pour éviter les pages blanches avec juste quelques pixels
+    while (heightLeft > 5) {
       pdf.addPage()
       // Calculer la position négative pour continuer l'image
       position = -(imgHeight - heightLeft)
@@ -739,7 +740,8 @@ export const generateBonLivraisonPDF = async (demande: any): Promise<void> => {
     pdf.addImage(imgData, 'PNG', marginLeft, marginTop, imgWidth, imgHeight)
     heightLeft -= availableHeight
 
-    while (heightLeft > 0) {
+    // Utiliser un seuil de 5mm pour éviter les pages blanches avec juste quelques pixels
+    while (heightLeft > 5) {
       pdf.addPage()
       position = -(imgHeight - heightLeft)
       pdf.addImage(imgData, 'PNG', marginLeft, position + marginTop, imgWidth, imgHeight)
@@ -1081,7 +1083,8 @@ export const generateBonSortiePDF = async (demande: any): Promise<void> => {
     pdf.addImage(imgData, 'PNG', marginLeft, marginTop, imgWidth, imgHeight)
     heightLeft -= availableHeight
 
-    while (heightLeft > 0) {
+    // Utiliser un seuil de 5mm pour éviter les pages blanches avec juste quelques pixels
+    while (heightLeft > 5) {
       pdf.addPage()
       position = -(imgHeight - heightLeft)
       pdf.addImage(imgData, 'PNG', marginLeft, position + marginTop, imgWidth, imgHeight)

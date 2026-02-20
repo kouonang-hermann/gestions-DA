@@ -196,6 +196,7 @@ export const GET = async (request: NextRequest) => {
         // Voit :
         // 1. Les demandes de matériel des projets où il est assigné (pour validation)
         // 2. TOUTES ses propres demandes (matériel ET outillage)
+        // 3. Les demandes où il est assigné comme livreur
         const conducteurProjets = await prisma.userProjet.findMany({
           where: { userId: currentUser.id },
           select: { projetId: true }
@@ -210,6 +211,10 @@ export const GET = async (request: NextRequest) => {
             // Toutes ses propres demandes (matériel ET outillage)
             {
               technicienId: currentUser.id
+            },
+            // Demandes où il est assigné comme livreur
+            {
+              livreurAssigneId: currentUser.id
             }
           ]
         }
