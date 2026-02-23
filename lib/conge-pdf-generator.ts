@@ -1,5 +1,6 @@
 /**
  * Générateur de PDF pour les demandes de congés
+ * Format basé sur le modèle fourni par l'utilisateur
  */
 
 export interface CongeData {
@@ -40,10 +41,360 @@ export interface CongeData {
   }
 }
 
+export function generateCongeHTML(demande: CongeData): string {
+  const dateJour = new Date().toLocaleDateString('fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  })
+
+  const typeCongeLabels: Record<string, string> = {
+    annuel: 'Congés annuel',
+    maladie: 'Congés maladie',
+    parental: 'Congés de parental',
+    recuperation: 'Congés sans solde',
+    autres: 'Autres'
+  }
+
+  const html = `
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Demande de Congés - ${demande.numero}</title>
+      <style>
+        @page {
+          size: A4;
+          margin: 2cm;
+        }
+        
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+        
+        body {
+          font-family: 'Arial', sans-serif;
+          font-size: 10pt;
+          line-height: 1.4;
+          color: #000;
+        }
+        
+        .container {
+          max-width: 800px;
+          margin: 0 auto;
+          padding: 20px;
+        }
+        
+        .header {
+          text-align: center;
+          background-color: #d0d0d0;
+          padding: 10px;
+          margin-bottom: 20px;
+        }
+        
+        .header h1 {
+          font-size: 14pt;
+          font-weight: bold;
+        }
+        
+        .section {
+          margin-bottom: 20px;
+        }
+        
+        .section-title {
+          background-color: #d0d0d0;
+          padding: 8px;
+          text-align: center;
+          font-weight: bold;
+          font-size: 11pt;
+          margin-bottom: 15px;
+        }
+        
+        .info-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px 20px;
+          margin-bottom: 15px;
+        }
+        
+        .info-item {
+          display: flex;
+          align-items: baseline;
+        }
+        
+        .info-label {
+          font-size: 9pt;
+          margin-right: 5px;
+          white-space: nowrap;
+        }
+        
+        .info-value {
+          border-bottom: 1px dotted #000;
+          flex: 1;
+          min-height: 20px;
+        }
+        
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 20px;
+        }
+        
+        th, td {
+          border: 1px solid #000;
+          padding: 8px;
+          text-align: left;
+        }
+        
+        th {
+          background-color: #f0f0f0;
+          font-weight: bold;
+          font-size: 9pt;
+        }
+        
+        td {
+          font-size: 9pt;
+          min-height: 30px;
+        }
+        
+        .signature-section {
+          margin-top: 30px;
+        }
+        
+        .signature-box {
+          background-color: #e0e0e0;
+          padding: 40px 10px;
+          margin-bottom: 10px;
+          min-height: 60px;
+          border: 1px solid #999;
+        }
+        
+        .signature-label {
+          font-size: 9pt;
+          font-weight: bold;
+          margin-bottom: 5px;
+        }
+        
+        .footer {
+          margin-top: 30px;
+          text-align: center;
+          font-size: 8pt;
+          color: #666;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <!-- En-tête -->
+        <div class="header">
+          <h1>Demande de Congés</h1>
+        </div>
+        
+        <!-- Informations employé et responsable -->
+        <div class="section">
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">Date du jour:</span>
+              <span class="info-value">${dateJour}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Heure de la demande:</span>
+              <span class="info-value">${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
+            
+            <div class="info-item">
+              <span class="info-label">Employé:</span>
+              <span class="info-value">${demande.employe?.nom || ''} ${demande.employe?.prenom || ''}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Resp. hiérarchique:</span>
+              <span class="info-value">${demande.responsableNom}</span>
+            </div>
+            
+            <div class="info-item">
+              <span class="info-label">Matricule:</span>
+              <span class="info-value">${demande.matricule}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Nom:</span>
+              <span class="info-value">${demande.responsableNom}</span>
+            </div>
+            
+            <div class="info-item">
+              <span class="info-label">Service:</span>
+              <span class="info-value">${demande.employe?.service || ''}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Numero téléphone:</span>
+              <span class="info-value">${demande.responsableTel}</span>
+            </div>
+            
+            <div class="info-item">
+              <span class="info-label">Numero tel:</span>
+              <span class="info-value">${demande.employe?.phone || ''}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Adresse email:</span>
+              <span class="info-value">${demande.responsableEmail}</span>
+            </div>
+            
+            <div class="info-item">
+              <span class="info-label">Adresse emails:</span>
+              <span class="info-value">${demande.employe?.email || ''}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Ancienneté dans la société:</span>
+              <span class="info-value">${demande.anciennete}</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Congés disponibles -->
+        <div class="section">
+          <div class="section-title">Congés disponibles</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Type de congés</th>
+                <th>Date de début</th>
+                <th>Date de fin</th>
+                <th>Reste de jours</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>${typeCongeLabels[demande.typeConge] || demande.typeConge}</td>
+                <td>${demande.dateDebut}</td>
+                <td>${demande.dateFin}</td>
+                <td>${demande.resteJours !== null && demande.resteJours !== undefined ? demande.resteJours : ''}</td>
+              </tr>
+              <tr>
+                <td>Congés maladie</td>
+                <td></td>
+                <td></td>
+                <td></td>
+              </tr>
+              <tr>
+                <td>Congés de parental</td>
+                <td></td>
+                <td></td>
+                <td></td>
+              </tr>
+              <tr>
+                <td>congés sans solde</td>
+                <td></td>
+                <td></td>
+                <td></td>
+              </tr>
+              <tr>
+                <td>Autres</td>
+                <td></td>
+                <td></td>
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Contacts en cas d'urgence -->
+        <div class="section">
+          <div class="section-title">Contacts en cas d'urgence</div>
+          <div class="info-grid">
+            <div>
+              <div class="info-item" style="margin-bottom: 10px;">
+                <span class="info-label">Contact personnel:</span>
+              </div>
+              <div class="info-item" style="margin-bottom: 10px;">
+                <span class="info-label">Nom:</span>
+                <span class="info-value">${demande.contactPersonnelNom}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Numero tel:</span>
+                <span class="info-value">${demande.contactPersonnelTel}</span>
+              </div>
+            </div>
+            
+            <div>
+              <div class="info-item" style="margin-bottom: 10px;">
+                <span class="info-label">Autre Contact:</span>
+              </div>
+              <div class="info-item" style="margin-bottom: 10px;">
+                <span class="info-label">Nom:</span>
+                <span class="info-value">${demande.contactAutreNom || ''}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Numero tel:</span>
+                <span class="info-value">${demande.contactAutreTel || ''}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Signatures -->
+        <div class="section signature-section">
+          <div class="section-title">Signatures</div>
+          
+          <div class="signature-label">Employé</div>
+          <div class="signature-box">
+            ${demande.signatureEmploye ? 'Signé électroniquement le ' + (demande.dateSoumission || '') : ''}
+          </div>
+          
+          <div class="signature-label">Responsable hiérarchique:</div>
+          <div class="signature-box">
+            ${demande.signatureResponsable ? 'Signé électroniquement' : ''}
+          </div>
+          
+          <div class="signature-label">Responsable RH</div>
+          <div class="signature-box">
+            ${demande.signatureRH ? 'Signé électroniquement' : ''}
+          </div>
+          
+          <div class="signature-label">Visa DG:</div>
+          <div class="signature-box">
+            ${demande.signatureDG ? 'Signé électroniquement' : ''}
+          </div>
+        </div>
+        
+        <!-- Pied de page -->
+        <div class="footer">
+          <p>Numéro de demande : ${demande.numero}</p>
+          <p>Document généré le ${new Date().toLocaleString('fr-FR')}</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `
+
+  return html
+}
+
 /**
- * Génère un PDF pour une demande de congé
+ * Télécharge la demande de congé en HTML (imprimable en PDF)
  */
-export async function generateCongePDF(demande: CongeData): Promise<void> {
+export function downloadCongePDF(demande: CongeData) {
+  const html = generateCongeHTML(demande)
+  
+  // Créer un blob avec le HTML
+  const blob = new Blob([html], { type: 'text/html' })
+  const url = URL.createObjectURL(blob)
+  
+  // Créer un lien de téléchargement
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `Demande_Conge_${demande.numero}.html`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
+/**
+ * Ancienne fonction - conservée pour compatibilité
+ */
+export async function generateCongePDF_OLD(demande: CongeData): Promise<void> {
   if (typeof window === 'undefined') {
     throw new Error('La génération PDF ne peut être effectuée que côté client')
   }

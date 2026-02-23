@@ -12,6 +12,8 @@ import ChargeAffaireDashboard from "@/components/dashboard/charge-affaire-dashbo
 import ApproDashboard from "@/components/dashboard/appro-dashboard"
 import ResponsableLogistiqueDashboard from "@/components/dashboard/responsable-logistique-dashboard"
 import ResponsableLivreurDashboard from "@/components/dashboard/responsable-livreur-dashboard"
+import DirecteurGeneralDashboard from "@/components/dashboard/directeur-general-dashboard"
+import ResponsableRHDashboard from "@/components/dashboard/responsable-rh-dashboard"
 
 export default function DashboardPage() {
   const { currentUser, isAuthenticated } = useStore()
@@ -51,6 +53,10 @@ export default function DashboardPage() {
   switch (currentUser.role) {
     case "superadmin":
       return <SuperAdminDashboard />
+    case "directeur_general":
+      return <DirecteurGeneralDashboard />
+    case "responsable_rh":
+      return <ResponsableRHDashboard />
     case "conducteur_travaux":
       return <ConducteurDashboard />
     case "responsable_travaux":

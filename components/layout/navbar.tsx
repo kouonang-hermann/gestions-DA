@@ -25,6 +25,8 @@ import InstrumElecLogo from "@/components/ui/instrumelec-logo"
 import Link from "next/link"
 import ChangePasswordModal from "@/components/modals/change-password-modal"
 import { CongesModal } from "@/components/conges/conges-modal"
+import AbsenceActionsModal from "@/components/absence/absence-actions-modal"
+import CreateAbsenceModal from "@/components/absence/create-absence-modal"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 const roleLabels: Record<string, string> = {
@@ -46,6 +48,8 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false)
   const [congesModalOpen, setCongesModalOpen] = useState(false)
+  const [absenceActionsModalOpen, setAbsenceActionsModalOpen] = useState(false)
+  const [createAbsenceModalOpen, setCreateAbsenceModalOpen] = useState(false)
   const router = useRouter()
 
   // Démarrer le polling des notifications au montage du composant
@@ -148,11 +152,14 @@ export default function Navbar() {
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button asChild variant="outline" size="sm" className="border-gray-300 hover:bg-gray-50 bg-white whitespace-nowrap flex-shrink-0">
-                    <Link href="/d-absence">
-                      <UserX className="h-4 w-4 mr-1" />
-                      <span>D-absence</span>
-                    </Link>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="border-gray-300 hover:bg-gray-50 bg-white whitespace-nowrap flex-shrink-0"
+                    onClick={() => setAbsenceActionsModalOpen(true)}
+                  >
+                    <UserX className="h-4 w-4 mr-1" />
+                    <span>D-absence</span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" sideOffset={6}>
@@ -383,11 +390,16 @@ export default function Navbar() {
                         D-congés
                       </Link>
                     </Button>
-                    <Button asChild variant="outline" className="w-full justify-start" onClick={() => setMobileMenuOpen(false)}>
-                      <Link href="/d-absence">
-                        <UserX className="h-4 w-4 mr-2" />
-                        D-absence
-                      </Link>
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start" 
+                      onClick={() => {
+                        setMobileMenuOpen(false)
+                        setAbsenceActionsModalOpen(true)
+                      }}
+                    >
+                      <UserX className="h-4 w-4 mr-2" />
+                      D-absence
                     </Button>
                     <Button asChild variant="outline" className="w-full justify-start" onClick={() => setMobileMenuOpen(false)}>
                       <Link href="/rapport-journalier">
@@ -463,6 +475,30 @@ export default function Navbar() {
       <CongesModal
         open={congesModalOpen}
         onOpenChange={setCongesModalOpen}
+      />
+
+      {/* Modal de choix d'action pour les absences */}
+      <AbsenceActionsModal
+        open={absenceActionsModalOpen}
+        onOpenChange={setAbsenceActionsModalOpen}
+        onCreateNew={() => {
+          setAbsenceActionsModalOpen(false)
+          setCreateAbsenceModalOpen(true)
+        }}
+        onViewExisting={() => {
+          setAbsenceActionsModalOpen(false)
+          router.push("/d-absence")
+        }}
+      />
+
+      {/* Modal de création de demande d'absence */}
+      <CreateAbsenceModal
+        open={createAbsenceModalOpen}
+        onOpenChange={setCreateAbsenceModalOpen}
+        onSuccess={() => {
+          setCreateAbsenceModalOpen(false)
+          router.push("/d-absence")
+        }}
       />
     </nav>
   )

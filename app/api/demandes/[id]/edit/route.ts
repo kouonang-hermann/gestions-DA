@@ -33,13 +33,62 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
       }, { status: 403 })
     }
 
-    // Vérifier que la demande n'a pas encore été validée par un niveau supérieur
-    const editableStatuses = [
-      "brouillon",
-      "soumise",
-      "en_attente_validation_conducteur",
-      "en_attente_validation_logistique"
-    ]
+    // Vérifier que la demande peut être modifiée selon le rôle et le statut
+    // Chaque rôle peut modifier ses propres demandes jusqu'à validation par le niveau supérieur
+    
+    let editableStatuses: string[] = []
+    
+    if (currentUser.role === "employe") {
+      // Employés simples : modifiable jusqu'à la première validation
+      editableStatuses = [
+        "brouillon",
+        "soumise",
+        "en_attente_validation_conducteur",
+        "en_attente_validation_logistique"
+      ]
+    } else if (currentUser.role === "conducteur_travaux") {
+      // Conducteur : peut modifier jusqu'à validation par responsable travaux
+      editableStatuses = [
+        "brouillon",
+        "soumise",
+        "en_attente_validation_conducteur",
+        "en_attente_validation_logistique",
+        "en_attente_validation_responsable_travaux"
+      ]
+    } else if (currentUser.role === "responsable_travaux") {
+      // Responsable travaux : peut modifier jusqu'à validation par chargé d'affaire
+      editableStatuses = [
+        "brouillon",
+        "soumise",
+        "en_attente_validation_conducteur",
+        "en_attente_validation_logistique",
+        "en_attente_validation_responsable_travaux",
+        "en_attente_validation_charge_affaire"
+      ]
+    } else if (currentUser.role === "charge_affaire") {
+      // Chargé d'affaire : peut modifier jusqu'à préparation appro
+      editableStatuses = [
+        "brouillon",
+        "soumise",
+        "en_attente_validation_conducteur",
+        "en_attente_validation_logistique",
+        "en_attente_validation_responsable_travaux",
+        "en_attente_validation_charge_affaire",
+        "en_attente_preparation_appro"
+      ]
+    } else if (["responsable_logistique", "responsable_appro"].includes(currentUser.role)) {
+      // Responsable logistique/appro : peuvent modifier jusqu'à préparation
+      editableStatuses = [
+        "brouillon",
+        "soumise",
+        "en_attente_validation_conducteur",
+        "en_attente_validation_logistique",
+        "en_attente_validation_responsable_travaux",
+        "en_attente_validation_charge_affaire",
+        "en_attente_preparation_appro",
+        "en_attente_preparation_logistique"
+      ]
+    }
 
     if (!editableStatuses.includes(demande.status)) {
       return NextResponse.json({ 

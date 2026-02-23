@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
 import './globals.css'
+import '@/styles/responsive-fixes.css'
 import MobileInjectorWrapper from '@/components/mobile/mobile-injector-wrapper'
 import LayoutWrapper from '@/components/layout/layout-wrapper'
 
@@ -23,7 +24,9 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
+  minimumScale: 1,
   userScalable: true,
+  viewportFit: 'cover',
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#ffffff' },
     { media: '(prefers-color-scheme: dark)', color: '#000000' }
@@ -44,6 +47,9 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="msapplication-TileColor" content="#2563eb" />
         <meta name="msapplication-tap-highlight" content="no" />
+        <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="renderer" content="webkit" />
+        <meta name="force-rendering" content="webkit" />
         <style>{`
 html {
   font-family: ${GeistSans.style.fontFamily};

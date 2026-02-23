@@ -202,6 +202,8 @@ model User {
   demandesTechnicien        Demande[]             @relation("demandes_technicienIdTousers")
   demandesCongesEmploye     DemandeConge[]        @relation("DemandesCongesEmploye")
   demandesCongesResponsable DemandeConge[]        @relation("DemandesCongesResponsable")
+  demandesAbsencesEmploye   DemandeAbsence[]      @relation("DemandesAbsencesEmploye")
+  demandesAbsencesSuperieur DemandeAbsence[]      @relation("DemandesAbsencesSuperieur")
   historyEntries            HistoryEntry[]
   livraisons                Livraison[]
   notifications             Notification[]
@@ -369,4 +371,45 @@ enum CongeStatus {
   approuvee
   rejetee
   annulee
+}
+
+enum TypeAbsence {
+  maladie
+  personnelle
+  familiale
+  formation
+  autre
+}
+
+enum AbsenceStatus {
+  brouillon
+  soumise
+  en_attente_validation
+  approuvee
+  rejetee
+  annulee
+}
+
+model DemandeAbsence {
+  id                      String        @id @default(cuid())
+  numero                  String        @unique
+  employeId               String
+  superieurHierarchiqueId String
+  typeAbsence             TypeAbsence
+  motif                   String
+  dateDebut               DateTime
+  dateFin                 DateTime
+  nombreJours             Int
+  status                  AbsenceStatus @default(brouillon)
+  commentaireEmploye      String?
+  commentaireSuperieur    String?
+  dateCreation            DateTime      @default(now())
+  dateModification        DateTime      @updatedAt
+  dateSoumission          DateTime?
+  dateValidation          DateTime?
+  rejetMotif              String?
+  employe                 User          @relation("DemandesAbsencesEmploye", fields: [employeId], references: [id], onDelete: Cascade)
+  superieurHierarchique   User          @relation("DemandesAbsencesSuperieur", fields: [superieurHierarchiqueId], references: [id])
+
+  @@map("demandes_absences")
 }

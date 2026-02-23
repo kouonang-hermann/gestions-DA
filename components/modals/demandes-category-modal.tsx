@@ -207,29 +207,6 @@ export default function DemandesCategoryModal({
       return true
     }
     
-    // Le demandeur peut modifier ses propres demandes UNIQUEMENT avant la première validation
-    // - Demande matériel : modifiable jusqu'à validation par le conducteur (inclus en_attente_validation_conducteur)
-    // - Demande outillage : modifiable jusqu'à validation par le responsable logistique (inclus en_attente_validation_logistique)
-    if (demande.technicienId === currentUser?.id) {
-      const modifiableStatusesMateriel = [
-        "brouillon", 
-        "soumise", 
-        "en_attente_validation_conducteur"
-      ]
-      const modifiableStatusesOutillage = [
-        "brouillon", 
-        "soumise", 
-        "en_attente_validation_logistique"
-      ]
-      
-      if (demande.type === "materiel" && modifiableStatusesMateriel.includes(demande.status)) {
-        return true
-      }
-      if (demande.type === "outillage" && modifiableStatusesOutillage.includes(demande.status)) {
-        return true
-      }
-    }
-    
     // Les valideurs peuvent modifier les demandes qu'ils doivent valider
     // Conducteur peut modifier les demandes matériel en attente de sa validation
     if (currentUser?.role === "conducteur_travaux" && 
@@ -257,6 +234,84 @@ export default function DemandesCategoryModal({
       return true
     }
     
+    // Le demandeur peut modifier ses propres demandes SELON LA HIÉRARCHIE DE VALIDATION
+    if (demande.technicienId === currentUser?.id) {
+      // Employés simples : modifiable jusqu'à la première validation
+      if (currentUser.role === "employe") {
+        const modifiableStatusesMateriel = [
+          "brouillon", 
+          "soumise", 
+          "en_attente_validation_conducteur"
+        ]
+        const modifiableStatusesOutillage = [
+          "brouillon", 
+          "soumise", 
+          "en_attente_validation_logistique"
+        ]
+        
+        if (demande.type === "materiel" && modifiableStatusesMateriel.includes(demande.status)) {
+          return true
+        }
+        if (demande.type === "outillage" && modifiableStatusesOutillage.includes(demande.status)) {
+          return true
+        }
+      }
+      
+      // Conducteur des travaux : peut modifier jusqu'à validation par responsable travaux
+      if (currentUser.role === "conducteur_travaux") {
+        const modifiableStatuses = [
+          "brouillon",
+          "soumise",
+          "en_attente_validation_conducteur",
+          "en_attente_validation_logistique",
+          "en_attente_validation_responsable_travaux"
+        ]
+        return modifiableStatuses.includes(demande.status)
+      }
+      
+      // Responsable des travaux : peut modifier jusqu'à validation par chargé d'affaire
+      if (currentUser.role === "responsable_travaux") {
+        const modifiableStatuses = [
+          "brouillon",
+          "soumise",
+          "en_attente_validation_conducteur",
+          "en_attente_validation_logistique",
+          "en_attente_validation_responsable_travaux",
+          "en_attente_validation_charge_affaire"
+        ]
+        return modifiableStatuses.includes(demande.status)
+      }
+      
+      // Chargé d'affaire : peut modifier jusqu'à préparation appro
+      if (currentUser.role === "charge_affaire") {
+        const modifiableStatuses = [
+          "brouillon",
+          "soumise",
+          "en_attente_validation_conducteur",
+          "en_attente_validation_logistique",
+          "en_attente_validation_responsable_travaux",
+          "en_attente_validation_charge_affaire",
+          "en_attente_preparation_appro"
+        ]
+        return modifiableStatuses.includes(demande.status)
+      }
+      
+      // Responsable logistique et appro : peuvent modifier leurs propres demandes jusqu'à préparation
+      if (["responsable_logistique", "responsable_appro"].includes(currentUser.role)) {
+        const modifiableStatuses = [
+          "brouillon",
+          "soumise",
+          "en_attente_validation_conducteur",
+          "en_attente_validation_logistique",
+          "en_attente_validation_responsable_travaux",
+          "en_attente_validation_charge_affaire",
+          "en_attente_preparation_appro",
+          "en_attente_preparation_logistique"
+        ]
+        return modifiableStatuses.includes(demande.status)
+      }
+    }
+    
     return false
   }
 
@@ -266,19 +321,22 @@ export default function DemandesCategoryModal({
       return true
     }
     
-    // Le demandeur peut supprimer ses propres demandes UNIQUEMENT avant la première validation
+    // Le demandeur peut supprimer ses propres demandes UNIQUEMENT avant la première validation OU si rejetée
     // - Demande matériel : supprimable jusqu'à validation par le conducteur (inclus en_attente_validation_conducteur)
     // - Demande outillage : supprimable jusqu'à validation par le responsable logistique (inclus en_attente_validation_logistique)
+    // - Demande rejetée : supprimable par le demandeur pour pouvoir la recréer ou l'abandonner
     if (demande.technicienId === currentUser?.id) {
       const deletableStatusesMateriel = [
         "brouillon", 
         "soumise", 
-        "en_attente_validation_conducteur"
+        "en_attente_validation_conducteur",
+        "rejetee"
       ]
       const deletableStatusesOutillage = [
         "brouillon", 
         "soumise", 
-        "en_attente_validation_logistique"
+        "en_attente_validation_logistique",
+        "rejetee"
       ]
       
       if (demande.type === "materiel" && deletableStatusesMateriel.includes(demande.status)) {

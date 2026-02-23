@@ -132,11 +132,11 @@ export default function ValidatedRequestsHistory({ isOpen, onClose }: ValidatedR
         <DialogContent className="max-w-6xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              Toutes mes demandes
+              <FileText className="h-5 w-5 text-blue-600" />
+              Toutes les demandes
             </DialogTitle>
             <DialogDescription>
-              Toutes les demandes ayant suivi le processus de validation complet
+              Vue d'ensemble de toutes les demandes du système
             </DialogDescription>
           </DialogHeader>
 
@@ -151,126 +151,71 @@ export default function ValidatedRequestsHistory({ isOpen, onClose }: ValidatedR
                 <p>Aucune demande trouvée</p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {validatedRequests.map((request) => (
-                  <Card key={request.id} className="border-l-4 border-l-blue-500">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Package className="h-5 w-5 text-blue-600" />
-                          <div>
-                            <CardTitle className="text-lg">
-                              {request.numero}
-                            </CardTitle>
-                            <p className="text-sm text-gray-600">
-                              {request.projet?.nom} • {request.type === 'materiel' ? 'Matériel' : 'Outillage'}
-                            </p>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[600px]">
+                  <thead className="bg-gray-50 sticky top-0">
+                    <tr>
+                      <th className="text-left p-3 font-medium text-sm text-gray-600">Numéro</th>
+                      <th className="text-left p-3 font-medium text-sm text-gray-600">Type</th>
+                      <th className="text-left p-3 font-medium text-sm text-gray-600">Projet</th>
+                      <th className="text-left p-3 font-medium text-sm text-gray-600">Demandeur</th>
+                      <th className="text-left p-3 font-medium text-sm text-gray-600">Statut</th>
+                      <th className="text-left p-3 font-medium text-sm text-gray-600">Date création</th>
+                      <th className="text-center p-3 font-medium text-sm text-gray-600">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {validatedRequests.map((request) => (
+                      <tr key={request.id} className="border-t hover:bg-gray-50">
+                        <td className="p-3">
+                          <div className="flex items-center gap-2">
+                            <Package className="h-4 w-4 text-blue-600" />
+                            <span className="font-medium text-sm">{request.numero}</span>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge className={getStatusColor(request.status || request.status)}>
-                            {getStatusLabel(request.status || request.status)}
+                        </td>
+                        <td className="p-3">
+                          <Badge variant="outline" className="text-xs">
+                            {request.type === 'materiel' ? 'Matériel' : 'Outillage'}
                           </Badge>
+                        </td>
+                        <td className="p-3 text-sm">
+                          {request.projet?.nom || 'N/A'}
+                        </td>
+                        <td className="p-3">
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4 text-gray-500" />
+                            <span className="text-sm">
+                              {request.technicien?.prenom} {request.technicien?.nom}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <Badge className={getStatusColor(request.status)}>
+                            {getStatusLabel(request.status)}
+                          </Badge>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-gray-500" />
+                            <span className="text-sm">
+                              {new Date(request.dateCreation).toLocaleDateString('fr-FR')}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="p-3 text-center">
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => openRequestDetails(request)}
                           >
                             <Eye className="h-4 w-4 mr-1" />
-                            Détails
+                            Voir
                           </Button>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-gray-500" />
-                          <span className="text-sm">
-                            <strong>Demandeur:</strong> {request.technicien?.nom} {request.technicien?.prenom}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-gray-500" />
-                          <span className="text-sm">
-                            <strong>Créée le:</strong> {new Date(request.dateCreation).toLocaleDateString('fr-FR')}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <CheckCircle className="h-4 w-4 text-green-500" />
-                          <span className="text-sm">
-                            <strong>Dernière action:</strong> {request.validationSteps?.length > 0 
-                              ? new Date(request.validationSteps[request.validationSteps.length - 1].date).toLocaleDateString('fr-FR')
-                              : new Date(request.dateCreation).toLocaleDateString('fr-FR')
-                            }
-                          </span>
-                        </div>
-                      </div>
-
-                      <Separator className="my-3" />
-
-                      <div>
-                        <h4 className="font-medium mb-2 text-sm">Articles demandés:</h4>
-                        <div className="space-y-2">
-                          {request.items?.map((item, index) => {
-                            const quantiteValidee = item.quantiteValidee || item.quantiteDemandee
-                            const quantiteLivree = item.quantiteSortie || 0
-                            const quantiteRestante = Math.max(0, quantiteValidee - quantiteLivree)
-                            
-                            return (
-                              <div key={index} className="bg-gray-50 p-3 rounded text-sm border border-gray-200">
-                                <div className="flex justify-between items-start mb-2">
-                                  <span className="font-medium">{item.article?.nom || 'Article inconnu'}</span>
-                                  <span className="text-xs text-gray-500">{item.article?.reference || 'N/A'}</span>
-                                </div>
-                                <div className="flex gap-2 flex-wrap">
-                                  <Badge variant="secondary" className="text-xs">
-                                    Qté validée: {quantiteValidee}
-                                  </Badge>
-                                  <Badge className="text-xs bg-blue-100 text-blue-700 border-blue-200">
-                                    Qté livrée: {quantiteLivree}
-                                  </Badge>
-                                  <Badge className="text-xs bg-orange-100 text-orange-700 border-orange-200">
-                                    Qté restante: {quantiteRestante}
-                                  </Badge>
-                                </div>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      </div>
-
-                      {request.validationSteps && request.validationSteps.length > 0 && (
-                        <>
-                          <Separator className="my-3" />
-                          <div>
-                            <h4 className="font-medium mb-2 text-sm">Étapes de validation:</h4>
-                            <div className="flex flex-wrap gap-2">
-                              {request.validationSteps.map((step, index) => (
-                                <Badge key={index} variant="outline" className="text-xs">
-                                  {getRoleLabel(step.role)} ✓
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                        </>
-                      )}
-
-                      {request.commentaires && (
-                        <>
-                          <Separator className="my-3" />
-                          <div>
-                            <h4 className="font-medium mb-2 text-sm">Commentaires:</h4>
-                            <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                              {request.commentaires}
-                            </p>
-                          </div>
-                        </>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </ScrollArea>

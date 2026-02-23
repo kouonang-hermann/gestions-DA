@@ -54,6 +54,16 @@ const ROLES: { value: UserRole; label: string; description: string }[] = [
     label: "Responsable Livreur", 
     description: "Validation finale avant demandeur" 
   },
+  { 
+    value: "responsable_rh", 
+    label: "Responsable RH", 
+    description: "Gère les congés et absences, accès RH" 
+  },
+  { 
+    value: "directeur_general", 
+    label: "Directeur Général", 
+    description: "Accès complet, privilèges administrateur" 
+  },
 ]
 
 export default function ChangeUserRoleModal({ 

@@ -444,7 +444,8 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
                   articleId: item.articleId,
                   quantiteDemandee: quantiteManquante,
                   quantiteValidee: quantiteManquante,
-                  commentaire: `Quantité manquante de la demande ${demande.numero} - Validée: ${quantiteValideeParChargeAffaire}, Reçue: ${quantiteRecue}`
+                  commentaire: `Quantité manquante de la demande ${demande.numero} - Validée: ${quantiteValideeParChargeAffaire}, Reçue: ${quantiteRecue}`,
+                  prixUnitaire: item.prixUnitaire // Préserver le prix déjà renseigné par le responsable appro/logistique
                 })
               } else if (quantiteManquante < 0) {
               } else {

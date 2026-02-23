@@ -11,7 +11,7 @@ export default function RapportMensuelPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-6">
+        <div className="flex items-center gap-4 mb-6">
           <Button
             variant="ghost"
             size="sm"
@@ -21,7 +21,7 @@ export default function RapportMensuelPage() {
             <ArrowLeft className="h-4 w-4" />
             Retour
           </Button>
-          <h1 className="text-3xl font-bold text-gray-900 mt-4">
+          <h1 className="text-3xl font-bold text-gray-900">
             Rapport Mensuel
           </h1>
           <p className="text-sm text-gray-600 mt-1">

@@ -65,16 +65,16 @@ function DialogContent({
         )}
         {...props}
       >
-        {children}
         {showCloseButton && (
           <DialogPrimitive.Close
             data-slot="dialog-close"
-            className="absolute top-4 right-4 rounded-full p-2 min-w-[40px] min-h-[40px] flex items-center justify-center text-red-600 hover:text-white hover:bg-red-600 transition-all focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none z-50 border border-red-600"
+            className="!absolute !top-4 !right-4 rounded-full p-2 min-w-[40px] min-h-[40px] flex items-center justify-center text-red-600 hover:text-white hover:bg-red-600 transition-all focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none !z-[9999] border border-red-600 bg-white shadow-lg"
           >
             <XIcon className="h-5 w-5" />
             <span className="sr-only">Fermer</span>
           </DialogPrimitive.Close>
         )}
+        {children}
       </DialogPrimitive.Content>
     </DialogPortal>
   )

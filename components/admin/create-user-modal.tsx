@@ -49,11 +49,13 @@ export default function CreateUserModal({ isOpen, onClose }: CreateUserModalProp
     { value: "charge_affaire", label: "Chargé d'Affaire" },
     { value: "responsable_logistique", label: "Responsable Logistique" },
     { value: "responsable_livreur", label: "Responsable Livreur" },
+    { value: "responsable_rh", label: "Responsable RH" },
+    { value: "directeur_general", label: "Directeur Général" },
   ]
 
-  // Activer automatiquement isAdmin si le rôle est superadmin
+  // Activer automatiquement isAdmin si le rôle est superadmin ou directeur_general
   useEffect(() => {
-    if (formData.role === "superadmin") {
+    if (formData.role === "superadmin" || formData.role === "directeur_general") {
       setFormData((prev) => ({ ...prev, isAdmin: true }))
     }
   }, [formData.role])

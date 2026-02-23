@@ -153,8 +153,7 @@ export default function ResponsableTravauxDashboard() {
       case "enAttente":
         return demandesFiltered.filter((d) => d.status === "en_attente_validation_responsable_travaux")
       case "enCours":
-        return demandesFiltered.filter((d) => 
-          d.validationResponsableTravaux?.userId === currentUser.id &&
+        return mesDemandes.filter((d) => 
           ![
             "brouillon", 
             "cloturee", 
