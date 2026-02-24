@@ -239,7 +239,7 @@ export default function DemandeFormModal({ isOpen, onClose, demande, mode, type 
     return mesProjetIds.includes(p.id) && p.actif && notEnded
   })
 
-  const unites = ["pièce", "kg", "m", "m²", "m³", "L", "sac", "barre", "rouleau", "boîte", "paquet"]
+  const unites = ["pièce", "Unités", "kg", "m", "ml", "m²", "m³", "L", "sac", "barre", "rouleau", "boîte", "paquet"]
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

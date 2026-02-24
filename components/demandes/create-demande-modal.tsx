@@ -296,7 +296,7 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel",
     return p.actif && notEnded
   })
 
-  const unites = ["pièce", "kg", "m", "m²", "m³", "L", "sac", "barre", "rouleau", "boîte", "paquet"]
+  const unites = ["pièce", "Unités", "kg", "m", "ml", "m²", "m³", "L", "sac", "barre", "rouleau", "boîte", "paquet"]
 
   // Fonction pour télécharger le template Excel
   const handleDownloadTemplate = () => {

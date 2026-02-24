@@ -341,6 +341,14 @@ export const GET = async (request: NextRequest) => {
               select: { id: true, nom: true, prenom: true, email: true }
             }
           }
+        },
+        history: {
+          include: {
+            user: {
+              select: { id: true, nom: true, prenom: true, email: true }
+            }
+          },
+          orderBy: { timestamp: 'asc' }
         }
       },
       orderBy: { dateCreation: 'desc' }

@@ -161,7 +161,18 @@ function getNextStatus(currentStatus: DemandeStatus, userRole: string, demandeTy
 export const POST = withAuth(async (request: NextRequest, currentUser: any, context: { params: Promise<{ id: string }> }) => {
   try {
     const params = await context.params
-    const { action, commentaire, quantitesSorties, quantites, itemsModifications, targetStatus, livreurAssigneId, items, quantitesRecues } = await request.json()
+    const { 
+      action, 
+      commentaire, 
+      quantitesSorties, 
+      quantites, 
+      itemsModifications, 
+      targetStatus, 
+      livreurAssigneId, 
+      items, 
+      quantitesRecues,
+      signatureImage
+    } = await request.json()
 
 
     // Récupérer la demande
@@ -337,29 +348,50 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
           }
         }
         
-        // Créer/mettre à jour la signature de validation (éviter les doublons)
-        await prisma.validationSignature.upsert({
+        // Capturer l'adresse IP du validateur
+        const ipAddress = request.headers.get('x-forwarded-for')?.split(',')[0] || 
+                         request.headers.get('x-real-ip') || 
+                         'unknown'
+        
+        // Générer un hash d'intégrité pour garantir l'immuabilité
+        const signatureData = JSON.stringify({
+          userId: currentUser.id,
+          demandeId: demande.id,
+          type: getValidationType(demande.status, currentUser.role),
+          date: new Date().toISOString(),
+          ipAddress
+        })
+        const hashIntegrite = crypto.createHash('sha256').update(signatureData).digest('hex')
+        
+        // Vérifier si une signature existe déjà (immuabilité)
+        const existingSignature = await prisma.validationSignature.findUnique({
           where: {
             demandeId_type: {
               demandeId: demande.id,
               type: getValidationType(demande.status, currentUser.role)
             }
-          },
-          update: {
-            userId: currentUser.id,
-            commentaire: commentaire || null,
-            signature: `${currentUser.id}-${action}-${Date.now()}`,
-            date: new Date()
-          },
-          create: {
-            id: crypto.randomUUID(),
-            userId: currentUser.id,
-            demandeId: demande.id,
-            commentaire: commentaire || null,
-            signature: `${currentUser.id}-${action}-${Date.now()}`,
-            type: getValidationType(demande.status, currentUser.role)
           }
         })
+        
+        // Si une signature existe déjà, ne pas la modifier (immuabilité)
+        if (existingSignature) {
+          console.log(`⚠️ [VALIDATION] Signature déjà existante pour ${demande.numero} - ${getValidationType(demande.status, currentUser.role)}`)
+        } else {
+          // Créer la signature de validation (création uniquement, pas de modification)
+          await prisma.validationSignature.create({
+            data: {
+              id: crypto.randomUUID(),
+              userId: currentUser.id,
+              demandeId: demande.id,
+              commentaire: commentaire || null,
+              signature: `${currentUser.id}-${action}-${Date.now()}`,
+              signatureImage: signatureImage || null,
+              type: getValidationType(demande.status, currentUser.role),
+              ipAddress: ipAddress,
+              hashIntegrite: hashIntegrite
+            }
+          })
+        }
         break
 
       case "valider_sortie":
@@ -1162,13 +1194,15 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
 })
 
 function getValidationType(status: string, role: string): string {
-  if (status === "en_attente_validation_conducteur") return "conducteur"
-  if (status === "en_attente_validation_responsable_travaux") return "responsable_travaux"
-  if (status === "en_attente_validation_logistique") return "logistique"
-  if (status === "en_attente_validation_charge_affaire") return "charge_affaire"
-  if (status === "en_attente_preparation_appro") return "appro"
-  if (status === "en_attente_validation_livreur") return "livreur"
-  return "finale"
+  if (status === "en_attente_validation_conducteur") return "validation_conducteur"
+  if (status === "en_attente_validation_responsable_travaux") return "validation_responsable_travaux"
+  if (status === "en_attente_validation_logistique") return "validation_logistique"
+  if (status === "en_attente_validation_charge_affaire") return "validation_charge_affaire"
+  if (status === "en_attente_preparation_appro") return "validation_appro"
+  if (status === "en_attente_preparation_logistique") return "preparation_logistique"
+  if (status === "en_attente_validation_livreur") return "validation_livreur"
+  if (status === "en_attente_validation_finale_demandeur") return "validation_finale"
+  return "validation_autre"
 }
 
 function getActionLabel(action: string): string {

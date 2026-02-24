@@ -143,19 +143,22 @@ export default function ResponsableLogistiqueDashboard() {
         )
       )
       
-      // 5. DEMANDES VALIDÉES (toutes les demandes outillage validées par le responsable logistique)
-      // Inclut : APRÈS validation initiale + préparation + livraison + terminées
+      // 5. DEMANDES VALIDÉES (demandes outillage validées PAR CE responsable logistique)
+      // Utilise la signature de validation pour garantir la traçabilité
       const demandesValidees = mesDemandesLogistique.filter((d) => 
-        d && d.type === "outillage" && d.status && (
-          d.status === "en_attente_validation_responsable_travaux" || // Validée aujourd'hui par logistique
-          d.status === "en_attente_validation_charge_affaire" ||
-          d.status === "en_attente_preparation_logistique" ||
-          d.status === "en_attente_reception_livreur" ||
-          d.status === "en_attente_livraison" ||
-          d.status === "en_attente_validation_finale_demandeur" ||
-          d.status === "confirmee_demandeur" || 
-          d.status === "cloturee"
-        )
+        d && d.type === "outillage" && 
+        d.validationLogistique?.userId === currentUser.id &&
+        [
+          "en_attente_validation_responsable_travaux",
+          "en_attente_validation_charge_affaire",
+          "en_attente_preparation_logistique",
+          "en_attente_reception_livreur",
+          "en_attente_livraison",
+          "en_attente_validation_finale_demandeur",
+          "confirmee_demandeur",
+          "cloturee",
+          "rejetee"
+        ].includes(d.status)
       )
 
       console.log(`📊 [RESPONSABLE-LOGISTIQUE-DASHBOARD] Statistiques pour ${currentUser.nom}:`, {
@@ -165,6 +168,14 @@ export default function ResponsableLogistiqueDashboard() {
         aPreparer: demandesAPreparer.length,
         enCoursLivraison: demandesEnCoursLivraison.length,
         validees: demandesValidees.length
+      })
+
+      console.log(`📊 [RESPONSABLE-LOGISTIQUE-DASHBOARD] Statistiques validations pour ${currentUser.nom}:`, {
+        totalValidees: demandesValidees.length,
+        demandesAvecMaSignature: demandesValidees.length,
+        enCours: demandesValidees.filter(d => !["cloturee", "rejetee", "confirmee_demandeur"].includes(d.status)).length,
+        terminees: demandesValidees.filter(d => ["cloturee", "confirmee_demandeur"].includes(d.status)).length,
+        rejetees: demandesValidees.filter(d => d.status === "rejetee").length
       })
       
       console.log(`🔍 [DEBUG] Détails des demandes:`, {
@@ -261,19 +272,21 @@ export default function ResponsableLogistiqueDashboard() {
         )
       
       case "validees":
-        // Demandes outillage validées par le responsable logistique
-        // Inclut : APRÈS validation initiale + préparation + livraison + terminées
+        // Demandes outillage validées PAR CE responsable logistique (signature obligatoire)
         return demandesFiltered.filter((d) => 
-          d.type === "outillage" && (
-            d.status === "en_attente_validation_responsable_travaux" || // Validée aujourd'hui par logistique
-            d.status === "en_attente_validation_charge_affaire" ||
-            d.status === "en_attente_preparation_logistique" ||
-            d.status === "en_attente_reception_livreur" ||
-            d.status === "en_attente_livraison" ||
-            d.status === "en_attente_validation_finale_demandeur" ||
-            d.status === "confirmee_demandeur" || 
-            d.status === "cloturee"
-          )
+          d.type === "outillage" && 
+          d.validationLogistique?.userId === currentUser.id &&
+          [
+            "en_attente_validation_responsable_travaux",
+            "en_attente_validation_charge_affaire",
+            "en_attente_preparation_logistique",
+            "en_attente_reception_livreur",
+            "en_attente_livraison",
+            "en_attente_validation_finale_demandeur",
+            "confirmee_demandeur",
+            "cloturee",
+            "rejetee"
+          ].includes(d.status)
         )
       
       case "mesDemandesEnCours":

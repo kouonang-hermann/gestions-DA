@@ -74,46 +74,167 @@ export async function generatePurchaseRequestPDF(demande: any, users: any[] = []
       return `${user.prenom || ''} ${user.nom || ''}`.trim()
     }
 
-    // Debug: Vérifier les données de validation
-    console.log('🔍 [PDF] Données de validation:', {
-      validationConducteur: demande.validationConducteur,
-      sortieAppro: demande.sortieAppro,
-      validationLogistique: demande.validationLogistique,
-      validationChargeAffaire: demande.validationChargeAffaire,
-      validationResponsableTravaux: demande.validationResponsableTravaux
+    // Transformer validationSignatures (array) en objets individuels
+    const validationSignatures = demande.validationSignatures || []
+    let validationConducteur = validationSignatures.find((v: any) => v.type === 'validation_conducteur')
+    let validationLogistique = validationSignatures.find((v: any) => v.type === 'validation_logistique' || v.type === 'preparation_logistique')
+    let validationResponsableTravaux = validationSignatures.find((v: any) => v.type === 'validation_responsable_travaux')
+    let validationChargeAffaire = validationSignatures.find((v: any) => v.type === 'validation_charge_affaire')
+    let validationAppro = validationSignatures.find((v: any) => v.type === 'validation_appro' || v.type === 'preparation_appro')
+
+    // FALLBACK : Si pas de validationSignatures, extraire depuis history_entries (anciennes demandes)
+    if (validationSignatures.length === 0 && demande.history && demande.history.length > 0) {
+      console.log('⚠️ [PDF] Aucune signature trouvée, extraction depuis history_entries pour ancienne demande')
+      
+      const history = demande.history || []
+      
+      // Trouver les validations dans l'historique
+      const historyValidationConducteur = history.find((h: any) => 
+        h.action === 'valider' && 
+        (h.ancienStatus === 'en_attente_validation_conducteur' || h.nouveauStatus === 'en_attente_validation_responsable_travaux')
+      )
+      const historyValidationRespTravaux = history.find((h: any) => 
+        h.action === 'valider' && 
+        (h.ancienStatus === 'en_attente_validation_responsable_travaux' || h.nouveauStatus === 'en_attente_validation_charge_affaire')
+      )
+      const historyValidationChargeAffaire = history.find((h: any) => 
+        h.action === 'valider' && 
+        (h.ancienStatus === 'en_attente_validation_charge_affaire' || h.nouveauStatus === 'en_attente_preparation_appro' || h.nouveauStatus === 'en_attente_preparation_logistique')
+      )
+      const historyValidationLogistique = history.find((h: any) => 
+        h.action === 'valider' && 
+        (h.ancienStatus === 'en_attente_validation_logistique' || h.nouveauStatus === 'en_attente_validation_responsable_travaux')
+      )
+      const historyPreparationAppro = history.find((h: any) => 
+        h.action === 'preparer_sortie' && 
+        h.ancienStatus === 'en_attente_preparation_appro'
+      )
+
+      // Créer des objets de validation à partir de l'historique
+      if (historyValidationConducteur) {
+        validationConducteur = {
+          userId: historyValidationConducteur.userId,
+          date: historyValidationConducteur.timestamp,
+          user: historyValidationConducteur.user
+        }
+      }
+      if (historyValidationRespTravaux) {
+        validationResponsableTravaux = {
+          userId: historyValidationRespTravaux.userId,
+          date: historyValidationRespTravaux.timestamp,
+          user: historyValidationRespTravaux.user
+        }
+      }
+      if (historyValidationChargeAffaire) {
+        validationChargeAffaire = {
+          userId: historyValidationChargeAffaire.userId,
+          date: historyValidationChargeAffaire.timestamp,
+          user: historyValidationChargeAffaire.user
+        }
+      }
+      if (historyValidationLogistique) {
+        validationLogistique = {
+          userId: historyValidationLogistique.userId,
+          date: historyValidationLogistique.timestamp,
+          user: historyValidationLogistique.user
+        }
+      }
+      if (historyPreparationAppro) {
+        validationAppro = {
+          userId: historyPreparationAppro.userId,
+          date: historyPreparationAppro.timestamp,
+          user: historyPreparationAppro.user
+        }
+      }
+
+      console.log('✅ [PDF] Validations extraites depuis history:', {
+        conducteur: !!validationConducteur,
+        responsableTravaux: !!validationResponsableTravaux,
+        chargeAffaire: !!validationChargeAffaire,
+        logistique: !!validationLogistique,
+        appro: !!validationAppro
+      })
+    }
+
+    console.log('🔍 [PDF] Signatures trouvées:', {
+      total: validationSignatures.length,
+      conducteur: !!validationConducteur,
+      logistique: !!validationLogistique,
+      responsableTravaux: !!validationResponsableTravaux,
+      chargeAffaire: !!validationChargeAffaire,
+      appro: !!validationAppro
     })
 
-    const conducteurDate = formatDate(demande.validationConducteur?.date)
-    const conducteurHeure = formatTime(demande.validationConducteur?.date)
-    const conducteurNom = demande.validationConducteur?.user 
-      ? `${demande.validationConducteur.user.prenom || ''} ${demande.validationConducteur.user.nom || ''}`.trim()
-      : getUserName(demande.validationConducteur?.userId)
+    const conducteurDate = formatDate(validationConducteur?.date)
+    const conducteurHeure = formatTime(validationConducteur?.date)
+    const conducteurNom = validationConducteur?.user 
+      ? `${validationConducteur.user.prenom || ''} ${validationConducteur.user.nom || ''}`.trim()
+      : getUserName(validationConducteur?.userId)
+    const conducteurSignature = validationConducteur?.signatureImage || ''
 
-    const approLogDate = formatDate(demande.sortieAppro?.date || demande.validationLogistique?.date)
-    const approLogHeure = formatTime(demande.sortieAppro?.date || demande.validationLogistique?.date)
-    const approLogNom = (demande.sortieAppro?.user || demande.validationLogistique?.user)
-      ? `${(demande.sortieAppro?.user?.prenom || demande.validationLogistique?.user?.prenom || '')} ${(demande.sortieAppro?.user?.nom || demande.validationLogistique?.user?.nom || '')}`.trim()
-      : getUserName(demande.sortieAppro?.userId || demande.validationLogistique?.userId)
+    if (validationConducteur) {
+      console.log('✅ [PDF] Signature Conducteur:', {
+        nom: conducteurNom,
+        date: conducteurDate,
+        heure: conducteurHeure,
+        hasSignatureImage: !!conducteurSignature,
+        signatureLength: conducteurSignature?.length || 0
+      })
+    } else {
+      console.log('❌ [PDF] Aucune signature conducteur trouvée')
+    }
+
+    const approLogDate = formatDate(validationAppro?.date || validationLogistique?.date)
+    const approLogHeure = formatTime(validationAppro?.date || validationLogistique?.date)
+    const approLogNom = (validationAppro?.user || validationLogistique?.user)
+      ? `${(validationAppro?.user?.prenom || validationLogistique?.user?.prenom || '')} ${(validationAppro?.user?.nom || validationLogistique?.user?.nom || '')}`.trim()
+      : getUserName(validationAppro?.userId || validationLogistique?.userId)
+    const approLogSignature = validationAppro?.signatureImage || validationLogistique?.signatureImage || ''
+
+    if (validationAppro || validationLogistique) {
+      console.log('✅ [PDF] Signature Appro/Logistique:', {
+        nom: approLogNom,
+        date: approLogDate,
+        heure: approLogHeure,
+        hasSignatureImage: !!approLogSignature,
+        signatureLength: approLogSignature?.length || 0
+      })
+    } else {
+      console.log('❌ [PDF] Aucune signature Appro/Logistique trouvée')
+    }
 
     const respTravauxOuCADate = formatDate(
-      demande.validationChargeAffaire?.date || demande.validationResponsableTravaux?.date
+      validationChargeAffaire?.date || validationResponsableTravaux?.date
     )
     const respTravauxOuCAHeure = formatTime(
-      demande.validationChargeAffaire?.date || demande.validationResponsableTravaux?.date
+      validationChargeAffaire?.date || validationResponsableTravaux?.date
     )
-    const respTravauxOuCANom = (demande.validationChargeAffaire?.user || demande.validationResponsableTravaux?.user)
-      ? `${(demande.validationChargeAffaire?.user?.prenom || demande.validationResponsableTravaux?.user?.prenom || '')} ${(demande.validationChargeAffaire?.user?.nom || demande.validationResponsableTravaux?.user?.nom || '')}`.trim()
-      : getUserName(demande.validationChargeAffaire?.userId || demande.validationResponsableTravaux?.userId)
+    const respTravauxOuCANom = (validationChargeAffaire?.user || validationResponsableTravaux?.user)
+      ? `${(validationChargeAffaire?.user?.prenom || validationResponsableTravaux?.user?.prenom || '')} ${(validationChargeAffaire?.user?.nom || validationResponsableTravaux?.user?.nom || '')}`.trim()
+      : getUserName(validationChargeAffaire?.userId || validationResponsableTravaux?.userId)
+    const respTravauxOuCASignature = validationChargeAffaire?.signatureImage || validationResponsableTravaux?.signatureImage || ''
 
-    console.log('📝 [PDF] Noms extraits:', {
-      conducteurNom,
-      approLogNom,
-      respTravauxOuCANom
+    if (validationChargeAffaire || validationResponsableTravaux) {
+      console.log('✅ [PDF] Signature Responsable Travaux/Chargé Affaire:', {
+        nom: respTravauxOuCANom,
+        date: respTravauxOuCADate,
+        heure: respTravauxOuCAHeure,
+        hasSignatureImage: !!respTravauxOuCASignature,
+        signatureLength: respTravauxOuCASignature?.length || 0
+      })
+    } else {
+      console.log('❌ [PDF] Aucune signature Responsable Travaux/Chargé Affaire trouvée')
+    }
+
+    console.log('📝 [PDF] Résumé des validateurs:', {
+      conducteur: { nom: conducteurNom, hasSignature: !!conducteurSignature },
+      approLog: { nom: approLogNom, hasSignature: !!approLogSignature },
+      respTravauxCA: { nom: respTravauxOuCANom, hasSignature: !!respTravauxOuCASignature }
     })
 
-    const visaConducteur = Boolean(demande.validationConducteur)
-    const visaApproLog = Boolean(demande.sortieAppro || demande.validationLogistique)
-    const visaRespTravauxOuCA = Boolean(demande.validationChargeAffaire || demande.validationResponsableTravaux)
+    const visaConducteur = Boolean(validationConducteur)
+    const visaApproLog = Boolean(validationAppro || validationLogistique)
+    const visaRespTravauxOuCA = Boolean(validationChargeAffaire || validationResponsableTravaux)
 
     const checkedMateriel = demande.type === 'materiel'
     const checkedOutillage = demande.type === 'outillage'
@@ -235,6 +356,17 @@ export async function generatePurchaseRequestPDF(demande: any, users: any[] = []
           .visa-table th { font-weight: bold; }
           .visa-left { width: 80px; font-weight: bold; text-align: left; padding-left: 10px; }
           .visa-name { font-weight: bold; font-size: 9px; }
+          .signature-cell { 
+            height: 60px; 
+            padding: 4px;
+            vertical-align: middle;
+          }
+          .signature-img { 
+            max-width: 100%; 
+            max-height: 50px; 
+            display: block;
+            margin: 0 auto;
+          }
 
           .items-table { width: 100%; border-collapse: collapse; }
           .items-table th, .items-table td {
@@ -332,6 +464,19 @@ export async function generatePurchaseRequestPDF(demande: any, users: any[] = []
                 <td>${visaConducteur ? 'X' : ''}</td>
                 <td>${visaApproLog ? 'X' : ''}</td>
                 <td>${visaRespTravauxOuCA ? 'X' : ''}</td>
+              </tr>
+              <tr>
+                <td class="visa-left">SIGNATURE</td>
+                <td class="signature-cell"></td>
+                <td class="signature-cell">
+                  ${conducteurSignature ? `<img src="${conducteurSignature}" class="signature-img" alt="Signature Conducteur" />` : ''}
+                </td>
+                <td class="signature-cell">
+                  ${approLogSignature ? `<img src="${approLogSignature}" class="signature-img" alt="Signature Appro/Log" />` : ''}
+                </td>
+                <td class="signature-cell">
+                  ${respTravauxOuCASignature ? `<img src="${respTravauxOuCASignature}" class="signature-img" alt="Signature Resp/CA" />` : ''}
+                </td>
               </tr>
             </tbody>
           </table>
