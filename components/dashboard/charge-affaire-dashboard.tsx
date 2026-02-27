@@ -120,11 +120,12 @@ export default function ChargeAffaireDashboard() {
       // Mes demandes personnelles
       const mesDemandesCA = demandes.filter((d) => d.technicienId === currentUser.id)
 
-      // HISTORIQUE COMPLET : Inclure uniquement les demandes validées PAR MOI
+      // HISTORIQUE COMPLET : Inclure les demandes validées PAR MOI
+      // LOGIQUE HYBRIDE : Avec signature OU qui ont dépassé l'étape de validation chargé d'affaire
       const demandesValidees = demandes.filter((d) => {
-        // Vérifier que c'est MOI qui ai validé cette demande (signature obligatoire)
-        return d.validationChargeAffaire?.userId === currentUser.id &&
-          [
+        // Méthode 1 : Si signature existe (nouveau système)
+        if (d.validationChargeAffaire?.userId === currentUser.id) {
+          return [
             "en_attente_preparation_appro",
             "en_attente_validation_logistique",
             "en_attente_validation_finale_demandeur",
@@ -132,6 +133,20 @@ export default function ChargeAffaireDashboard() {
             "cloturee",
             "rejetee"
           ].includes(d.status)
+        }
+        
+        // Méthode 2 : Demandes qui ont dépassé l'étape de validation chargé d'affaire (ancien système)
+        if (!d.validationChargeAffaire) {
+          return [
+            "en_attente_preparation_appro",
+            "en_attente_validation_logistique",
+            "en_attente_validation_finale_demandeur",
+            "confirmee_demandeur",
+            "cloturee"
+          ].includes(d.status)
+        }
+        
+        return false
       })
 
       console.log(`📊 [CHARGE-AFFAIRE-DASHBOARD] Statistiques validations pour ${currentUser.nom}:`, {
@@ -183,18 +198,34 @@ export default function ChargeAffaireDashboard() {
           "archivee"
         ].includes(d.status))
       case "validees":
-        // HISTORIQUE COMPLET : Uniquement les demandes validées PAR MOI (signature obligatoire)
-        return currentUser ? demandes.filter((d) => 
-          d.validationChargeAffaire?.userId === currentUser.id &&
-          [
-            "en_attente_preparation_appro",
-            "en_attente_validation_logistique",
-            "en_attente_validation_finale_demandeur",
-            "confirmee_demandeur",
-            "cloturee",
-            "rejetee"
-          ].includes(d.status)
-        ) : []
+        // HISTORIQUE COMPLET : Demandes validées PAR MOI
+        // LOGIQUE HYBRIDE : Avec signature OU qui ont dépassé l'étape de validation chargé d'affaire
+        return currentUser ? demandes.filter((d) => {
+          // Méthode 1 : Si signature existe
+          if (d.validationChargeAffaire?.userId === currentUser.id) {
+            return [
+              "en_attente_preparation_appro",
+              "en_attente_validation_logistique",
+              "en_attente_validation_finale_demandeur",
+              "confirmee_demandeur",
+              "cloturee",
+              "rejetee"
+            ].includes(d.status)
+          }
+          
+          // Méthode 2 : Demandes qui ont dépassé l'étape de validation chargé d'affaire (ancien système)
+          if (!d.validationChargeAffaire) {
+            return [
+              "en_attente_preparation_appro",
+              "en_attente_validation_logistique",
+              "en_attente_validation_finale_demandeur",
+              "confirmee_demandeur",
+              "cloturee"
+            ].includes(d.status)
+          }
+          
+          return false
+        }) : []
       case "rejetees":
         // MES demandes rejetées
         return mesDemandes.filter((d) => d.status === "rejetee")

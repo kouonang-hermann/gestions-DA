@@ -4,6 +4,8 @@
  * en créant un document HTML isolé avec ses propres styles CSS
  */
 
+import { VALIDATION_TYPES } from '@/constants/validation-types'
+
 export interface PDFOptions {
   filename?: string
   format?: 'a4' | 'letter'
@@ -76,11 +78,11 @@ export async function generatePurchaseRequestPDF(demande: any, users: any[] = []
 
     // Transformer validationSignatures (array) en objets individuels
     const validationSignatures = demande.validationSignatures || []
-    let validationConducteur = validationSignatures.find((v: any) => v.type === 'validation_conducteur')
-    let validationLogistique = validationSignatures.find((v: any) => v.type === 'validation_logistique' || v.type === 'preparation_logistique')
-    let validationResponsableTravaux = validationSignatures.find((v: any) => v.type === 'validation_responsable_travaux')
-    let validationChargeAffaire = validationSignatures.find((v: any) => v.type === 'validation_charge_affaire')
-    let validationAppro = validationSignatures.find((v: any) => v.type === 'validation_appro' || v.type === 'preparation_appro')
+    let validationConducteur = validationSignatures.find((v: any) => v.type === VALIDATION_TYPES.CONDUCTEUR)
+    let validationLogistique = validationSignatures.find((v: any) => v.type === VALIDATION_TYPES.LOGISTIQUE || v.type === 'preparation_logistique')
+    let validationResponsableTravaux = validationSignatures.find((v: any) => v.type === VALIDATION_TYPES.RESPONSABLE_TRAVAUX)
+    let validationChargeAffaire = validationSignatures.find((v: any) => v.type === VALIDATION_TYPES.CHARGE_AFFAIRE)
+    let validationAppro = validationSignatures.find((v: any) => v.type === VALIDATION_TYPES.APPRO || v.type === 'preparation_appro')
 
     // FALLBACK : Si pas de validationSignatures, extraire depuis history_entries (anciennes demandes)
     if (validationSignatures.length === 0 && demande.history && demande.history.length > 0) {

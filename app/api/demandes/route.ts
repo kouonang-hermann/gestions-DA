@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
-import { requireAuth, hasPermission } from "@/lib/auth"
-import { createDemandeSchema } from "@/lib/validations"
+import { prisma } from '@/lib/prisma'
+import { requireAuth } from '@/lib/auth'
+import { VALIDATION_TYPES } from '@/constants/validation-types'
 import crypto from "crypto"
 
 /**
@@ -358,14 +358,14 @@ export const GET = async (request: NextRequest) => {
     // Enrichir les demandes avec les informations des valideurs depuis ValidationSignature
     const enrichedDemandes = demandes.map((demande: any) => {
       // Mapper les validationSignatures aux champs attendus par le frontend
-      const validationConducteur = demande.validationSignatures?.find((v: any) => v.type === 'conducteur') || null
-      const validationResponsableTravaux = demande.validationSignatures?.find((v: any) => v.type === 'responsable_travaux') || null
-      const validationChargeAffaire = demande.validationSignatures?.find((v: any) => v.type === 'charge_affaire') || null
-      const validationLogistique = demande.validationSignatures?.find((v: any) => v.type === 'logistique') || null
+      const validationConducteur = demande.validationSignatures?.find((v: any) => v.type === VALIDATION_TYPES.CONDUCTEUR) || null
+      const validationResponsableTravaux = demande.validationSignatures?.find((v: any) => v.type === VALIDATION_TYPES.RESPONSABLE_TRAVAUX) || null
+      const validationChargeAffaire = demande.validationSignatures?.find((v: any) => v.type === VALIDATION_TYPES.CHARGE_AFFAIRE) || null
+      const validationLogistique = demande.validationSignatures?.find((v: any) => v.type === VALIDATION_TYPES.LOGISTIQUE) || null
       
       // sortieSignature est déjà chargé depuis la relation, mais on vérifie aussi les validationSignatures pour 'appro'
       // Car certaines demandes peuvent avoir une validation 'appro' au lieu d'une sortieSignature
-      const validationAppro = demande.validationSignatures?.find((v: any) => v.type === 'appro') || null
+      const validationAppro = demande.validationSignatures?.find((v: any) => v.type === VALIDATION_TYPES.APPRO) || null
       const sortieAppro = demande.sortieSignature || validationAppro || null
 
       return {
@@ -431,20 +431,17 @@ export const POST = async (request: NextRequest) => {
 
   const currentUser = authResult.user
   try {
-    // Vérifier les permissions - tous les rôles peuvent créer des demandes
-    if (!hasPermission(currentUser, "create_demande")) {
-      return NextResponse.json({ success: false, error: "Accès non autorisé" }, { status: 403 })
-    }
-
     const body = await request.json()
     
-    // Validation des données
-    const validatedData = createDemandeSchema.parse(body)
+    // Validation basique des données requises
+    if (!body.projetId || !body.type) {
+      return NextResponse.json({ success: false, error: "Données manquantes (projetId, type)" }, { status: 400 })
+    }
 
     // Vérifier que l'utilisateur a accès au projet (uniquement assigné)
     const projet = await prisma.projet.findFirst({
       where: {
-        id: validatedData.projetId,
+        id: body.projetId,
         utilisateurs: { some: { userId: currentUser.id } }
       }
     })
@@ -455,7 +452,7 @@ export const POST = async (request: NextRequest) => {
 
     // Interdire la création de demande sur un projet inactif ou terminé
     const projetDetails = await prisma.projet.findUnique({
-      where: { id: validatedData.projetId },
+      where: { id: body.projetId },
       select: { actif: true, dateFin: true, nom: true }
     })
 
@@ -472,7 +469,7 @@ export const POST = async (request: NextRequest) => {
 
     // Générer un numéro de demande unique avec retry en cas de collision
     const year = new Date().getFullYear()
-    const typePrefix = validatedData.type === "materiel" ? "DA-M" : "DA-O"
+    const typePrefix = body.type === "materiel" ? "DA-M" : "DA-O"
     let numero = ""
     let attempts = 0
     const maxAttempts = 5
@@ -521,16 +518,16 @@ export const POST = async (request: NextRequest) => {
     }
 
     // Déterminer le statut initial selon le type de demande et le rôle du créateur
-    const initialStatus = getInitialStatus(validatedData.type, currentUser.role)
+    const initialStatus = getInitialStatus(body.type, currentUser.role)
 
     // Traiter les articles - créer ceux qui n'existent pas
     const processedItems = []
     
-    for (const item of validatedData.items) {
+    for (const item of body.items || []) {
       let articleId = item.articleId
       
       // Si c'est un article manuel (commence par "manual-"), le créer d'abord
-      if (item.articleId.startsWith('manual-') && item.article) {
+      if (item.articleId?.startsWith('manual-') && item.article) {
         const newArticle = await prisma.article.create({
           data: {
             id: crypto.randomUUID(),
@@ -538,7 +535,7 @@ export const POST = async (request: NextRequest) => {
             description: item.article.description || '',
             reference: item.article.reference?.trim() || null,
             unite: item.article.unite,
-            type: validatedData.type,
+            type: body.type,
             stock: null,
             prixUnitaire: null,
             updatedAt: new Date(),
@@ -560,12 +557,12 @@ export const POST = async (request: NextRequest) => {
       data: {
         id: crypto.randomUUID(),
         numero,
-        projetId: validatedData.projetId,
+        projetId: body.projetId,
         technicienId: currentUser.id,
-        type: validatedData.type,
+        type: body.type,
         status: initialStatus as any,
-        commentaires: validatedData.commentaires,
-        dateLivraisonSouhaitee: validatedData.dateLivraisonSouhaitee ? new Date(validatedData.dateLivraisonSouhaitee) : null,
+        commentaires: body.commentaires || null,
+        dateLivraisonSouhaitee: body.dateLivraisonSouhaitee ? new Date(body.dateLivraisonSouhaitee) : null,
         dateModification: new Date(),
         items: {
           create: processedItems
@@ -619,7 +616,7 @@ export const POST = async (request: NextRequest) => {
       ]
     }
 
-    const flow = flows[validatedData.type as keyof typeof flows]
+    const flow = flows[body.type as keyof typeof flows]
     
     // Créer des entrées pour chaque étape sautée
     for (const step of flow) {

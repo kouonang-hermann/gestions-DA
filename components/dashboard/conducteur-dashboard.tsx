@@ -89,13 +89,15 @@ export default function ConducteurDashboard() {
       )
       
       // Demandes que j'ai validées en tant que conducteur (demandes matériel dans mes projets)
+      // LOGIQUE HYBRIDE : Avec signature OU qui ont dépassé l'étape de validation conducteur
       const demandesValideesConducteur = demandes.filter((d) => {
         if (d.type !== "materiel" || !currentUser.projets.includes(d.projetId) || d.technicienId === currentUser.id) {
           return false
         }
-        // Vérifier que c'est MOI qui ai validé cette demande (signature obligatoire)
-        return d.validationConducteur?.userId === currentUser.id &&
-          [
+        
+        // Méthode 1 : Si signature existe (nouveau système)
+        if (d.validationConducteur?.userId === currentUser.id) {
+          return [
             "en_attente_validation_responsable_travaux",
             "en_attente_validation_charge_affaire",
             "en_attente_preparation_appro",
@@ -105,6 +107,22 @@ export default function ConducteurDashboard() {
             "cloturee",
             "rejetee"
           ].includes(d.status)
+        }
+        
+        // Méthode 2 : Demandes matériel qui ont dépassé l'étape de validation conducteur (ancien système)
+        if (!d.validationConducteur) {
+          return [
+            "en_attente_validation_responsable_travaux",
+            "en_attente_validation_charge_affaire",
+            "en_attente_preparation_appro",
+            "en_attente_validation_logistique",
+            "en_attente_validation_finale_demandeur",
+            "confirmee_demandeur",
+            "cloturee"
+          ].includes(d.status)
+        }
+        
+        return false
       })
 
       console.log(`📊 [CONDUCTEUR-DASHBOARD] Statistiques validations pour ${currentUser.nom}:`, {
@@ -157,24 +175,43 @@ export default function ConducteurDashboard() {
           "brouillon", "cloturee", "rejetee", "archivee"
         ].includes(d.status))
       case "validees":
-        // Demandes que j'ai validées en tant que conducteur (HISTORIQUE COMPLET - signature obligatoire)
+        // Demandes que j'ai validées en tant que conducteur
+        // LOGIQUE HYBRIDE : Avec signature OU qui ont dépassé l'étape de validation conducteur
         if (!currentUser.projets) return []
-        return demandes.filter((d) => 
-          d.type === "materiel" &&
-          currentUser.projets.includes(d.projetId) &&
-          d.technicienId !== currentUser.id &&
-          d.validationConducteur?.userId === currentUser.id &&
-          [
-            "en_attente_validation_responsable_travaux",
-            "en_attente_validation_charge_affaire",
-            "en_attente_preparation_appro",
-            "en_attente_validation_logistique",
-            "en_attente_validation_finale_demandeur",
-            "confirmee_demandeur",
-            "cloturee",
-            "rejetee"
-          ].includes(d.status)
-        )
+        return demandes.filter((d) => {
+          if (d.type !== "materiel" || !currentUser.projets.includes(d.projetId) || d.technicienId === currentUser.id) {
+            return false
+          }
+          
+          // Méthode 1 : Si signature existe
+          if (d.validationConducteur?.userId === currentUser.id) {
+            return [
+              "en_attente_validation_responsable_travaux",
+              "en_attente_validation_charge_affaire",
+              "en_attente_preparation_appro",
+              "en_attente_validation_logistique",
+              "en_attente_validation_finale_demandeur",
+              "confirmee_demandeur",
+              "cloturee",
+              "rejetee"
+            ].includes(d.status)
+          }
+          
+          // Méthode 2 : Demandes matériel qui ont dépassé l'étape de validation conducteur (ancien système)
+          if (!d.validationConducteur) {
+            return [
+              "en_attente_validation_responsable_travaux",
+              "en_attente_validation_charge_affaire",
+              "en_attente_preparation_appro",
+              "en_attente_validation_logistique",
+              "en_attente_validation_finale_demandeur",
+              "confirmee_demandeur",
+              "cloturee"
+            ].includes(d.status)
+          }
+          
+          return false
+        })
       case "rejetees":
         // Mes demandes rejetées (pas besoin de vérifier les projets)
         return mesDemandes.filter((d) => d.status === "rejetee")

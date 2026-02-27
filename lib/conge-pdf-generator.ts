@@ -392,6 +392,11 @@ export function downloadCongePDF(demande: CongeData) {
 }
 
 /**
+ * Alias pour downloadCongePDF - pour compatibilité
+ */
+export const generateCongePDF = downloadCongePDF
+
+/**
  * Ancienne fonction - conservée pour compatibilité
  */
 export async function generateCongePDF_OLD(demande: CongeData): Promise<void> {

@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useRouter } from "next/navigation"
 import { useStore } from "@/stores/useStore"
 import { NouvelleDemandeModal } from "@/components/conges/nouvelle-demande-modal"
-import { downloadCongePDF } from "@/lib/conge-pdf-generator"
+import { generateCongePDF } from "@/lib/conge-pdf-generator"
 import DemandeCongeDetailsModal from "@/components/conges/demande-conge-details-modal"
 import type { DemandeConge } from "@/types"
 
@@ -95,7 +95,7 @@ export default function DCongesPage() {
   const handleDownloadPDF = async (demande: DemandeConge) => {
     setDownloadingId(demande.id)
     try {
-      downloadCongePDF(demande as any)
+      await generateCongePDF(demande as any)
     } catch (error) {
       console.error('Erreur téléchargement PDF:', error)
       alert('Erreur lors de la génération du PDF')
@@ -112,17 +112,17 @@ export default function DCongesPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => router.back()}
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Retour
-            </Button>
+        <div className="mb-6">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.back()}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Retour
+          </Button>
+          <div className="flex justify-between items-center mt-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
                 Mes Demandes de Congés
@@ -131,14 +131,14 @@ export default function DCongesPage() {
                 Gestion et suivi de vos demandes de congés
               </p>
             </div>
+            <Button
+              onClick={() => setNouvelleDemandeOpen(true)}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Nouvelle demande
+            </Button>
           </div>
-          <Button
-            onClick={() => setNouvelleDemandeOpen(true)}
-            className="bg-green-600 hover:bg-green-700"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Nouvelle demande
-          </Button>
         </div>
 
         {/* Statistiques */}

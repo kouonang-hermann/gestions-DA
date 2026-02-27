@@ -143,23 +143,44 @@ export default function ResponsableLogistiqueDashboard() {
         )
       )
       
-      // 5. DEMANDES VALIDÉES (demandes outillage validées PAR CE responsable logistique)
-      // Utilise la signature de validation pour garantir la traçabilité
-      const demandesValidees = mesDemandesLogistique.filter((d) => 
-        d && d.type === "outillage" && 
-        d.validationLogistique?.userId === currentUser.id &&
-        [
-          "en_attente_validation_responsable_travaux",
-          "en_attente_validation_charge_affaire",
-          "en_attente_preparation_logistique",
-          "en_attente_reception_livreur",
-          "en_attente_livraison",
-          "en_attente_validation_finale_demandeur",
-          "confirmee_demandeur",
-          "cloturee",
-          "rejetee"
-        ].includes(d.status)
-      )
+      // 5. DEMANDES VALIDÉES (TOUTES les demandes outillage validées de l'application)
+      // Le responsable logistique a une visibilité globale sur toutes les demandes d'outillage validées
+      // LOGIQUE HYBRIDE : Compte les demandes avec signature OU les demandes qui ont dépassé l'étape de validation logistique
+      const demandesValidees = demandes.filter((d) => {
+        if (!d || d.type !== "outillage") return false
+        
+        // Méthode 1 : Si signature existe (nouveau système)
+        if (d.validationLogistique?.userId) {
+          return [
+            "en_attente_validation_responsable_travaux",
+            "en_attente_validation_charge_affaire",
+            "en_attente_preparation_logistique",
+            "en_attente_reception_livreur",
+            "en_attente_livraison",
+            "en_attente_validation_finale_demandeur",
+            "confirmee_demandeur",
+            "cloturee",
+            "rejetee"
+          ].includes(d.status)
+        }
+        
+        // Méthode 2 : Demandes outillage qui ont dépassé l'étape de validation logistique (ancien système)
+        // Ces demandes ont forcément été validées par un responsable logistique
+        if (!d.validationLogistique) {
+          return [
+            "en_attente_validation_responsable_travaux",
+            "en_attente_validation_charge_affaire",
+            "en_attente_preparation_logistique",
+            "en_attente_reception_livreur",
+            "en_attente_livraison",
+            "en_attente_validation_finale_demandeur",
+            "confirmee_demandeur",
+            "cloturee"
+          ].includes(d.status)
+        }
+        
+        return false
+      })
 
       console.log(`📊 [RESPONSABLE-LOGISTIQUE-DASHBOARD] Statistiques pour ${currentUser.nom}:`, {
         totalDemandes: mesDemandesLogistique.length,
@@ -272,22 +293,43 @@ export default function ResponsableLogistiqueDashboard() {
         )
       
       case "validees":
-        // Demandes outillage validées PAR CE responsable logistique (signature obligatoire)
-        return demandesFiltered.filter((d) => 
-          d.type === "outillage" && 
-          d.validationLogistique?.userId === currentUser.id &&
-          [
-            "en_attente_validation_responsable_travaux",
-            "en_attente_validation_charge_affaire",
-            "en_attente_preparation_logistique",
-            "en_attente_reception_livreur",
-            "en_attente_livraison",
-            "en_attente_validation_finale_demandeur",
-            "confirmee_demandeur",
-            "cloturee",
-            "rejetee"
-          ].includes(d.status)
-        )
+        // TOUTES les demandes outillage validées de l'application
+        // Le responsable logistique a une visibilité globale
+        // LOGIQUE HYBRIDE : Avec signature OU qui ont dépassé l'étape de validation logistique
+        return demandes.filter((d) => {
+          if (d.type !== "outillage") return false
+          
+          // Méthode 1 : Si signature existe
+          if (d.validationLogistique?.userId) {
+            return [
+              "en_attente_validation_responsable_travaux",
+              "en_attente_validation_charge_affaire",
+              "en_attente_preparation_logistique",
+              "en_attente_reception_livreur",
+              "en_attente_livraison",
+              "en_attente_validation_finale_demandeur",
+              "confirmee_demandeur",
+              "cloturee",
+              "rejetee"
+            ].includes(d.status)
+          }
+          
+          // Méthode 2 : Demandes outillage qui ont dépassé l'étape de validation logistique (ancien système)
+          if (!d.validationLogistique) {
+            return [
+              "en_attente_validation_responsable_travaux",
+              "en_attente_validation_charge_affaire",
+              "en_attente_preparation_logistique",
+              "en_attente_reception_livreur",
+              "en_attente_livraison",
+              "en_attente_validation_finale_demandeur",
+              "confirmee_demandeur",
+              "cloturee"
+            ].includes(d.status)
+          }
+          
+          return false
+        })
       
       case "mesDemandesEnCours":
         // MES demandes en cours (comme employé)

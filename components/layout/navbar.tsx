@@ -93,9 +93,9 @@ export default function Navbar() {
             <>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button asChild variant="outline" size="sm" className="border-gray-300 hover:bg-gray-50 bg-white whitespace-nowrap flex-shrink-0">
-                    <Link href="/da">
-                      <FileText className="h-4 w-4 mr-1" />
+                  <Button asChild variant="outline" size="sm" className="border-0 bg-gradient-to-r from-blue-100 via-purple-100 to-pink-100 hover:from-blue-200 hover:via-purple-200 hover:to-pink-200 shadow-sm hover:shadow-md transition-all duration-300 whitespace-nowrap flex-shrink-0">
+                    <Link href="/da" className="font-medium text-gray-700">
+                      <FileText className="h-4 w-4 mr-1.5" />
                       <span>DA</span>
                     </Link>
                   </Button>
@@ -107,9 +107,9 @@ export default function Navbar() {
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button asChild variant="outline" size="sm" className="border-gray-300 hover:bg-gray-50 bg-white whitespace-nowrap flex-shrink-0">
-                    <Link href="/d-paye">
-                      <DollarSign className="h-4 w-4 mr-1" />
+                  <Button asChild variant="outline" size="sm" className="border-0 bg-gradient-to-r from-blue-100 via-purple-100 to-pink-100 hover:from-blue-200 hover:via-purple-200 hover:to-pink-200 shadow-sm hover:shadow-md transition-all duration-300 whitespace-nowrap flex-shrink-0">
+                    <Link href="/d-paye" className="font-medium text-gray-700">
+                      <DollarSign className="h-4 w-4 mr-1.5" />
                       <span>D-paye</span>
                     </Link>
                   </Button>
@@ -121,9 +121,9 @@ export default function Navbar() {
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button asChild variant="outline" size="sm" className="border-gray-300 hover:bg-gray-50 bg-white whitespace-nowrap flex-shrink-0">
-                    <Link href="/dit">
-                      <Laptop className="h-4 w-4 mr-1" />
+                  <Button asChild variant="outline" size="sm" className="border-0 bg-gradient-to-r from-blue-100 via-purple-100 to-pink-100 hover:from-blue-200 hover:via-purple-200 hover:to-pink-200 shadow-sm hover:shadow-md transition-all duration-300 whitespace-nowrap flex-shrink-0">
+                    <Link href="/dit" className="font-medium text-gray-700">
+                      <Laptop className="h-4 w-4 mr-1.5" />
                       <span>DIT</span>
                     </Link>
                   </Button>
@@ -135,14 +135,11 @@ export default function Navbar() {
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="border-gray-300 hover:bg-gray-50 bg-white whitespace-nowrap flex-shrink-0"
-                    onClick={() => setCongesModalOpen(true)}
-                  >
-                    <Calendar className="h-4 w-4 mr-1" />
-                    <span>D-congés</span>
+                  <Button asChild variant="outline" size="sm" className="border-0 bg-gradient-to-r from-blue-100 via-purple-100 to-pink-100 hover:from-blue-200 hover:via-purple-200 hover:to-pink-200 shadow-sm hover:shadow-md transition-all duration-300 whitespace-nowrap flex-shrink-0">
+                    <Link href="/d-conges" className="font-medium text-gray-700">
+                      <Calendar className="h-4 w-4 mr-1.5" />
+                      <span>D-congés</span>
+                    </Link>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" sideOffset={6}>
@@ -152,14 +149,11 @@ export default function Navbar() {
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="border-gray-300 hover:bg-gray-50 bg-white whitespace-nowrap flex-shrink-0"
-                    onClick={() => setAbsenceActionsModalOpen(true)}
-                  >
-                    <UserX className="h-4 w-4 mr-1" />
-                    <span>D-absence</span>
+                  <Button asChild variant="outline" size="sm" className="border-0 bg-gradient-to-r from-blue-100 via-purple-100 to-pink-100 hover:from-blue-200 hover:via-purple-200 hover:to-pink-200 shadow-sm hover:shadow-md transition-all duration-300 whitespace-nowrap flex-shrink-0">
+                    <Link href="/d-absence" className="font-medium text-gray-700">
+                      <UserX className="h-4 w-4 mr-1.5" />
+                      <span>D-absence</span>
+                    </Link>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" sideOffset={6}>
@@ -169,9 +163,9 @@ export default function Navbar() {
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button asChild variant="outline" size="sm" className="border-gray-300 hover:bg-gray-50 bg-white whitespace-nowrap flex-shrink-0">
-                    <Link href="/rapport-journalier">
-                      <ClipboardList className="h-4 w-4 mr-1" />
+                  <Button asChild variant="outline" size="sm" className="border-0 bg-gradient-to-r from-blue-100 via-purple-100 to-pink-100 hover:from-blue-200 hover:via-purple-200 hover:to-pink-200 shadow-sm hover:shadow-md transition-all duration-300 whitespace-nowrap flex-shrink-0">
+                    <Link href="/rapport-journalier" className="font-medium text-gray-700">
+                      <ClipboardList className="h-4 w-4 mr-1.5" />
                       <span>Rapport J.</span>
                     </Link>
                   </Button>
@@ -183,9 +177,9 @@ export default function Navbar() {
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button asChild variant="outline" size="sm" className="border-gray-300 hover:bg-gray-50 bg-white whitespace-nowrap flex-shrink-0">
-                    <Link href="/rapport-mensuel">
-                      <FileBarChart className="h-4 w-4 mr-1" />
+                  <Button asChild variant="outline" size="sm" className="border-0 bg-gradient-to-r from-blue-100 via-purple-100 to-pink-100 hover:from-blue-200 hover:via-purple-200 hover:to-pink-200 shadow-sm hover:shadow-md transition-all duration-300 whitespace-nowrap flex-shrink-0">
+                    <Link href="/rapport-mensuel" className="font-medium text-gray-700">
+                      <FileBarChart className="h-4 w-4 mr-1.5" />
                       <span>Rapport M.</span>
                     </Link>
                   </Button>
@@ -201,9 +195,9 @@ export default function Navbar() {
             <>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button asChild variant="outline" size="sm" className="border-gray-300 hover:bg-gray-50 bg-white whitespace-nowrap flex-shrink-0">
-                    <Link href="/finance">
-                      <BarChart3 className="h-4 w-4 mr-1" />
+                  <Button asChild variant="outline" size="sm" className="border-0 bg-gradient-to-r from-blue-100 via-purple-100 to-pink-100 hover:from-blue-200 hover:via-purple-200 hover:to-pink-200 shadow-sm hover:shadow-md transition-all duration-300 whitespace-nowrap flex-shrink-0">
+                    <Link href="/finance" className="font-medium text-gray-700">
+                      <BarChart3 className="h-4 w-4 mr-1.5" />
                       <span>Analyse</span>
                     </Link>
                   </Button>
@@ -215,9 +209,9 @@ export default function Navbar() {
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button asChild variant="outline" size="sm" className="border-gray-300 hover:bg-gray-50 bg-white whitespace-nowrap flex-shrink-0">
-                    <Link href="/admin">
-                      <Settings className="h-4 w-4 mr-1" />
+                  <Button asChild variant="outline" size="sm" className="border-0 bg-gradient-to-r from-blue-100 via-purple-100 to-pink-100 hover:from-blue-200 hover:via-purple-200 hover:to-pink-200 shadow-sm hover:shadow-md transition-all duration-300 whitespace-nowrap flex-shrink-0">
+                    <Link href="/admin" className="font-medium text-gray-700">
+                      <Settings className="h-4 w-4 mr-1.5" />
                       <span>Admin</span>
                     </Link>
                   </Button>
