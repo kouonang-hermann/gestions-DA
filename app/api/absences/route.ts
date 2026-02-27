@@ -22,7 +22,10 @@ async function requireAuth(request: NextRequest) {
         nom: true,
         prenom: true,
         email: true,
-        role: true
+        role: true,
+        phone: true,
+        matricule: true,
+        anciennete: true
       }
     })
     return user
@@ -73,7 +76,15 @@ export async function GET(request: NextRequest) {
         employeId: currentUser.id
       },
       include: {
-        superieurHierarchique: {
+        responsable: {
+          select: {
+            id: true,
+            nom: true,
+            prenom: true,
+            email: true
+          }
+        },
+        employe: {
           select: {
             id: true,
             nom: true,
@@ -118,26 +129,26 @@ export async function POST(request: NextRequest) {
       dateDebut,
       dateFin,
       nombreJours,
-      superieurHierarchiqueId,
+      responsableId,
       commentaireEmploye
     } = body
 
     // Validation des données
-    if (!typeAbsence || !motif || !dateDebut || !dateFin || !nombreJours || !superieurHierarchiqueId) {
+    if (!typeAbsence || !motif || !dateDebut || !dateFin || !nombreJours || !responsableId) {
       return NextResponse.json(
         { success: false, error: "Données manquantes" },
         { status: 400 }
       )
     }
 
-    // Vérifier que le supérieur existe
-    const superieur = await prisma.user.findUnique({
-      where: { id: superieurHierarchiqueId }
+    // Vérifier que le responsable existe
+    const responsable = await prisma.user.findUnique({
+      where: { id: responsableId }
     })
 
-    if (!superieur) {
+    if (!responsable) {
       return NextResponse.json(
-        { success: false, error: "Supérieur hiérarchique non trouvé" },
+        { success: false, error: "Responsable non trouvé" },
         { status: 404 }
       )
     }
@@ -150,18 +161,23 @@ export async function POST(request: NextRequest) {
       data: {
         numero,
         employeId: currentUser.id,
-        superieurHierarchiqueId,
-        typeAbsence,
-        motif,
+        responsableId,
+        matricule: currentUser.matricule || '',
+        anciennete: currentUser.anciennete || '',
+        responsableNom: responsable.nom,
+        responsableTel: responsable.phone || '',
+        responsableEmail: responsable.email || '',
+        typeConge: typeAbsence,
         dateDebut: new Date(dateDebut),
         dateFin: new Date(dateFin),
         nombreJours,
-        status: "soumise",
-        commentaireEmploye,
+        contactPersonnelNom: '',
+        contactPersonnelTel: '',
+        status: "brouillon",
         dateSoumission: new Date()
       },
       include: {
-        superieurHierarchique: {
+        responsable: {
           select: {
             id: true,
             nom: true,

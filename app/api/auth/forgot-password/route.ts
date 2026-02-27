@@ -16,50 +16,24 @@ export async function POST(req: NextRequest) {
     }
 
     // Rechercher l'utilisateur par nom et téléphone
-    // Essayer plusieurs formats de nom pour plus de flexibilité
+    // Recherche flexible : téléphone peut contenir le numéro, nom peut être dans nom ou prenom
     const nomTrimmed = nom.trim();
+    const premierMot = nomTrimmed.split(' ')[0];
     
     const user = await prisma.user.findFirst({
       where: {
-        phone: telephone.trim(),
+        phone: {
+          contains: telephone.trim(), // Recherche flexible sur le téléphone
+        },
         OR: [
-          // Format 1 : Nom complet dans le champ "nom"
-          {
-            nom: {
-              equals: nomTrimmed,
-              mode: 'insensitive',
-            },
-          },
-          // Format 2 : Nom complet dans le champ "prenom"
-          {
-            prenom: {
-              equals: nomTrimmed,
-              mode: 'insensitive',
-            },
-          },
-          // Format 3 : Nom complet = nom + prenom
-          {
-            AND: [
-              {
-                OR: [
-                  // Essayer "nom prenom"
-                  {
-                    AND: [
-                      { nom: { contains: nomTrimmed.split(' ')[0], mode: 'insensitive' } },
-                      { prenom: { contains: nomTrimmed.split(' ').slice(1).join(' '), mode: 'insensitive' } },
-                    ],
-                  },
-                  // Essayer "prenom nom"
-                  {
-                    AND: [
-                      { prenom: { contains: nomTrimmed.split(' ')[0], mode: 'insensitive' } },
-                      { nom: { contains: nomTrimmed.split(' ').slice(1).join(' '), mode: 'insensitive' } },
-                    ],
-                  },
-                ],
-              },
-            ],
-          },
+          // Format 1 : Nom complet dans "nom"
+          { nom: { contains: nomTrimmed, mode: 'insensitive' } },
+          // Format 2 : Nom complet dans "prenom"
+          { prenom: { contains: nomTrimmed, mode: 'insensitive' } },
+          // Format 3 : Premier mot du nom dans "nom"
+          { nom: { contains: premierMot, mode: 'insensitive' } },
+          // Format 4 : Premier mot du nom dans "prenom"
+          { prenom: { contains: premierMot, mode: 'insensitive' } },
         ],
       },
     });
