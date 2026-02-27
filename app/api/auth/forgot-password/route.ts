@@ -16,13 +16,51 @@ export async function POST(req: NextRequest) {
     }
 
     // Rechercher l'utilisateur par nom et téléphone
+    // Essayer plusieurs formats de nom pour plus de flexibilité
+    const nomTrimmed = nom.trim();
+    
     const user = await prisma.user.findFirst({
       where: {
-        nom: {
-          equals: nom.trim(),
-          mode: 'insensitive', // Recherche insensible à la casse
-        },
         phone: telephone.trim(),
+        OR: [
+          // Format 1 : Nom complet dans le champ "nom"
+          {
+            nom: {
+              equals: nomTrimmed,
+              mode: 'insensitive',
+            },
+          },
+          // Format 2 : Nom complet dans le champ "prenom"
+          {
+            prenom: {
+              equals: nomTrimmed,
+              mode: 'insensitive',
+            },
+          },
+          // Format 3 : Nom complet = nom + prenom
+          {
+            AND: [
+              {
+                OR: [
+                  // Essayer "nom prenom"
+                  {
+                    AND: [
+                      { nom: { contains: nomTrimmed.split(' ')[0], mode: 'insensitive' } },
+                      { prenom: { contains: nomTrimmed.split(' ').slice(1).join(' '), mode: 'insensitive' } },
+                    ],
+                  },
+                  // Essayer "prenom nom"
+                  {
+                    AND: [
+                      { prenom: { contains: nomTrimmed.split(' ')[0], mode: 'insensitive' } },
+                      { nom: { contains: nomTrimmed.split(' ').slice(1).join(' '), mode: 'insensitive' } },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
       },
     });
 

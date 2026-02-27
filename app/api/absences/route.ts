@@ -36,7 +36,7 @@ async function generateNumero(): Promise<string> {
   const year = new Date().getFullYear()
   const prefix = `ABS-${year}-`
   
-  const lastDemande = await prisma.demandeAbsence.findFirst({
+  const lastDemande = await prisma.demandeConge.findFirst({
     where: {
       numero: {
         startsWith: prefix
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Récupérer les demandes de l'utilisateur connecté
-    const demandes = await prisma.demandeAbsence.findMany({
+    const demandes = await prisma.demandeConge.findMany({
       where: {
         employeId: currentUser.id
       },
@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
     const numero = await generateNumero()
 
     // Créer la demande
-    const demande = await prisma.demandeAbsence.create({
+    const demande = await prisma.demandeConge.create({
       data: {
         numero,
         employeId: currentUser.id,
