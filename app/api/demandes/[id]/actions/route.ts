@@ -1274,85 +1274,99 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
 
           
 
-          // Créer la sortie appro (ancien système - compatibilité)
+          try {
 
-          await prisma.sortieSignature.create({
+            // Créer la sortie appro (ancien système - compatibilité)
 
-            data: {
+            await prisma.sortieSignature.create({
 
-              id: crypto.randomUUID(),
+              data: {
 
-              userId: currentUser.id,
+                id: crypto.randomUUID(),
 
-              demandeId: demande.id,
+                userId: currentUser.id,
 
-              commentaire: commentaire || null,
+                demandeId: demande.id,
 
-              signature: `${currentUser.id}-sortie-${Date.now()}`,
+                commentaire: commentaire || null,
 
-              quantitesSorties: quantitesSorties || {},
+                signature: `${currentUser.id}-sortie-${Date.now()}`,
 
-              dateModificationLimite: new Date(Date.now() + 45 * 60 * 1000) // +45 minutes
+                quantitesSorties: quantitesSorties || {},
 
-            }
-
-          })
-
-          
-
-
-
-          // NOUVEAU : Créer automatiquement une livraison complète (système de livraisons multiples)
-
-          // Cela permet la compatibilité avec l'ancien système tout en supportant le nouveau
-
-          const items = await prisma.itemDemande.findMany({
-
-            where: { demandeId: demande.id }
-
-          })
-
-          
-
-          await prisma.livraison.create({
-
-            data: {
-
-              id: crypto.randomUUID(),
-
-              demandeId: demande.id,
-
-              livreurId: livreurAssigneId,
-
-              commentaire: commentaire || "Livraison complète créée automatiquement",
-
-              statut: "prete",
-
-              items: {
-
-                create: items.map(item => ({
-
-                  id: crypto.randomUUID(),
-
-                  itemDemandeId: item.id,
-
-                  quantiteLivree: item.quantiteValidee || item.quantiteDemandee
-
-                }))
+                dateModificationLimite: new Date(Date.now() + 45 * 60 * 1000)
 
               }
 
-            }
+            })
 
-          })
-
-          
+            
 
 
 
-          // Envoyer notification au livreur assigné
+            // NOUVEAU : Créer automatiquement une livraison complète (système de livraisons multiples)
 
-          await notificationService.notifyLivreurAssigne(demande.id, livreurAssigneId, currentUser.id)
+            const items = await prisma.itemDemande.findMany({
+
+              where: { demandeId: demande.id }
+
+            })
+
+            
+
+            await prisma.livraison.create({
+
+              data: {
+
+                id: crypto.randomUUID(),
+
+                demandeId: demande.id,
+
+                livreurId: livreurAssigneId,
+
+                commentaire: commentaire || "Livraison complète créée automatiquement",
+
+                statut: "prete",
+
+                items: {
+
+                  create: items.map(item => ({
+
+                    id: crypto.randomUUID(),
+
+                    itemDemandeId: item.id,
+
+                    quantiteLivree: item.quantiteValidee || item.quantiteDemandee
+
+                  }))
+
+                }
+
+              }
+
+            })
+
+            
+
+
+
+            // Envoyer notification au livreur assigné
+
+            await notificationService.notifyLivreurAssigne(demande.id, livreurAssigneId, currentUser.id)
+
+          } catch (error: any) {
+
+            console.error("Erreur lors de la préparation de sortie:", error)
+
+            return NextResponse.json({ 
+
+              success: false, 
+
+              error: `Erreur lors de la préparation: ${error.message || "Erreur inconnue"}` 
+
+            }, { status: 500 })
+
+          }
 
         } else {
 

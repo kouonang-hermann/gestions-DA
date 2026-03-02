@@ -94,7 +94,7 @@ export default function Navbar() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button asChild variant="outline" size="sm" className="border-0 bg-gradient-to-r from-blue-100 via-purple-100 to-pink-100 hover:from-blue-200 hover:via-purple-200 hover:to-pink-200 shadow-sm hover:shadow-md transition-all duration-300 whitespace-nowrap flex-shrink-0">
-                    <Link href="/da" className="font-medium text-gray-700">
+                    <Link href="/dashboard" className="font-medium text-gray-700">
                       <FileText className="h-4 w-4 mr-1.5" />
                       <span>DA</span>
                     </Link>
@@ -361,7 +361,7 @@ export default function Navbar() {
                 {currentUser && (
                   <>
                     <Button asChild variant="outline" className="w-full justify-start" onClick={() => setMobileMenuOpen(false)}>
-                      <Link href="/da">
+                      <Link href="/dashboard">
                         <FileText className="h-4 w-4 mr-2" />
                         DA
                       </Link>
