@@ -5,7 +5,7 @@ import { getCurrentUser } from "@/lib/auth"
 /**
  * TABLEAU 3 – ARTICLES NON VALORISÉS
  * 
- * Objectif : détecter les blocages anciens du processus.
+ * Objectif : détecter tous les articles sans prix ayant dépassé la validation budgétaire.
  * 
  * Colonnes :
  * - Projet
@@ -13,14 +13,17 @@ import { getCurrentUser } from "@/lib/auth"
  * - Nombre d'articles non valorisés
  * - Jours sans valorisation (MAX)
  * 
- * Règles :
+ * Règles RÉVISÉES :
  * - Un article est "non valorisé" si :
- *   1. Il a une quantité restante (quantiteValidee - quantiteSortie > 0)
- *   2. Cette quantité restante n'a pas de prix (prixUnitaire IS NULL)
- * - Le point de départ du calcul est la date de validation appro/logistique
- *   (datePassageAppro ou datePassageLogistique)
- * - Jours sans valorisation = Date du jour − Date de validation
- * - Pour chaque projet et type de demande, on prend le MAX des jours
+ *   1. Quantité restante > 0 (quantiteValidee - max(quantiteSortie, quantiteRecue, quantiteLivreeTotal))
+ *   2. Prix unitaire non renseigné (prixUnitaire IS NULL)
+ *   3. La demande a dépassé l'étape de validation charge_affaire
+ *   4. La demande n'est pas rejetée définitivement ou archivée
+ * 
+ * - Calcul des jours sans valorisation :
+ *   Priorité : dateEngagement > datePassageAppro/Logistique > dateCreation
+ * 
+ * - Statuts concernés : tous les statuts à partir de la préparation jusqu'à la clôture
  */
 export async function GET(request: NextRequest) {
   try {
@@ -33,11 +36,19 @@ export async function GET(request: NextRequest) {
       }, { status: 401 })
     }
 
-    // Récupérer toutes les demandes actives qui ont des articles non valorisés
+    // Récupérer toutes les demandes ayant dépassé la validation charge_affaire
+    // Cela inclut : préparation, réception, livraison, validation finale, clôture
     const demandes = await prisma.demande.findMany({
       where: {
         status: {
-          notIn: ["brouillon", "rejetee", "archivee"]
+          in: [
+            "en_attente_preparation_appro",
+            "en_attente_preparation_logistique",
+            "en_attente_reception_livreur",
+            "en_attente_livraison",
+            "en_attente_validation_finale_demandeur",
+            "cloturee"
+          ]
         }
       },
       include: {
@@ -51,6 +62,9 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             quantiteDemandee: true,
+            quantiteValidee: true,
+            quantiteSortie: true,
+            quantiteRecue: true,
             quantiteLivreeTotal: true,
             prixUnitaire: true
           }
@@ -67,21 +81,31 @@ export async function GET(request: NextRequest) {
       type: string
       nombreArticlesNonValorises: number
       joursMaxSansValorisation: number
-      demandesImpactees: string[]
+      demandesImpactees: Set<string>
     }>()
 
     const now = new Date()
 
     for (const demande of demandes) {
       // Compter les articles non valorisés :
-      // - Quantité restante > 0 (quantiteDemandee - quantiteLivreeTotal)
+      // - Article validé (quantiteValidee IS NOT NULL)
+      // - Quantité restante > 0 (quantiteValidee - max(quantiteSortie, quantiteRecue, quantiteLivreeTotal))
       // - Prix unitaire non renseigné (prixUnitaire IS NULL)
-      // IMPORTANT: Utilise les mêmes champs que les Tableaux 1 & 2 pour cohérence
       const articlesNonValorises = demande.items.filter(item => {
-        const quantiteDemandee = item.quantiteDemandee || 0
-        const quantiteLivree = item.quantiteLivreeTotal || 0
-        const quantiteRestante = quantiteDemandee - quantiteLivree
-        
+        // Exclure les articles jamais validés (quantiteValidee = NULL)
+        if (item.quantiteValidee === null || item.quantiteValidee === undefined) {
+          return false
+        }
+
+        const baseValidee = item.quantiteValidee
+        const qteSortie = item.quantiteSortie ?? 0
+        const qteRecue = item.quantiteRecue ?? 0
+        const qteLivreeTotal = item.quantiteLivreeTotal ?? 0
+
+        // On prend la quantité la plus fiable disponible (certaines colonnes peuvent rester à 0)
+        const baseSortie = Math.max(qteSortie, qteRecue, qteLivreeTotal)
+
+        const quantiteRestante = Math.max(0, baseValidee - baseSortie)
         return quantiteRestante > 0 && item.prixUnitaire === null
       })
       
@@ -90,12 +114,12 @@ export async function GET(request: NextRequest) {
       if (articlesNonValorises.length === 0) continue
 
       // Déterminer la date de référence pour le calcul
-      // Priorité : date de passage > date de création
+      // Priorité : dateEngagement (saisie prix) > datePassage (validation étape) > dateCreation
       const datePassage = demande.type === "materiel" 
         ? demande.datePassageAppro 
         : demande.datePassageLogistique
       
-      const dateReference = datePassage || demande.dateCreation
+      const dateReference = demande.dateEngagement || datePassage || demande.dateCreation
 
       // Calculer les jours sans valorisation
       const diffTime = now.getTime() - new Date(dateReference).getTime()
@@ -111,7 +135,7 @@ export async function GET(request: NextRequest) {
           type: demande.type,
           nombreArticlesNonValorises: 0,
           joursMaxSansValorisation: 0,
-          demandesImpactees: []
+          demandesImpactees: new Set<string>()
         })
       }
 
@@ -121,11 +145,15 @@ export async function GET(request: NextRequest) {
         aggregation.joursMaxSansValorisation, 
         joursSansValorisation
       )
-      aggregation.demandesImpactees.push(demande.numero)
+      aggregation.demandesImpactees.add(demande.numero)
     }
 
     // Convertir en tableau et trier par jours décroissants (blocages les plus anciens en premier)
     const articlesNonValorises = Array.from(aggregationMap.values())
+      .map(a => ({
+        ...a,
+        demandesImpactees: Array.from(a.demandesImpactees)
+      }))
       .sort((a, b) => b.joursMaxSansValorisation - a.joursMaxSansValorisation)
 
     // Calculer les totaux globaux
@@ -151,10 +179,20 @@ export async function GET(request: NextRequest) {
 
     for (const demande of demandes) {
       const articlesNonValorises = demande.items.filter(item => {
-        const quantiteDemandee = item.quantiteDemandee || 0
-        const quantiteLivree = item.quantiteLivreeTotal || 0
-        const quantiteRestante = quantiteDemandee - quantiteLivree
-        
+        // Exclure les articles jamais validés (quantiteValidee = NULL)
+        if (item.quantiteValidee === null || item.quantiteValidee === undefined) {
+          return false
+        }
+
+        const baseValidee = item.quantiteValidee
+        const qteSortie = item.quantiteSortie ?? 0
+        const qteRecue = item.quantiteRecue ?? 0
+        const qteLivreeTotal = item.quantiteLivreeTotal ?? 0
+
+        // On prend la quantité la plus fiable disponible (certaines colonnes peuvent rester à 0)
+        const baseSortie = Math.max(qteSortie, qteRecue, qteLivreeTotal)
+
+        const quantiteRestante = Math.max(0, baseValidee - baseSortie)
         return quantiteRestante > 0 && item.prixUnitaire === null
       })
       if (articlesNonValorises.length === 0) continue
@@ -163,7 +201,7 @@ export async function GET(request: NextRequest) {
         ? demande.datePassageAppro 
         : demande.datePassageLogistique
 
-      const dateReference = datePassage || demande.dateCreation
+      const dateReference = demande.dateEngagement || datePassage || demande.dateCreation
 
       const diffTime = now.getTime() - new Date(dateReference).getTime()
       const joursSansValorisation = Math.floor(diffTime / (1000 * 60 * 60 * 24))

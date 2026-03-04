@@ -50,6 +50,8 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             quantiteDemandee: true,
+            quantiteValidee: true,
+            quantiteSortie: true,
             quantiteLivreeTotal: true,
             prixUnitaire: true
           }
@@ -85,7 +87,16 @@ export async function GET(request: NextRequest) {
       const projetData = projetsMap.get(projetId)!
 
       for (const item of demande.items) {
-        const quantiteRestante = item.quantiteDemandee - (item.quantiteLivreeTotal || 0)
+        // Définition unique "quantité restante" (analyse):
+        // restant = (quantité validée si dispo, sinon quantité demandée)
+        //         − (quantité sortie si dispo, sinon quantité livrée totale)
+        // clamp à 0 pour éviter les restants négatifs
+        const baseDemandee = item.quantiteDemandee || 0
+        const baseValidee = item.quantiteValidee ?? baseDemandee
+        const baseLivreeTotal = item.quantiteLivreeTotal || 0
+        const baseSortie = item.quantiteSortie ?? baseLivreeTotal
+
+        const quantiteRestante = Math.max(0, baseValidee - baseSortie)
         
         if (quantiteRestante > 0) {
           projetData.nombreArticlesRestants += 1

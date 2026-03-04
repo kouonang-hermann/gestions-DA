@@ -202,6 +202,8 @@ model User {
   demandesTechnicien        Demande[]             @relation("demandes_technicienIdTousers")
   demandesCongesEmploye     DemandeConge[]        @relation("DemandesCongesEmploye")
   demandesCongesResponsable DemandeConge[]        @relation("DemandesCongesResponsable")
+  demandesAbsencesEmploye   DemandeAbsence[]      @relation("DemandesAbsencesEmploye")
+  demandesAbsencesResponsable DemandeAbsence[]    @relation("DemandesAbsencesResponsable")
   historyEntries            HistoryEntry[]
   livraisons                Livraison[]
   notifications             Notification[]
@@ -294,6 +296,35 @@ model DemandeConge {
   @@map("demandes_conges")
 }
 
+model DemandeAbsence {
+  id                   String        @id @default(cuid())
+  numero               String        @unique
+  employeId            String
+  responsableId        String
+  typeAbsence          String
+  motif                String
+  dateDebut            DateTime
+  dateFin              DateTime
+  nombreJours          Int
+  status               AbsenceStatus @default(brouillon)
+  signatureEmploye     Json?
+  signatureResponsable Json?
+  signatureRH          Json?
+  signatureDG          Json?
+  dateDebutFinale      DateTime?
+  dateFinFinale        DateTime?
+  nombreJoursFinal     Int?
+  dateCreation         DateTime      @default(now())
+  dateModification     DateTime      @updatedAt
+  dateSoumission       DateTime?
+  dateValidation       DateTime?
+  rejetMotif           String?
+  employe              User          @relation("DemandesAbsencesEmploye", fields: [employeId], references: [id], onDelete: Cascade)
+  responsable          User          @relation("DemandesAbsencesResponsable", fields: [responsableId], references: [id])
+
+  @@map("demandes_absences")
+}
+
 enum DemandeStatus {
   brouillon
   soumise
@@ -361,6 +392,17 @@ enum TypeConge {
 }
 
 enum CongeStatus {
+  brouillon
+  soumise
+  en_attente_validation_hierarchique
+  en_attente_validation_rh
+  en_attente_visa_dg
+  approuvee
+  rejetee
+  annulee
+}
+
+enum AbsenceStatus {
   brouillon
   soumise
   en_attente_validation_hierarchique

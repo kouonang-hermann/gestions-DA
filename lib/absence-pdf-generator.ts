@@ -16,7 +16,7 @@ interface DemandeAbsencePDF {
   typeAbsence: string
   status: string
   dateCreation: string
-  superieurHierarchique: {
+  responsable: {
     nom: string
     prenom: string
   }
@@ -29,22 +29,22 @@ export function generateAbsencePDF(demande: DemandeAbsencePDF): string {
     year: 'numeric'
   })
 
-  const typeAbsenceLabels: Record<string, string> = {
-    maladie: 'Maladie',
-    personnelle: 'Personnelle',
-    familiale: 'Familiale',
-    formation: 'Formation',
-    autre: 'Autre'
-  }
-
   const statusLabels: Record<string, string> = {
     brouillon: 'Brouillon',
     soumise: 'Soumise',
-    en_attente_validation: 'En attente de validation',
+    en_attente_validation_hierarchique: 'En attente validation hiérarchique',
+    en_attente_validation_rh: 'En attente validation RH',
+    en_attente_visa_dg: 'En attente visa DG',
     approuvee: 'Approuvée',
     rejetee: 'Rejetée',
     annulee: 'Annulée'
   }
+
+  const hierarchieAccord = [
+    'en_attente_validation_rh',
+    'en_attente_visa_dg',
+    'approuvee'
+  ].includes(demande.status)
 
   const html = `
     <!DOCTYPE html>
@@ -263,7 +263,7 @@ export function generateAbsencePDF(demande: DemandeAbsencePDF): string {
           
           <div class="form-field">
             <span class="form-label">TYPE D'ABSENCE :</span>
-            <span class="form-value">${typeAbsenceLabels[demande.typeAbsence] || demande.typeAbsence}</span>
+            <span class="form-value">${demande.typeAbsence}</span>
           </div>
           
           <div class="form-field">
@@ -282,7 +282,7 @@ export function generateAbsencePDF(demande: DemandeAbsencePDF): string {
           <div class="validation-title">VALIDATION DE LA HIÉRARCHIE :</div>
           <div class="checkbox-group">
             <div class="checkbox-item">
-              <span class="checkbox ${demande.status === 'approuvee' ? 'checked' : ''}"></span>
+              <span class="checkbox ${hierarchieAccord ? 'checked' : ''}"></span>
               <span>ACCORD</span>
             </div>
             <div class="checkbox-item">
@@ -292,7 +292,7 @@ export function generateAbsencePDF(demande: DemandeAbsencePDF): string {
           </div>
           <div class="form-field" style="margin-top: 15px;">
             <span class="form-label">Supérieur hiérarchique :</span>
-            <span class="form-value">${demande.superieurHierarchique.prenom} ${demande.superieurHierarchique.nom}</span>
+            <span class="form-value">${demande.responsable.prenom} ${demande.responsable.nom}</span>
           </div>
         </div>
         

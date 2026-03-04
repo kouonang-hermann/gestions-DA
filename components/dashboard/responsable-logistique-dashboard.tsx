@@ -56,6 +56,7 @@ import DemandeDetailsModal from "@/components/modals/demande-details-modal"
 import MesLivraisonsSection from "@/components/dashboard/mes-livraisons-section"
 import LivraisonsCard from "@/components/dashboard/livraisons-card"
 import SousDemandesList from "@/components/dashboard/sous-demandes-list"
+import AnalyticsModal from "@/components/analytics/analytics-modal"
 
 export default function ResponsableLogistiqueDashboard() {
   const { currentUser, demandes, projets, users, isLoading } = useStore()
@@ -107,6 +108,7 @@ export default function ResponsableLogistiqueDashboard() {
   const [universalClosureModalOpen, setUniversalClosureModalOpen] = useState(false)
   const [selectedDemandeId, setSelectedDemandeId] = useState<string | null>(null)
   const [demandeDetailOpen, setDemandeDetailOpen] = useState(false)
+  const [analyticsModalOpen, setAnalyticsModalOpen] = useState(false)
 
   // Données chargées automatiquement par useDataLoader
 
@@ -668,6 +670,23 @@ export default function ResponsableLogistiqueDashboard() {
                     </TooltipContent>
                   </Tooltip>
 
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        className="justify-start text-white"
+                        style={{ backgroundColor: '#dc2626' }}
+                        size="sm"
+                        onClick={() => setAnalyticsModalOpen(true)}
+                      >
+                        <TrendingUp className="h-4 w-4 mr-2" />
+                        <span className="text-sm">Analyse</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" sideOffset={6}>
+                      Analyser les projets bloqués, articles restants et non valorisés
+                    </TooltipContent>
+                  </Tooltip>
+
                   <DecideurButton />
                 </div>
               </CardContent>
@@ -775,6 +794,11 @@ export default function ResponsableLogistiqueDashboard() {
         isOpen={createDemandeModalOpen}
         onClose={() => setCreateDemandeModalOpen(false)}
         type={demandeType}
+      />
+
+      <AnalyticsModal
+        isOpen={analyticsModalOpen}
+        onClose={() => setAnalyticsModalOpen(false)}
       />
       {/* Modale de détails des demandes */}
       <Dialog open={detailsModalOpen} onOpenChange={setDetailsModalOpen}>

@@ -134,7 +134,10 @@ export const PUT = async (
       const demandeItem = demande.items.find((i: any) => i.id === itemId)
       if (demandeItem) {
         const quantiteValidee = demandeItem.quantiteValidee || demandeItem.quantiteDemandee
-        const quantiteLivree = demandeItem.quantiteSortie || 0
+        const qteSortie = demandeItem.quantiteSortie || 0
+        const qteRecue = demandeItem.quantiteRecue || 0
+        const qteLivreeTotal = demandeItem.quantiteLivreeTotal || 0
+        const quantiteLivree = Math.max(qteSortie, qteRecue, qteLivreeTotal)
         const quantiteRestante = Math.max(0, quantiteValidee - quantiteLivree)
         coutTotal += prixUnitaire * quantiteRestante
       }

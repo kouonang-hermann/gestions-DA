@@ -64,6 +64,7 @@
     "crypto": "latest",
     "date-fns": "4.1.0",
     "embla-carousel-react": "8.5.1",
+    "eslint-config-next": "^15.5.12",
     "geist": "^1.4.2",
     "html2canvas": "^1.4.1",
     "immer": "latest",

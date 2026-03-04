@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -20,12 +20,11 @@ interface DemandeAbsence {
   nombreJours: number
   status: string
   commentaireEmploye?: string
-  commentaireSuperieur?: string
   dateCreation: string
   dateSoumission?: string
   dateValidation?: string
   rejetMotif?: string
-  superieurHierarchique: {
+  responsable: {
     id: string
     nom: string
     prenom: string
@@ -36,18 +35,12 @@ interface DemandeAbsence {
   }
 }
 
-const typeAbsenceLabels: Record<string, string> = {
-  maladie: "Maladie",
-  personnelle: "Personnelle",
-  familiale: "Familiale",
-  formation: "Formation",
-  autre: "Autre"
-}
-
 const statusLabels: Record<string, string> = {
   brouillon: "Brouillon",
   soumise: "Soumise",
-  en_attente_validation: "En attente de validation",
+  en_attente_validation_hierarchique: "En attente validation hiérarchique",
+  en_attente_validation_rh: "En attente validation RH",
+  en_attente_visa_dg: "En attente visa DG",
   approuvee: "Approuvée",
   rejetee: "Rejetée",
   annulee: "Annulée"
@@ -56,7 +49,9 @@ const statusLabels: Record<string, string> = {
 const statusColors: Record<string, { bg: string; text: string }> = {
   brouillon: { bg: "#f3f4f6", text: "#374151" },
   soumise: { bg: "#dbeafe", text: "#1e40af" },
-  en_attente_validation: { bg: "#fef3c7", text: "#92400e" },
+  en_attente_validation_hierarchique: { bg: "#ffedd5", text: "#9a3412" },
+  en_attente_validation_rh: { bg: "#fef3c7", text: "#92400e" },
+  en_attente_visa_dg: { bg: "#ede9fe", text: "#5b21b6" },
   approuvee: { bg: "#dcfce7", text: "#166534" },
   rejetee: { bg: "#fecaca", text: "#dc2626" },
   annulee: { bg: "#f3f4f6", text: "#374151" }
@@ -67,7 +62,7 @@ export default function AbsencesList() {
   const [demandes, setDemandes] = useState<DemandeAbsence[]>([])
   const [loading, setLoading] = useState(true)
 
-  const loadDemandes = async () => {
+  const loadDemandes = useCallback(async () => {
     if (!token) return
 
     setLoading(true)
@@ -90,11 +85,11 @@ export default function AbsencesList() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [token])
 
   useEffect(() => {
     loadDemandes()
-  }, [token])
+  }, [loadDemandes])
 
   if (loading) {
     return (
@@ -146,7 +141,7 @@ export default function AbsencesList() {
                   <div>
                     <div className="font-semibold text-gray-900">{demande.numero}</div>
                     <div className="text-sm text-gray-500">
-                      {typeAbsenceLabels[demande.typeAbsence]}
+                      {demande.typeAbsence}
                     </div>
                   </div>
                 </div>
@@ -156,7 +151,7 @@ export default function AbsencesList() {
                     color: statusColors[demande.status]?.text || "#374151"
                   }}
                 >
-                  {statusLabels[demande.status]}
+                  {statusLabels[demande.status] || demande.status}
                 </Badge>
               </div>
 
@@ -185,12 +180,12 @@ export default function AbsencesList() {
                   </div>
                 </div>
 
-                {/* Supérieur hiérarchique */}
+                {/* Responsable */}
                 <div className="flex items-center gap-2 text-sm">
                   <User className="h-4 w-4 text-gray-400" />
-                  <span className="text-gray-600">Supérieur:</span>
+                  <span className="text-gray-600">Responsable:</span>
                   <span className="font-medium">
-                    {demande.superieurHierarchique.prenom} {demande.superieurHierarchique.nom}
+                    {demande.responsable.prenom} {demande.responsable.nom}
                   </span>
                 </div>
 
@@ -205,16 +200,6 @@ export default function AbsencesList() {
                   <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
                     <div className="text-xs font-medium text-blue-700 mb-1">Votre commentaire</div>
                     <div className="text-sm text-blue-900">{demande.commentaireEmploye}</div>
-                  </div>
-                )}
-
-                {/* Commentaire supérieur */}
-                {demande.commentaireSuperieur && (
-                  <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                    <div className="text-xs font-medium text-green-700 mb-1">
-                      Commentaire du supérieur
-                    </div>
-                    <div className="text-sm text-green-900">{demande.commentaireSuperieur}</div>
                   </div>
                 )}
 
@@ -262,7 +247,10 @@ export default function AbsencesList() {
                         typeAbsence: demande.typeAbsence,
                         status: demande.status,
                         dateCreation: format(new Date(demande.dateCreation), "dd/MM/yyyy à HH:mm", { locale: fr }),
-                        superieurHierarchique: demande.superieurHierarchique
+                        responsable: {
+                          nom: demande.responsable.nom,
+                          prenom: demande.responsable.prenom
+                        }
                       }
                       downloadAbsencePDF(pdfData)
                     }}

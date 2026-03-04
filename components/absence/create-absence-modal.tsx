@@ -20,14 +20,6 @@ interface CreateAbsenceModalProps {
   onSuccess?: () => void
 }
 
-const typeAbsenceLabels: Record<string, string> = {
-  maladie: "Maladie",
-  personnelle: "Personnelle",
-  familiale: "Familiale",
-  formation: "Formation",
-  autre: "Autre"
-}
-
 export default function CreateAbsenceModal({
   open,
   onOpenChange,
@@ -87,28 +79,46 @@ export default function CreateAbsenceModal({
           dateDebut: formData.dateDebut.toISOString(),
           dateFin: formData.dateFin.toISOString(),
           nombreJours: calculateDays(),
-          superieurHierarchiqueId: formData.superieurHierarchiqueId,
+          responsableId: formData.superieurHierarchiqueId,
           commentaireEmploye: formData.commentaireEmploye || undefined
         })
       })
 
       const result = await response.json()
 
-      if (result.success) {
-        alert("Demande d'absence créée avec succès")
-        onOpenChange(false)
-        setFormData({
-          typeAbsence: "",
-          motif: "",
-          dateDebut: undefined,
-          dateFin: undefined,
-          superieurHierarchiqueId: "",
-          commentaireEmploye: ""
-        })
-        onSuccess?.()
-      } else {
+      if (!result.success) {
         alert(result.error || "Erreur lors de la création de la demande")
+        return
       }
+
+      const submitResponse = await fetch(`/api/absences/${result.data.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          action: "soumettre"
+        })
+      })
+
+      const submitResult = await submitResponse.json()
+      if (!submitResult.success) {
+        alert(submitResult.error || "Erreur lors de la soumission de la demande")
+        return
+      }
+
+      alert("Demande d'absence soumise avec succès")
+      onOpenChange(false)
+      setFormData({
+        typeAbsence: "",
+        motif: "",
+        dateDebut: undefined,
+        dateFin: undefined,
+        superieurHierarchiqueId: "",
+        commentaireEmploye: ""
+      })
+      onSuccess?.()
     } catch (error) {
       console.error("Erreur:", error)
       alert("Erreur de connexion")
@@ -131,21 +141,13 @@ export default function CreateAbsenceModal({
               <Label htmlFor="typeAbsence">
                 Type d'absence <span className="text-red-500">*</span>
               </Label>
-              <Select
+              <Input
+                id="typeAbsence"
                 value={formData.typeAbsence}
-                onValueChange={(value) => setFormData({ ...formData, typeAbsence: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(typeAbsenceLabels).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(e) => setFormData({ ...formData, typeAbsence: e.target.value })}
+                placeholder="Saisir le type d'absence"
+                required
+              />
             </div>
 
             {/* Supérieur hiérarchique */}

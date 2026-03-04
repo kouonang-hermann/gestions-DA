@@ -9,6 +9,8 @@ import ApproDashboard from "./appro-dashboard"
 import ChargeAffaireDashboard from "./charge-affaire-dashboard"
 import ResponsableLogistiqueDashboard from "./responsable-logistique-dashboard"
 import ResponsableLivreurDashboard from "./responsable-livreur-dashboard"
+import ResponsableRHDashboard from "./responsable-rh-dashboard"
+import DirecteurGeneralDashboard from "./directeur-general-dashboard"
 
 export default function Dashboard() {
   const { currentUser } = useStore()
@@ -43,12 +45,16 @@ export default function Dashboard() {
           return <ChargeAffaireDashboard />
         case "responsable_livreur":
           return <ResponsableLivreurDashboard />
+        case "responsable_rh":
+          return <ResponsableRHDashboard />
+        case "directeur_general":
+          return <DirecteurGeneralDashboard />
         default:
           return (
             <div className="p-6 text-center text-gray-500">
               Rôle non reconnu: {currentUser.role}
               <br />
-              <small className="text-gray-400">Rôles disponibles: superadmin, employe, conducteur_travaux, responsable_travaux, responsable_logistique, responsable_appro, charge_affaire, responsable_livreur</small>
+              <small className="text-gray-400">Rôles disponibles: superadmin, employe, conducteur_travaux, responsable_travaux, responsable_logistique, responsable_appro, charge_affaire, responsable_livreur, responsable_rh, directeur_general</small>
             </div>
           )
       }

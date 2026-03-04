@@ -1,22 +1,84 @@
 "use client"
 
+import { useMemo, useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, User, Mail, Phone, Clock, FileText, CheckCircle2, XCircle } from "lucide-react"
+import { Calendar, User, Phone, Clock } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { useStore } from "@/stores/useStore"
 import type { DemandeConge } from "@/types"
 
 interface DemandeCongeDetailsModalProps {
   isOpen: boolean
   onClose: () => void
   demande: DemandeConge | null
+  onUpdated?: () => void
 }
 
 export default function DemandeCongeDetailsModal({
   isOpen,
   onClose,
-  demande
+  demande,
+  onUpdated
 }: DemandeCongeDetailsModalProps) {
+  const { currentUser } = useStore()
+  const [isEditingDates, setIsEditingDates] = useState(false)
+  const [isSavingDates, setIsSavingDates] = useState(false)
+
+  const canEditDates = useMemo(() => {
+    const role = currentUser?.role
+    return role === "superadmin" || role === "responsable_rh" || role === "directeur_general"
+  }, [currentUser?.role])
+
+  const currentDateDebut = demande?.dateDebutFinale || demande?.dateDebut
+  const currentDateFin = demande?.dateFinFinale || demande?.dateFin
+  const currentNombreJours = demande?.nombreJoursFinal ?? demande?.nombreJours
+
+  const [dateDebutEdit, setDateDebutEdit] = useState(() =>
+    currentDateDebut ? new Date(currentDateDebut).toISOString().slice(0, 10) : ""
+  )
+  const [dateFinEdit, setDateFinEdit] = useState(() =>
+    currentDateFin ? new Date(currentDateFin).toISOString().slice(0, 10) : ""
+  )
+
   if (!demande) return null
+
+  const handleSaveDates = async () => {
+    if (!canEditDates) return
+
+    setIsSavingDates(true)
+    try {
+      const token = useStore.getState().token
+      const response = await fetch(`/api/conges/${demande.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({
+          action: "modifier_dates",
+          dateDebutModifiee: dateDebutEdit,
+          dateFinModifiee: dateFinEdit,
+        }),
+      })
+
+      const data = await response.json()
+      if (!data.success) {
+        alert(`❌ Erreur: ${data.error}`)
+        return
+      }
+
+      setIsEditingDates(false)
+      onUpdated?.()
+      alert("✅ Dates modifiées avec succès")
+      onClose()
+    } catch (error) {
+      console.error("Erreur modification dates:", error)
+      alert("❌ Erreur lors de la modification des dates")
+    } finally {
+      setIsSavingDates(false)
+    }
+  }
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -86,6 +148,35 @@ export default function DemandeCongeDetailsModal({
               <Calendar className="h-5 w-5 text-green-600" />
               Détails du congé
             </h3>
+
+            {canEditDates && (
+              <div className="flex justify-end mb-3">
+                {!isEditingDates ? (
+                  <Button variant="outline" size="sm" onClick={() => setIsEditingDates(true)}>
+                    Modifier dates
+                  </Button>
+                ) : (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setIsEditingDates(false)
+                        setDateDebutEdit(currentDateDebut ? new Date(currentDateDebut).toISOString().slice(0, 10) : "")
+                        setDateFinEdit(currentDateFin ? new Date(currentDateFin).toISOString().slice(0, 10) : "")
+                      }}
+                      disabled={isSavingDates}
+                    >
+                      Annuler
+                    </Button>
+                    <Button size="sm" onClick={handleSaveDates} disabled={isSavingDates}>
+                      {isSavingDates ? "Enregistrement..." : "Enregistrer"}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-600">Type de congé</p>
@@ -96,15 +187,35 @@ export default function DemandeCongeDetailsModal({
               </div>
               <div>
                 <p className="text-sm text-gray-600">Nombre de jours</p>
-                <p className="font-medium">{demande.nombreJours} jour(s)</p>
+                <p className="font-medium">{currentNombreJours} jour(s)</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Date de début</p>
-                <p className="font-medium">{new Date(demande.dateDebut).toLocaleDateString('fr-FR')}</p>
+                {isEditingDates ? (
+                  <input
+                    type="date"
+                    className="w-full border border-gray-300 rounded-md px-2 py-1 text-sm"
+                    value={dateDebutEdit}
+                    onChange={(e) => setDateDebutEdit(e.target.value)}
+                    disabled={isSavingDates}
+                  />
+                ) : (
+                  <p className="font-medium">{currentDateDebut ? new Date(currentDateDebut).toLocaleDateString('fr-FR') : 'N/A'}</p>
+                )}
               </div>
               <div>
                 <p className="text-sm text-gray-600">Date de fin</p>
-                <p className="font-medium">{new Date(demande.dateFin).toLocaleDateString('fr-FR')}</p>
+                {isEditingDates ? (
+                  <input
+                    type="date"
+                    className="w-full border border-gray-300 rounded-md px-2 py-1 text-sm"
+                    value={dateFinEdit}
+                    onChange={(e) => setDateFinEdit(e.target.value)}
+                    disabled={isSavingDates}
+                  />
+                ) : (
+                  <p className="font-medium">{currentDateFin ? new Date(currentDateFin).toLocaleDateString('fr-FR') : 'N/A'}</p>
+                )}
               </div>
               {demande.resteJours !== undefined && (
                 <div>

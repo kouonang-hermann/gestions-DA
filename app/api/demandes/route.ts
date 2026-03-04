@@ -357,15 +357,44 @@ export const GET = async (request: NextRequest) => {
 
     // Enrichir les demandes avec les informations des valideurs depuis ValidationSignature
     const enrichedDemandes = demandes.map((demande: any) => {
-      // Mapper les validationSignatures aux champs attendus par le frontend
-      const validationConducteur = demande.validationSignatures?.find((v: any) => v.type === VALIDATION_TYPES.CONDUCTEUR) || null
-      const validationResponsableTravaux = demande.validationSignatures?.find((v: any) => v.type === VALIDATION_TYPES.RESPONSABLE_TRAVAUX) || null
-      const validationChargeAffaire = demande.validationSignatures?.find((v: any) => v.type === VALIDATION_TYPES.CHARGE_AFFAIRE) || null
-      const validationLogistique = demande.validationSignatures?.find((v: any) => v.type === VALIDATION_TYPES.LOGISTIQUE) || null
+      const validationSignatures = demande.validationSignatures || []
+      const validationSignaturesSorted = [...validationSignatures].sort((a: any, b: any) => {
+        const aTime = a?.date instanceof Date ? a.date.getTime() : new Date(a?.date).getTime()
+        const bTime = b?.date instanceof Date ? b.date.getTime() : new Date(b?.date).getTime()
+        return bTime - aTime
+      })
+
+      const findSignature = (types: string[]) => {
+        return validationSignaturesSorted.find((v: any) => types.includes(v.type)) || null
+      }
+
+      // Mapper les validationSignatures aux champs attendus par le frontend (avec fallback legacy)
+      const validationConducteur = findSignature([
+        VALIDATION_TYPES.CONDUCTEUR,
+        'conducteur_travaux',
+        'conducteur'
+      ])
+      const validationResponsableTravaux = findSignature([
+        VALIDATION_TYPES.RESPONSABLE_TRAVAUX,
+        'responsable_travaux'
+      ])
+      const validationChargeAffaire = findSignature([
+        VALIDATION_TYPES.CHARGE_AFFAIRE,
+        'charge_affaire'
+      ])
+      const validationLogistique = findSignature([
+        VALIDATION_TYPES.LOGISTIQUE,
+        'logistique',
+        'preparation_logistique'
+      ])
       
       // sortieSignature est déjà chargé depuis la relation, mais on vérifie aussi les validationSignatures pour 'appro'
       // Car certaines demandes peuvent avoir une validation 'appro' au lieu d'une sortieSignature
-      const validationAppro = demande.validationSignatures?.find((v: any) => v.type === VALIDATION_TYPES.APPRO) || null
+      const validationAppro = findSignature([
+        VALIDATION_TYPES.APPRO,
+        'appro',
+        'preparation_appro'
+      ])
       const sortieAppro = demande.sortieSignature || validationAppro || null
 
       return {

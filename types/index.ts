@@ -111,11 +111,42 @@ export interface DemandeConge {
   dateDebut: string
   dateFin: string
   nombreJours: number
+  dateDebutFinale?: string
+  dateFinFinale?: string
+  nombreJoursFinal?: number
   resteJours?: number
   contactPersonnelNom: string
   contactPersonnelTel: string
   contactAutreNom?: string
   contactAutreTel?: string
+  status: string
+  dateCreation: string
+  dateSoumission?: string
+  dateValidation?: string
+  rejetMotif?: string
+  employe?: {
+    nom: string
+    prenom: string
+    email: string
+    phone?: string
+    service?: string
+  }
+  responsable?: {
+    nom: string
+    prenom: string
+  }
+}
+
+export interface DemandeAbsence {
+  id: string
+  numero: string
+  employeId: string
+  responsableId: string
+  typeAbsence: string
+  motif: string
+  dateDebut: string
+  dateFin: string
+  nombreJours: number
   status: string
   dateCreation: string
   dateSoumission?: string

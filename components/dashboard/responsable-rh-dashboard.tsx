@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+
 import "@/styles/dashboard-layout.css"
 import "@/styles/mobile-dashboard.css"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -61,6 +63,7 @@ import UniversalClosureModal from "@/components/modals/universal-closure-modal"
 import { useAutoReload } from "@/hooks/useAutoReload"
 
 export default function ResponsableRHDashboard() {
+  const router = useRouter()
   const { currentUser, demandes, projets, isLoading } = useStore()
   
   const [stats, setStats] = useState({
@@ -1089,7 +1092,7 @@ export default function ResponsableRHDashboard() {
                         className="justify-start text-white"
                         style={{ backgroundColor: '#8b5cf6' }}
                         size="sm"
-                        onClick={() => window.location.href = '/decideur'}
+                        onClick={() => router.push('/decideur')}
                       >
                         <Gavel className="h-4 w-4 mr-2" />
                         <span className="text-sm">Décider</span>

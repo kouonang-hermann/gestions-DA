@@ -3,24 +3,30 @@
 import { useState, useEffect } from "react"
 import { useStore } from "@/stores/useStore"
 import { useRouter } from "next/navigation"
+import { useHydration } from "@/hooks/useHydration"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Calendar, CheckCircle2, XCircle, Clock, User, FileText, AlertCircle, Eye } from "lucide-react"
 import DemandeCongeDetailsModal from "@/components/conges/demande-conge-details-modal"
-import type { DemandeConge } from "@/types"
+import type { DemandeConge, DemandeAbsence } from "@/types"
 
 export default function DecideurPage() {
   const router = useRouter()
   const { currentUser, isAuthenticated } = useStore()
+  const isHydrated = useHydration()
   const [demandes, setDemandes] = useState<DemandeConge[]>([])
+  const [demandesAbsences, setDemandesAbsences] = useState<DemandeAbsence[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("conges")
   const [selectedDemande, setSelectedDemande] = useState<DemandeConge | null>(null)
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
 
   useEffect(() => {
+    // Attendre l'hydratation avant de décider une redirection.
+    if (!isHydrated) return
+
     if (!isAuthenticated) {
       router.push("/")
       return
@@ -31,32 +37,67 @@ export default function DecideurPage() {
     const isResponsableHierarchique = currentUser?.role && !rolesAutorises.includes(currentUser.role)
     
     if (!currentUser || (!rolesAutorises.includes(currentUser.role) && !isResponsableHierarchique)) {
-      // Vérifier si l'utilisateur peut être responsable hiérarchique
-      loadDemandes()
+      loadDemandes("conges")
     } else {
-      loadDemandes()
+      loadDemandes("conges")
     }
-  }, [isAuthenticated, currentUser, router])
+  }, [isAuthenticated, currentUser, router, isHydrated])
 
-  const loadDemandes = async () => {
+  // Attendre l'hydratation Zustand pour éviter un flash/redirect dû au state initial (non hydraté)
+  if (!isHydrated) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+          <p className="text-gray-600">Chargement de l'application...</p>
+        </div>
+      </div>
+    )
+  }
+
+  const loadDemandes = async (tab: "conges" | "absences") => {
     setLoading(true)
     try {
       const token = useStore.getState().token
-      const response = await fetch("/api/conges", {
+      const response = await fetch(tab === "conges" ? "/api/conges" : "/api/absences", {
         headers: {
           ...(token && { Authorization: `Bearer ${token}` })
         }
       })
       const data = await response.json()
       if (data.success) {
-        // Filtrer les demandes selon le rôle de l'utilisateur
-        const demandesFiltrees = filterDemandesParRole(data.data)
-        setDemandes(demandesFiltrees)
+        if (tab === "conges") {
+          const demandesFiltrees = filterDemandesParRole(data.data)
+          setDemandes(demandesFiltrees)
+        } else {
+          const demandesFiltrees = filterAbsencesParRole(data.data)
+          setDemandesAbsences(demandesFiltrees)
+        }
       }
     } catch (error) {
       console.error("Erreur lors du chargement des demandes:", error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const filterAbsencesParRole = (allDemandes: DemandeAbsence[]) => {
+    if (!currentUser) return []
+
+    switch (currentUser.role) {
+      case "responsable_rh":
+        return allDemandes.filter(d => d.status === "en_attente_validation_rh")
+
+      case "directeur_general":
+        return allDemandes.filter(d => d.status === "en_attente_visa_dg")
+
+      case "superadmin":
+        return allDemandes
+
+      default:
+        return allDemandes.filter(
+          d => d.responsableId === currentUser.id && d.status === "en_attente_validation_hierarchique"
+        )
     }
   }
 
@@ -97,7 +138,32 @@ export default function DecideurPage() {
       const data = await response.json()
       if (data.success) {
         // Recharger les demandes
-        loadDemandes()
+        loadDemandes("conges")
+        alert(`✅ Demande ${action === "valider" ? "validée" : "rejetée"} avec succès`)
+      } else {
+        alert(`❌ Erreur: ${data.error}`)
+      }
+    } catch (error) {
+      console.error("Erreur lors de l'action:", error)
+      alert("❌ Erreur lors du traitement de la demande")
+    }
+  }
+
+  const handleActionAbsence = async (demandeId: string, action: "valider" | "rejeter", commentaire?: string) => {
+    try {
+      const token = useStore.getState().token
+      const response = await fetch(`/api/absences/${demandeId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` })
+        },
+        body: JSON.stringify({ action, commentaire })
+      })
+
+      const data = await response.json()
+      if (data.success) {
+        loadDemandes("absences")
         alert(`✅ Demande ${action === "valider" ? "validée" : "rejetée"} avec succès`)
       } else {
         alert(`❌ Erreur: ${data.error}`)
@@ -170,9 +236,9 @@ export default function DecideurPage() {
             <Calendar className="h-4 w-4 mr-2" />
             Demandes de Congés ({demandes.length})
           </TabsTrigger>
-          <TabsTrigger value="absences" disabled>
+          <TabsTrigger value="absences" onClick={() => loadDemandes("absences")}>
             <AlertCircle className="h-4 w-4 mr-2" />
-            Demandes d'Absence (Bientôt)
+            Demandes d'Absence ({demandesAbsences.length})
           </TabsTrigger>
           <TabsTrigger value="paiements" disabled>
             <FileText className="h-4 w-4 mr-2" />
@@ -281,11 +347,99 @@ export default function DecideurPage() {
         </TabsContent>
 
         <TabsContent value="absences">
-          <Card>
-            <CardContent className="py-12 text-center">
-              <p className="text-gray-600">Cette fonctionnalité sera disponible prochainement.</p>
-            </CardContent>
-          </Card>
+          {demandesAbsences.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <CheckCircle2 className="h-16 w-16 text-green-500 mb-4" />
+                <h3 className="text-xl font-semibold mb-2">Aucune demande en attente</h3>
+                <p className="text-gray-600 text-center">
+                  Vous n'avez aucune demande d'absence à traiter pour le moment.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4">
+              {demandesAbsences.map((demande) => (
+                <Card key={demande.id} className="hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="flex items-center gap-2">
+                          <User className="h-5 w-5" />
+                          {demande.employe?.prenom} {demande.employe?.nom}
+                        </CardTitle>
+                        <CardDescription>
+                          Demande n°{demande.numero}
+                        </CardDescription>
+                      </div>
+                      {getStatusBadge(demande.status)}
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">Type d'absence</p>
+                        <p className="font-medium">{demande.typeAbsence}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">Période</p>
+                        <p className="font-medium">
+                          {new Date(demande.dateDebut).toLocaleDateString()} → {new Date(demande.dateFin).toLocaleDateString()}
+                        </p>
+                        <p className="text-sm text-gray-500">{demande.nombreJours} jour(s)</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">Email</p>
+                        <p className="font-medium text-sm">{demande.employe?.email}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">Service</p>
+                        <p className="font-medium text-sm">{demande.employe?.service || "-"}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 pt-4 border-t">
+                      <Button
+                        onClick={() => {
+                          alert("Détails absences: à ajouter (modal dédié)")
+                        }}
+                        variant="outline"
+                        className="flex-1"
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        Vue
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          const confirm = window.confirm("Êtes-vous sûr de vouloir valider cette demande ?")
+                          if (confirm) handleActionAbsence(demande.id, "valider")
+                        }}
+                        className="flex-1 bg-green-600 hover:bg-green-700"
+                      >
+                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                        Valider
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          const motif = window.prompt("Motif du rejet (obligatoire):")
+                          if (motif && motif.trim()) {
+                            handleActionAbsence(demande.id, "rejeter", motif)
+                          } else if (motif !== null) {
+                            alert("Le motif du rejet est obligatoire")
+                          }
+                        }}
+                        variant="destructive"
+                        className="flex-1"
+                      >
+                        <XCircle className="h-4 w-4 mr-2" />
+                        Rejeter
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="paiements">
@@ -297,14 +451,17 @@ export default function DecideurPage() {
         </TabsContent>
       </Tabs>
 
-      <DemandeCongeDetailsModal
-        isOpen={detailsModalOpen}
-        onClose={() => {
-          setDetailsModalOpen(false)
-          setSelectedDemande(null)
-        }}
-        demande={selectedDemande}
-      />
+      {selectedDemande && (
+        <DemandeCongeDetailsModal
+          isOpen={detailsModalOpen}
+          onClose={() => {
+            setDetailsModalOpen(false)
+            setSelectedDemande(null)
+          }}
+          demande={selectedDemande}
+          onUpdated={() => loadDemandes("conges")}
+        />
+      )}
     </div>
   )
 }

@@ -18,6 +18,7 @@ import {
   TrendingDown
 } from "lucide-react"
 import * as XLSX from "xlsx"
+import DemandeDetailModal from "@/components/modals/demande-details-modal"
 
 interface AnalyticsModalProps {
   isOpen: boolean
@@ -30,6 +31,7 @@ interface ProjetBloque {
   nombreArticlesRestants: number
   quantiteTotaleRestante: number
   coutTotalRestant: number
+  nombreArticlesNonValorises?: number
 }
 
 interface ArticleRestant {
@@ -62,6 +64,9 @@ export default function AnalyticsModal({ isOpen, onClose }: AnalyticsModalProps)
   const [activeTab, setActiveTab] = useState("projets-bloques")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+
+  const [demandeDetailsOpen, setDemandeDetailsOpen] = useState(false)
+  const [selectedDemandeId, setSelectedDemandeId] = useState<string | null>(null)
 
   // Données des 3 tableaux
   const [projetsBloques, setProjetsBloques] = useState<ProjetBloque[]>([])
@@ -102,7 +107,17 @@ export default function AnalyticsModal({ isOpen, onClose }: AnalyticsModalProps)
       }
 
       if (dataArticles.success) {
-        setArticlesRestants(dataArticles.data.articles)
+        // Structure officielle Tableau 2: data.projets (groupé par projet)
+        // Le modal affiche une vue "flat": on aplatit projets[].articles.
+        const projets = dataArticles.data.projets || []
+        const flat: ArticleRestant[] = projets.flatMap((p: any) =>
+          (p.articles || []).map((a: any) => ({
+            projetId: p.projetId,
+            projetNom: p.projetNom,
+            ...a
+          }))
+        )
+        setArticlesRestants(flat)
         setTotalGlobalArticles(dataArticles.data.totalGlobal)
       }
 
@@ -468,7 +483,14 @@ export default function AnalyticsModal({ isOpen, onClose }: AnalyticsModalProps)
                               <tr key={`${article.demandeId}-${article.articleId}-${index}`} className="border-b hover:bg-gray-50">
                                 <td className="px-3 py-2 text-xs">{article.projetNom}</td>
                                 <td className="px-3 py-2">
-                                  <Badge variant="outline" className="text-xs">
+                                  <Badge
+                                    variant="outline"
+                                    className="text-xs cursor-pointer"
+                                    onClick={() => {
+                                      setSelectedDemandeId(article.demandeId)
+                                      setDemandeDetailsOpen(true)
+                                    }}
+                                  >
                                     {article.demandeNumero}
                                   </Badge>
                                 </td>
@@ -573,6 +595,16 @@ export default function AnalyticsModal({ isOpen, onClose }: AnalyticsModalProps)
                 </Card>
               </TabsContent>
             </Tabs>
+
+            <DemandeDetailModal
+              isOpen={demandeDetailsOpen}
+              onClose={() => {
+                setDemandeDetailsOpen(false)
+                setSelectedDemandeId(null)
+              }}
+              demandeId={selectedDemandeId}
+              mode="view"
+            />
           </div>
         )}
       </DialogContent>

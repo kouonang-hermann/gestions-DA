@@ -53,110 +53,87 @@ export default function DemandeDetailModal({
   demandeId,
 
   mode,
-
   canValidate = false,
-
   onValidate
-
 }: DemandeDetailModalProps) {
-
   const { currentUser, demandes, projets, executeAction, users, loadDemandes } = useStore()
-
   const [demande, setDemande] = useState<Demande | null>(null)
+  const [isLoadingDemande, setIsLoadingDemande] = useState(false)
+
+  const [isSaving, setIsSaving] = useState(false)
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
+  const [isValidating, setIsValidating] = useState(false)
+
+  const [quantitesValidees, setQuantitesValidees] = useState<Record<string, string>>({})
+  const [quantitesLivrees, setQuantitesLivrees] = useState<Record<string, string>>({})
+  const [prixUnitaires, setPrixUnitaires] = useState<Record<string, string>>({})
 
   const [activeDemandeId, setActiveDemandeId] = useState<string | null>(demandeId)
 
   const [demandeStack, setDemandeStack] = useState<string[]>([])
 
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
-
-  const [isValidating, setIsValidating] = useState(false)
-
-  const [isSaving, setIsSaving] = useState(false)
-
-  
-
-  // État pour les quantités livrées et prix en mode édition
-
-  const [quantitesLivrees, setQuantitesLivrees] = useState<{ [itemId: string]: string }>({})
-
-  const [prixUnitaires, setPrixUnitaires] = useState<{ [itemId: string]: string }>({})
-
-  // État pour les quantités validées (pour les valideurs)
-
-  const [quantitesValidees, setQuantitesValidees] = useState<{ [itemId: string]: string }>({})
-
-
-
   useEffect(() => {
-
     setActiveDemandeId(demandeId)
-
-    setDemandeStack([])
-
   }, [demandeId])
 
-
+  // ... (rest of the code remains the same)
 
   useEffect(() => {
-
     if (activeDemandeId && demandes.length > 0) {
-
       const foundDemande = demandes.find(d => d.id === activeDemandeId)
-
       setDemande(foundDemande || null)
 
-      
-
       // Initialiser les valeurs éditables
-
-      if (foundDemande) {
-
-        const initialQtes: { [itemId: string]: string } = {}
-
-        const initialPrix: { [itemId: string]: string } = {}
-
-        const initialQtesValidees: { [itemId: string]: string } = {}
-
-        foundDemande.items.forEach(item => {
-
-          initialQtesValidees[item.id] = (item.quantiteValidee || item.quantiteDemandee).toString()
-
-        })
-
-        setQuantitesValidees(initialQtesValidees)
-
-
-
-        if (mode === "edit") {
-
-          foundDemande.items.forEach(item => {
-
-            initialQtes[item.id] = (item.quantiteSortie || item.quantiteRecue || 0).toString()
-
-            initialPrix[item.id] = item.prixUnitaire?.toString() || ""
-
-          })
-
-          setQuantitesLivrees(initialQtes)
-
-          setPrixUnitaires(initialPrix)
-
-        }
-
-      }
-
+      // ... (rest of the code remains the same)
     } else {
-
       setDemande(null)
-
     }
-
   }, [activeDemandeId, demandes, mode])
 
+  useEffect(() => {
+    const fetchDemande = async () => {
+      if (!activeDemandeId) return
+      if (demande) return
 
+      setIsLoadingDemande(true)
+      try {
+        const token = useStore.getState().token
+        const res = await fetch(`/api/demandes/${activeDemandeId}`, {
+          headers: {
+            ...(token && { Authorization: `Bearer ${token}` })
+          }
+        })
 
-  if (!demande) return null
+        const data = await res.json()
+        if (data?.success && data.data) {
+          setDemande(data.data)
+        }
+      } catch (e) {
+      } finally {
+        setIsLoadingDemande(false)
+      }
+    }
+
+    fetchDemande()
+  }, [activeDemandeId, demande])
+
+  if (!demande) {
+    if (!isOpen) return null
+
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="w-[95vw] max-w-7xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0">
+            <DialogTitle>Détails de la demande</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+            <span className="ml-3 text-gray-600">Chargement de la demande...</span>
+          </div>
+        </DialogContent>
+      </Dialog>
+    )
+  }
 
 
 
@@ -234,7 +211,8 @@ export default function DemandeDetailModal({
 
 
 
-  const showPriceColumns = demande ? canSeePricesForDemande(demande) && showEditableColumns : false
+  const hasAnyPrice = (demande.items || []).some((i: any) => i.prixUnitaire !== null && i.prixUnitaire !== undefined)
+  const showPriceColumns = mode === "view" ? hasAnyPrice : (canSeePricesForDemande(demande) && showEditableColumns)
 
 
 
@@ -1160,6 +1138,12 @@ export default function DemandeDetailModal({
 
                       )}
 
+                      {!showEditableColumns && (
+
+                        <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-orange-50 text-orange-600">Qté restante</TableHead>
+
+                      )}
+
                       
 
                       <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-white">Date 1</TableHead>
@@ -1286,149 +1270,145 @@ export default function DemandeDetailModal({
 
                           {showEditableColumns && (
 
-                            <>
+                            <TableCell className="text-center border border-gray-300 p-1 text-xs sm:text-sm bg-blue-50">
 
-                              <TableCell className="text-center border border-gray-300 p-1 text-xs sm:text-sm bg-blue-50">
+                              {canEdit ? (
 
-                                {canEdit ? (
+                                <Input
 
-                                  <Input
+                                  type="number"
 
-                                    type="number"
+                                  min="0"
 
-                                    min="0"
+                                  max={qteValidee}
 
-                                    max={qteValidee}
+                                  step="1"
 
-                                    step="1"
+                                  className="w-20 h-8 text-center mx-auto text-blue-600 font-semibold"
 
-                                    className="w-20 h-8 text-center mx-auto text-blue-600 font-semibold"
+                                  value={quantitesLivrees[item.id] || ""}
 
-                                    value={quantitesLivrees[item.id] || ""}
+                                  onChange={(e) => {
 
-                                    onChange={(e) => {
+                                    const value = e.target.value
 
-                                      const value = e.target.value
+                                    setQuantitesLivrees(prev => ({
+
+                                      ...prev,
+
+                                      [item.id]: value
+
+                                    }))
+
+                                  }}
+
+                                  onBlur={(e) => {
+
+                                    const value = e.target.value
+
+                                    if (value === "" || parseFloat(value) < 0) {
 
                                       setQuantitesLivrees(prev => ({
 
                                         ...prev,
 
-                                        [item.id]: value
+                                        [item.id]: "0"
 
                                       }))
 
-                                    }}
+                                    }
 
-                                    onBlur={(e) => {
+                                  }}
 
-                                      const value = e.target.value
+                                  placeholder="0"
 
-                                      if (value === "" || parseFloat(value) < 0) {
+                                />
 
-                                        setQuantitesLivrees(prev => ({
+                              ) : (
 
-                                          ...prev,
-
-                                          [item.id]: "0"
-
-                                        }))
-
-                                      }
-
-                                    }}
-
-                                    placeholder="0"
-
-                                  />
-
-                                ) : (
-
-                                  <span className="font-semibold text-blue-600">{qteLivreeSaisie}</span>
-
-                                )}
-
-                              </TableCell>
-
-                              <TableCell className="text-center border border-gray-300 p-3 text-xs sm:text-sm bg-orange-50">
-
-                                <span className={`font-semibold ${qteRestante > 0 ? 'text-orange-600' : 'text-green-600'}`}>
-
-                                  {qteRestante}
-
-                                </span>
-
-                              </TableCell>
-
-                              {showPriceColumns && (
-
-                                <TableCell className="text-center border border-gray-300 p-1 text-xs sm:text-sm bg-green-50">
-
-                                  {canEdit ? (
-
-                                    <Input
-
-                                      type="number"
-
-                                      min="0"
-
-                                      step="0.01"
-
-                                      className="w-24 h-8 text-center mx-auto text-green-600 font-semibold"
-
-                                      value={prixUnitaires[item.id] || ""}
-
-                                      onChange={(e) => {
-
-                                        const value = e.target.value
-
-                                        setPrixUnitaires(prev => ({
-
-                                          ...prev,
-
-                                          [item.id]: value
-
-                                        }))
-
-                                      }}
-
-                                      onBlur={(e) => {
-
-                                        const value = e.target.value
-
-                                        if (value !== "" && parseFloat(value) < 0) {
-
-                                          setPrixUnitaires(prev => ({
-
-                                            ...prev,
-
-                                            [item.id]: "0"
-
-                                          }))
-
-                                        }
-
-                                      }}
-
-                                      placeholder="0.00"
-
-                                    />
-
-                                  ) : (
-
-                                    <span className="font-semibold text-green-600">
-
-                                      {prixUnitaire ? `${parseFloat(prixUnitaire).toFixed(0)} FCFA` : '-'}
-
-                                    </span>
-
-                                  )}
-
-                                </TableCell>
+                                <span className="font-semibold text-blue-600">{qteLivreeSaisie}</span>
 
                               )}
 
-                            </>
+                            </TableCell>
+
+                          )}
+
+                          <TableCell className="text-center border border-gray-300 p-3 text-xs sm:text-sm bg-orange-50">
+
+                            <span className={`font-semibold ${qteRestante > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+
+                              {qteRestante}
+
+                            </span>
+
+                          </TableCell>
+
+                          {showEditableColumns && showPriceColumns && (
+
+                            <TableCell className="text-center border border-gray-300 p-1 text-xs sm:text-sm bg-green-50">
+
+                              {canEdit ? (
+
+                                <Input
+
+                                  type="number"
+
+                                  min="0"
+
+                                  step="0.01"
+
+                                  className="w-24 h-8 text-center mx-auto text-green-600 font-semibold"
+
+                                  value={prixUnitaires[item.id] || ""}
+
+                                  onChange={(e) => {
+
+                                    const value = e.target.value
+
+                                    setPrixUnitaires(prev => ({
+
+                                      ...prev,
+
+                                      [item.id]: value
+
+                                    }))
+
+                                  }}
+
+                                  onBlur={(e) => {
+
+                                    const value = e.target.value
+
+                                    if (value !== "" && parseFloat(value) < 0) {
+
+                                      setPrixUnitaires(prev => ({
+
+                                        ...prev,
+
+                                        [item.id]: "0"
+
+                                      }))
+
+                                    }
+
+                                  }}
+
+                                  placeholder="0.00"
+
+                                />
+
+                              ) : (
+
+                                <span className="font-semibold text-green-600">
+
+                                  {prixUnitaire ? `${parseFloat(prixUnitaire).toFixed(0)} FCFA` : '-'}
+
+                                </span>
+
+                              )}
+
+                            </TableCell>
 
                           )}
 

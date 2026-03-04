@@ -154,12 +154,23 @@ export async function generateTableau1Data(): Promise<Tableau1Data> {
 /**
  * Génère les données du TABLEAU 3 : Articles Non Valorisés
  * Logique identique à /api/analytics/articles-non-valorises
+ * 
+ * Règles RÉVISÉES :
+ * - Statuts concernés : tous les statuts à partir de la préparation jusqu'à la clôture
+ * - Calcul jours : dateEngagement > datePassageAppro/Logistique > dateCreation
  */
 export async function generateTableau3Data(): Promise<Tableau3Data> {
   const demandes = await prisma.demande.findMany({
     where: {
       status: {
-        notIn: ["brouillon", "rejetee", "archivee"]
+        in: [
+          "en_attente_preparation_appro",
+          "en_attente_preparation_logistique",
+          "en_attente_reception_livreur",
+          "en_attente_livraison",
+          "en_attente_validation_finale_demandeur",
+          "cloturee"
+        ]
       }
     },
     include: {
@@ -172,8 +183,11 @@ export async function generateTableau3Data(): Promise<Tableau3Data> {
       items: {
         select: {
           id: true,
+          quantiteDemandee: true,
           quantiteValidee: true,
           quantiteSortie: true,
+          quantiteRecue: true,
+          quantiteLivreeTotal: true,
           prixUnitaire: true
         }
       }
@@ -185,9 +199,18 @@ export async function generateTableau3Data(): Promise<Tableau3Data> {
 
   for (const demande of demandes) {
     const articlesNonValorises = demande.items.filter(item => {
-      const quantiteValidee = item.quantiteValidee || 0
-      const quantiteSortie = item.quantiteSortie || 0
-      const quantiteRestante = quantiteValidee - quantiteSortie
+      // Exclure les articles jamais validés (quantiteValidee = NULL)
+      if (item.quantiteValidee === null || item.quantiteValidee === undefined) {
+        return false
+      }
+
+      const baseValidee = item.quantiteValidee
+      const qteSortie = item.quantiteSortie ?? 0
+      const qteRecue = item.quantiteRecue ?? 0
+      const qteLivreeTotal = item.quantiteLivreeTotal ?? 0
+
+      const baseSortie = Math.max(qteSortie, qteRecue, qteLivreeTotal)
+      const quantiteRestante = Math.max(0, baseValidee - baseSortie)
       
       return quantiteRestante > 0 && item.prixUnitaire === null
     })
@@ -198,7 +221,7 @@ export async function generateTableau3Data(): Promise<Tableau3Data> {
       ? demande.datePassageAppro 
       : demande.datePassageLogistique
 
-    const dateReference = datePassage || demande.dateCreation
+    const dateReference = demande.dateEngagement || datePassage || demande.dateCreation
 
     const diffTime = now.getTime() - new Date(dateReference).getTime()
     const joursSansValorisation = Math.floor(diffTime / (1000 * 60 * 60 * 24))

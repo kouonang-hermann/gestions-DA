@@ -1,123 +1,116 @@
 import { NextRequest, NextResponse } from "next/server"
-import { PrismaClient } from "@prisma/client"
-import jwt from "jsonwebtoken"
+import { prisma } from "@/lib/prisma"
+import { getCurrentUser } from "@/lib/auth"
 
-const prisma = new PrismaClient()
-const JWT_SECRET = process.env.JWT_SECRET || "votre-secret-jwt-super-securise"
-
-// Fonction pour vérifier l'authentification
-async function requireAuth(request: NextRequest) {
-  const authHeader = request.headers.get("authorization")
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return null
-  }
-
-  const token = authHeader.substring(7)
+// GET - Récupérer les demandes d'absence
+export async function GET(request: NextRequest) {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string }
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
+    const currentUser = await getCurrentUser(request)
+
+    if (!currentUser) {
+      return NextResponse.json(
+        { success: false, error: "Non autorisé" },
+        { status: 401 }
+      )
+    }
+
+    let demandes
+
+    if (currentUser.role === "responsable_rh" || (currentUser.role as string) === "directeur_general") {
+      demandes = (await prisma.demandeAbsence.findMany({
+        include: {
+          employe: {
+            select: {
+              id: true,
+              nom: true,
+              prenom: true,
+              email: true,
+              phone: true,
+              service: true
+            }
+          }
+        },
+        orderBy: { dateCreation: "desc" }
+      })) as any
+    } else if (["responsable_travaux", "charge_affaire", "conducteur_travaux"].includes(currentUser.role)) {
+      demandes = (await (prisma.demandeAbsence as any).findMany({
+        where: {
+          OR: [{ employeId: currentUser.id }, { responsableId: currentUser.id }]
+        },
+        include: {
+          employe: {
+            select: {
+              id: true,
+              nom: true,
+              prenom: true,
+              email: true,
+              phone: true,
+              service: true
+            }
+          }
+        },
+        orderBy: { dateCreation: "desc" }
+      })) as any
+    } else {
+      demandes = (await prisma.demandeAbsence.findMany({
+        where: { employeId: currentUser.id },
+        include: {
+          employe: {
+            select: {
+              id: true,
+              nom: true,
+              prenom: true,
+              email: true,
+              phone: true,
+              service: true
+            }
+          }
+        },
+        orderBy: { dateCreation: "desc" }
+      })) as any
+    }
+
+    const responsableIds: string[] = Array.from(
+      new Set(
+        (demandes || [])
+          .map((d: any) => d?.responsableId)
+          .filter((id: any): id is string => typeof id === "string" && id.length > 0)
+      )
+    )
+
+    const responsables = await prisma.user.findMany({
+      where: { id: { in: responsableIds } },
       select: {
         id: true,
         nom: true,
         prenom: true,
         email: true,
-        role: true,
-        phone: true,
-        matricule: true,
-        anciennete: true
+        phone: true
       }
     })
-    return user
+
+    const responsablesById = new Map(responsables.map((r) => [r.id, r]))
+
+    const demandesEnriched = (demandes || []).map((d: any) => ({
+      ...d,
+      responsable: d?.responsableId ? responsablesById.get(d.responsableId) || null : null
+    }))
+
+    return NextResponse.json({ success: true, data: demandesEnriched })
   } catch (error) {
-    return null
-  }
-}
-
-// Générer un numéro de demande unique
-async function generateNumero(): Promise<string> {
-  const year = new Date().getFullYear()
-  const prefix = `ABS-${year}-`
-  
-  const lastDemande = await prisma.demandeConge.findFirst({
-    where: {
-      numero: {
-        startsWith: prefix
-      }
-    },
-    orderBy: {
-      dateCreation: "desc"
-    }
-  })
-
-  let nextNumber = 1
-  if (lastDemande) {
-    const lastNumber = parseInt(lastDemande.numero.split("-")[2])
-    nextNumber = lastNumber + 1
-  }
-
-  return `${prefix}${nextNumber.toString().padStart(4, "0")}`
-}
-
-// GET - Récupérer les demandes d'absence
-export async function GET(request: NextRequest) {
-  try {
-    const currentUser = await requireAuth(request)
-    if (!currentUser) {
-      return NextResponse.json(
-        { success: false, error: "Non authentifié" },
-        { status: 401 }
-      )
-    }
-
-    // Récupérer les demandes de l'utilisateur connecté
-    const demandes = await prisma.demandeConge.findMany({
-      where: {
-        employeId: currentUser.id
-      },
-      include: {
-        responsable: {
-          select: {
-            id: true,
-            nom: true,
-            prenom: true,
-            email: true
-          }
-        },
-        employe: {
-          select: {
-            id: true,
-            nom: true,
-            prenom: true,
-            email: true
-          }
-        }
-      },
-      orderBy: {
-        dateCreation: "desc"
-      }
-    })
-
-    return NextResponse.json({
-      success: true,
-      data: demandes
-    })
-  } catch (error) {
-    console.error("Erreur GET /api/absences:", error)
-    return NextResponse.json(
-      { success: false, error: "Erreur serveur" },
-      { status: 500 }
-    )
+    console.error("❌ [API ABSENCES] Erreur GET:", error)
+    return NextResponse.json({ success: false, error: (error as any).message }, { status: 500 })
   }
 }
 
 // POST - Créer une nouvelle demande d'absence
 export async function POST(request: NextRequest) {
   try {
-    const currentUser = await requireAuth(request)
+    const currentUser = await getCurrentUser(request)
+
     if (!currentUser) {
       return NextResponse.json(
-        { success: false, error: "Non authentifié" },
+        { success: false, error: "Non autorisé" },
         { status: 401 }
       )
     }
@@ -135,10 +128,7 @@ export async function POST(request: NextRequest) {
 
     // Validation des données
     if (!typeAbsence || !motif || !dateDebut || !dateFin || !nombreJours || !responsableId) {
-      return NextResponse.json(
-        { success: false, error: "Données manquantes" },
-        { status: 400 }
-      )
+      return NextResponse.json({ success: false, error: "Champs requis manquants" }, { status: 400 })
     }
 
     // Vérifier que le responsable existe
@@ -154,49 +144,55 @@ export async function POST(request: NextRequest) {
     }
 
     // Générer le numéro de demande
-    const numero = await generateNumero()
+    const year = new Date().getFullYear()
+    const count = await prisma.demandeAbsence.count()
+    const numero = `DA-ABS-${year}-${String(count + 1).padStart(4, "0")}`
 
     // Créer la demande
-    const demande = await prisma.demandeConge.create({
+    const demande = (await (prisma.demandeAbsence as any).create({
       data: {
         numero,
         employeId: currentUser.id,
         responsableId,
-        matricule: currentUser.matricule || '',
-        anciennete: currentUser.anciennete || '',
-        responsableNom: responsable.nom,
-        responsableTel: responsable.phone || '',
-        responsableEmail: responsable.email || '',
-        typeConge: typeAbsence,
+        typeAbsence,
+        motif,
         dateDebut: new Date(dateDebut),
         dateFin: new Date(dateFin),
         nombreJours,
-        contactPersonnelNom: '',
-        contactPersonnelTel: '',
-        status: "brouillon",
-        dateSoumission: new Date()
+        status: "brouillon" as any
       },
       include: {
-        responsable: {
+        employe: {
           select: {
             id: true,
             nom: true,
             prenom: true,
-            email: true
+            email: true,
+            phone: true,
+            service: true
           }
         }
       }
-    })
+    })) as any
 
-    return NextResponse.json({
-      success: true,
-      data: demande
-    })
-  } catch (error) {
-    console.error("Erreur POST /api/absences:", error)
     return NextResponse.json(
-      { success: false, error: "Erreur serveur" },
-      { status: 500 }
+      {
+        success: true,
+        data: {
+          ...demande,
+          responsable: {
+            id: responsable.id,
+            nom: responsable.nom,
+            prenom: responsable.prenom,
+            email: responsable.email,
+            phone: (responsable as any).phone || null
+          }
+        }
+      },
+      { status: 201 }
     )
+  } catch (error) {
+    console.error("❌ [API ABSENCES] Erreur POST:", error)
+    return NextResponse.json({ success: false, error: (error as any).message }, { status: 500 })
   }
 }

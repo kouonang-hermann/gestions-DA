@@ -347,14 +347,17 @@ export default function DCongesPage() {
         }}
       />
 
-      <DemandeCongeDetailsModal
-        isOpen={detailsModalOpen}
-        onClose={() => {
-          setDetailsModalOpen(false)
-          setSelectedDemande(null)
-        }}
-        demande={selectedDemande}
-      />
+      {selectedDemande && (
+        <DemandeCongeDetailsModal
+          isOpen={detailsModalOpen}
+          onClose={() => {
+            setDetailsModalOpen(false)
+            setSelectedDemande(null)
+          }}
+          demande={selectedDemande}
+          onUpdated={loadDemandes}
+        />
+      )}
     </div>
   )
 }

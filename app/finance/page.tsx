@@ -25,10 +25,14 @@ import {
 import { useRouter } from "next/navigation"
 import { getDemandeFinance, getTotalRemainingCost } from "@/lib/finance-utils"
 import * as XLSX from "xlsx"
+import DemandeDetailModal from "@/components/modals/demande-details-modal"
 
 export default function FinancePage() {
   const router = useRouter()
   const { currentUser, projets, demandes, articles, isLoading, loadProjets, loadDemandes, loadArticles } = useStore()
+
+  const [demandeDetailsOpen, setDemandeDetailsOpen] = useState(false)
+  const [selectedDemandeId, setSelectedDemandeId] = useState<string | null>(null)
 
   // États pour les filtres financiers
   // CORRECTION : Initialiser à "all" pour afficher toutes les données par défaut
@@ -569,7 +573,14 @@ export default function FinancePage() {
                                       {projet.articles.map((article: any, index: number) => (
                                         <tr key={`${article.demandeId}-${article.articleId}-${index}`} className="border-b hover:bg-gray-50">
                                           <td className="px-4 py-2">
-                                            <Badge variant="outline" className="text-xs">
+                                            <Badge
+                                              variant="outline"
+                                              className="text-xs cursor-pointer"
+                                              onClick={() => {
+                                                setSelectedDemandeId(article.demandeId)
+                                                setDemandeDetailsOpen(true)
+                                              }}
+                                            >
                                               {article.demandeNumero}
                                             </Badge>
                                           </td>
@@ -701,6 +712,16 @@ export default function FinancePage() {
             )}
           </CardContent>
         </Card>
+
+        <DemandeDetailModal
+          isOpen={demandeDetailsOpen}
+          onClose={() => {
+            setDemandeDetailsOpen(false)
+            setSelectedDemandeId(null)
+          }}
+          demandeId={selectedDemandeId}
+          mode="view"
+        />
 
         {/* Filtres financiers */}
         <Card className="mb-6">

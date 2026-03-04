@@ -119,6 +119,58 @@ export async function PATCH(
     let updateData: any = {}
 
     switch (action) {
+      case "modifier_dates": {
+        // RH/DG (et superadmin) peuvent modifier les dates sans valider la demande
+        if (
+          currentUser.role !== "superadmin" &&
+          currentUser.role !== "responsable_rh" &&
+          (currentUser.role as string) !== "directeur_general"
+        ) {
+          return NextResponse.json(
+            { success: false, error: "Non autorisé" },
+            { status: 403 }
+          )
+        }
+
+        const { dateDebutModifiee, dateFinModifiee } = body
+
+        if (!dateDebutModifiee || !dateFinModifiee) {
+          return NextResponse.json(
+            { success: false, error: "Les dates de début et de fin sont requises" },
+            { status: 400 }
+          )
+        }
+
+        const debut = new Date(dateDebutModifiee)
+        const fin = new Date(dateFinModifiee)
+
+        if (Number.isNaN(debut.getTime()) || Number.isNaN(fin.getTime())) {
+          return NextResponse.json(
+            { success: false, error: "Dates invalides" },
+            { status: 400 }
+          )
+        }
+
+        if (fin.getTime() < debut.getTime()) {
+          return NextResponse.json(
+            { success: false, error: "La date de fin doit être postérieure ou égale à la date de début" },
+            { status: 400 }
+          )
+        }
+
+        const nombreJoursModifie =
+          Math.ceil((fin.getTime() - debut.getTime()) / (1000 * 60 * 60 * 24)) + 1
+
+        updateData = {
+          // On ne change pas le status
+          status: demande.status,
+          dateDebutFinale: debut,
+          dateFinFinale: fin,
+          nombreJoursFinal: nombreJoursModifie,
+        }
+        break
+      }
+
       case "valider":
         // Validation simplifiée selon le rôle
         let newStatus = demande.status

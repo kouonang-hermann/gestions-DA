@@ -70,8 +70,8 @@ export default function Navbar() {
 
   return (
     <nav className="border-b bg-white border-gray-200 shadow-sm sticky top-0 z-40">
-      <div className="flex h-14 sm:h-16 items-center px-4 sm:px-6 justify-between">
-        <div className="flex items-center space-x-3 sm:space-x-6">
+      <div className="flex flex-nowrap h-14 sm:h-16 items-center px-4 sm:px-6 justify-between gap-2">
+        <div className="flex items-center space-x-3 sm:space-x-6 min-w-0">
           <Link href="/" className="flex items-center space-x-2">
             <InstrumElecLogo size="sm" showText={false} />
             <span className="text-lg sm:text-xl font-bold text-gray-800 hidden sm:block">Gestion Demandes</span>
@@ -87,7 +87,8 @@ export default function Navbar() {
         </div>
 
         {/* Desktop Navigation */}
-        <div className="hidden sm:flex items-center gap-2 overflow-x-auto max-w-[calc(100vw-400px)] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+        <div className="hidden sm:flex flex-1 min-w-0 items-center justify-end">
+          <div className="flex items-center gap-2 flex-nowrap overflow-x-auto max-w-full whitespace-nowrap scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
           {/* Boutons pour tous les utilisateurs */}
           {currentUser && (
             <>
@@ -191,7 +192,7 @@ export default function Navbar() {
             </>
           )}
 
-          {currentUser?.role === "superadmin" && (
+          {(currentUser?.role === "superadmin" || currentUser?.role === "directeur_general") && (
             <>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -280,6 +281,7 @@ export default function Navbar() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          </div>
         </div>
 
         {/* Mobile Navigation */}
@@ -411,7 +413,7 @@ export default function Navbar() {
                 )}
 
                 {/* Admin Link */}
-                {currentUser?.role === "superadmin" && (
+                {(currentUser?.role === "superadmin" || currentUser?.role === "directeur_general") && (
                   <>
                     <Button asChild variant="outline" className="w-full justify-start" onClick={() => setMobileMenuOpen(false)}>
                       <Link href="/finance">
