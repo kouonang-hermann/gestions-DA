@@ -423,6 +423,10 @@ export async function generatePurchaseRequestPDF(demande: any, users: any[] = []
               <td class="label-cell">Code projet :</td>
               <td>${projectName}</td>
             </tr>
+            <tr>
+              <td class="label-cell">N° Demande :</td>
+              <td><strong>${escapeHtml(demande.numero || '')}</strong></td>
+            </tr>
           </table>
           <div class="right-box"></div>
         </div>
@@ -788,6 +792,7 @@ export const generateBonLivraisonPDF = async (demande: any): Promise<void> => {
 
         <div class="bon-commande">
           <p><strong>Bon de Commande :</strong> ${demande.projet?.nom || "N/A"} du ${demande.dateCreation ? new Date(demande.dateCreation).toLocaleDateString("fr-FR") : "N/A"}</p>
+          <p><strong>N° Demande :</strong> ${demande.numero || "N/A"}</p>
         </div>
 
         <table>
@@ -1125,6 +1130,10 @@ export const generateBonSortiePDF = async (demande: any): Promise<void> => {
           <div class="info-row">
             <div class="info-label">Code Affaire :</div>
             <div class="info-value">${demande.numero || ""}</div>
+          </div>
+          <div class="info-row">
+            <div class="info-label">N° Demande :</div>
+            <div class="info-value"><strong>${demande.numero || ""}</strong></div>
           </div>
         </div>
 
