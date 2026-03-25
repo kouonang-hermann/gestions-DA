@@ -30,13 +30,13 @@ export async function GET(request: NextRequest) {
       }, { status: 401 })
     }
 
-    // Récupérer toutes les demandes avec leurs items et projets
-    // Exclure : brouillon, rejetee, archivee
-    // Inclure : toutes les autres, y compris cloturee si quantité restante > 0
+    // Récupérer uniquement les demandes en préparation Appro ou Logistique
+    // Ce sont eux qui doivent faire la valorisation (saisir les prix unitaires)
+    // Alignement avec Tableau 3 pour cohérence des articles non valorisés
     const demandes = await prisma.demande.findMany({
       where: {
         status: {
-          notIn: ["brouillon", "rejetee", "archivee"]
+          in: ["en_attente_preparation_appro", "en_attente_preparation_logistique"]
         }
       },
       include: {
@@ -53,6 +53,7 @@ export async function GET(request: NextRequest) {
             quantiteValidee: true,
             quantiteSortie: true,
             quantiteLivreeTotal: true,
+            quantiteRecue: true,
             prixUnitaire: true
           }
         }
@@ -87,16 +88,15 @@ export async function GET(request: NextRequest) {
       const projetData = projetsMap.get(projetId)!
 
       for (const item of demande.items) {
-        // Définition unique "quantité restante" (analyse):
-        // restant = (quantité validée si dispo, sinon quantité demandée)
-        //         − (quantité sortie si dispo, sinon quantité livrée totale)
-        // clamp à 0 pour éviter les restants négatifs
+        // LOGIQUE UNIFIÉE : Quantité restante = Validée - Reçue
+        // Priorité : quantiteRecue (ce que le demandeur a confirmé recevoir)
+        // Fallback : quantiteLivreeTotal (si pas encore de confirmation)
+        // Si aucune des deux : 0 (considéré comme non livré)
         const baseDemandee = item.quantiteDemandee || 0
         const baseValidee = item.quantiteValidee ?? baseDemandee
-        const baseLivreeTotal = item.quantiteLivreeTotal || 0
-        const baseSortie = item.quantiteSortie ?? baseLivreeTotal
+        const quantiteLivree = item.quantiteRecue ?? item.quantiteLivreeTotal ?? 0
 
-        const quantiteRestante = Math.max(0, baseValidee - baseSortie)
+        const quantiteRestante = Math.max(0, baseValidee - quantiteLivree)
         
         if (quantiteRestante > 0) {
           projetData.nombreArticlesRestants += 1

@@ -41,9 +41,11 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get("type") // "materiel" ou "outillage"
 
     // Construire le filtre
+    // Récupérer uniquement les demandes en préparation Appro ou Logistique
+    // Ce sont eux qui doivent faire la valorisation (saisir les prix unitaires)
     const whereClause: any = {
       status: {
-        notIn: ["brouillon", "rejetee", "archivee"]
+        in: ["en_attente_preparation_appro", "en_attente_preparation_logistique"]
       }
     }
 
@@ -124,17 +126,15 @@ export async function GET(request: NextRequest) {
       const projetData = projetsMap.get(projetId)!
 
       for (const item of demande.items) {
-        // Définition unique "quantité restante" (analyse):
-        // restant = (quantité validée si dispo, sinon quantité demandée)
-        //         − (quantité sortie si dispo, sinon quantité livrée totale)
-        // clamp à 0 pour éviter les restants négatifs (sur-sortie / sur-livraison)
+        // LOGIQUE UNIFIÉE : Quantité restante = Validée - Reçue
+        // Priorité : quantiteRecue (ce que le demandeur a confirmé recevoir)
+        // Fallback : quantiteLivreeTotal (si pas encore de confirmation)
+        // Si aucune des deux : 0 (considéré comme non livré)
         const baseDemandee = item.quantiteDemandee || 0
         const baseValidee = item.quantiteValidee ?? baseDemandee
-        const baseLivreeTotal = item.quantiteLivreeTotal || 0
-        const baseSortie = item.quantiteSortie ?? baseLivreeTotal
+        const quantiteLivree = item.quantiteRecue ?? item.quantiteLivreeTotal ?? 0
 
-        const quantiteLivree = baseLivreeTotal
-        const quantiteRestante = Math.max(0, baseValidee - baseSortie)
+        const quantiteRestante = Math.max(0, baseValidee - quantiteLivree)
         
         // Inclure uniquement les articles avec quantité restante > 0
         if (quantiteRestante > 0) {

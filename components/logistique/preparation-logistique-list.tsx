@@ -12,8 +12,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Package, Truck, Clock, CheckCircle, AlertCircle, User, Eye, X, FileDown, Wrench } from "lucide-react"
 import type { Demande } from "@/types"
 import DemandeDetailsModal from "@/components/modals/demande-details-modal"
-import jsPDF from "jspdf"
-import html2canvas from "html2canvas"
+import { generatePurchaseRequestPDF } from "@/lib/pdf-generator"
 
 export default function PreparationLogistiqueList() {
   const { currentUser, demandes, loadDemandes, executeAction, isLoading, error, users } = useStore()
@@ -106,203 +105,9 @@ export default function PreparationLogistiqueList() {
     setDetailsModalOpen(true)
   }
 
-  const generatePDF = async (demande: Demande) => {
+  const handleGeneratePDF = async (demande: Demande) => {
     try {
-      const iframe = document.createElement('iframe')
-      iframe.style.position = 'absolute'
-      iframe.style.left = '-9999px'
-      iframe.style.width = '800px'
-      iframe.style.height = '1200px'
-      document.body.appendChild(iframe)
-
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document
-      if (!iframeDoc) throw new Error('Impossible de créer le document iframe')
-
-      iframeDoc.open()
-      iframeDoc.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { 
-              font-family: Arial, sans-serif; 
-              padding: 40px;
-              background-color: #ffffff;
-              color: #000000;
-            }
-            .header {
-              text-align: center;
-              margin-bottom: 30px;
-              border-bottom: 2px solid #333333;
-              padding-bottom: 20px;
-            }
-            .header h1 {
-              margin: 0;
-              color: #333333;
-              font-size: 24px;
-            }
-            .header p {
-              margin: 10px 0;
-              font-size: 16px;
-              color: #000000;
-            }
-            .info-section {
-              margin-bottom: 20px;
-              padding: 15px;
-              background-color: #f5f5f5;
-              border-radius: 5px;
-            }
-            .info-row {
-              margin-bottom: 8px;
-              color: #000000;
-            }
-            .info-row strong {
-              display: inline-block;
-              width: 200px;
-              color: #000000;
-            }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-top: 20px;
-            }
-            th, td {
-              border: 1px solid #dddddd;
-              padding: 12px;
-              text-align: left;
-              color: #000000;
-            }
-            th {
-              background-color: #8b5cf6;
-              color: #ffffff;
-            }
-            tr:nth-child(even) {
-              background-color: #f9f9f9;
-            }
-            .signature-section {
-              margin-top: 50px;
-              display: flex;
-              justify-content: space-between;
-            }
-            .signature-box {
-              width: 45%;
-              border-top: 1px solid #333333;
-              padding-top: 10px;
-              text-align: center;
-            }
-            .signature-box p {
-              margin: 5px 0;
-              color: #000000;
-            }
-            .footer {
-              margin-top: 40px;
-              padding-top: 20px;
-              border-top: 1px solid #dddddd;
-              text-align: center;
-              color: #666666;
-              font-size: 12px;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h1>BON DE SORTIE OUTILLAGE</h1>
-            <p>Demande N° ${demande.numero}</p>
-          </div>
-
-          <div class="info-section">
-            <div class="info-row"><strong>Type:</strong>Outillage</div>
-            <div class="info-row"><strong>Projet:</strong>${demande.projet?.nom || "N/A"}</div>
-            <div class="info-row"><strong>Demandeur:</strong>${demande.technicien?.nom || "N/A"} ${demande.technicien?.prenom || ""}</div>
-            <div class="info-row"><strong>Date de création:</strong>${new Date(demande.dateCreation).toLocaleDateString("fr-FR")}</div>
-            <div class="info-row"><strong>Date de livraison:</strong>${demande.dateLivraisonSouhaitee ? new Date(demande.dateLivraisonSouhaitee).toLocaleDateString("fr-FR") : "N/A"}</div>
-          </div>
-
-          <table>
-            <thead>
-              <tr>
-                <th>Article</th>
-                <th>Référence</th>
-                <th>Unité</th>
-                <th>Qté Dem.</th>
-                <th>Qté Val.</th>
-                <th>Commentaire</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${demande.items.map(item => `
-                <tr>
-                  <td>${item.article?.nom || "N/A"}</td>
-                  <td>${item.article?.reference || "N/A"}</td>
-                  <td>${item.article?.unite || "N/A"}</td>
-                  <td>${item.quantiteDemandee}</td>
-                  <td>${item.quantiteValidee || item.quantiteDemandee}</td>
-                  <td>${item.commentaire || ""}</td>
-                </tr>
-              `).join("")}
-            </tbody>
-          </table>
-
-          <div class="signature-section">
-            <div class="signature-box">
-              <p><strong>Préparé par (Logistique)</strong></p>
-              <p>Nom: _____________________</p>
-              <p>Date: _____________________</p>
-              <p>Signature: _____________________</p>
-            </div>
-            <div class="signature-box">
-              <p><strong>Reçu par (Livreur)</strong></p>
-              <p>Nom: _____________________</p>
-              <p>Date: _____________________</p>
-              <p>Signature: _____________________</p>
-            </div>
-          </div>
-
-          <div class="footer">
-            <p>Document généré le ${new Date().toLocaleDateString("fr-FR")} à ${new Date().toLocaleTimeString("fr-FR")}</p>
-          </div>
-        </body>
-        </html>
-      `)
-      iframeDoc.close()
-
-      await new Promise(resolve => setTimeout(resolve, 100))
-
-      const canvas = await html2canvas(iframeDoc.body, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff'
-      })
-
-      document.body.removeChild(iframe)
-
-      const imgData = canvas.toDataURL('image/png')
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-      })
-
-      const imgWidth = 210
-      const pageHeight = 297
-      const imgHeight = (canvas.height * imgWidth) / canvas.width
-      let heightLeft = imgHeight
-      let position = 0
-
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
-      heightLeft -= pageHeight
-
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight
-        pdf.addPage()
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
-        heightLeft -= pageHeight
-      }
-
-      pdf.save(`Bon_Sortie_Outillage_${demande.numero}_${new Date().toISOString().split("T")[0]}.pdf`)
+      await generatePurchaseRequestPDF(demande, users)
     } catch (error) {
       alert('Erreur lors de la génération du PDF. Veuillez réessayer.')
     }
@@ -385,7 +190,7 @@ export default function PreparationLogistiqueList() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => generatePDF(demande)}
+                      onClick={() => handleGeneratePDF(demande)}
                       className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
                       title="Générer un PDF pour impression"
                     >

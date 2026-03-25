@@ -1276,29 +1276,47 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
 
           try {
 
-            // Créer la sortie appro (ancien système - compatibilité)
+            // Vérifier si une sortie signature existe déjà
 
-            await prisma.sortieSignature.create({
+            const existingSortieSignature = await prisma.sortieSignature.findUnique({
 
-              data: {
-
-                id: crypto.randomUUID(),
-
-                userId: currentUser.id,
-
-                demandeId: demande.id,
-
-                commentaire: commentaire || null,
-
-                signature: `${currentUser.id}-sortie-${Date.now()}`,
-
-                quantitesSorties: quantitesSorties || {},
-
-                dateModificationLimite: new Date(Date.now() + 45 * 60 * 1000)
-
-              }
+              where: { demandeId: demande.id }
 
             })
+
+
+
+            // Créer la sortie appro uniquement si elle n'existe pas
+
+            if (!existingSortieSignature) {
+
+              await prisma.sortieSignature.create({
+
+                data: {
+
+                  id: crypto.randomUUID(),
+
+                  userId: currentUser.id,
+
+                  demandeId: demande.id,
+
+                  commentaire: commentaire || null,
+
+                  signature: `${currentUser.id}-sortie-${Date.now()}`,
+
+                  quantitesSorties: quantitesSorties || {},
+
+                  dateModificationLimite: new Date(Date.now() + 45 * 60 * 1000)
+
+                }
+
+              })
+
+            } else {
+
+              console.log(`ℹ️ [PREPARER-SORTIE-APPRO] Sortie signature existe déjà pour demande ${demande.numero}`)
+
+            }
 
             
 
@@ -1454,29 +1472,47 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
 
           
 
-          // Créer la sortie signature (pour traçabilité)
+          // Vérifier si une sortie signature existe déjà
 
-          await prisma.sortieSignature.create({
+          const existingSortieSignatureLogistique = await prisma.sortieSignature.findUnique({
 
-            data: {
-
-              id: crypto.randomUUID(),
-
-              userId: currentUser.id,
-
-              demandeId: demande.id,
-
-              commentaire: commentaire || null,
-
-              signature: `${currentUser.id}-sortie-logistique-${Date.now()}`,
-
-              quantitesSorties: quantitesSorties || {},
-
-              dateModificationLimite: new Date(Date.now() + 45 * 60 * 1000) // +45 minutes
-
-            }
+            where: { demandeId: demande.id }
 
           })
+
+
+
+          // Créer la sortie signature uniquement si elle n'existe pas
+
+          if (!existingSortieSignatureLogistique) {
+
+            await prisma.sortieSignature.create({
+
+              data: {
+
+                id: crypto.randomUUID(),
+
+                userId: currentUser.id,
+
+                demandeId: demande.id,
+
+                commentaire: commentaire || null,
+
+                signature: `${currentUser.id}-sortie-logistique-${Date.now()}`,
+
+                quantitesSorties: quantitesSorties || {},
+
+                dateModificationLimite: new Date(Date.now() + 45 * 60 * 1000) // +45 minutes
+
+              }
+
+            })
+
+          } else {
+
+            console.log(`ℹ️ [PREPARER-SORTIE-LOGISTIQUE] Sortie signature existe déjà pour demande ${demande.numero}`)
+
+          }
 
           
 

@@ -536,8 +536,10 @@ export async function generatePurchaseRequestPDF(demande: any, users: any[] = []
     await new Promise(resolve => setTimeout(resolve, 200))
 
     // Convertir en canvas puis en PDF
+    // Optimisation : scale réduit de 2 à 1.5 pour réduire la taille du fichier
+    // Scale 1.5 offre un bon compromis qualité/taille (au lieu de 4x pixels avec scale 2)
     const canvas = await html2canvas(iframeDoc.body, {
-      scale: 2,
+      scale: 1.5,  // Réduit de 2 à 1.5 pour diminuer la taille (~50% de réduction)
       useCORS: true,
       logging: false,
       backgroundColor: '#ffffff'
@@ -546,12 +548,14 @@ export async function generatePurchaseRequestPDF(demande: any, users: any[] = []
     // Supprimer l'iframe
     document.body.removeChild(iframe)
 
-    // Créer le PDF
-    const imgData = canvas.toDataURL('image/png')
+    // Créer le PDF avec compression JPEG au lieu de PNG
+    // JPEG avec qualité 0.85 réduit la taille de ~80% par rapport à PNG
+    const imgData = canvas.toDataURL('image/jpeg', 0.85)  // JPEG qualité 85% au lieu de PNG
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
-      format: 'a4'
+      format: 'a4',
+      compress: true  // Activer la compression PDF
     })
 
     // Définir les marges (en mm)
@@ -575,7 +579,8 @@ export async function generatePurchaseRequestPDF(demande: any, users: any[] = []
     let position = 0
 
     // Première page avec marges
-    pdf.addImage(imgData, 'PNG', marginLeft, marginTop, imgWidth, imgHeight)
+    // Utiliser JPEG au lieu de PNG pour toutes les pages
+    pdf.addImage(imgData, 'JPEG', marginLeft, marginTop, imgWidth, imgHeight, undefined, 'FAST')  // Compression FAST
     heightLeft -= availableHeight
 
     // Ajouter des pages supplémentaires si nécessaire
@@ -585,7 +590,7 @@ export async function generatePurchaseRequestPDF(demande: any, users: any[] = []
       // Calculer la position négative pour continuer l'image
       position = -(imgHeight - heightLeft)
       // Ajouter les marges pour créer un vrai espace en haut de chaque page
-      pdf.addImage(imgData, 'PNG', marginLeft, position + marginTop, imgWidth, imgHeight)
+      pdf.addImage(imgData, 'JPEG', marginLeft, position + marginTop, imgWidth, imgHeight, undefined, 'FAST')
       heightLeft -= availableHeight
     }
 
@@ -856,8 +861,9 @@ export const generateBonLivraisonPDF = async (demande: any): Promise<void> => {
 
     await new Promise(resolve => setTimeout(resolve, 200))
 
+    // Optimisation Bon de Livraison
     const canvas = await html2canvas(iframeDoc.body, {
-      scale: 2,
+      scale: 1.5,
       useCORS: true,
       logging: false,
       backgroundColor: '#ffffff'
@@ -865,11 +871,12 @@ export const generateBonLivraisonPDF = async (demande: any): Promise<void> => {
 
     document.body.removeChild(iframe)
 
-    const imgData = canvas.toDataURL('image/png')
+    const imgData = canvas.toDataURL('image/jpeg', 0.85)
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
-      format: 'a4'
+      format: 'a4',
+      compress: true
     })
 
     const marginLeft = 10
@@ -889,14 +896,15 @@ export const generateBonLivraisonPDF = async (demande: any): Promise<void> => {
     let heightLeft = imgHeight
     let position = 0
 
-    pdf.addImage(imgData, 'PNG', marginLeft, marginTop, imgWidth, imgHeight)
+    // Utiliser JPEG avec compression FAST
+    pdf.addImage(imgData, 'JPEG', marginLeft, marginTop, imgWidth, imgHeight, undefined, 'FAST')
     heightLeft -= availableHeight
 
     // Utiliser un seuil de 5mm pour éviter les pages blanches avec juste quelques pixels
     while (heightLeft > 5) {
       pdf.addPage()
       position = -(imgHeight - heightLeft)
-      pdf.addImage(imgData, 'PNG', marginLeft, position + marginTop, imgWidth, imgHeight)
+      pdf.addImage(imgData, 'JPEG', marginLeft, position + marginTop, imgWidth, imgHeight, undefined, 'FAST')
       heightLeft -= availableHeight
     }
 
@@ -1203,8 +1211,9 @@ export const generateBonSortiePDF = async (demande: any): Promise<void> => {
 
     await new Promise(resolve => setTimeout(resolve, 200))
 
+    // Optimisation Bon de Sortie
     const canvas = await html2canvas(iframeDoc.body, {
-      scale: 2,
+      scale: 1.5,
       useCORS: true,
       logging: false,
       backgroundColor: '#ffffff'
@@ -1212,11 +1221,12 @@ export const generateBonSortiePDF = async (demande: any): Promise<void> => {
 
     document.body.removeChild(iframe)
 
-    const imgData = canvas.toDataURL('image/png')
+    const imgData = canvas.toDataURL('image/jpeg', 0.85)
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
-      format: 'a4'
+      format: 'a4',
+      compress: true
     })
 
     const marginLeft = 10
@@ -1236,14 +1246,14 @@ export const generateBonSortiePDF = async (demande: any): Promise<void> => {
     let heightLeft = imgHeight
     let position = 0
 
-    pdf.addImage(imgData, 'PNG', marginLeft, marginTop, imgWidth, imgHeight)
+    pdf.addImage(imgData, 'JPEG', marginLeft, marginTop, imgWidth, imgHeight, undefined, 'FAST')
     heightLeft -= availableHeight
 
     // Utiliser un seuil de 5mm pour éviter les pages blanches avec juste quelques pixels
     while (heightLeft > 5) {
       pdf.addPage()
       position = -(imgHeight - heightLeft)
-      pdf.addImage(imgData, 'PNG', marginLeft, position + marginTop, imgWidth, imgHeight)
+      pdf.addImage(imgData, 'JPEG', marginLeft, position + marginTop, imgWidth, imgHeight, undefined, 'FAST')
       heightLeft -= availableHeight
     }
 

@@ -36,18 +36,14 @@ export async function GET(request: NextRequest) {
       }, { status: 401 })
     }
 
-    // Récupérer toutes les demandes ayant dépassé la validation charge_affaire
-    // Cela inclut : préparation, réception, livraison, validation finale, clôture
+    // Récupérer uniquement les demandes en préparation Appro ou Logistique
+    // Ce sont eux qui doivent faire la valorisation (saisir les prix unitaires)
     const demandes = await prisma.demande.findMany({
       where: {
         status: {
           in: [
             "en_attente_preparation_appro",
-            "en_attente_preparation_logistique",
-            "en_attente_reception_livreur",
-            "en_attente_livraison",
-            "en_attente_validation_finale_demandeur",
-            "cloturee"
+            "en_attente_preparation_logistique"
           ]
         }
       },
@@ -89,7 +85,7 @@ export async function GET(request: NextRequest) {
     for (const demande of demandes) {
       // Compter les articles non valorisés :
       // - Article validé (quantiteValidee IS NOT NULL)
-      // - Quantité restante > 0 (quantiteValidee - max(quantiteSortie, quantiteRecue, quantiteLivreeTotal))
+      // - Quantité restante > 0 (LOGIQUE UNIFIÉE : validée - reçue)
       // - Prix unitaire non renseigné (prixUnitaire IS NULL)
       const articlesNonValorises = demande.items.filter(item => {
         // Exclure les articles jamais validés (quantiteValidee = NULL)
@@ -97,15 +93,12 @@ export async function GET(request: NextRequest) {
           return false
         }
 
-        const baseValidee = item.quantiteValidee
-        const qteSortie = item.quantiteSortie ?? 0
-        const qteRecue = item.quantiteRecue ?? 0
-        const qteLivreeTotal = item.quantiteLivreeTotal ?? 0
+        const baseDemandee = item.quantiteDemandee || 0
+        const baseValidee = item.quantiteValidee ?? baseDemandee
+        // LOGIQUE UNIFIÉE : Priorité quantiteRecue, fallback quantiteLivreeTotal
+        const quantiteLivree = item.quantiteRecue ?? item.quantiteLivreeTotal ?? 0
 
-        // On prend la quantité la plus fiable disponible (certaines colonnes peuvent rester à 0)
-        const baseSortie = Math.max(qteSortie, qteRecue, qteLivreeTotal)
-
-        const quantiteRestante = Math.max(0, baseValidee - baseSortie)
+        const quantiteRestante = Math.max(0, baseValidee - quantiteLivree)
         return quantiteRestante > 0 && item.prixUnitaire === null
       })
       
@@ -184,15 +177,12 @@ export async function GET(request: NextRequest) {
           return false
         }
 
-        const baseValidee = item.quantiteValidee
-        const qteSortie = item.quantiteSortie ?? 0
-        const qteRecue = item.quantiteRecue ?? 0
-        const qteLivreeTotal = item.quantiteLivreeTotal ?? 0
+        const baseDemandee = item.quantiteDemandee || 0
+        const baseValidee = item.quantiteValidee ?? baseDemandee
+        // LOGIQUE UNIFIÉE : Priorité quantiteRecue, fallback quantiteLivreeTotal
+        const quantiteLivree = item.quantiteRecue ?? item.quantiteLivreeTotal ?? 0
 
-        // On prend la quantité la plus fiable disponible (certaines colonnes peuvent rester à 0)
-        const baseSortie = Math.max(qteSortie, qteRecue, qteLivreeTotal)
-
-        const quantiteRestante = Math.max(0, baseValidee - baseSortie)
+        const quantiteRestante = Math.max(0, baseValidee - quantiteLivree)
         return quantiteRestante > 0 && item.prixUnitaire === null
       })
       if (articlesNonValorises.length === 0) continue
