@@ -11,8 +11,8 @@
   },
   "crons": [
     {
-      "path": "/api/cron/daily-analytics",
-      "schedule": "0 5 * * *"
+      "path": "/api/analytics/send-report",
+      "schedule": "0 7 * * *"
     }
   ],
   "env": {
