@@ -53,6 +53,7 @@ export default function DemandesCategoryModal({
   const [searchTerm, setSearchTerm] = useState("")
   const [filterMonth, setFilterMonth] = useState<string>("")
   const [filterUser, setFilterUser] = useState<string>("")
+  const [filterProjet, setFilterProjet] = useState<string>("")
   const [sortBy, setSortBy] = useState<"date" | "numero" | "statut" | "type">("date")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
   const [selectedDemande, setSelectedDemande] = useState<Demande | null>(null)
@@ -87,6 +88,20 @@ export default function DemandesCategoryModal({
   if (filterUser) {
     filteredDemandes = filteredDemandes.filter((d) => d.technicienId === filterUser)
   }
+
+  // Appliquer le filtre par projet
+  if (filterProjet) {
+    filteredDemandes = filteredDemandes.filter((d) => d.projetId === filterProjet)
+  }
+
+  // Liste unique des projets présents dans les demandes (pour le select)
+  const projetsDisponibles = Array.from(
+    new Map(
+      demandes
+        .filter((d) => d.projet)
+        .map((d) => [d.projetId, { id: d.projetId, nom: d.projet?.nom || "N/A" }])
+    ).values()
+  ).sort((a, b) => a.nom.localeCompare(b.nom))
 
   // Appliquer le tri
   filteredDemandes = [...filteredDemandes].sort((a, b) => {
@@ -477,6 +492,39 @@ export default function DemandesCategoryModal({
                         variant="ghost"
                         size="sm"
                         onClick={() => setFilterUser("")}
+                        className="px-2"
+                        title="Effacer le filtre"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Filtre par projet */}
+                <div className="flex-1 min-w-[200px]">
+                  <label className="text-xs font-medium text-gray-700 mb-1 block">
+                    <Filter className="h-3 w-3 inline mr-1" />
+                    Filtrer par projet
+                  </label>
+                  <div className="flex gap-2">
+                    <select
+                      value={filterProjet}
+                      onChange={(e) => setFilterProjet(e.target.value)}
+                      className="flex h-9 w-full rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                      <option value="">Tous les projets</option>
+                      {projetsDisponibles.map((projet) => (
+                        <option key={projet.id} value={projet.id}>
+                          {projet.nom}
+                        </option>
+                      ))}
+                    </select>
+                    {filterProjet && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setFilterProjet("")}
                         className="px-2"
                         title="Effacer le filtre"
                       >
