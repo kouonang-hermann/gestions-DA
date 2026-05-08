@@ -424,7 +424,7 @@ export default function PriceEntryModal({ isOpen, onClose, demande, onPricesUpda
 
                               placeholder="0"
 
-                              className="w-28 text-center mx-auto"
+                              className="w-32 text-center mx-auto"
 
                             />
 

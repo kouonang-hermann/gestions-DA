@@ -1126,7 +1126,7 @@ export default function DemandeDetailModal({
 
                           {showPriceColumns && (
 
-                            <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-green-50 text-green-600">
+                            <TableHead className="font-bold text-center border border-gray-300 py-3 text-xs sm:text-sm bg-green-50 text-green-600 min-w-[140px]">
 
                               Prix unit. (FCFA) {canEdit && <span className="text-red-500">*</span>}
 
@@ -1358,7 +1358,7 @@ export default function DemandeDetailModal({
 
                                   step="0.01"
 
-                                  className="w-24 h-8 text-center mx-auto text-green-600 font-semibold"
+                                  className="w-32 h-8 text-center mx-auto text-green-600 font-semibold"
 
                                   value={prixUnitaires[item.id] || ""}
 

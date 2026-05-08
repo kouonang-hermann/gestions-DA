@@ -345,6 +345,12 @@ export async function generatePurchaseRequestPDF(demande: any, users: any[] = []
             border: 1px solid #000;
             border-left: none;
             min-height: 80px;
+            padding: 8px 10px;
+            font-size: 11px;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
           }
 
           .visa-table { width: 100%; border-collapse: collapse; }
@@ -428,7 +434,7 @@ export async function generatePurchaseRequestPDF(demande: any, users: any[] = []
               <td><strong>${escapeHtml(demande.numero || '')}</strong></td>
             </tr>
           </table>
-          <div class="right-box"></div>
+          <div class="right-box">${escapeHtml(demande.commentaires || '')}</div>
         </div>
 
         <div class="mb-12">

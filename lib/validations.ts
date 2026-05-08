@@ -66,7 +66,7 @@ export const createDemandeSchema = z.object({
       type: z.enum(["materiel", "outillage"]),
     }).optional(),
   })).min(1, "Au moins un article est requis"),
-  commentaires: z.string().optional(),
+  commentaires: z.string().min(1, "Le motif de la demande est obligatoire"),
   dateLivraisonSouhaitee: z.string().min(1, "Date de livraison requise"),
 })
 

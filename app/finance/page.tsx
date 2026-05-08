@@ -25,6 +25,7 @@ import {
 import { useRouter } from "next/navigation"
 import { getDemandeFinance, getTotalRemainingCost } from "@/lib/finance-utils"
 import * as XLSX from "xlsx"
+import XLSXStyle from "xlsx-js-style"
 import DemandeDetailModal from "@/components/modals/demande-details-modal"
 
 export default function FinancePage() {
@@ -159,69 +160,194 @@ export default function FinancePage() {
   }
 
   // Export Excel - Tableau 2
+  // Format demandé : colonne A vide (étroite), STATUT (B) en jaune,
+  // Désignation (C), Unité (D), Quantités non livrées (E), Prix unitaire (F), Prix total (G)
   const exportArticlesRestants = () => {
-    const data: any[] = []
+    // Construction ligne par ligne (array of arrays) pour contrôler précisément la mise en page
+    const aoa: any[][] = []
 
-    projetsArticlesRestants.forEach(projet => {
-      // Ajouter le nom du projet comme séparateur
-      data.push({
-        "N° Demande": `PROJET: ${projet.projetNom}`,
-        "Désignation": "",
-        "Unité": "",
-        "Quantités non livrées": "",
-        "Prix unitaire (FCFA)": "",
-        "Prix total (FCFA)": ""
-      })
+    // Ligne 1 : en-têtes
+    aoa.push([
+      "N° Demande",
+      "STATUT",
+      "Désignation",
+      "Unité",
+      "Quantités non livrées",
+      "Prix unitaire",
+      "Prix total (FCFA)",
+    ])
 
-      // Ajouter les articles du projet
+    // Lignes spéciales à styliser ensuite
+    const projectHeaderRows: number[] = []
+    const sousTotalRows: number[] = []
+
+    projetsArticlesRestants.forEach((projet) => {
+      // En-tête de projet : "PROJET: <nom>" en colonne A
+      projectHeaderRows.push(aoa.length)
+      aoa.push([`PROJET: ${projet.projetNom}`, "", "", "", "", "", ""])
+
+      // Articles du projet (numéro de demande en colonne A)
       projet.articles.forEach((article: any) => {
-        data.push({
-          "N° Demande": article.demandeNumero,
-          "Désignation": article.articleDesignation,
-          "Unité": article.articleUnite,
-          "Quantités non livrées": article.quantiteRestante,
-          "Prix unitaire (FCFA)": article.prixUnitaire || 0,
-          "Prix total (FCFA)": article.coutRestant
-        })
+        aoa.push([
+          article.demandeNumero || "",
+          "",
+          article.articleDesignation,
+          article.articleUnite,
+          article.quantiteRestante,
+          article.prixUnitaire || 0,
+          article.coutRestant,
+        ])
       })
 
-      // Ajouter le sous-total du projet
-      data.push({
-        "N° Demande": "SOUS-TOTAL",
-        "Désignation": "",
-        "Unité": "",
-        "Quantités non livrées": projet.totalQuantiteRestante,
-        "Prix unitaire (FCFA)": "",
-        "Prix total (FCFA)": projet.totalCoutRestant
-      })
+      // Ligne de sous-total : "SOUS-TOTAL" en colonne A, totaux en E et G
+      sousTotalRows.push(aoa.length)
+      aoa.push([
+        "SOUS-TOTAL",
+        "",
+        "",
+        "",
+        projet.totalQuantiteRestante,
+        "",
+        projet.totalCoutRestant,
+      ])
 
-      // Ligne vide pour séparer les projets
-      data.push({
-        "N° Demande": "",
-        "Désignation": "",
-        "Unité": "",
-        "Quantités non livrées": "",
-        "Prix unitaire (FCFA)": "",
-        "Prix total (FCFA)": ""
-      })
+      // Ligne vide de séparation entre projets
+      aoa.push([])
     })
 
-    // Ajouter le total global
+    // Total global : "TOTAL GLOBAL" en colonne A, totaux en E et G
+    let totalRowIndex: number | null = null
     if (totalGlobalArticles) {
-      data.push({
-        "N° Demande": "TOTAL GLOBAL",
-        "Désignation": "",
-        "Unité": "",
-        "Quantités non livrées": totalGlobalArticles.quantiteTotale,
-        "Prix unitaire (FCFA)": "",
-        "Prix total (FCFA)": totalGlobalArticles.coutTotal
-      })
+      totalRowIndex = aoa.length
+      aoa.push([
+        "TOTAL GLOBAL",
+        "",
+        "",
+        "",
+        totalGlobalArticles.quantiteTotale,
+        "",
+        totalGlobalArticles.coutTotal,
+      ])
     }
 
-    const ws = XLSX.utils.json_to_sheet(data)
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, "Articles Restants")
-    XLSX.writeFile(wb, `articles-restants-${new Date().toISOString().split("T")[0]}.xlsx`)
+    // Création de la feuille avec xlsx-js-style (compatible avec l'API SheetJS, supporte les styles)
+    const ws = XLSXStyle.utils.aoa_to_sheet(aoa)
+
+    // Largeurs de colonnes (en caractères)
+    ws["!cols"] = [
+      { wch: 24 },  // A : N° Demande / PROJET: xxx / SOUS-TOTAL / TOTAL GLOBAL
+      { wch: 14 },  // B : STATUT
+      { wch: 55 },  // C : Désignation
+      { wch: 10 },  // D : Unité
+      { wch: 22 },  // E : Quantités non livrées
+      { wch: 16 },  // F : Prix unitaire
+      { wch: 20 },  // G : Prix total (FCFA)
+    ]
+
+    const range = XLSXStyle.utils.decode_range(ws["!ref"]!)
+
+    // Style commun : fond jaune
+    const yellowFill = { fill: { fgColor: { rgb: "FFFF00" } } }
+
+    // Style en-tête : gras + fond jaune + centré + bordures
+    const headerStyle: any = {
+      font: { bold: true, sz: 11 },
+      fill: { fgColor: { rgb: "FFFF00" } },
+      alignment: { horizontal: "center", vertical: "center", wrapText: true },
+      border: {
+        top: { style: "thin", color: { rgb: "000000" } },
+        bottom: { style: "thin", color: { rgb: "000000" } },
+        left: { style: "thin", color: { rgb: "000000" } },
+        right: { style: "thin", color: { rgb: "000000" } },
+      },
+    }
+
+    const headerStyleNoFill: any = {
+      font: { bold: true, sz: 11 },
+      alignment: { horizontal: "center", vertical: "center", wrapText: true },
+      border: {
+        top: { style: "thin", color: { rgb: "000000" } },
+        bottom: { style: "thin", color: { rgb: "000000" } },
+        left: { style: "thin", color: { rgb: "000000" } },
+        right: { style: "thin", color: { rgb: "000000" } },
+      },
+    }
+
+    // 1) Appliquer le fond jaune sur toute la colonne B (du début à la fin)
+    for (let r = range.s.r; r <= range.e.r; r++) {
+      const cellRef = XLSXStyle.utils.encode_cell({ r, c: 1 })
+      if (!ws[cellRef]) {
+        ws[cellRef] = { t: "s", v: "" }
+      }
+      ws[cellRef].s = r === 0 ? headerStyle : yellowFill
+    }
+
+    // 2) Style en-tête pour la ligne 0 (toutes les colonnes A et C..G)
+    for (const c of [0, 2, 3, 4, 5, 6]) {
+      const cellRef = XLSXStyle.utils.encode_cell({ r: 0, c })
+      if (ws[cellRef]) {
+        ws[cellRef].s = headerStyleNoFill
+      }
+    }
+
+    // 3) Style pour les en-têtes de projet ("PROJET: xxx" en col A — gras, fond bleu clair)
+    const projectHeaderStyle: any = {
+      font: { bold: true, sz: 11, color: { rgb: "1F4E78" } },
+      fill: { fgColor: { rgb: "DDEBF7" } },
+    }
+    for (const r of projectHeaderRows) {
+      const cellRef = XLSXStyle.utils.encode_cell({ r, c: 0 })
+      if (ws[cellRef]) {
+        ws[cellRef].s = projectHeaderStyle
+      }
+    }
+
+    // 4) Style pour les lignes "SOUS-TOTAL" (gras, fond gris très clair)
+    const sousTotalStyle: any = {
+      font: { bold: true, sz: 11 },
+      fill: { fgColor: { rgb: "F2F2F2" } },
+    }
+    for (const r of sousTotalRows) {
+      for (const c of [0, 4, 6]) {
+        const cellRef = XLSXStyle.utils.encode_cell({ r, c })
+        if (!ws[cellRef]) {
+          ws[cellRef] = { t: "s", v: "" }
+        }
+        ws[cellRef].s = sousTotalStyle
+      }
+    }
+
+    // 5) Style pour la ligne "TOTAL GLOBAL" (gras, fond gris plus marqué)
+    if (totalRowIndex !== null) {
+      const totalStyle: any = {
+        font: { bold: true, sz: 12 },
+        fill: { fgColor: { rgb: "D9D9D9" } },
+      }
+      for (const c of [0, 4, 6]) {
+        const cellRef = XLSXStyle.utils.encode_cell({ r: totalRowIndex, c })
+        if (!ws[cellRef]) {
+          ws[cellRef] = { t: "s", v: "" }
+        }
+        ws[cellRef].s = totalStyle
+      }
+    }
+
+    // 6) Format numérique pour les colonnes Quantité (E), Prix unitaire (F), Prix total (G)
+    for (let r = 1; r <= range.e.r; r++) {
+      for (const c of [4, 5, 6]) {
+        const cellRef = XLSXStyle.utils.encode_cell({ r, c })
+        const cell = ws[cellRef]
+        if (cell && typeof cell.v === "number") {
+          cell.t = "n"
+          cell.z = "#,##0"
+          cell.s = { ...(cell.s || {}), alignment: { horizontal: "right" } }
+        }
+      }
+    }
+
+    const wb = XLSXStyle.utils.book_new()
+    XLSXStyle.utils.book_append_sheet(wb, ws, "Articles Restants")
+    XLSXStyle.writeFile(wb, `articles-restants-${new Date().toISOString().split("T")[0]}.xlsx`)
   }
 
   // Export Excel - Tableau 3

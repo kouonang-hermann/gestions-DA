@@ -157,6 +157,11 @@ export default function DemandeFormModal({ isOpen, onClose, demande, mode, type 
       return false
     }
 
+    if (!formData.commentaires || !formData.commentaires.trim()) {
+      setError("Veuillez saisir le motif de la demande")
+      return false
+    }
+
     for (const item of formData.items) {
       if (!item.nom.trim()) {
         setError("Tous les articles doivent avoir un nom")
@@ -298,14 +303,15 @@ export default function DemandeFormModal({ isOpen, onClose, demande, mode, type 
 
               <div>
                 <label htmlFor="commentaires" className="block text-sm font-medium mb-2">
-                  Commentaires généraux (optionnel)
+                  Motif de la demande <span className="text-red-600">*</span>
                 </label>
                 <textarea
                   id="commentaires"
                   value={formData.commentaires}
                   onChange={(e) => setFormData(prev => ({ ...prev, commentaires: e.target.value }))}
                   className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  placeholder="Commentaires sur la demande..."
+                  placeholder="Indiquez le motif de la demande (obligatoire)..."
+                  required
                 />
               </div>
 
