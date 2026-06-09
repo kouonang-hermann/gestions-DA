@@ -14,58 +14,37 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    const role = currentUser.role as string
+
+    const includeEmploye = {
+      employe: {
+        select: {
+          id: true,
+          nom: true,
+          prenom: true,
+          email: true,
+          phone: true,
+          service: true
+        }
+      }
+    } as const
+
     let demandes
 
-    if (currentUser.role === "responsable_rh" || (currentUser.role as string) === "directeur_general") {
+    // Super Admin, RH et DG voient toutes les demandes
+    if (role === "superadmin" || role === "responsable_rh" || role === "directeur_general") {
       demandes = (await prisma.demandeAbsence.findMany({
-        include: {
-          employe: {
-            select: {
-              id: true,
-              nom: true,
-              prenom: true,
-              email: true,
-              phone: true,
-              service: true
-            }
-          }
-        },
+        include: includeEmploye,
         orderBy: { dateCreation: "desc" }
       })) as any
-    } else if (["responsable_travaux", "charge_affaire", "conducteur_travaux"].includes(currentUser.role)) {
+    }
+    // Tous les autres : leurs propres demandes + celles dont ils sont le responsable assigné
+    else {
       demandes = (await (prisma.demandeAbsence as any).findMany({
         where: {
           OR: [{ employeId: currentUser.id }, { responsableId: currentUser.id }]
         },
-        include: {
-          employe: {
-            select: {
-              id: true,
-              nom: true,
-              prenom: true,
-              email: true,
-              phone: true,
-              service: true
-            }
-          }
-        },
-        orderBy: { dateCreation: "desc" }
-      })) as any
-    } else {
-      demandes = (await prisma.demandeAbsence.findMany({
-        where: { employeId: currentUser.id },
-        include: {
-          employe: {
-            select: {
-              id: true,
-              nom: true,
-              prenom: true,
-              email: true,
-              phone: true,
-              service: true
-            }
-          }
-        },
+        include: includeEmploye,
         orderBy: { dateCreation: "desc" }
       })) as any
     }

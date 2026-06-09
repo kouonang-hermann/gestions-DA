@@ -44,6 +44,10 @@ export interface User {
   createdAt: Date
   updatedAt: Date
   projets: string[] // IDs des projets assignés
+  // Signature manuscrite numérique (data URL base64 PNG), capturée une seule
+  // fois et réutilisée sur tous les documents signés par cet utilisateur.
+  signature?: string | null
+  signatureUpdatedAt?: Date | string | null
 }
 
 export interface Projet {

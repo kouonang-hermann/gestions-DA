@@ -5,12 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useStore } from "@/stores/useStore"
+import { useEnsureSignature } from "@/hooks/use-ensure-signature"
 import { CheckCircle, XCircle, Eye, Package } from 'lucide-react'
 import type { Demande } from "@/types"
 import DemandeDetailsModal from "@/components/modals/demande-details-modal"
 
 export default function ValidationPreparationList() {
   const { currentUser, demandes, loadDemandes, executeAction, isLoading, error } = useStore()
+  const { ensureSignature } = useEnsureSignature()
   const [demandesAValider, setDemandesAValider] = useState<Demande[]>([])
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
@@ -35,6 +37,14 @@ export default function ValidationPreparationList() {
   }, [currentUser, demandes])
 
   const handleValidation = async (demandeId: string, action: "valider" | "rejeter", commentaireFromModal?: string) => {
+    // Exiger une signature avant l'action (le valideur signe son acte)
+    const signature = await ensureSignature(
+      action === "valider"
+        ? "Votre signature sera apposée sur la validation de cette demande."
+        : "Votre signature sera apposée sur le rejet de cette demande."
+    )
+    if (!signature) return // utilisateur a annulé -> on abandonne
+
     setActionLoading(demandeId)
 
     try {

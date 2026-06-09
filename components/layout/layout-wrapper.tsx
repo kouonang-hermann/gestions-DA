@@ -3,6 +3,7 @@
 import { useStore } from "@/stores/useStore"
 import Navbar from "./navbar"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { SignatureProvider } from "@/hooks/use-ensure-signature"
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useStore()
@@ -12,8 +13,10 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   
   return (
     <TooltipProvider delayDuration={200}>
-      {showNavbar && <Navbar />}
-      {children}
+      <SignatureProvider>
+        {showNavbar && <Navbar />}
+        {children}
+      </SignatureProvider>
     </TooltipProvider>
   )
 }

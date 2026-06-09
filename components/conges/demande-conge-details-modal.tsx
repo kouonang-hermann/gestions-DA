@@ -3,9 +3,10 @@
 import { useMemo, useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, User, Phone, Clock } from "lucide-react"
+import { Calendar, User, Phone, Clock, Trash2, CheckCircle2, XCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useStore } from "@/stores/useStore"
+import { useEnsureSignature } from "@/hooks/use-ensure-signature"
 import type { DemandeConge } from "@/types"
 
 interface DemandeCongeDetailsModalProps {
@@ -22,13 +23,83 @@ export default function DemandeCongeDetailsModal({
   onUpdated
 }: DemandeCongeDetailsModalProps) {
   const { currentUser } = useStore()
+  const { ensureSignature } = useEnsureSignature()
   const [isEditingDates, setIsEditingDates] = useState(false)
   const [isSavingDates, setIsSavingDates] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [isValidating, setIsValidating] = useState(false)
+  const [isRejecting, setIsRejecting] = useState(false)
 
+  // Détermine si l'utilisateur connecté peut valider/rejeter la demande
+  // à l'étape courante (responsable hiérarchique, RH, DG, ou superadmin).
+  const canValidate = useMemo(() => {
+    if (!currentUser || !demande) return false
+    const role = currentUser.role as string
+    if (role === "superadmin") {
+      return [
+        "en_attente_validation_hierarchique",
+        "en_attente_validation_rh",
+        "en_attente_visa_dg",
+      ].includes(demande.status)
+    }
+    if (
+      demande.status === "en_attente_validation_hierarchique" &&
+      demande.responsableId === currentUser.id
+    ) {
+      return true
+    }
+    if (demande.status === "en_attente_validation_rh" && role === "responsable_rh") {
+      return true
+    }
+    if (demande.status === "en_attente_visa_dg" && role === "directeur_general") {
+      return true
+    }
+    return false
+  }, [currentUser, demande])
+
+  // L'étiquette du bouton "Valider" est contextualisée par l'étape
+  const validateLabel = useMemo(() => {
+    if (!demande) return "Valider"
+    switch (demande.status) {
+      case "en_attente_validation_hierarchique":
+        return "Valider (Responsable)"
+      case "en_attente_validation_rh":
+        return "Valider (RH)"
+      case "en_attente_visa_dg":
+        return "Apposer le visa DG"
+      default:
+        return "Valider"
+    }
+  }, [demande])
+
+  // Peuvent modifier les dates :
+  //  - superadmin, RH, DG (toujours)
+  //  - le responsable hiérarchique assigné à la demande
+  // Sauf si la demande est déjà approuvée (uniquement superadmin dans ce cas).
   const canEditDates = useMemo(() => {
-    const role = currentUser?.role
-    return role === "superadmin" || role === "responsable_rh" || role === "directeur_general"
-  }, [currentUser?.role])
+    if (!currentUser || !demande) return false
+    const role = currentUser.role as string
+    const isPrivileged =
+      role === "superadmin" || role === "responsable_rh" || role === "directeur_general"
+    const isAssignedResponsable = demande.responsableId === currentUser.id
+    if (demande.status === "approuvee" && role !== "superadmin") return false
+    return isPrivileged || isAssignedResponsable
+  }, [currentUser, demande])
+
+  // Le bouton "Supprimer" est visible pour les responsables intervenant
+  // (responsable hiérarchique de la demande, RH, DG, superadmin),
+  // ainsi que pour l'employé propriétaire si sa demande est encore en brouillon.
+  const canDelete = useMemo(() => {
+    if (!currentUser || !demande) return false
+    const role = currentUser.role as string
+    const isOwner = demande.employeId === currentUser.id
+    const isResponsable = demande.responsableId === currentUser.id
+    const isPrivilegedRole =
+      role === "superadmin" || role === "responsable_rh" || role === "directeur_general"
+    // On bloque la suppression si la demande est déjà approuvée (sauf superadmin)
+    if (demande.status === "approuvee" && role !== "superadmin") return false
+    return isPrivilegedRole || isResponsable || (isOwner && demande.status === "brouillon")
+  }, [currentUser, demande])
 
   const currentDateDebut = demande?.dateDebutFinale || demande?.dateDebut
   const currentDateFin = demande?.dateFinFinale || demande?.dateFin
@@ -80,6 +151,128 @@ export default function DemandeCongeDetailsModal({
     }
   }
 
+  const callAction = async (
+    action: "valider" | "rejeter",
+    commentaire?: string
+  ): Promise<boolean> => {
+    if (!demande) return false
+    const token = useStore.getState().token
+    const response = await fetch(`/api/conges/${demande.id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: JSON.stringify({ action, commentaire }),
+    })
+    const data = await response.json()
+    if (!data.success) {
+      alert(`❌ Erreur: ${data.error}`)
+      return false
+    }
+    return true
+  }
+
+  const handleValidate = async () => {
+    if (!demande || !canValidate) return
+
+    const confirmation = window.confirm(
+      `Confirmez-vous la validation de la demande n°${demande.numero} ?`
+    )
+    if (!confirmation) return
+
+    // Exiger une signature avant la validation (le valideur signe son acte)
+    const signature = await ensureSignature(
+      `Votre signature sera apposée sur la validation de la demande n°${demande.numero}.`
+    )
+    if (!signature) return // utilisateur a annulé -> on abandonne
+
+    const commentaire = window.prompt("Commentaire (facultatif) :") || undefined
+
+    setIsValidating(true)
+    try {
+      const ok = await callAction("valider", commentaire)
+      if (ok) {
+        alert("✅ Demande validée avec succès")
+        onUpdated?.()
+        onClose()
+      }
+    } catch (error) {
+      console.error("Erreur validation:", error)
+      alert("❌ Erreur lors de la validation")
+    } finally {
+      setIsValidating(false)
+    }
+  }
+
+  const handleReject = async () => {
+    if (!demande || !canValidate) return
+
+    const motif = window.prompt(
+      `Motif du rejet de la demande n°${demande.numero} (obligatoire) :`
+    )
+    if (!motif || !motif.trim()) {
+      if (motif !== null) alert("❌ Un motif de rejet est requis")
+      return
+    }
+
+    // Exiger une signature avant le rejet (le valideur signe son acte)
+    const signature = await ensureSignature(
+      `Votre signature sera apposée sur le rejet de la demande n°${demande.numero}.`
+    )
+    if (!signature) return // utilisateur a annulé -> on abandonne
+
+    setIsRejecting(true)
+    try {
+      const ok = await callAction("rejeter", motif.trim())
+      if (ok) {
+        alert("✅ Demande rejetée")
+        onUpdated?.()
+        onClose()
+      }
+    } catch (error) {
+      console.error("Erreur rejet:", error)
+      alert("❌ Erreur lors du rejet")
+    } finally {
+      setIsRejecting(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!demande || !canDelete) return
+
+    const confirmation = window.confirm(
+      `⚠️ Voulez-vous vraiment supprimer la demande n°${demande.numero} ?\n\nCette action est définitive et ne peut pas être annulée.`
+    )
+    if (!confirmation) return
+
+    setIsDeleting(true)
+    try {
+      const token = useStore.getState().token
+      const response = await fetch(`/api/conges/${demande.id}`, {
+        method: "DELETE",
+        headers: {
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      })
+
+      const data = await response.json()
+      if (!data.success) {
+        alert(`❌ Erreur: ${data.error}`)
+        return
+      }
+
+      alert("✅ Demande supprimée avec succès")
+      onUpdated?.()
+      onClose()
+    } catch (error) {
+      console.error("Erreur suppression demande:", error)
+      alert("❌ Erreur lors de la suppression de la demande")
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       brouillon: { label: "Brouillon", className: "bg-gray-500" },
@@ -109,9 +302,24 @@ export default function DemandeCongeDetailsModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
+          <DialogTitle className="flex items-center justify-between gap-2 pr-8">
             <span>Détails de la demande n°{demande.numero}</span>
-            {getStatusBadge(demande.status)}
+            <div className="flex items-center gap-2">
+              {getStatusBadge(demande.status)}
+              {canDelete && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700"
+                  title="Supprimer cette demande"
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  {isDeleting ? "Suppression..." : "Supprimer"}
+                </Button>
+              )}
+            </div>
           </DialogTitle>
         </DialogHeader>
 
@@ -317,6 +525,29 @@ export default function DemandeCongeDetailsModal({
               )}
             </div>
           </div>
+
+          {/* Barre d'action : Valider / Rejeter (selon l'étape de validation) */}
+          {canValidate && (
+            <div className="sticky bottom-0 -mx-1 mt-2 flex flex-col sm:flex-row gap-2 sm:justify-end border-t pt-4 bg-white">
+              <Button
+                variant="outline"
+                onClick={handleReject}
+                disabled={isValidating || isRejecting}
+                className="border-red-300 text-red-700 hover:bg-red-50 hover:text-red-800"
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                {isRejecting ? "Rejet en cours..." : "Rejeter"}
+              </Button>
+              <Button
+                onClick={handleValidate}
+                disabled={isValidating || isRejecting}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                {isValidating ? "Validation..." : validateLabel}
+              </Button>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

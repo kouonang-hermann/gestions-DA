@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useStore } from "@/stores/useStore"
+import { useEnsureSignature } from "@/hooks/use-ensure-signature"
 import { CheckCircle, XCircle, Eye, Package, Truck, Edit } from "lucide-react"
 import type { Demande } from "@/types"
 import DemandeDetailsModal from "@/components/modals/demande-details-modal"
@@ -12,6 +13,7 @@ import CreateDemandeModal from "@/components/demandes/create-demande-modal"
 
 export default function ValidationLogistiqueList() {
   const { currentUser, demandes, loadDemandes, executeAction, isLoading, error } = useStore()
+  const { ensureSignature } = useEnsureSignature()
   const [demandesAValider, setDemandesAValider] = useState<Demande[]>([])
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
@@ -40,6 +42,14 @@ export default function ValidationLogistiqueList() {
   }, [currentUser, demandes])
 
   const handleValidation = async (demandeId: string, action: "valider" | "rejeter") => {
+    // Exiger une signature avant l'action (le valideur signe son acte)
+    const signature = await ensureSignature(
+      action === "valider"
+        ? "Votre signature sera apposée sur la validation de cette demande."
+        : "Votre signature sera apposée sur le rejet de cette demande."
+    )
+    if (!signature) return // utilisateur a annulé -> on abandonne
+
     setActionLoading(demandeId)
 
     try {
@@ -82,6 +92,16 @@ export default function ValidationLogistiqueList() {
 
   const handleModalValidation = async (action: "valider" | "annuler" | "valider_sortie" | "rejeter" | "cloturer", quantites?: { [itemId: string]: number }, commentaire?: string) => {
     if (selectedDemande) {
+      // Exiger une signature pour toute action engageante (sauf 'annuler')
+      if (action !== "annuler") {
+        const signature = await ensureSignature(
+          action === "rejeter"
+            ? "Votre signature sera apposée sur le rejet de cette demande."
+            : "Votre signature sera apposée sur cette action."
+        )
+        if (!signature) return // utilisateur a annulé -> on abandonne
+      }
+
       setActionLoading(selectedDemande.id)
 
       try {

@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { DemandeInfosModal } from "./demande-infos-modal"
 import { ContactsUrgenceModal } from "./contacts-urgence-modal"
 import { useStore } from "@/stores/useStore"
+import { useEnsureSignature } from "@/hooks/use-ensure-signature"
 
 interface NouvelleDemandeModalProps {
   open: boolean
@@ -32,6 +33,7 @@ export interface ContactsUrgence {
 export function NouvelleDemandeModal({ open, onOpenChange }: NouvelleDemandeModalProps) {
   const [step, setStep] = useState<"infos" | "contacts">("infos")
   const [demandeInfos, setDemandeInfos] = useState<DemandeInfos | null>(null)
+  const { ensureSignature } = useEnsureSignature()
 
   const handleInfosValidated = (infos: DemandeInfos) => {
     setDemandeInfos(infos)
@@ -40,6 +42,12 @@ export function NouvelleDemandeModal({ open, onOpenChange }: NouvelleDemandeModa
 
   const handleContactsValidated = async (contacts: ContactsUrgence) => {
     if (!demandeInfos) return
+
+    // Exiger une signature avant de soumettre la demande (le demandeur signe)
+    const signature = await ensureSignature(
+      "Votre signature sera apposée sur cette demande de congé."
+    )
+    if (!signature) return // utilisateur a annulé -> on abandonne
 
     // Soumettre la demande
     try {

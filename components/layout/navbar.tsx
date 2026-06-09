@@ -1,6 +1,6 @@
 "use client"
 
-import { Bell, LogOut, Settings, Menu, X, KeyRound, BarChart3, FileText, DollarSign, Laptop, Calendar, UserX, ClipboardList, FileBarChart } from "lucide-react"
+import { Bell, LogOut, Settings, Menu, X, KeyRound, BarChart3, FileText, DollarSign, Laptop, Calendar, UserX, ClipboardList, FileBarChart, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useState, useEffect } from "react"
@@ -43,13 +43,24 @@ const roleLabels: Record<string, string> = {
   directeur_general: "Directeur Général",
 }
 
+interface PendingCounts {
+  conges: { total: number; hierarchique: number; rh: number; dg: number }
+  absences: { total: number; hierarchique: number; rh: number; dg: number }
+}
+
+const EMPTY_COUNTS: PendingCounts = {
+  conges: { total: 0, hierarchique: 0, rh: 0, dg: 0 },
+  absences: { total: 0, hierarchique: 0, rh: 0, dg: 0 },
+}
+
 export default function Navbar() {
-  const { currentUser, logout, notifications, startNotificationPolling, stopNotificationPolling } = useStore()
+  const { currentUser, logout, notifications, startNotificationPolling, stopNotificationPolling, token } = useStore()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false)
   const [congesModalOpen, setCongesModalOpen] = useState(false)
   const [absenceActionsModalOpen, setAbsenceActionsModalOpen] = useState(false)
   const [createAbsenceModalOpen, setCreateAbsenceModalOpen] = useState(false)
+  const [pendingCounts, setPendingCounts] = useState<PendingCounts>(EMPTY_COUNTS)
   const router = useRouter()
 
   // Démarrer le polling des notifications au montage du composant
@@ -66,7 +77,50 @@ export default function Navbar() {
     }
   }, [currentUser, startNotificationPolling, stopNotificationPolling])
 
+  // Polling des compteurs de demandes en attente (congés + absences)
+  // pour afficher des badges permanents dans la navbar
+  useEffect(() => {
+    if (!currentUser) return
+
+    let cancelled = false
+
+    const fetchPendingCounts = async () => {
+      try {
+        const headers: HeadersInit = {}
+        if (token) headers["Authorization"] = `Bearer ${token}`
+        const res = await fetch("/api/notifications/pending-counts", { headers })
+        if (!res.ok) return
+        const json = await res.json()
+        if (!cancelled && json.success && json.data) {
+          setPendingCounts(json.data)
+        }
+      } catch {
+        /* silencieux : ne casse pas la nav */
+      }
+    }
+
+    fetchPendingCounts()
+    const intervalId = setInterval(fetchPendingCounts, 30_000) // toutes les 30s
+    return () => {
+      cancelled = true
+      clearInterval(intervalId)
+    }
+  }, [currentUser, token])
+
   const unreadCount = notifications.filter((n) => !n.read).length
+  const congesPending = pendingCounts.conges.total
+  const absencesPending = pendingCounts.absences.total
+
+  const buildTooltipDetail = (
+    label: string,
+    counts: { hierarchique: number; rh: number; dg: number }
+  ) => {
+    const parts: string[] = []
+    if (counts.hierarchique > 0) parts.push(`${counts.hierarchique} en attente de votre validation hiérarchique`)
+    if (counts.rh > 0) parts.push(`${counts.rh} en attente RH`)
+    if (counts.dg > 0) parts.push(`${counts.dg} en attente du visa DG`)
+    return parts.length === 0 ? label : `${label} — ${parts.join(", ")}`
+  }
 
   return (
     <nav className="border-b bg-white border-gray-200 shadow-sm sticky top-0 z-40">
@@ -136,29 +190,39 @@ export default function Navbar() {
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button asChild variant="outline" size="sm" className="border-0 bg-gradient-to-r from-blue-100 via-purple-100 to-pink-100 hover:from-blue-200 hover:via-purple-200 hover:to-pink-200 shadow-sm hover:shadow-md transition-all duration-300 whitespace-nowrap flex-shrink-0">
+                  <Button asChild variant="outline" size="sm" className="relative border-0 bg-gradient-to-r from-blue-100 via-purple-100 to-pink-100 hover:from-blue-200 hover:via-purple-200 hover:to-pink-200 shadow-sm hover:shadow-md transition-all duration-300 whitespace-nowrap flex-shrink-0">
                     <Link href="/d-conges" className="font-medium text-gray-700">
                       <Calendar className="h-4 w-4 mr-1.5" />
                       <span>D-congés</span>
+                      {congesPending > 0 && (
+                        <Badge className="absolute -top-2 -right-2 h-5 min-w-[20px] px-1 flex items-center justify-center text-[10px] bg-red-500 text-white border-2 border-white animate-pulse">
+                          {congesPending > 99 ? "99+" : congesPending}
+                        </Badge>
+                      )}
                     </Link>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" sideOffset={6}>
-                  Demandes de congés
+                  {buildTooltipDetail("Demandes de congés", pendingCounts.conges)}
                 </TooltipContent>
               </Tooltip>
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button asChild variant="outline" size="sm" className="border-0 bg-gradient-to-r from-blue-100 via-purple-100 to-pink-100 hover:from-blue-200 hover:via-purple-200 hover:to-pink-200 shadow-sm hover:shadow-md transition-all duration-300 whitespace-nowrap flex-shrink-0">
+                  <Button asChild variant="outline" size="sm" className="relative border-0 bg-gradient-to-r from-blue-100 via-purple-100 to-pink-100 hover:from-blue-200 hover:via-purple-200 hover:to-pink-200 shadow-sm hover:shadow-md transition-all duration-300 whitespace-nowrap flex-shrink-0">
                     <Link href="/d-absence" className="font-medium text-gray-700">
                       <UserX className="h-4 w-4 mr-1.5" />
                       <span>D-absence</span>
+                      {absencesPending > 0 && (
+                        <Badge className="absolute -top-2 -right-2 h-5 min-w-[20px] px-1 flex items-center justify-center text-[10px] bg-red-500 text-white border-2 border-white animate-pulse">
+                          {absencesPending > 99 ? "99+" : absencesPending}
+                        </Badge>
+                      )}
                     </Link>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" sideOffset={6}>
-                  Demandes d'absence
+                  {buildTooltipDetail("Demandes d'absence", pendingCounts.absences)}
                 </TooltipContent>
               </Tooltip>
 
@@ -271,6 +335,10 @@ export default function Navbar() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-gray-200" />
+              <DropdownMenuItem onClick={() => router.push('/profil')} className="hover:bg-blue-50">
+                <User className="mr-2 h-4 w-4" />
+                Mon profil
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setChangePasswordModalOpen(true)} className="hover:bg-blue-50">
                 <KeyRound className="mr-2 h-4 w-4" />
                 Changer mot de passe
@@ -383,7 +451,12 @@ export default function Navbar() {
                     <Button asChild variant="outline" className="w-full justify-start" onClick={() => setMobileMenuOpen(false)}>
                       <Link href="/d-conges">
                         <Calendar className="h-4 w-4 mr-2" />
-                        D-congés
+                        <span className="flex-1 text-left">D-congés</span>
+                        {congesPending > 0 && (
+                          <Badge className="bg-red-500 text-white animate-pulse">
+                            {congesPending > 99 ? "99+" : congesPending}
+                          </Badge>
+                        )}
                       </Link>
                     </Button>
                     <Button 
@@ -395,7 +468,12 @@ export default function Navbar() {
                       }}
                     >
                       <UserX className="h-4 w-4 mr-2" />
-                      D-absence
+                      <span className="flex-1 text-left">D-absence</span>
+                      {absencesPending > 0 && (
+                        <Badge className="bg-red-500 text-white animate-pulse">
+                          {absencesPending > 99 ? "99+" : absencesPending}
+                        </Badge>
+                      )}
                     </Button>
                     <Button asChild variant="outline" className="w-full justify-start" onClick={() => setMobileMenuOpen(false)}>
                       <Link href="/rapport-journalier">
@@ -429,6 +507,14 @@ export default function Navbar() {
                     </Button>
                   </>
                 )}
+
+                {/* Mon profil */}
+                <Button asChild variant="outline" className="w-full justify-start" onClick={() => setMobileMenuOpen(false)}>
+                  <Link href="/profil">
+                    <User className="h-4 w-4 mr-2" />
+                    Mon profil
+                  </Link>
+                </Button>
 
                 {/* Change Password */}
                 <Button 

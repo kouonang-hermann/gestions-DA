@@ -11,6 +11,7 @@ import { useStore } from "@/stores/useStore"
 import { NouvelleDemandeModal } from "@/components/conges/nouvelle-demande-modal"
 import { generateCongePDF } from "@/lib/conge-pdf-generator"
 import DemandeCongeDetailsModal from "@/components/conges/demande-conge-details-modal"
+import DemandesCongeListModal from "@/components/conges/demandes-conge-list-modal"
 import type { DemandeConge } from "@/types"
 
 export default function DCongesPage() {
@@ -24,6 +25,11 @@ export default function DCongesPage() {
   const [selectedDemande, setSelectedDemande] = useState<DemandeConge | null>(null)
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
   const [downloadingId, setDownloadingId] = useState<string | null>(null)
+  // Modal "liste filtrée" déclenché par les cartes statistiques
+  const [statsListOpen, setStatsListOpen] = useState(false)
+  const [statsListCategory, setStatsListCategory] = useState<
+    "all" | "en_attente" | "approuvee" | "rejetee"
+  >("all")
 
   useEffect(() => {
     loadDemandes()
@@ -79,11 +85,36 @@ export default function DCongesPage() {
     return new Date(dateString).toLocaleDateString("fr-FR")
   }
 
+  const PENDING_STATUSES = [
+    "soumise",
+    "en_attente_validation_hierarchique",
+    "en_attente_validation_rh",
+    "en_attente_visa_dg",
+  ]
+
   const filteredDemandes = demandes.filter(d => {
     if (filterStatus !== "all" && d.status !== filterStatus) return false
     if (filterType !== "all" && d.typeConge !== filterType) return false
     return true
   })
+
+  const statsListDemandes =
+    statsListCategory === "all" ? demandes
+    : statsListCategory === "en_attente" ? demandes.filter(d => PENDING_STATUSES.includes(d.status))
+    : statsListCategory === "approuvee" ? demandes.filter(d => d.status === "approuvee")
+    : demandes.filter(d => d.status === "rejetee")
+
+  const statsListConfig = {
+    all: { title: "Toutes les demandes de congés", accent: "text-blue-600" },
+    en_attente: { title: "Demandes de congés en attente", accent: "text-orange-600" },
+    approuvee: { title: "Demandes de congés approuvées", accent: "text-green-600" },
+    rejetee: { title: "Demandes de congés rejetées", accent: "text-red-600" },
+  } as const
+
+  const openStatsList = (category: typeof statsListCategory) => {
+    setStatsListCategory(category)
+    setStatsListOpen(true)
+  }
 
   const stats = {
     total: demandes.length,
@@ -141,55 +172,38 @@ export default function DCongesPage() {
           </div>
         </div>
 
-        {/* Statistiques */}
+        {/* Statistiques — cartes cliquables : ouvrent un modal listant les demandes de la catégorie */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Total</p>
-                  <p className="text-2xl font-bold">{stats.total}</p>
+          {([
+            { key: "all", label: "Total", value: stats.total, Icon: FileText, color: "text-blue-500" },
+            { key: "en_attente", label: "En attente", value: stats.enAttente, Icon: Clock, color: "text-orange-500" },
+            { key: "approuvee", label: "Approuvées", value: stats.approuvees, Icon: CheckCircle, color: "text-green-500" },
+            { key: "rejetee", label: "Rejetées", value: stats.rejetees, Icon: XCircle, color: "text-red-500" },
+          ] as const).map(({ key, label, value, Icon, color }) => (
+            <Card
+              key={key}
+              role="button"
+              tabIndex={0}
+              onClick={() => openStatsList(key)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault()
+                  openStatsList(key)
+                }
+              }}
+              className="cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            >
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">{label}</p>
+                    <p className="text-2xl font-bold">{value}</p>
+                  </div>
+                  <Icon className={`h-8 w-8 ${color}`} />
                 </div>
-                <FileText className="h-8 w-8 text-blue-500" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">En attente</p>
-                  <p className="text-2xl font-bold">{stats.enAttente}</p>
-                </div>
-                <Clock className="h-8 w-8 text-orange-500" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Approuvées</p>
-                  <p className="text-2xl font-bold">{stats.approuvees}</p>
-                </div>
-                <CheckCircle className="h-8 w-8 text-green-500" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Rejetées</p>
-                  <p className="text-2xl font-bold">{stats.rejetees}</p>
-                </div>
-                <XCircle className="h-8 w-8 text-red-500" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
         {/* Filtres */}
@@ -358,6 +372,16 @@ export default function DCongesPage() {
           onUpdated={loadDemandes}
         />
       )}
+
+      {/* Modal "liste filtrée" déclenché par les cartes statistiques */}
+      <DemandesCongeListModal
+        isOpen={statsListOpen}
+        onClose={() => setStatsListOpen(false)}
+        title={statsListConfig[statsListCategory].title}
+        accentColor={statsListConfig[statsListCategory].accent}
+        demandes={statsListDemandes}
+        onUpdated={loadDemandes}
+      />
     </div>
   )
 }

@@ -431,13 +431,35 @@ export async function DELETE(
       return NextResponse.json({ success: false, error: "Demande non trouvée" }, { status: 404 })
     }
 
-    if (demande.employeId !== currentUser.id && currentUser.role !== "superadmin") {
-      return NextResponse.json({ success: false, error: "Non autorisé" }, { status: 403 })
+    // Autorisations de suppression :
+    //  - L'employé propriétaire (uniquement si encore en brouillon)
+    //  - Le responsable hiérarchique assigné à la demande
+    //  - Les rôles RH, DG, superadmin (toujours)
+    const role = currentUser.role as string
+    // ⚠️ Le client Prisma TS peut être désynchronisé avec le schéma sur DemandeAbsence
+    // (cf. pending-counts/route.ts). Le champ responsableId existe bien en base.
+    const demandeAny = demande as any
+    const isOwner = demandeAny.employeId === currentUser.id
+    const isResponsable = demandeAny.responsableId === currentUser.id
+    const isPrivilegedRole =
+      role === "superadmin" || role === "responsable_rh" || role === "directeur_general"
+
+    const canDelete =
+      isPrivilegedRole ||
+      isResponsable ||
+      (isOwner && demande.status === "brouillon")
+
+    if (!canDelete) {
+      return NextResponse.json(
+        { success: false, error: "Non autorisé à supprimer cette demande" },
+        { status: 403 }
+      )
     }
 
-    if (demande.status !== "brouillon") {
+    // Une demande déjà approuvée ne peut plus être supprimée (sauf superadmin)
+    if (demande.status === "approuvee" && role !== "superadmin") {
       return NextResponse.json(
-        { success: false, error: "Seules les demandes en brouillon peuvent être supprimées" },
+        { success: false, error: "Impossible de supprimer une demande déjà approuvée" },
         { status: 400 }
       )
     }
@@ -446,7 +468,7 @@ export async function DELETE(
       where: { id }
     })
 
-    console.log(`✅ [API ABSENCES] Demande ${demande.numero} supprimée`)
+    console.log(`✅ [API ABSENCES] Demande ${demande.numero} supprimée par ${currentUser.id} (${role})`)
 
     return NextResponse.json({ success: true, message: "Demande supprimée" })
   } catch (error: any) {

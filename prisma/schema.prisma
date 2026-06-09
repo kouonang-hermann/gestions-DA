@@ -198,6 +198,11 @@ model User {
   matricule                 String?
   service                   String?
   anciennete                String?
+  // Signature manuscrite numerique de l'utilisateur (data URL base64 PNG).
+  // Capturee une seule fois via un canvas et reutilisee sur tous les documents
+  // (conges, absences, demandes materiel/outillage, bons de sortie/livraison).
+  signature                 String?               @db.Text
+  signatureUpdatedAt        DateTime?
   demandesLivreur           Demande[]             @relation("demandes_livreurAssigneIdTousers")
   demandesTechnicien        Demande[]             @relation("demandes_technicienIdTousers")
   demandesCongesEmploye     DemandeConge[]        @relation("DemandesCongesEmploye")

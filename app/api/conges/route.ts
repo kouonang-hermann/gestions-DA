@@ -17,93 +17,54 @@ export async function GET(request: NextRequest) {
       }, { status: 401 })
     }
 
+    const role = currentUser.role as string
+
+    // Inclusions communes
+    const includeRelations = {
+      employe: {
+        select: {
+          id: true,
+          nom: true,
+          prenom: true,
+          email: true,
+          phone: true,
+          service: true
+        }
+      },
+      responsable: {
+        select: {
+          id: true,
+          nom: true,
+          prenom: true,
+          email: true,
+          phone: true
+        }
+      }
+    } as const
+
     let demandes
 
     // Super Admin, RH et DG voient toutes les demandes
-    if (currentUser.role === "responsable_rh" || (currentUser.role as string) === "directeur_general") {
+    if (role === "superadmin" || role === "responsable_rh" || role === "directeur_general") {
       demandes = await prisma.demandeConge.findMany({
-        include: {
-          employe: {
-            select: {
-              id: true,
-              nom: true,
-              prenom: true,
-              email: true,
-              phone: true,
-              service: true
-            }
-          },
-          responsable: {
-            select: {
-              id: true,
-              nom: true,
-              prenom: true,
-              email: true,
-              phone: true
-            }
-          }
-        },
-        orderBy: { dateCreation: "desc" }
-      })
-    } 
-    // Responsables voient les demandes de leurs subordonnés
-    else if (["responsable_travaux", "charge_affaire", "conducteur_travaux"].includes(currentUser.role)) {
-      demandes = await prisma.demandeConge.findMany({
-        where: {
-          OR: [
-            { employeId: currentUser.id }, // Ses propres demandes
-            { responsableId: currentUser.id } // Demandes de son équipe
-          ]
-        },
-        include: {
-          employe: {
-            select: {
-              id: true,
-              nom: true,
-              prenom: true,
-              email: true,
-              phone: true,
-              service: true
-            }
-          },
-          responsable: {
-            select: {
-              id: true,
-              nom: true,
-              prenom: true,
-              email: true,
-              phone: true
-            }
-          }
-        },
+        include: includeRelations,
         orderBy: { dateCreation: "desc" }
       })
     }
-    // Employés voient uniquement leurs demandes
+    // Tous les autres utilisateurs voient :
+    //  - leurs propres demandes (employeId)
+    //  - les demandes dont ils sont le responsable hiérarchique assigné (responsableId)
+    // Cela couvre tous les rôles autorisés à être responsables (responsable_travaux,
+    // charge_affaire, conducteur_travaux, responsable_appro, responsable_logistique, etc.)
     else {
       demandes = await prisma.demandeConge.findMany({
-        where: { employeId: currentUser.id },
-        include: {
-          employe: {
-            select: {
-              id: true,
-              nom: true,
-              prenom: true,
-              email: true,
-              phone: true,
-              service: true
-            }
-          },
-          responsable: {
-            select: {
-              id: true,
-              nom: true,
-              prenom: true,
-              email: true,
-              phone: true
-            }
-          }
+        where: {
+          OR: [
+            { employeId: currentUser.id },
+            { responsableId: currentUser.id }
+          ]
         },
+        include: includeRelations,
         orderBy: { dateCreation: "desc" }
       })
     }

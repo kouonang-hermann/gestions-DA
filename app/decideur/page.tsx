@@ -10,11 +10,13 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Calendar, CheckCircle2, XCircle, Clock, User, FileText, AlertCircle, Eye } from "lucide-react"
 import DemandeCongeDetailsModal from "@/components/conges/demande-conge-details-modal"
+import { useEnsureSignature } from "@/hooks/use-ensure-signature"
 import type { DemandeConge, DemandeAbsence } from "@/types"
 
 export default function DecideurPage() {
   const router = useRouter()
   const { currentUser, isAuthenticated } = useStore()
+  const { ensureSignature } = useEnsureSignature()
   const isHydrated = useHydration()
   const [demandes, setDemandes] = useState<DemandeConge[]>([])
   const [demandesAbsences, setDemandesAbsences] = useState<DemandeAbsence[]>([])
@@ -124,6 +126,14 @@ export default function DecideurPage() {
   }
 
   const handleAction = async (demandeId: string, action: "valider" | "rejeter", commentaire?: string) => {
+    // Exiger une signature avant la décision (le valideur signe son acte)
+    const signature = await ensureSignature(
+      action === "valider"
+        ? "Votre signature sera apposée sur la validation de cette demande de congé."
+        : "Votre signature sera apposée sur le rejet de cette demande de congé."
+    )
+    if (!signature) return // utilisateur a annulé -> on abandonne
+
     try {
       const token = useStore.getState().token
       const response = await fetch(`/api/conges/${demandeId}`, {
@@ -150,6 +160,14 @@ export default function DecideurPage() {
   }
 
   const handleActionAbsence = async (demandeId: string, action: "valider" | "rejeter", commentaire?: string) => {
+    // Exiger une signature avant la décision (le valideur signe son acte)
+    const signature = await ensureSignature(
+      action === "valider"
+        ? "Votre signature sera apposée sur la validation de cette demande d'absence."
+        : "Votre signature sera apposée sur le rejet de cette demande d'absence."
+    )
+    if (!signature) return // utilisateur a annulé -> on abandonne
+
     try {
       const token = useStore.getState().token
       const response = await fetch(`/api/absences/${demandeId}`, {

@@ -76,13 +76,38 @@ export async function generatePurchaseRequestPDF(demande: any, users: any[] = []
       return `${user.prenom || ''} ${user.nom || ''}`.trim()
     }
 
-    // Transformer validationSignatures (array) en objets individuels
+    // Transformer validationSignatures (array) en objets individuels.
+    // ⚠️ Les `type` stockés en DB peuvent avoir plusieurs variantes selon l'API
+    // qui les a écrits (cf. getValidationType dans app/api/demandes/[id]/actions/route.ts
+    // qui écrit "conducteur" alors que la constante vaut "validation_conducteur").
+    // On accepte donc toutes les variantes connues (idem que app/api/demandes/route.ts).
     const validationSignatures = demande.validationSignatures || []
-    let validationConducteur = validationSignatures.find((v: any) => v.type === VALIDATION_TYPES.CONDUCTEUR)
-    let validationLogistique = validationSignatures.find((v: any) => v.type === VALIDATION_TYPES.LOGISTIQUE || v.type === 'preparation_logistique')
-    let validationResponsableTravaux = validationSignatures.find((v: any) => v.type === VALIDATION_TYPES.RESPONSABLE_TRAVAUX)
-    let validationChargeAffaire = validationSignatures.find((v: any) => v.type === VALIDATION_TYPES.CHARGE_AFFAIRE)
-    let validationAppro = validationSignatures.find((v: any) => v.type === VALIDATION_TYPES.APPRO || v.type === 'preparation_appro')
+    const findByTypes = (types: string[]) =>
+      validationSignatures.find((v: any) => types.includes(v.type))
+
+    let validationConducteur = findByTypes([
+      VALIDATION_TYPES.CONDUCTEUR,
+      'conducteur',
+      'conducteur_travaux',
+    ])
+    let validationLogistique = findByTypes([
+      VALIDATION_TYPES.LOGISTIQUE,
+      'logistique',
+      'preparation_logistique',
+    ])
+    let validationResponsableTravaux = findByTypes([
+      VALIDATION_TYPES.RESPONSABLE_TRAVAUX,
+      'responsable_travaux',
+    ])
+    let validationChargeAffaire = findByTypes([
+      VALIDATION_TYPES.CHARGE_AFFAIRE,
+      'charge_affaire',
+    ])
+    let validationAppro = findByTypes([
+      VALIDATION_TYPES.APPRO,
+      'appro',
+      'preparation_appro',
+    ])
 
     // FALLBACK : Si pas de validationSignatures, extraire depuis history_entries (anciennes demandes)
     if (validationSignatures.length === 0 && demande.history && demande.history.length > 0) {

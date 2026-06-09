@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useStore } from "@/stores/useStore"
+import { useEnsureSignature } from "@/hooks/use-ensure-signature"
 import { Plus, Trash2, Save } from 'lucide-react'
 import type { Demande, ItemDemande, DemandeType } from "@/types"
 
@@ -56,6 +57,7 @@ interface CreateDemandeData {
 
 export default function DemandeFormModal({ isOpen, onClose, demande, mode, type = "materiel" }: DemandeFormModalProps) {
   const { currentUser, projets, loadProjets, createDemande, updateDemandeContent, isLoading } = useStore()
+  const { ensureSignature } = useEnsureSignature()
   
   const [formData, setFormData] = useState<FormData>({
     projetId: "",
@@ -184,6 +186,14 @@ export default function DemandeFormModal({ isOpen, onClose, demande, mode, type 
     e.preventDefault()
 
     if (!validateForm()) return
+
+    // Exiger une signature avant la soumission/modification (le demandeur signe son acte)
+    const signature = await ensureSignature(
+      mode === "edit"
+        ? "Votre signature sera apposée sur cette modification de demande."
+        : `Votre signature sera apposée sur cette demande de ${formData.type}.`
+    )
+    if (!signature) return // utilisateur a annulé -> on abandonne
 
     setSaving(true)
     try {

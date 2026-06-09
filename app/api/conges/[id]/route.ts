@@ -120,15 +120,28 @@ export async function PATCH(
 
     switch (action) {
       case "modifier_dates": {
-        // RH/DG (et superadmin) peuvent modifier les dates sans valider la demande
-        if (
-          currentUser.role !== "superadmin" &&
-          currentUser.role !== "responsable_rh" &&
-          (currentUser.role as string) !== "directeur_general"
-        ) {
+        // Peuvent modifier les dates sans valider la demande :
+        //  - superadmin, RH, DG (toujours)
+        //  - le responsable hiérarchique assigné à la demande
+        const editorRole = currentUser.role as string
+        const isPrivilegedEditor =
+          editorRole === "superadmin" ||
+          editorRole === "responsable_rh" ||
+          editorRole === "directeur_general"
+        const isAssignedResponsable = demande.responsableId === currentUser.id
+
+        if (!isPrivilegedEditor && !isAssignedResponsable) {
           return NextResponse.json(
-            { success: false, error: "Non autorisé" },
+            { success: false, error: "Non autorisé à modifier les dates de cette demande" },
             { status: 403 }
+          )
+        }
+
+        // Une demande déjà approuvée ne peut plus être modifiée (sauf superadmin)
+        if (demande.status === "approuvee" && editorRole !== "superadmin") {
+          return NextResponse.json(
+            { success: false, error: "Impossible de modifier une demande déjà approuvée" },
+            { status: 400 }
           )
         }
 
@@ -428,9 +441,11 @@ export async function PATCH(
 
       case "rejeter":
         // Rejet possible à n'importe quelle étape par les validateurs
+        // ✅ FIX : Après soumission, le statut est `en_attente_validation_hierarchique` (pas `soumise`)
         const canReject = 
+          currentUser.role === "superadmin" ||
           (currentUser.role as string) === "directeur_general" ||
-          (demande.status === "soumise" && demande.responsableId === currentUser.id) ||
+          (demande.status === "en_attente_validation_hierarchique" && demande.responsableId === currentUser.id) ||
           (demande.status === "en_attente_validation_rh" && currentUser.role === "responsable_rh") ||
           (demande.status === "en_attente_visa_dg" && (currentUser.role as string) === "directeur_general")
 
@@ -555,19 +570,33 @@ export async function DELETE(
       }, { status: 404 })
     }
 
-    // Seul l'employé ou le super admin peut supprimer
-    if (demande.employeId !== currentUser.id && currentUser.role !== "superadmin") {
-      return NextResponse.json({ 
-        success: false, 
-        error: "Non autorisé" 
+    // Autorisations de suppression :
+    //  - L'employé propriétaire (uniquement si encore en brouillon)
+    //  - Le responsable hiérarchique assigné à la demande
+    //  - Les rôles RH, DG, superadmin (toujours)
+    const role = currentUser.role as string
+    const isOwner = demande.employeId === currentUser.id
+    const isResponsable = demande.responsableId === currentUser.id
+    const isPrivilegedRole =
+      role === "superadmin" || role === "responsable_rh" || role === "directeur_general"
+
+    const canDelete =
+      isPrivilegedRole ||
+      isResponsable ||
+      (isOwner && demande.status === "brouillon")
+
+    if (!canDelete) {
+      return NextResponse.json({
+        success: false,
+        error: "Non autorisé à supprimer cette demande"
       }, { status: 403 })
     }
 
-    // Seules les demandes brouillon peuvent être supprimées
-    if (demande.status !== "brouillon") {
-      return NextResponse.json({ 
-        success: false, 
-        error: "Seules les demandes en brouillon peuvent être supprimées" 
+    // Une demande déjà approuvée ne peut plus être supprimée (sauf superadmin)
+    if (demande.status === "approuvee" && role !== "superadmin") {
+      return NextResponse.json({
+        success: false,
+        error: "Impossible de supprimer une demande déjà approuvée"
       }, { status: 400 })
     }
 
@@ -575,7 +604,7 @@ export async function DELETE(
       where: { id }
     })
 
-    console.log(`✅ [API CONGES] Demande ${demande.numero} supprimée`)
+    console.log(`✅ [API CONGES] Demande ${demande.numero} supprimée par ${currentUser.id} (${role})`)
 
     return NextResponse.json({ 
       success: true, 

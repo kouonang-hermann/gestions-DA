@@ -13,6 +13,7 @@ import { CalendarIcon, Loader2 } from "lucide-react"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
 import { useStore } from "@/stores/useStore"
+import { useEnsureSignature } from "@/hooks/use-ensure-signature"
 
 interface CreateAbsenceModalProps {
   open: boolean
@@ -26,6 +27,7 @@ export default function CreateAbsenceModal({
   onSuccess
 }: CreateAbsenceModalProps) {
   const { users, currentUser, token } = useStore()
+  const { ensureSignature } = useEnsureSignature()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     typeAbsence: "",
@@ -64,6 +66,12 @@ export default function CreateAbsenceModal({
       alert("La date de fin doit être après la date de début")
       return
     }
+
+    // Exiger une signature avant de soumettre la demande (le demandeur signe)
+    const signature = await ensureSignature(
+      "Votre signature sera apposée sur cette demande d'absence."
+    )
+    if (!signature) return // utilisateur a annulé -> on abandonne
 
     setLoading(true)
     try {

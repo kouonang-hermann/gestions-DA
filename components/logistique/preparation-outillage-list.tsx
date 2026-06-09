@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useStore } from "@/stores/useStore"
+import { useEnsureSignature } from "@/hooks/use-ensure-signature"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -16,6 +17,7 @@ import DemandeDetailsModal from "@/components/modals/demande-details-modal"
 
 export default function PreparationOutillageList() {
   const { currentUser, demandes, loadDemandes, executeAction, isLoading, error, users } = useStore()
+  const { ensureSignature } = useEnsureSignature()
   const [demandesAPreparer, setDemandesAPreparer] = useState<Demande[]>([])
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
@@ -109,6 +111,12 @@ export default function PreparationOutillageList() {
       alert("Veuillez sélectionner un livreur")
       return
     }
+
+    // Exiger une signature avant la préparation finale (le valideur signe son acte)
+    const signature = await ensureSignature(
+      "Votre signature sera apposée sur la validation de préparation de cette demande d'outillage."
+    )
+    if (!signature) return // utilisateur a annulé -> on abandonne
 
     setActionLoading(demandeToPrep)
     setPreparationModalOpen(false)

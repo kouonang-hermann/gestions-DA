@@ -20,6 +20,8 @@ import type { DemandeType, ItemDemande } from "@/types"
 
 import { downloadExcelTemplate, parseExcelFile, validateExcelItems } from '@/lib/excel-utils'
 
+import { useEnsureSignature } from "@/hooks/use-ensure-signature"
+
 
 
 interface CreateDemandeModalProps {
@@ -59,6 +61,8 @@ interface ManualItem {
 export default function CreateDemandeModal({ isOpen, onClose, type = "materiel", existingDemande }: CreateDemandeModalProps) {
 
   const { currentUser, projets, createDemande, loadProjets, isLoading, executeAction, loadDemandes, token } = useStore()
+
+  const { ensureSignature } = useEnsureSignature()
 
   
 
@@ -401,6 +405,22 @@ export default function CreateDemandeModal({ isOpen, onClose, type = "materiel",
       }
 
     }
+
+
+
+    // Exiger une signature avant la soumission (le demandeur signe son acte)
+
+    const signature = await ensureSignature(
+
+      isEditMode
+
+        ? "Votre signature sera apposée sur cette modification de demande."
+
+        : `Votre signature sera apposée sur cette demande de ${formData.type}.`
+
+    )
+
+    if (!signature) return // utilisateur a annulé -> on abandonne
 
 
 
