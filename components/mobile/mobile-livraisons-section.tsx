@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useStore } from "@/stores/useStore"
+import { useEnsureSignature } from "@/hooks/use-ensure-signature"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -18,6 +19,7 @@ import DemandeDetailsModal from "@/components/modals/demande-details-modal"
 
 export default function MobileLivraisonsSection() {
   const { currentUser, demandes, executeAction, error } = useStore()
+  const { ensureSignature } = useEnsureSignature()
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
   const [selectedDemande, setSelectedDemande] = useState<Demande | null>(null)
@@ -36,6 +38,12 @@ export default function MobileLivraisonsSection() {
   )
 
   const handleValiderReception = async (demandeId: string) => {
+    // Exiger une signature avant la validation de réception (le valideur signe son acte)
+    const signature = await ensureSignature(
+      "Votre signature sera apposée sur la validation de réception de cette demande."
+    )
+    if (!signature) return // utilisateur a annulé -> on abandonne
+
     setActionLoading(demandeId)
     try {
       const success = await executeAction(demandeId, "valider_reception", {
@@ -52,6 +60,12 @@ export default function MobileLivraisonsSection() {
   }
 
   const handleValiderLivraison = async (demandeId: string) => {
+    // Exiger une signature avant la validation de livraison (le valideur signe son acte)
+    const signature = await ensureSignature(
+      "Votre signature sera apposée sur la validation de livraison de cette demande."
+    )
+    if (!signature) return // utilisateur a annulé -> on abandonne
+
     setActionLoading(demandeId)
     try {
       const success = await executeAction(demandeId, "valider_livraison", {

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useStore } from "@/stores/useStore"
+import { useEnsureSignature } from "@/hooks/use-ensure-signature"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -18,6 +19,7 @@ import DemandeDetailsModal from "@/components/modals/demande-details-modal"
 
 export default function MobileValidationSection() {
   const { currentUser, demandes, executeAction, canUserValidateStep, error } = useStore()
+  const { ensureSignature } = useEnsureSignature()
   const [demandesAValider, setDemandesAValider] = useState<Demande[]>([])
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
@@ -41,6 +43,12 @@ export default function MobileValidationSection() {
   }, [currentUser, demandes, canUserValidateStep])
 
   const handleValider = async (demandeId: string) => {
+    // Exiger une signature avant la validation (le valideur signe son acte)
+    const signature = await ensureSignature(
+      "Votre signature sera apposée sur la validation de cette demande."
+    )
+    if (!signature) return // utilisateur a annulé -> on abandonne
+
     setActionLoading(demandeId)
     try {
       const success = await executeAction(demandeId, "valider", {
@@ -59,6 +67,12 @@ export default function MobileValidationSection() {
   const handleRejeter = async (demandeId: string) => {
     const motif = prompt("Motif du rejet :")
     if (!motif) return
+
+    // Exiger une signature avant le rejet (le valideur signe son acte)
+    const signature = await ensureSignature(
+      "Votre signature sera apposée sur le rejet de cette demande."
+    )
+    if (!signature) return // utilisateur a annulé -> on abandonne
 
     setActionLoading(demandeId)
     try {

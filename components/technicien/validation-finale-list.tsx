@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useStore } from "@/stores/useStore"
+import { useEnsureSignature } from "@/hooks/use-ensure-signature"
 import { CheckCircle, Eye, Package } from 'lucide-react'
 import type { Demande } from "@/types"
 import DemandeDetailsModal from "@/components/modals/demande-details-modal"
@@ -12,6 +13,7 @@ import ClotureConfirmationModal from "@/components/modals/cloture-confirmation-m
 
 export default function ValidationFinaleList() {
   const { currentUser, demandes, loadDemandes, executeAction, isLoading, error } = useStore()
+  const { ensureSignature } = useEnsureSignature()
   const [demandesAValider, setDemandesAValider] = useState<Demande[]>([])
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
@@ -48,6 +50,12 @@ export default function ValidationFinaleList() {
     if (!selectedDemande) {
       return
     }
+
+    // Exiger une signature avant la clôture finale (le valideur signe son acte)
+    const signature = await ensureSignature(
+      "Votre signature sera apposée sur la clôture finale de cette demande."
+    )
+    if (!signature) return // utilisateur a annulé -> on abandonne
 
     setActionLoading(selectedDemande.id)
 

@@ -166,10 +166,19 @@ export function generateCongeHTML(demande: CongeData): string {
         
         .signature-box {
           background-color: #e0e0e0;
-          padding: 40px 10px;
+          padding: 10px;
           margin-bottom: 10px;
-          min-height: 60px;
+          min-height: 80px;
           border: 1px solid #999;
+          text-align: center;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .signature-img {
+          max-width: 200px;
+          max-height: 70px;
+          object-fit: contain;
         }
         
         .signature-label {
@@ -339,22 +348,30 @@ export function generateCongeHTML(demande: CongeData): string {
           
           <div class="signature-label">Employé</div>
           <div class="signature-box">
-            ${demande.signatureEmploye ? 'Signé électroniquement le ' + (demande.dateSoumission || '') : ''}
+            ${demande.signatureEmploye?.signatureImage
+              ? `<img src="${demande.signatureEmploye.signatureImage}" class="signature-img" alt="Signature Employé" />`
+              : (demande.signatureEmploye ? 'Signé électroniquement le ' + (demande.dateSoumission || '') : '')}
           </div>
           
           <div class="signature-label">Responsable hiérarchique:</div>
           <div class="signature-box">
-            ${demande.signatureResponsable ? 'Signé électroniquement' : ''}
+            ${demande.signatureResponsable?.signatureImage
+              ? `<img src="${demande.signatureResponsable.signatureImage}" class="signature-img" alt="Signature Responsable" />`
+              : (demande.signatureResponsable ? 'Signé électroniquement' : '')}
           </div>
           
           <div class="signature-label">Responsable RH</div>
           <div class="signature-box">
-            ${demande.signatureRH ? 'Signé électroniquement' : ''}
+            ${demande.signatureRH?.signatureImage
+              ? `<img src="${demande.signatureRH.signatureImage}" class="signature-img" alt="Signature RH" />`
+              : (demande.signatureRH ? 'Signé électroniquement' : '')}
           </div>
           
           <div class="signature-label">Visa DG:</div>
           <div class="signature-box">
-            ${demande.signatureDG ? 'Signé électroniquement' : ''}
+            ${demande.signatureDG?.signatureImage
+              ? `<img src="${demande.signatureDG.signatureImage}" class="signature-img" alt="Signature DG" />`
+              : (demande.signatureDG ? 'Signé électroniquement' : '')}
           </div>
         </div>
         
@@ -564,7 +581,14 @@ export async function generateCongePDF_OLD(demande: CongeData): Promise<void> {
           .signature-box {
             border: 1px solid #000;
             padding: 10px;
-            min-height: 80px;
+            min-height: 100px;
+          }
+          .signature-img {
+            max-width: 180px;
+            max-height: 60px;
+            object-fit: contain;
+            display: block;
+            margin: 0 auto;
           }
 
           .signature-title {
@@ -741,25 +765,33 @@ export async function generateCongePDF_OLD(demande: CongeData): Promise<void> {
           <div class="signature-box">
             <div class="signature-title">SIGNATURE EMPLOYÉ</div>
             <div class="signature-content">
-              ${demande.signatureEmploye ? '✓ Signé' : 'En attente'}
+              ${demande.signatureEmploye?.signatureImage
+                ? `<img src="${demande.signatureEmploye.signatureImage}" class="signature-img" alt="Signature Employé" />`
+                : (demande.signatureEmploye ? '✓ Signé' : 'En attente')}
             </div>
           </div>
           <div class="signature-box">
             <div class="signature-title">SIGNATURE RESPONSABLE</div>
             <div class="signature-content">
-              ${demande.signatureResponsable ? '✓ Signé' : 'En attente'}
+              ${demande.signatureResponsable?.signatureImage
+                ? `<img src="${demande.signatureResponsable.signatureImage}" class="signature-img" alt="Signature Responsable" />`
+                : (demande.signatureResponsable ? '✓ Signé' : 'En attente')}
             </div>
           </div>
           <div class="signature-box">
             <div class="signature-title">SIGNATURE RH</div>
             <div class="signature-content">
-              ${demande.signatureRH ? '✓ Signé' : 'En attente'}
+              ${demande.signatureRH?.signatureImage
+                ? `<img src="${demande.signatureRH.signatureImage}" class="signature-img" alt="Signature RH" />`
+                : (demande.signatureRH ? '✓ Signé' : 'En attente')}
             </div>
           </div>
           <div class="signature-box">
             <div class="signature-title">VISA DIRECTEUR GÉNÉRAL</div>
             <div class="signature-content">
-              ${demande.signatureDG ? '✓ Signé' : 'En attente'}
+              ${demande.signatureDG?.signatureImage
+                ? `<img src="${demande.signatureDG.signatureImage}" class="signature-img" alt="Signature DG" />`
+                : (demande.signatureDG ? '✓ Signé' : 'En attente')}
             </div>
           </div>
         </div>

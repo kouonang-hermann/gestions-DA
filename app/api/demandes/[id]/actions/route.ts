@@ -7,6 +7,7 @@ import { withAuth } from "@/lib/middleware"
 import { notificationService } from "@/services/notificationService"
 
 import type { DemandeStatus } from "@/types"
+import { enrichDemandeWithSignatures } from "@/lib/enrich-validation-signatures"
 
 import crypto from "crypto"
 
@@ -2350,13 +2351,16 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
 
 
 
+    // Enrichir la demande avec les signatures des utilisateurs
+    const enrichedDemande = await enrichDemandeWithSignatures(updatedDemande)
+
     return NextResponse.json({
 
       success: true,
 
       data: {
 
-        demande: updatedDemande
+        demande: enrichedDemande
 
       }
 

@@ -9,6 +9,7 @@ import { updateDemandeStatusSchema } from "@/lib/validations"
 import type { DemandeStatus } from "@/types"
 
 import { getPreviousStatus, getPreviousValidatorRole, generateRejectionNotificationMessage, hasReachedMaxRejections } from "@/lib/workflow-utils"
+import { enrichDemandeWithSignatures } from "@/lib/enrich-validation-signatures"
 
 import crypto from "crypto"
 
@@ -774,11 +775,14 @@ export const PUT = withAuth(async (request: NextRequest, currentUser: any, conte
 
 
 
+    // Enrichir la demande avec les signatures des utilisateurs
+    const enrichedDemande = await enrichDemandeWithSignatures(updatedDemande)
+
     return NextResponse.json({
 
       success: true,
 
-      data: updatedDemande,
+      data: enrichedDemande,
 
     })
 

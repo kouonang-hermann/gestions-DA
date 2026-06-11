@@ -102,6 +102,13 @@ export async function PATCH(
       return NextResponse.json({ success: false, error: "Demande non trouvée" }, { status: 404 })
     }
 
+    // Charger la signature manuscrite (data URL PNG) du valideur courant
+    const userWithSignature = await prisma.user.findUnique({
+      where: { id: currentUser.id },
+      select: { signature: true }
+    })
+    const userSignatureImage: string | null = userWithSignature?.signature ?? null
+
     let updateData: any = {}
 
     switch (action) {
@@ -126,6 +133,7 @@ export async function PATCH(
               userId: currentUser.id,
               date: new Date(),
               signature: `signature_${currentUser.id}_${Date.now()}`,
+              signatureImage: userSignatureImage,
               commentaire: commentaire || null
             }
           }
@@ -145,6 +153,7 @@ export async function PATCH(
               userId: currentUser.id,
               date: new Date(),
               signature: `signature_${currentUser.id}_${Date.now()}`,
+              signatureImage: userSignatureImage,
               commentaire: commentaire || null
             }
           }
@@ -164,6 +173,7 @@ export async function PATCH(
               userId: currentUser.id,
               date: new Date(),
               signature: `signature_${currentUser.id}_${Date.now()}`,
+              signatureImage: userSignatureImage,
               commentaire: commentaire || null
             },
             dateValidation: new Date()
@@ -229,7 +239,8 @@ export async function PATCH(
           signatureEmploye: {
             userId: currentUser.id,
             date: new Date(),
-            signature: `signature_${currentUser.id}_${Date.now()}`
+            signature: `signature_${currentUser.id}_${Date.now()}`,
+            signatureImage: userSignatureImage
           }
         }
         break
@@ -276,6 +287,7 @@ export async function PATCH(
             userId: currentUser.id,
             date: new Date(),
             signature: `signature_${currentUser.id}_${Date.now()}`,
+            signatureImage: userSignatureImage,
             commentaire: commentaire || null,
             dateDebutModifiee: dateDebutResp || null,
             dateFinModifiee: dateFinResp || null,
@@ -311,6 +323,7 @@ export async function PATCH(
             userId: currentUser.id,
             date: new Date(),
             signature: `signature_${currentUser.id}_${Date.now()}`,
+            signatureImage: userSignatureImage,
             commentaire: commentaire || null,
             dateDebutModifiee: dateDebutRH || null,
             dateFinModifiee: dateFinRH || null,
@@ -350,6 +363,7 @@ export async function PATCH(
             userId: currentUser.id,
             date: new Date(),
             signature: `signature_${currentUser.id}_${Date.now()}`,
+            signatureImage: userSignatureImage,
             commentaire: commentaire || null,
             dateDebutModifiee: dateDebutDG || null,
             dateFinModifiee: dateFinDG || null,

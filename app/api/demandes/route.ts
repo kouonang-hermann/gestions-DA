@@ -313,7 +313,7 @@ export const GET = async (request: NextRequest) => {
           select: { id: true, nom: true }
         },
         technicien: {
-          select: { id: true, nom: true, prenom: true, email: true }
+          select: { id: true, nom: true, prenom: true, email: true, signature: true }
         },
         livreurAssigne: {
           select: { id: true, nom: true, prenom: true, email: true }
@@ -331,21 +331,21 @@ export const GET = async (request: NextRequest) => {
         validationSignatures: {
           include: {
             user: {
-              select: { id: true, nom: true, prenom: true, email: true }
+              select: { id: true, nom: true, prenom: true, email: true, signature: true }
             }
           }
         },
         sortieSignature: {
           include: {
             user: {
-              select: { id: true, nom: true, prenom: true, email: true }
+              select: { id: true, nom: true, prenom: true, email: true, signature: true }
             }
           }
         },
         history: {
           include: {
             user: {
-              select: { id: true, nom: true, prenom: true, email: true }
+              select: { id: true, nom: true, prenom: true, email: true, signature: true }
             }
           },
           orderBy: { timestamp: 'asc' }
@@ -364,8 +364,16 @@ export const GET = async (request: NextRequest) => {
         return bTime - aTime
       })
 
+      // Helper pour ajouter signatureImage (data URL PNG) sur la validation
+      // pour que les générateurs PDF puissent l'injecter dans les cellules SIGNATURE
+      const withSignatureImage = (v: any) => {
+        if (!v) return v
+        return { ...v, signatureImage: v.user?.signature || v.signatureImage || null }
+      }
+
       const findSignature = (types: string[]) => {
-        return validationSignaturesSorted.find((v: any) => types.includes(v.type)) || null
+        const match = validationSignaturesSorted.find((v: any) => types.includes(v.type)) || null
+        return withSignatureImage(match)
       }
 
       // Mapper les validationSignatures aux champs attendus par le frontend (avec fallback legacy)
@@ -395,7 +403,14 @@ export const GET = async (request: NextRequest) => {
         'appro',
         'preparation_appro'
       ])
-      const sortieAppro = demande.sortieSignature || validationAppro || null
+      const sortieAppro = withSignatureImage(demande.sortieSignature || validationAppro || null)
+
+      // Signature finale du demandeur (clôture)
+      const validationFinale = findSignature([
+        'finale',
+        'validation_finale',
+        'demandeur'
+      ])
 
       return {
         ...demande,
@@ -403,6 +418,7 @@ export const GET = async (request: NextRequest) => {
         validationResponsableTravaux,
         validationChargeAffaire,
         validationLogistique,
+        validationFinale,
         sortieAppro
       }
     })
@@ -602,7 +618,7 @@ export const POST = async (request: NextRequest) => {
           select: { id: true, nom: true }
         },
         technicien: {
-          select: { id: true, nom: true, prenom: true, email: true }
+          select: { id: true, nom: true, prenom: true, email: true, signature: true }
         },
         items: {
           include: {

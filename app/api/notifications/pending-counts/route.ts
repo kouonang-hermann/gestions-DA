@@ -52,6 +52,22 @@ export async function GET(request: NextRequest) {
     // en_attente_validation_hierarchique / en_attente_validation_rh / en_attente_visa_dg
     // existent en base mais pas toujours dans le client TS). Le SQL brut contourne
     // la validation enum côté client.
+    // Helper : exécute une promesse de comptage en isolant les erreurs DB
+    // (ex. colonne manquante en cours de migration). Renvoie 0 et logge l'erreur
+    // au lieu de faire crasher toute l'API (et donc le client qui appelle ce
+    // endpoint en boucle pour les badges navbar).
+    const safeCount = async (
+      label: string,
+      promise: Promise<number>
+    ): Promise<number> => {
+      try {
+        return await promise
+      } catch (err: any) {
+        console.error(`[API PENDING-COUNTS] ${label} échoué :`, err?.message || err)
+        return 0
+      }
+    }
+
     const countAbsencesByStatus = async (
       statusValue: string,
       responsableFilter?: string
@@ -80,27 +96,46 @@ export async function GET(request: NextRequest) {
       absencesRh,
       absencesDg,
     ] = await Promise.all([
-      prisma.demandeConge.count({
-        where: { status: "en_attente_validation_hierarchique", responsableId: userId },
-      }),
+      safeCount(
+        "conges.hierarchique",
+        prisma.demandeConge.count({
+          where: { status: "en_attente_validation_hierarchique", responsableId: userId },
+        })
+      ),
       role === "responsable_rh" || role === "superadmin"
-        ? prisma.demandeConge.count({ where: { status: "en_attente_validation_rh" } })
+        ? safeCount(
+            "conges.rh",
+            prisma.demandeConge.count({ where: { status: "en_attente_validation_rh" } })
+          )
         : Promise.resolve(0),
       role === "directeur_general" || role === "superadmin"
-        ? prisma.demandeConge.count({ where: { status: "en_attente_visa_dg" } })
+        ? safeCount(
+            "conges.dg",
+            prisma.demandeConge.count({ where: { status: "en_attente_visa_dg" } })
+          )
         : Promise.resolve(0),
-      countAbsencesByStatus("en_attente_validation_hierarchique", userId),
+      safeCount(
+        "absences.hierarchique",
+        countAbsencesByStatus("en_attente_validation_hierarchique", userId)
+      ),
       role === "responsable_rh" || role === "superadmin"
-        ? countAbsencesByStatus("en_attente_validation_rh")
+        ? safeCount(
+            "absences.rh",
+            countAbsencesByStatus("en_attente_validation_rh")
+          )
         : Promise.resolve(0),
       role === "directeur_general" || role === "superadmin"
-        ? countAbsencesByStatus("en_attente_visa_dg")
+        ? safeCount(
+            "absences.dg",
+            countAbsencesByStatus("en_attente_visa_dg")
+          )
         : Promise.resolve(0),
     ])
 
-    const congesPending = await prisma.demandeConge.count({
-      where: { OR: congeFilters },
-    })
+    const congesPending = await safeCount(
+      "conges.total",
+      prisma.demandeConge.count({ where: { OR: congeFilters } })
+    )
     const absencesPending = absencesHierarchique + absencesRh + absencesDg
 
     return NextResponse.json({

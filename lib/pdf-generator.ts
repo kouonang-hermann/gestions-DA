@@ -606,23 +606,29 @@ export async function generatePurchaseRequestPDF(demande: any, users: any[] = []
     const imgWidth = availableWidth
     const imgHeight = (canvas.height * imgWidth) / canvas.width
 
-    let heightLeft = imgHeight
-    let position = 0
+    // FIT-TO-SINGLE-PAGE : si le contenu déborde légèrement (<= 20%), on réduit
+    // proportionnellement pour tenir sur une seule page A4. Évite les 2èmes
+    // pages quasi-vides quand le contenu dépasse de quelques millimètres.
+    if (imgHeight <= availableHeight * 1.2) {
+      const finalHeight = Math.min(imgHeight, availableHeight)
+      const finalWidth = (imgWidth * finalHeight) / imgHeight
+      const xOffset = marginLeft + (availableWidth - finalWidth) / 2
+      pdf.addImage(imgData, 'JPEG', xOffset, marginTop, finalWidth, finalHeight, undefined, 'FAST')
+    } else {
+      // Multi-pages : pagination standard pour les contenus vraiment longs
+      let heightLeft = imgHeight
+      let position = 0
 
-    // Première page avec marges
-    // Utiliser JPEG au lieu de PNG pour toutes les pages
-    pdf.addImage(imgData, 'JPEG', marginLeft, marginTop, imgWidth, imgHeight, undefined, 'FAST')  // Compression FAST
-    heightLeft -= availableHeight
-
-    // Ajouter des pages supplémentaires si nécessaire
-    // Utiliser un seuil de 5mm pour éviter les pages blanches avec juste quelques pixels
-    while (heightLeft > 5) {
-      pdf.addPage()
-      // Calculer la position négative pour continuer l'image
-      position = -(imgHeight - heightLeft)
-      // Ajouter les marges pour créer un vrai espace en haut de chaque page
-      pdf.addImage(imgData, 'JPEG', marginLeft, position + marginTop, imgWidth, imgHeight, undefined, 'FAST')
+      pdf.addImage(imgData, 'JPEG', marginLeft, marginTop, imgWidth, imgHeight, undefined, 'FAST')
       heightLeft -= availableHeight
+
+      // Seuil 20mm : évite les pages blanches même avec un dépassement modéré
+      while (heightLeft > 20) {
+        pdf.addPage()
+        position = -(imgHeight - heightLeft)
+        pdf.addImage(imgData, 'JPEG', marginLeft, position + marginTop, imgWidth, imgHeight, undefined, 'FAST')
+        heightLeft -= availableHeight
+      }
     }
 
     // Télécharger le PDF
@@ -784,6 +790,17 @@ export const generateBonLivraisonPDF = async (demande: any): Promise<void> => {
             align-items: center;
             gap: 8px;
           }
+          .signature-item-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+          }
+          .signature-img {
+            max-width: 140px;
+            max-height: 50px;
+            object-fit: contain;
+            display: block;
+          }
           .checkbox {
             width: 14px;
             height: 14px;
@@ -870,8 +887,11 @@ export const generateBonLivraisonPDF = async (demande: any): Promise<void> => {
         </table>
 
         <div class="signature-footer">
-          <div class="signature-item">
-            <span>Le client_____________</span>
+          <div class="signature-item-stack">
+            <span>Le client :</span>
+            ${demande.validationFinale?.signatureImage || demande.technicien?.signature
+              ? `<img src="${demande.validationFinale?.signatureImage || demande.technicien?.signature}" class="signature-img" alt="Signature client" />`
+              : '<span>_____________</span>'}
           </div>
           <div class="signature-item">
             <span>Livraison partielle</span>
@@ -924,19 +944,25 @@ export const generateBonLivraisonPDF = async (demande: any): Promise<void> => {
     const imgWidth = availableWidth
     const imgHeight = (canvas.height * imgWidth) / canvas.width
 
-    let heightLeft = imgHeight
-    let position = 0
+    // FIT-TO-SINGLE-PAGE : voir explication dans generatePurchaseRequestPDF
+    if (imgHeight <= availableHeight * 1.2) {
+      const finalHeight = Math.min(imgHeight, availableHeight)
+      const finalWidth = (imgWidth * finalHeight) / imgHeight
+      const xOffset = marginLeft + (availableWidth - finalWidth) / 2
+      pdf.addImage(imgData, 'JPEG', xOffset, marginTop, finalWidth, finalHeight, undefined, 'FAST')
+    } else {
+      let heightLeft = imgHeight
+      let position = 0
 
-    // Utiliser JPEG avec compression FAST
-    pdf.addImage(imgData, 'JPEG', marginLeft, marginTop, imgWidth, imgHeight, undefined, 'FAST')
-    heightLeft -= availableHeight
-
-    // Utiliser un seuil de 5mm pour éviter les pages blanches avec juste quelques pixels
-    while (heightLeft > 5) {
-      pdf.addPage()
-      position = -(imgHeight - heightLeft)
-      pdf.addImage(imgData, 'JPEG', marginLeft, position + marginTop, imgWidth, imgHeight, undefined, 'FAST')
+      pdf.addImage(imgData, 'JPEG', marginLeft, marginTop, imgWidth, imgHeight, undefined, 'FAST')
       heightLeft -= availableHeight
+
+      while (heightLeft > 20) {
+        pdf.addPage()
+        position = -(imgHeight - heightLeft)
+        pdf.addImage(imgData, 'JPEG', marginLeft, position + marginTop, imgWidth, imgHeight, undefined, 'FAST')
+        heightLeft -= availableHeight
+      }
     }
 
     const filename = `bon-livraison-${demande.numero}-${new Date().toISOString().split("T")[0]}.pdf`
@@ -1119,6 +1145,14 @@ export const generateBonSortiePDF = async (demande: any): Promise<void> => {
             width: 150px;
             margin: 10px auto;
             height: 40px;
+            position: relative;
+          }
+          .signature-img-bs {
+            max-width: 140px;
+            max-height: 40px;
+            object-fit: contain;
+            display: block;
+            margin: 0 auto;
           }
           .footer-text {
             text-align: center;
@@ -1211,11 +1245,19 @@ export const generateBonSortiePDF = async (demande: any): Promise<void> => {
         <div class="signature-footer">
           <div class="signature-item">
             <div><strong>Demandeur</strong></div>
-            <div class="signature-line"></div>
+            <div class="signature-line">
+              ${demande.technicien?.signature
+                ? `<img src="${demande.technicien.signature}" class="signature-img-bs" alt="Signature Demandeur" />`
+                : ''}
+            </div>
           </div>
           <div class="signature-item">
             <div><strong>Resp Appro</strong></div>
-            <div class="signature-line"></div>
+            <div class="signature-line">
+              ${demande.sortieAppro?.signatureImage
+                ? `<img src="${demande.sortieAppro.signatureImage}" class="signature-img-bs" alt="Signature Resp Appro" />`
+                : ''}
+            </div>
           </div>
           <div class="signature-item">
             <div><strong>Magasinier</strong></div>
@@ -1274,18 +1316,25 @@ export const generateBonSortiePDF = async (demande: any): Promise<void> => {
     const imgWidth = availableWidth
     const imgHeight = (canvas.height * imgWidth) / canvas.width
 
-    let heightLeft = imgHeight
-    let position = 0
+    // FIT-TO-SINGLE-PAGE : voir explication dans generatePurchaseRequestPDF
+    if (imgHeight <= availableHeight * 1.2) {
+      const finalHeight = Math.min(imgHeight, availableHeight)
+      const finalWidth = (imgWidth * finalHeight) / imgHeight
+      const xOffset = marginLeft + (availableWidth - finalWidth) / 2
+      pdf.addImage(imgData, 'JPEG', xOffset, marginTop, finalWidth, finalHeight, undefined, 'FAST')
+    } else {
+      let heightLeft = imgHeight
+      let position = 0
 
-    pdf.addImage(imgData, 'JPEG', marginLeft, marginTop, imgWidth, imgHeight, undefined, 'FAST')
-    heightLeft -= availableHeight
-
-    // Utiliser un seuil de 5mm pour éviter les pages blanches avec juste quelques pixels
-    while (heightLeft > 5) {
-      pdf.addPage()
-      position = -(imgHeight - heightLeft)
-      pdf.addImage(imgData, 'JPEG', marginLeft, position + marginTop, imgWidth, imgHeight, undefined, 'FAST')
+      pdf.addImage(imgData, 'JPEG', marginLeft, marginTop, imgWidth, imgHeight, undefined, 'FAST')
       heightLeft -= availableHeight
+
+      while (heightLeft > 20) {
+        pdf.addPage()
+        position = -(imgHeight - heightLeft)
+        pdf.addImage(imgData, 'JPEG', marginLeft, position + marginTop, imgWidth, imgHeight, undefined, 'FAST')
+        heightLeft -= availableHeight
+      }
     }
 
     const filename = `bon-sortie-${demande.numero}-${new Date().toISOString().split("T")[0]}.pdf`

@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useStore } from "@/stores/useStore"
+import { useEnsureSignature } from "@/hooks/use-ensure-signature"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -17,6 +18,7 @@ import DemandeDetailsModal from "@/components/modals/demande-details-modal"
 
 export default function MobileApproSection() {
   const { currentUser, demandes, executeAction, error } = useStore()
+  const { ensureSignature } = useEnsureSignature()
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
   const [selectedDemande, setSelectedDemande] = useState<Demande | null>(null)
@@ -30,6 +32,12 @@ export default function MobileApproSection() {
   )
 
   const handlePreparerSortie = async (demandeId: string) => {
+    // Exiger une signature avant la préparation sortie APPRO (le valideur signe son acte)
+    const signature = await ensureSignature(
+      "Votre signature sera apposée sur la préparation sortie APPRO de cette demande."
+    )
+    if (!signature) return // utilisateur a annulé -> on abandonne
+
     setActionLoading(demandeId)
     try {
       const success = await executeAction(demandeId, "valider", {

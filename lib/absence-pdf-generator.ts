@@ -20,6 +20,10 @@ interface DemandeAbsencePDF {
     nom: string
     prenom: string
   }
+  signatureEmploye?: { signatureImage?: string | null } | null
+  signatureResponsable?: { signatureImage?: string | null } | null
+  signatureRH?: { signatureImage?: string | null } | null
+  signatureDG?: { signatureImage?: string | null } | null
 }
 
 export function generateAbsencePDF(demande: DemandeAbsencePDF): string {
@@ -219,6 +223,12 @@ export function generateAbsencePDF(demande: DemandeAbsencePDF): string {
           background-color: #fef3c7;
           color: #92400e;
         }
+        .signature-img {
+          max-width: 180px;
+          max-height: 60px;
+          object-fit: contain;
+          vertical-align: middle;
+        }
       </style>
     </head>
     <body>
@@ -273,7 +283,11 @@ export function generateAbsencePDF(demande: DemandeAbsencePDF): string {
           
           <div class="form-field">
             <span class="form-label">SIGNATURE DE DEMANDEUR :</span>
-            <span class="form-value">Demande soumise le ${demande.dateCreation}</span>
+            <span class="form-value">
+              ${demande.signatureEmploye?.signatureImage
+                ? `<img src="${demande.signatureEmploye.signatureImage}" class="signature-img" alt="Signature Employé" />`
+                : `Demande soumise le ${demande.dateCreation}`}
+            </span>
           </div>
         </div>
         
@@ -294,11 +308,25 @@ export function generateAbsencePDF(demande: DemandeAbsencePDF): string {
             <span class="form-label">Supérieur hiérarchique :</span>
             <span class="form-value">${demande.responsable.prenom} ${demande.responsable.nom}</span>
           </div>
+          ${demande.signatureResponsable?.signatureImage ? `
+          <div class="form-field" style="margin-top: 10px;">
+            <span class="form-label">Signature :</span>
+            <span class="form-value">
+              <img src="${demande.signatureResponsable.signatureImage}" class="signature-img" alt="Signature Responsable" />
+            </span>
+          </div>` : ''}
         </div>
         
         <!-- Validation RH -->
         <div class="validation-section">
           <div class="validation-title">VALIDATION DU SERVICE RH ET ADMINISTRATION</div>
+          ${demande.signatureRH?.signatureImage ? `
+          <div class="form-field" style="margin-top: 10px;">
+            <span class="form-label">Signature RH :</span>
+            <span class="form-value">
+              <img src="${demande.signatureRH.signatureImage}" class="signature-img" alt="Signature RH" />
+            </span>
+          </div>` : ''}
         </div>
         
         <!-- Informations complémentaires -->
@@ -315,6 +343,13 @@ export function generateAbsencePDF(demande: DemandeAbsencePDF): string {
         <!-- Visa DG -->
         <div class="visa-section">
           <div class="visa-title">VISA DE LA DIRECTION GÉNÉRALE</div>
+          ${demande.signatureDG?.signatureImage ? `
+          <div class="form-field" style="margin-top: 10px;">
+            <span class="form-label">Signature DG :</span>
+            <span class="form-value">
+              <img src="${demande.signatureDG.signatureImage}" class="signature-img" alt="Signature DG" />
+            </span>
+          </div>` : ''}
         </div>
         
         <!-- Pied de page -->
