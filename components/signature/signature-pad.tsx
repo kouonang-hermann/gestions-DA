@@ -1,8 +1,18 @@
 "use client"
 
 import { useRef, forwardRef, useImperativeHandle } from 'react'
-import SignatureCanvas from 'react-signature-canvas'
+import dynamic from 'next/dynamic'
+import type SignatureCanvasType from 'react-signature-canvas'
 import { Button } from '@/components/ui/button'
+
+const SignatureCanvas = dynamic(() => import('react-signature-canvas'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center" style={{ height: 200, background: '#fff' }}>
+      <span className="text-gray-400 text-sm">Chargement...</span>
+    </div>
+  ),
+}) as any
 
 export interface SignaturePadRef {
   clear: () => void
@@ -18,7 +28,7 @@ interface SignaturePadProps {
 
 export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(
   ({ onSave, width = 500, height = 200 }, ref) => {
-    const sigPad = useRef<SignatureCanvas>(null)
+    const sigPad = useRef<SignatureCanvasType>(null)
 
     useImperativeHandle(ref, () => ({
       clear: () => {
