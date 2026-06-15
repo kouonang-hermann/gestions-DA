@@ -43,18 +43,39 @@ export default function UniversalMobileInjector() {
   const { handleManualReload } = useAutoReload("MOBILE")
 
   useEffect(() => {
+    // Vérification SSR sécurisée
+    if (typeof window === 'undefined') return
+    
+    let resizeTimeout: ReturnType<typeof setTimeout> | null = null
+    
     const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768)
+      // Debounce pour optimisation mobile
+      if (resizeTimeout) clearTimeout(resizeTimeout)
+      resizeTimeout = setTimeout(() => {
+        setIsMobile(window.innerWidth <= 768)
+      }, 150)
     }
     
     checkMobile()
-    window.addEventListener('resize', checkMobile)
-    return () => window.removeEventListener('resize', checkMobile)
+    window.addEventListener('resize', checkMobile, { passive: true })
+    window.addEventListener('orientationchange', checkMobile, { passive: true })
+    
+    return () => {
+      if (resizeTimeout) clearTimeout(resizeTimeout)
+      window.removeEventListener('resize', checkMobile)
+      window.removeEventListener('orientationchange', checkMobile)
+    }
   }, [])
 
   const getUserInitials = () => {
-    if (!currentUser) return "U"
-    return `${currentUser.prenom?.[0] || ''}${currentUser.nom?.[0] || ''}`.toUpperCase() || "U"
+    try {
+      if (!currentUser) return "U"
+      const prenom = currentUser.prenom || ''
+      const nom = currentUser.nom || ''
+      return `${prenom.charAt(0)}${nom.charAt(0)}`.toUpperCase() || "U"
+    } catch (e) {
+      return "U"
+    }
   }
 
   const getRoleDisplayName = () => {
@@ -143,76 +164,113 @@ export default function UniversalMobileInjector() {
 
   // Calculer les statistiques selon le rôle
   const getStats = () => {
-    if (!currentUser || !demandes) return { total: 0, aValider: 0, enCours: 0, validees: 0 }
+    try {
+      if (!currentUser || !demandes || !Array.isArray(demandes)) {
+        return { total: 0, aValider: 0, enCours: 0, validees: 0, livraisons: 0, aPreparer: 0 }
+      }
 
-    const mesDemandesCreees = demandes.filter(d => d && d.technicienId === currentUser.id)
-    const demandesProjet = demandes.filter(d => 
-      d && d.projetId && (!currentUser.projets || currentUser.projets.length === 0 || currentUser.projets.includes(d.projetId))
-    )
+      const mesDemandesCreees = demandes.filter(d => d && d.technicienId === currentUser.id)
+      const demandesProjet = demandes.filter(d => 
+        d && d.projetId && (!currentUser.projets || currentUser.projets.length === 0 || currentUser.projets.includes(d.projetId))
+      )
 
-    // Demandes à valider selon le rôle
-    const demandesAValider = demandesProjet.filter(d => d && d.type && d.status && canUserValidateStep(currentUser.role, d.type, d.status))
+      // Demandes à valider selon le rôle
+      const demandesAValider = demandesProjet.filter(d => {
+        if (!d?.type || !d?.status) return false
+        try {
+          return canUserValidateStep(currentUser.role, d.type, d.status)
+        } catch (e) {
+          return false
+        }
+      })
 
-    // Livraisons assignées
-    const livraisonsAssignees = demandes.filter(d => 
-      d && d.livreurAssigneId === currentUser.id &&
-      d.status && ["en_attente_reception_livreur", "en_attente_livraison"].includes(d.status)
-    )
+      // Livraisons assignées
+      const livraisonsAssignees = demandes.filter(d => 
+        d?.livreurAssigneId === currentUser.id &&
+        d?.status && ["en_attente_reception_livreur", "en_attente_livraison"].includes(d.status)
+      )
 
-    // Demandes à préparer (appro)
-    const demandesAPreparer = demandesProjet.filter(d => 
-      d && d.type === "materiel" && d.status === "en_attente_preparation_appro"
-    )
+      // Demandes à préparer (appro)
+      const demandesAPreparer = demandesProjet.filter(d => 
+        d?.type === "materiel" && d?.status === "en_attente_preparation_appro"
+      )
 
-    // Mes demandes en cours
-    const mesDemandesEnCours = mesDemandesCreees.filter(d => 
-      d && d.status && !["brouillon", "cloturee", "rejetee", "archivee"].includes(d.status)
-    )
+      // Mes demandes en cours
+      const mesDemandesEnCours = mesDemandesCreees.filter(d => 
+        d?.status && !["brouillon", "cloturee", "rejetee", "archivee"].includes(d.status)
+      )
 
-    // Mes demandes clôturées
-    const mesDemandesValidees = mesDemandesCreees.filter(d => 
-      d && d.status && ["cloturee", "archivee"].includes(d.status)
-    )
+      // Mes demandes clôturées
+      const mesDemandesValidees = mesDemandesCreees.filter(d => 
+        d?.status && ["cloturee", "archivee"].includes(d.status)
+      )
 
-    return {
-      total: mesDemandesCreees.length,
-      aValider: demandesAValider.length,
-      livraisons: livraisonsAssignees.length,
-      aPreparer: demandesAPreparer.length,
-      enCours: mesDemandesEnCours.length,
-      validees: mesDemandesValidees.length
+      return {
+        total: mesDemandesCreees.length || 0,
+        aValider: demandesAValider.length || 0,
+        livraisons: livraisonsAssignees.length || 0,
+        aPreparer: demandesAPreparer.length || 0,
+        enCours: mesDemandesEnCours.length || 0,
+        validees: mesDemandesValidees.length || 0
+      }
+    } catch (error) {
+      console.error('[MobileInjector] Erreur calcul stats:', error)
+      return { total: 0, aValider: 0, enCours: 0, validees: 0, livraisons: 0, aPreparer: 0 }
     }
   }
 
   const stats = getStats()
+  
+  // Validation des stats
+  const safeStats = {
+    total: stats?.total || 0,
+    aValider: stats?.aValider || 0,
+    enCours: stats?.enCours || 0,
+    validees: stats?.validees || 0,
+    livraisons: stats?.livraisons || 0,
+    aPreparer: stats?.aPreparer || 0
+  }
 
   // Récupérer les demandes rejetées de l'utilisateur
   const getDemandesRejetees = () => {
-    if (!currentUser) return []
-    return demandes.filter(d => 
-      d && d.technicienId === currentUser.id && 
-      d.status === "rejetee"
-    )
+    try {
+      if (!currentUser || !demandes || !Array.isArray(demandes)) return []
+      return demandes.filter(d => 
+        d?.technicienId === currentUser.id && 
+        d?.status === "rejetee"
+      )
+    } catch (error) {
+      console.error('[MobileInjector] Erreur getDemandesRejetees:', error)
+      return []
+    }
   }
 
   const demandesRejetees = getDemandesRejetees()
+  
+  // Sécurité : retourner null si données invalides
+  if (!currentUser || !isMobile) return null
 
   // Filtrer les demandes pour la modale
   const getFilteredDemandes = (type: "total" | "enCours" | "validees" | "brouillons") => {
-    if (!currentUser) return []
-    const mesDemandesCreees = demandes.filter(d => d && d.technicienId === currentUser.id)
-    
-    switch (type) {
-      case "total":
-        return mesDemandesCreees
-      case "enCours":
-        return mesDemandesCreees.filter(d => d && d.status && !["brouillon", "cloturee", "rejetee", "archivee"].includes(d.status))
-      case "validees":
-        return mesDemandesCreees.filter(d => d && d.status && ["cloturee", "archivee"].includes(d.status))
-      case "brouillons":
-        return mesDemandesCreees.filter(d => d && d.status === "brouillon")
-      default:
-        return []
+    try {
+      if (!currentUser || !demandes || !Array.isArray(demandes)) return []
+      const mesDemandesCreees = demandes.filter(d => d?.technicienId === currentUser.id)
+      
+      switch (type) {
+        case "total":
+          return mesDemandesCreees
+        case "enCours":
+          return mesDemandesCreees.filter(d => d?.status && !["brouillon", "cloturee", "rejetee", "archivee"].includes(d.status))
+        case "validees":
+          return mesDemandesCreees.filter(d => d?.status && ["cloturee", "archivee"].includes(d.status))
+        case "brouillons":
+          return mesDemandesCreees.filter(d => d?.status === "brouillon")
+        default:
+          return []
+      }
+    } catch (error) {
+      console.error('[MobileInjector] Erreur getFilteredDemandes:', error)
+      return []
     }
   }
 
@@ -246,15 +304,15 @@ export default function UniversalMobileInjector() {
   }
 
   // Vérifier si l'utilisateur est un valideur
-  const isValidator = currentUser && [
+  const isValidator = currentUser?.role && [
     'conducteur_travaux', 
     'responsable_travaux', 
     'charge_affaire', 
     'responsable_appro', 
-    'responsable_logistique'
+    'responsable_logistique',
+    'responsable_qhse',
+    'responsable_livreur'
   ].includes(currentUser.role)
-
-  if (!isMobile || !currentUser) return null
 
   const mainAction = getMainAction()
   const quickActions = getQuickActions()
@@ -297,17 +355,17 @@ export default function UniversalMobileInjector() {
               <span className="mobile-stat-card-title">Total</span>
               <FileText className="mobile-stat-card-icon" />
             </div>
-            <div className="mobile-stat-card-value">{stats.total}</div>
+            <div className="mobile-stat-card-value">{safeStats.total}</div>
             <div className="mobile-stat-card-desc">Mes demandes</div>
           </div>
 
-          {isValidator && stats.aValider > 0 ? (
+          {isValidator && safeStats.aValider > 0 ? (
             <div className="mobile-stat-card stat-encours">
               <div className="mobile-stat-card-header">
                 <span className="mobile-stat-card-title">À valider</span>
                 <Clock className="mobile-stat-card-icon" />
               </div>
-              <div className="mobile-stat-card-value">{stats.aValider}</div>
+              <div className="mobile-stat-card-value">{safeStats.aValider}</div>
               <div className="mobile-stat-card-desc">En attente</div>
             </div>
           ) : (
@@ -319,18 +377,18 @@ export default function UniversalMobileInjector() {
                 <span className="mobile-stat-card-title">En cours</span>
                 <Clock className="mobile-stat-card-icon" />
               </div>
-              <div className="mobile-stat-card-value">{stats.enCours}</div>
+              <div className="mobile-stat-card-value">{safeStats.enCours}</div>
               <div className="mobile-stat-card-desc">En traitement</div>
             </div>
           )}
 
-          {(stats.livraisons || 0) > 0 ? (
+          {(safeStats.livraisons || 0) > 0 ? (
             <div className="mobile-stat-card stat-validees">
               <div className="mobile-stat-card-header">
                 <span className="mobile-stat-card-title">Livraisons</span>
                 <Truck className="mobile-stat-card-icon" />
               </div>
-              <div className="mobile-stat-card-value">{stats.livraisons}</div>
+              <div className="mobile-stat-card-value">{safeStats.livraisons}</div>
               <div className="mobile-stat-card-desc">À effectuer</div>
             </div>
           ) : (
@@ -342,18 +400,18 @@ export default function UniversalMobileInjector() {
                 <span className="mobile-stat-card-title">Validées</span>
                 <CheckCircle className="mobile-stat-card-icon" />
               </div>
-              <div className="mobile-stat-card-value">{stats.validees}</div>
+              <div className="mobile-stat-card-value">{safeStats.validees}</div>
               <div className="mobile-stat-card-desc">Terminées</div>
             </div>
           )}
 
-          {currentUser.role === 'responsable_appro' && (stats.aPreparer || 0) > 0 ? (
+          {currentUser?.role === 'responsable_appro' && (safeStats.aPreparer || 0) > 0 ? (
             <div className="mobile-stat-card stat-brouillons">
               <div className="mobile-stat-card-header">
                 <span className="mobile-stat-card-title">À préparer</span>
                 <Package className="mobile-stat-card-icon" />
               </div>
-              <div className="mobile-stat-card-value">{stats.aPreparer || 0}</div>
+              <div className="mobile-stat-card-value">{safeStats.aPreparer || 0}</div>
               <div className="mobile-stat-card-desc">Sorties</div>
             </div>
           ) : (
@@ -365,7 +423,9 @@ export default function UniversalMobileInjector() {
                 <span className="mobile-stat-card-title">Brouillons</span>
                 <Archive className="mobile-stat-card-icon" />
               </div>
-              <div className="mobile-stat-card-value">{demandes.filter(d => d.technicienId === currentUser.id && d.status === "brouillon").length}</div>
+              <div className="mobile-stat-card-value">
+                {demandes?.filter(d => d?.technicienId === currentUser?.id && d?.status === "brouillon").length || 0}
+              </div>
               <div className="mobile-stat-card-desc">Non soumis</div>
             </div>
           )}
@@ -385,10 +445,10 @@ export default function UniversalMobileInjector() {
           <div className="mobile-rejected-section">
             <div className="mobile-rejected-header">
               <h3>Demandes Rejetées</h3>
-              <span className="mobile-rejected-badge">{demandesRejetees.length}</span>
+              <span className="mobile-rejected-badge">{demandesRejetees?.length || 0}</span>
             </div>
             <div className="mobile-rejected-list">
-              {demandesRejetees.map((demande) => (
+              {demandesRejetees?.map((demande) => (
                 <div key={demande.id} className="mobile-rejected-item">
                   <div className="mobile-rejected-item-header">
                     <div className="mobile-rejected-item-title">
@@ -409,7 +469,13 @@ export default function UniversalMobileInjector() {
                   )}
                   <div className="mobile-rejected-item-footer">
                     <span className="mobile-rejected-date">
-                      {new Date(demande.dateCreation).toLocaleDateString('fr-FR')}
+                      {(() => {
+                        try {
+                          return new Date(demande?.dateCreation).toLocaleDateString('fr-FR')
+                        } catch (e) {
+                          return 'Date inconnue'
+                        }
+                      })()}
                     </span>
                     <span className="mobile-rejected-items">
                       {demande.items?.length || 0} article(s)
@@ -471,9 +537,9 @@ export default function UniversalMobileInjector() {
         >
           <CheckCircle className="mobile-nav-icon" />
           <span className="mobile-nav-label">Clôturer</span>
-          {demandes.filter(d => d.technicienId === currentUser.id && d.status === "en_attente_validation_finale_demandeur").length > 0 && (
+          {(demandes?.filter(d => d?.technicienId === currentUser?.id && d?.status === "en_attente_validation_finale_demandeur").length || 0) > 0 && (
             <span className="mobile-nav-badge">
-              {demandes.filter(d => d.technicienId === currentUser.id && d.status === "en_attente_validation_finale_demandeur").length}
+              {demandes?.filter(d => d?.technicienId === currentUser?.id && d?.status === "en_attente_validation_finale_demandeur").length || 0}
             </span>
           )}
         </div>
