@@ -68,7 +68,7 @@ export function ValidationModalWithSignature({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleCancel}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl w-[95vw] max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           {description && (
@@ -116,7 +116,7 @@ export function ValidationModalWithSignature({
               Votre signature certifie que vous avez vérifié et validé cette demande.
               Cette action est <strong>irréversible</strong>.
             </p>
-            <SignaturePad ref={signaturePadRef} width={650} height={200} />
+            <SignaturePad ref={signaturePadRef} width={650} height={220} />
           </div>
 
           {/* Message d'erreur */}

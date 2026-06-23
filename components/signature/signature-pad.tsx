@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, forwardRef, useImperativeHandle } from 'react'
+import { useRef, forwardRef, useImperativeHandle, useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import type SignatureCanvasType from 'react-signature-canvas'
 import { Button } from '@/components/ui/button'
@@ -27,8 +27,36 @@ interface SignaturePadProps {
 }
 
 export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(
-  ({ onSave, width = 500, height = 200 }, ref) => {
+  ({ onSave, width: propWidth, height = 200 }, ref) => {
     const sigPad = useRef<SignatureCanvasType>(null)
+    const wrapperRef = useRef<HTMLDivElement>(null)
+    const hasMeasuredRef = useRef(false)
+
+    const [canvasWidth, setCanvasWidth] = useState(() => {
+      return propWidth ? Math.min(propWidth, 320) : 320
+    })
+
+    useEffect(() => {
+      hasMeasuredRef.current = false
+      setCanvasWidth(propWidth ? Math.min(propWidth, 320) : 320)
+
+      if (!wrapperRef.current) return
+
+      const resizeObserver = new ResizeObserver(() => {
+        if (!hasMeasuredRef.current && wrapperRef.current) {
+          const rect = wrapperRef.current.getBoundingClientRect()
+          if (rect.width > 0) {
+            const targetWidth = propWidth ? Math.min(rect.width, propWidth) : rect.width
+            setCanvasWidth(Math.floor(targetWidth))
+            hasMeasuredRef.current = true
+            resizeObserver.disconnect()
+          }
+        }
+      })
+
+      resizeObserver.observe(wrapperRef.current)
+      return () => resizeObserver.disconnect()
+    }, [propWidth])
 
     useImperativeHandle(ref, () => ({
       clear: () => {
@@ -55,16 +83,26 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(
 
     return (
       <div className="space-y-4">
-        <div className="border-2 border-gray-300 rounded-lg overflow-hidden bg-white">
+        <div
+          ref={wrapperRef}
+          className="border-2 border-gray-300 rounded-lg overflow-hidden bg-white mx-auto"
+          style={{ width: '100%', maxWidth: propWidth ? `${propWidth}px` : undefined }}
+        >
           <SignatureCanvas
             ref={sigPad}
             canvasProps={{
-              width: width,
+              width: canvasWidth,
               height: height,
-              className: 'w-full h-full cursor-crosshair'
+              className: 'w-full cursor-crosshair touch-none',
+              style: { height: `${height}px`, touchAction: 'none' }
             }}
             backgroundColor="rgb(255, 255, 255)"
             penColor="rgb(0, 0, 0)"
+            minWidth={1}
+            maxWidth={3}
+            throttle={16}
+            velocityFilterWeight={0.7}
+            clearOnResize={false}
           />
         </div>
         

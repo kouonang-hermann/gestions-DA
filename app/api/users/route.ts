@@ -44,10 +44,12 @@ export const GET = async (request: NextRequest) => {
       orderBy: { createdAt: 'desc' }
     })
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: users,
     })
+    response.headers.set('Cache-Control', 'private, max-age=120, stale-while-revalidate=60')
+    return response
   } catch (error) {
     return NextResponse.json({ success: false, error: "Erreur serveur" }, { status: 500 })
   }

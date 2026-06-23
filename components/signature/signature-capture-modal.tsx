@@ -118,7 +118,7 @@ export function SignatureCaptureModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl w-[95vw] p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {isFirstTime ? (
@@ -142,7 +142,7 @@ export function SignatureCaptureModal({
         </DialogHeader>
 
         <div className="py-2">
-          <SignaturePad ref={padRef} width={650} height={200} />
+          <SignaturePad ref={padRef} width={650} height={220} />
         </div>
 
         {error && (

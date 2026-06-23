@@ -4,9 +4,9 @@ import { useEffect, useRef } from "react"
 import { useStore } from "@/stores/useStore"
 
 // Cache global pour éviter les appels multiples entre dashboards
-// OPTIMISÉ: Augmenté de 30s à 60s pour réduire les appels API sur Vercel
+// OPTIMISÉ: 5 minutes pour réduire drastiquement les appels API sur Vercel
 let lastGlobalLoad = 0
-const CACHE_DURATION = 60000 // 60 secondes de cache
+const CACHE_DURATION = 300000 // 5 minutes de cache
 
 /**
  * Hook personnalisé pour le rechargement automatique des données
