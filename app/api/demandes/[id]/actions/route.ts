@@ -1,4 +1,4 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { type NextRequest, NextResponse, after } from "next/server"
 
 import { prisma } from "@/lib/prisma"
 
@@ -1369,9 +1369,9 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
 
 
 
-            // Envoyer notification au livreur assigné
+            // Envoyer notification au livreur assigné (non-bloquant)
 
-            await notificationService.notifyLivreurAssigne(demande.id, livreurAssigneId, currentUser.id)
+            after(() => notificationService.notifyLivreurAssigne(demande.id, livreurAssigneId, currentUser.id).catch(() => {}))
 
           } catch (error: any) {
 
@@ -1565,9 +1565,9 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
 
 
 
-          // Envoyer notification au livreur assigné
+          // Envoyer notification au livreur assigné (non-bloquant)
 
-          await notificationService.notifyLivreurAssigne(demande.id, livreurAssigneId, currentUser.id)
+          after(() => notificationService.notifyLivreurAssigne(demande.id, livreurAssigneId, currentUser.id).catch(() => {}))
 
         } else {
 
@@ -1653,21 +1653,16 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
 
           
 
-          // Notifier le demandeur que la livraison est effectuée
+          // Notifier le demandeur que la livraison est effectuée (non-bloquant)
 
-          await notificationService.notifyDemandeStatusChange(
-
-            demande.id,
-
-            demande.technicienId,
-
-            demande.status,
-
-            nextStatus,
-
-            currentUser.id
-
-          )
+          {
+            const _dId = demande.id
+            const _tech = demande.technicienId
+            const _from = demande.status
+            const _to = nextStatus
+            const _actor = currentUser.id
+            after(() => notificationService.notifyDemandeStatusChange(_dId, _tech, _from, _to, _actor).catch(() => {}))
+          }
 
           
 
@@ -1759,21 +1754,16 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
 
           
 
-          // Notifier l'ancien validateur que le super admin a pris le relais
+          // Notifier l'ancien validateur que le super admin a pris le relais (non-bloquant)
 
-          await notificationService.notifyDemandeStatusChange(
-
-            demande.id,
-
-            demande.technicienId,
-
-            demande.status,
-
-            targetStatus,
-
-            currentUser.id
-
-          )
+          {
+            const _dId = demande.id
+            const _tech = demande.technicienId
+            const _from = demande.status
+            const _to = targetStatus
+            const _actor = currentUser.id
+            after(() => notificationService.notifyDemandeStatusChange(_dId, _tech, _from, _to, _actor).catch(() => {}))
+          }
 
           
 
@@ -2328,18 +2318,24 @@ export const POST = withAuth(async (request: NextRequest, currentUser: any, cont
       
 
       // Envoyer les notifications email (au demandeur + aux prochains valideurs)
-
-      await notificationService.handleStatusChange(
-
-        updatedDemande as any,
-
-        demande.status as any,
-
-        newStatus as any,
-
-        usersWithProjetIds as any
-
-      )
+      // OPTIMISATION VERCEL : exécuté APRÈS la réponse HTTP pour ne pas bloquer l'utilisateur
+      // sur des appels réseau lents (SMTP / WhatsApp).
+      const _prevStatus = demande.status as any
+      const _newStatus = newStatus as any
+      const _updatedDemande = updatedDemande as any
+      const _usersWithProjetIds = usersWithProjetIds as any
+      after(async () => {
+        try {
+          await notificationService.handleStatusChange(
+            _updatedDemande,
+            _prevStatus,
+            _newStatus,
+            _usersWithProjetIds
+          )
+        } catch {
+          /* les erreurs d'envoi de notification ne doivent pas impacter la requête */
+        }
+      })
 
       
 

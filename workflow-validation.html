@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Workflow de validation des demandes</title>
+  <style>
+    :root {
+      --navy: #062a5a;
+      --blue: #015fc4;
+      --blue-mid: #2b7de0;
+      --blue-soft: #6aa8ec;
+      --blue-pale: #dcebfb;
+      --blue-line: #b7d3f2;
+      --ink: #0d2540;
+      --muted: #52708f;
+      --surface: #f3f8ff;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { margin: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
+      color: var(--ink);
+      background: #fff;
+    }
+
+    .page {
+      width: 1160px;
+      margin: 0 auto;
+      padding: 26px 34px 22px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding-bottom: 12px;
+      border-bottom: 3px solid var(--blue);
+    }
+
+    h1 {
+      margin: 0;
+      color: var(--navy);
+      font-size: 25px;
+      line-height: 1.1;
+    }
+
+    .subtitle {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .legend { display: flex; gap: 8px; flex-wrap: wrap; justify-content: end; }
+
+    .legend span {
+      padding: 5px 11px;
+      border-radius: 999px;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .legend .l-create { background: var(--blue-soft); }
+    .legend .l-valid  { background: var(--blue); }
+    .legend .l-prep   { background: var(--blue-mid); }
+    .legend .l-deliv  { background: var(--navy); }
+
+    /* ---- Lanes ---- */
+    .lane {
+      margin-top: 20px;
+      border: 1px solid var(--blue-line);
+      border-radius: 14px;
+      background: var(--surface);
+      overflow: hidden;
+      box-shadow: 0 6px 16px rgba(1, 95, 196, .08);
+    }
+
+    .lane-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 18px;
+      color: #fff;
+      background: linear-gradient(90deg, var(--navy), var(--blue));
+    }
+
+    .lane.outillage .lane-head { background: linear-gradient(90deg, #0a3f7a, var(--blue-mid)); }
+
+    .lane-head .tag {
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .lane-head h2 { margin: 0; font-size: 17px; }
+    .lane-head p { margin: 1px 0 0; font-size: 12px; opacity: .85; }
+
+    .flow {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      padding: 16px 14px 18px;
+      overflow-x: auto;
+    }
+
+    .node {
+      flex: 1 1 0;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 0 4px;
+    }
+
+    .bubble {
+      width: 100%;
+      border-radius: 11px;
+      padding: 9px 7px 8px;
+      color: #fff;
+      background: var(--blue);
+      box-shadow: 0 3px 7px rgba(6, 42, 90, .18);
+      min-height: 96px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .node.create .bubble { background: var(--blue-soft); }
+    .node.valid  .bubble { background: var(--blue); }
+    .node.prep   .bubble { background: var(--blue-mid); }
+    .node.deliv  .bubble { background: #0a3f7a; }
+    .node.close  .bubble { background: var(--navy); }
+
+    .ico { font-size: 20px; line-height: 1; margin-bottom: 4px; }
+    .role { font-size: 12px; font-weight: 700; line-height: 1.15; }
+    .desc { font-size: 10.5px; margin-top: 3px; opacity: .9; line-height: 1.25; }
+
+    .stat {
+      margin-top: 6px;
+      font-family: Consolas, monospace;
+      font-size: 8.5px;
+      color: var(--muted);
+      word-break: break-word;
+      line-height: 1.2;
+    }
+
+    .connect {
+      flex: 0 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--blue-mid);
+      font-size: 20px;
+      font-weight: 700;
+      margin-top: 32px;
+    }
+
+    /* ---- Common phase banner ---- */
+    .common {
+      margin-top: 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 18px;
+      border-radius: 12px;
+      background: var(--blue-pale);
+      border: 1px dashed var(--blue);
+    }
+
+    .common .badge {
+      flex: 0 0 auto;
+      background: var(--blue);
+      color: #fff;
+      font-weight: 800;
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 999px;
+    }
+
+    .common p { margin: 0; font-size: 12.5px; color: var(--ink); line-height: 1.4; }
+    .common strong { color: var(--navy); }
+
+    .notes {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .note {
+      padding: 12px 16px;
+      border-radius: 11px;
+      background: #fff;
+      border: 1px solid var(--blue-line);
+    }
+
+    .note h3 { margin: 0 0 5px; color: var(--blue); font-size: 13px; }
+    .note p, .note ul { margin: 0; color: #34506e; font-size: 11.5px; line-height: 1.45; }
+    .note ul { padding-left: 16px; }
+
+    @media print {
+      @page { size: A4 landscape; margin: 6mm; }
+      .page { width: 100%; padding: 0; }
+      .flow { overflow: visible; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="header">
+      <div>
+        <h1>Workflow de validation des demandes</h1>
+        <p class="subtitle">Circuits comparés : demande de matériel et demande d'outillage</p>
+      </div>
+      <div class="legend">
+        <span class="l-create">Création</span>
+        <span class="l-valid">Validation</span>
+        <span class="l-prep">Préparation</span>
+        <span class="l-deliv">Livraison &amp; clôture</span>
+      </div>
+    </header>
+
+    <!-- LANE MATERIEL -->
+    <section class="lane">
+      <div class="lane-head">
+        <span class="tag">&#128230;</span>
+        <div>
+          <h2>Demande de matériel</h2>
+          <p>Validation par le Conducteur puis préparation par l'Appro.</p>
+        </div>
+      </div>
+      <div class="flow">
+        <div class="node create"><div class="bubble"><div class="ico">&#128221;</div><div class="role">Demandeur</div><div class="desc">Crée la demande</div></div><div class="stat">soumise</div></div>
+        <div class="connect">&#8594;</div>
+        <div class="node valid"><div class="bubble"><div class="ico">&#128119;</div><div class="role">Conducteur Travaux</div><div class="desc">Valide le besoin</div></div><div class="stat">validation_conducteur</div></div>
+        <div class="connect">&#8594;</div>
+        <div class="node valid"><div class="bubble"><div class="ico">&#128188;</div><div class="role">Resp. Travaux</div><div class="desc">Contrôle projet</div></div><div class="stat">validation_resp_travaux</div></div>
+        <div class="connect">&#8594;</div>
+        <div class="node valid"><div class="bubble"><div class="ico">&#129534;</div><div class="role">Chargé d'Affaire</div><div class="desc">Valide l'engagement</div></div><div class="stat">validation_charge_affaire</div></div>
+        <div class="connect">&#8594;</div>
+        <div class="node prep"><div class="bubble"><div class="ico">&#128176;</div><div class="role">Resp. Appro</div><div class="desc">Prépare + assigne livreur</div></div><div class="stat">preparation_appro</div></div>
+        <div class="connect">&#8594;</div>
+        <div class="node deliv"><div class="bubble"><div class="ico">&#128666;</div><div class="role">Livreur : réception</div><div class="desc">Récupère le matériel</div></div><div class="stat">reception_livreur</div></div>
+        <div class="connect">&#8594;</div>
+        <div class="node deliv"><div class="bubble"><div class="ico">&#128667;</div><div class="role">Livreur : livraison</div><div class="desc">Livre au demandeur</div></div><div class="stat">livraison</div></div>
+        <div class="connect">&#8594;</div>
+        <div class="node close"><div class="bubble"><div class="ico">&#9989;</div><div class="role">Demandeur</div><div class="desc">Confirme &amp; clôture</div></div><div class="stat">cloturee</div></div>
+      </div>
+    </section>
+
+    <!-- LANE OUTILLAGE -->
+    <section class="lane outillage">
+      <div class="lane-head">
+        <span class="tag">&#128296;</span>
+        <div>
+          <h2>Demande d'outillage</h2>
+          <p>Validation et préparation par le Responsable Logistique.</p>
+        </div>
+      </div>
+      <div class="flow">
+        <div class="node create"><div class="bubble"><div class="ico">&#128221;</div><div class="role">Demandeur</div><div class="desc">Crée la demande</div></div><div class="stat">soumise</div></div>
+        <div class="connect">&#8594;</div>
+        <div class="node valid"><div class="bubble"><div class="ico">&#128230;</div><div class="role">Resp. Logistique</div><div class="desc">Valide la dispo</div></div><div class="stat">validation_logistique</div></div>
+        <div class="connect">&#8594;</div>
+        <div class="node valid"><div class="bubble"><div class="ico">&#128188;</div><div class="role">Resp. Travaux</div><div class="desc">Contrôle projet</div></div><div class="stat">validation_resp_travaux</div></div>
+        <div class="connect">&#8594;</div>
+        <div class="node valid"><div class="bubble"><div class="ico">&#129534;</div><div class="role">Chargé d'Affaire</div><div class="desc">Valide l'engagement</div></div><div class="stat">validation_charge_affaire</div></div>
+        <div class="connect">&#8594;</div>
+        <div class="node prep"><div class="bubble"><div class="ico">&#128230;</div><div class="role">Resp. Logistique</div><div class="desc">Prépare + assigne livreur</div></div><div class="stat">preparation_logistique</div></div>
+        <div class="connect">&#8594;</div>
+        <div class="node deliv"><div class="bubble"><div class="ico">&#128666;</div><div class="role">Livreur : réception</div><div class="desc">Récupère l'outillage</div></div><div class="stat">reception_livreur</div></div>
+        <div class="connect">&#8594;</div>
+        <div class="node deliv"><div class="bubble"><div class="ico">&#128667;</div><div class="role">Livreur : livraison</div><div class="desc">Livre au demandeur</div></div><div class="stat">livraison</div></div>
+        <div class="connect">&#8594;</div>
+        <div class="node close"><div class="bubble"><div class="ico">&#9989;</div><div class="role">Demandeur</div><div class="desc">Confirme &amp; clôture</div></div><div class="stat">cloturee</div></div>
+      </div>
+    </section>
+
+    <div class="common">
+      <span class="badge">Phase commune</span>
+      <p>À partir de la <strong>préparation</strong>, les deux circuits suivent le même chemin : <strong>assignation du livreur &#8594; réception &#8594; livraison &#8594; clôture par le demandeur</strong>. Seul le livreur assigné peut confirmer la réception et la livraison.</p>
+    </div>
+
+    <section class="notes">
+      <article class="note">
+        <h3>Différence clé entre les deux circuits</h3>
+        <p>Le <strong>matériel</strong> démarre par le Conducteur de Travaux et est préparé par l'<strong>Appro</strong>. L'<strong>outillage</strong> démarre par la Logistique et est préparé par la <strong>Logistique</strong>. Les étapes Resp. Travaux et Chargé d'Affaire sont communes.</p>
+      </article>
+      <article class="note">
+        <h3>Rejet et réception partielle</h3>
+        <ul>
+          <li>Une demande rejetée peut être corrigée et renvoyée au début de son circuit.</li>
+          <li>En cas de manque, une sous-demande est créée automatiquement et repart à l'étape de préparation.</li>
+        </ul>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

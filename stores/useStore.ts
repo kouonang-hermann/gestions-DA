@@ -379,15 +379,17 @@ export const useStore = create<AppState>()(
     // Charger immédiatement
     loadNotifications()
 
-    // Puis toutes les 120 secondes (optimisé pour réduire les appels API)
+    // OPTIMISATION VERCEL : 180s + pause quand l'onglet est masqué pour réduire les appels API
     const intervalId = setInterval(() => {
       const { currentUser } = get()
-      if (currentUser?.id) {
-        loadNotifications()
-      } else {
+      if (!currentUser?.id) {
         clearInterval(intervalId)
+        return
       }
-    }, 120000) // 120 secondes (2 minutes)
+      // Ne pas interroger le serveur si l'onglet n'est pas visible
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return
+      loadNotifications()
+    }, 180000) // 180 secondes (3 minutes)
 
     return intervalId
   },
@@ -554,7 +556,10 @@ export const useStore = create<AppState>()(
           if (result.success) {
             // Mettre à jour la demande dans le store
             set((state) => ({
-              demandes: state.demandes.map((d) => (d.id === demandeId ? result.data.demande : d)),
+              // Garde-fou : certaines actions (ex: update_validated_quantities) renvoient
+              // seulement { success, message } sans `demande`. On conserve alors la demande
+              // existante au lieu de la remplacer par `undefined`.
+              demandes: state.demandes.map((d) => (d.id === demandeId ? (result.data?.demande ?? d) : d)),
               notifications: result.data.notification
                 ? [result.data.notification, ...state.notifications]
                 : state.notifications,
@@ -563,8 +568,23 @@ export const useStore = create<AppState>()(
                 : state.history,
             }))
             
-            // Recharger automatiquement toutes les demandes pour s'assurer de la cohérence
-            await get().loadDemandes()
+            // OPTIMISATION VERCEL : ne recharger toutes les demandes que pour les actions
+            // susceptibles d'affecter plusieurs demandes (ex: création de sous-demandes,
+            // clôture, réception/livraison partielle). Pour les validations simples, la
+            // demande renvoyée par l'API est déjà fusionnée dans le store ci-dessus, ce qui
+            // évite un second appel réseau coûteux.
+            // Uniquement les actions qui renvoient la demande mise à jour (déjà fusionnée
+            // ci-dessus) peuvent éviter le rechargement complet. Les mises à jour de
+            // quantités ne renvoient PAS de demande : elles doivent recharger pour refléter
+            // quantiteValidee / prix en base.
+            const NO_RELOAD_ACTIONS = new Set([
+              "valider",
+              "rejeter",
+            ])
+
+            if (!NO_RELOAD_ACTIONS.has(action)) {
+              await get().loadDemandes()
+            }
             
             return true
           } else {

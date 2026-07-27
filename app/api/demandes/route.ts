@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
-import { VALIDATION_TYPES } from '@/constants/validation-types'
+import { mapDemandeValidations } from '@/lib/map-demande-validations'
 import crypto from "crypto"
 
 /**
@@ -313,7 +313,8 @@ export const GET = async (request: NextRequest) => {
           select: { id: true, nom: true }
         },
         technicien: {
-          select: { id: true, nom: true, prenom: true, email: true, signature: true }
+          // OPTIMISATION VERCEL : pas de signature base64 dans la liste (chargée à la demande pour les PDF)
+          select: { id: true, nom: true, prenom: true, email: true }
         },
         livreurAssigne: {
           select: { id: true, nom: true, prenom: true, email: true }
@@ -331,97 +332,32 @@ export const GET = async (request: NextRequest) => {
         validationSignatures: {
           include: {
             user: {
-              select: { id: true, nom: true, prenom: true, email: true, signature: true }
+              // OPTIMISATION VERCEL : pas de signature base64 dans la liste
+              select: { id: true, nom: true, prenom: true, email: true }
             }
           }
         },
         sortieSignature: {
           include: {
             user: {
-              select: { id: true, nom: true, prenom: true, email: true, signature: true }
+              // OPTIMISATION VERCEL : pas de signature base64 dans la liste
+              select: { id: true, nom: true, prenom: true, email: true }
             }
           }
-        },
-        history: {
-          include: {
-            user: {
-              select: { id: true, nom: true, prenom: true, email: true, signature: true }
-            }
-          },
-          orderBy: { timestamp: 'asc' }
         }
+        // OPTIMISATION VERCEL : l'historique complet (avec signatures base64) n'est PAS
+        // inclus dans la liste. Il n'est jamais lu depuis le store en vue liste et est
+        // rechargé à la demande via GET /api/demandes/[id] (modal de détail). Cela réduit
+        // fortement la taille du payload, la charge DB et la durée de la fonction serverless.
       },
       orderBy: { dateCreation: 'desc' }
     })
 
 
-    // Enrichir les demandes avec les informations des valideurs depuis ValidationSignature
-    const enrichedDemandes = demandes.map((demande: any) => {
-      const validationSignatures = demande.validationSignatures || []
-      const validationSignaturesSorted = [...validationSignatures].sort((a: any, b: any) => {
-        const aTime = a?.date instanceof Date ? a.date.getTime() : new Date(a?.date).getTime()
-        const bTime = b?.date instanceof Date ? b.date.getTime() : new Date(b?.date).getTime()
-        return bTime - aTime
-      })
-
-      // Helper pour ajouter signatureImage (data URL PNG) sur la validation
-      // pour que les générateurs PDF puissent l'injecter dans les cellules SIGNATURE
-      const withSignatureImage = (v: any) => {
-        if (!v) return v
-        return { ...v, signatureImage: v.user?.signature || v.signatureImage || null }
-      }
-
-      const findSignature = (types: string[]) => {
-        const match = validationSignaturesSorted.find((v: any) => types.includes(v.type)) || null
-        return withSignatureImage(match)
-      }
-
-      // Mapper les validationSignatures aux champs attendus par le frontend (avec fallback legacy)
-      const validationConducteur = findSignature([
-        VALIDATION_TYPES.CONDUCTEUR,
-        'conducteur_travaux',
-        'conducteur'
-      ])
-      const validationResponsableTravaux = findSignature([
-        VALIDATION_TYPES.RESPONSABLE_TRAVAUX,
-        'responsable_travaux'
-      ])
-      const validationChargeAffaire = findSignature([
-        VALIDATION_TYPES.CHARGE_AFFAIRE,
-        'charge_affaire'
-      ])
-      const validationLogistique = findSignature([
-        VALIDATION_TYPES.LOGISTIQUE,
-        'logistique',
-        'preparation_logistique'
-      ])
-      
-      // sortieSignature est déjà chargé depuis la relation, mais on vérifie aussi les validationSignatures pour 'appro'
-      // Car certaines demandes peuvent avoir une validation 'appro' au lieu d'une sortieSignature
-      const validationAppro = findSignature([
-        VALIDATION_TYPES.APPRO,
-        'appro',
-        'preparation_appro'
-      ])
-      const sortieAppro = withSignatureImage(demande.sortieSignature || validationAppro || null)
-
-      // Signature finale du demandeur (clôture)
-      const validationFinale = findSignature([
-        'finale',
-        'validation_finale',
-        'demandeur'
-      ])
-
-      return {
-        ...demande,
-        validationConducteur,
-        validationResponsableTravaux,
-        validationChargeAffaire,
-        validationLogistique,
-        validationFinale,
-        sortieAppro
-      }
-    })
+    // Enrichir les demandes avec les informations des valideurs depuis ValidationSignature.
+    // Logique centralisée dans mapDemandeValidations (partagée avec GET /api/demandes/[id]).
+    // En liste, user.signature n'est pas chargé -> signatureImage vaut null (payload léger).
+    const enrichedDemandes = demandes.map((demande: any) => mapDemandeValidations(demande))
 
     const canSeePricesForDemande = (demande: any) => {
       if (currentUser.role === "superadmin") return true

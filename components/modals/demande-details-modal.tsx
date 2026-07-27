@@ -20,6 +20,8 @@ import { useStore } from "@/stores/useStore"
 
 import { generatePurchaseRequestPDF, generateBonLivraisonPDF, generateBonSortiePDF } from "@/lib/pdf-generator"
 
+import { fetchDemandeById } from "@/lib/fetch-demande"
+
 import { PDFTypeSelector, type PDFType } from "@/components/demandes/pdf-type-selector"
 
 
@@ -116,6 +118,21 @@ export default function DemandeDetailModal({
 
     fetchDemande()
   }, [activeDemandeId, demande])
+
+  // Initialiser les quantités validées éditables à partir de la valeur déjà enregistrée
+  // (item.quantiteValidee) afin que le valideur suivant VOIE la modification du précédent
+  // et ne l'écrase pas involontairement. Si aucune quantité validée n'existe encore,
+  // on retombe sur la quantité demandée.
+  useEffect(() => {
+    if (!demande?.items) return
+    const init: Record<string, string> = {}
+    demande.items.forEach((item: any) => {
+      const qte = item.quantiteValidee ?? item.quantiteDemandee
+      init[item.id] = qte != null ? qte.toString() : ""
+    })
+    setQuantitesValidees(init)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [demande?.id])
 
   if (!demande) {
     if (!isOpen) return null
@@ -466,23 +483,26 @@ export default function DemandeDetailModal({
 
     try {
 
+      // Charger la demande enrichie (signatures) au moment du PDF uniquement
+      const full = (await fetchDemandeById(demande.id)) ?? demande
+
       switch (type) {
 
         case 'demande':
 
-          await generatePurchaseRequestPDF(demande, users)
+          await generatePurchaseRequestPDF(full, users)
 
           break
 
         case 'bon_livraison':
 
-          await generateBonLivraisonPDF(demande)
+          await generateBonLivraisonPDF(full)
 
           break
 
         case 'bon_sortie':
 
-          await generateBonSortiePDF(demande)
+          await generateBonSortiePDF(full)
 
           break
 
@@ -557,6 +577,31 @@ export default function DemandeDetailModal({
     setIsValidating(true)
 
     try {
+
+      // Si le valideur peut modifier les quantités validées, on persiste d'abord la saisie
+      // courante AVANT de valider, afin que les modifications faites pendant la validation
+      // soient bien enregistrées (et visibles par le valideur suivant).
+      if (canEditValidatedQty) {
+
+        const itemsData = demande.items.map((item: any) => {
+
+          const qteStr = quantitesValidees[item.id]
+
+          const parsed = qteStr != null ? parseFloat(qteStr) : NaN
+
+          const qte = (!isNaN(parsed) && parsed >= 0 && parsed <= item.quantiteDemandee)
+
+            ? parsed
+
+            : (item.quantiteValidee ?? item.quantiteDemandee)
+
+          return { itemId: item.id, quantiteValidee: qte }
+
+        })
+
+        await executeAction(demande.id, "update_validated_quantities", { items: itemsData })
+
+      }
 
       await onValidate(demande.id)
 

@@ -100,10 +100,22 @@ export default function Navbar() {
     }
 
     fetchPendingCounts()
-    const intervalId = setInterval(fetchPendingCounts, 30_000) // toutes les 30s
+    // OPTIMISATION VERCEL : 60s au lieu de 30s + pause quand l'onglet est masqué
+    // pour réduire fortement le nombre d'invocations serverless.
+    const intervalId = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return
+      fetchPendingCounts()
+    }, 60_000)
+
+    const onVisible = () => {
+      if (document.visibilityState === "visible") fetchPendingCounts()
+    }
+    document.addEventListener("visibilitychange", onVisible)
+
     return () => {
       cancelled = true
       clearInterval(intervalId)
+      document.removeEventListener("visibilitychange", onVisible)
     }
   }, [currentUser, token])
 

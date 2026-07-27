@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import type { Demande } from "@/types"
 import PurchaseRequestCard from "@/components/demandes/purchase-request-card"
 import { generatePurchaseRequestPDF, generateBonLivraisonPDF, generateBonSortiePDF } from "@/lib/pdf-generator"
+import { fetchDemandeById } from "@/lib/fetch-demande"
 import { PDFTypeSelector, type PDFType } from "@/components/demandes/pdf-type-selector"
 import { toast } from "sonner"
 import { useStore } from "@/stores/useStore"
@@ -30,15 +31,17 @@ export default function PurchaseRequestDetailsModal({
   const handleDownloadPDF = async (type: PDFType) => {
     setIsGeneratingPDF(true)
     try {
+      // Charger la demande enrichie (signatures) au moment du PDF uniquement
+      const full = (await fetchDemandeById(demande.id)) ?? demande
       switch (type) {
         case 'demande':
-          await generatePurchaseRequestPDF(demande, users)
+          await generatePurchaseRequestPDF(full, users)
           break
         case 'bon_livraison':
-          await generateBonLivraisonPDF(demande)
+          await generateBonLivraisonPDF(full)
           break
         case 'bon_sortie':
-          await generateBonSortiePDF(demande)
+          await generateBonSortiePDF(full)
           break
       }
       toast.success("PDF téléchargé avec succès!")

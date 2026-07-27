@@ -14,6 +14,7 @@ import { Package, Truck, Clock, CheckCircle, AlertCircle, User, Eye, X, FileDown
 import type { Demande } from "@/types"
 import DemandeDetailsModal from "@/components/modals/demande-details-modal"
 import { generatePurchaseRequestPDF } from "@/lib/pdf-generator"
+import { fetchDemandeById } from "@/lib/fetch-demande"
 
 export default function PreparationLogistiqueList() {
   const { currentUser, demandes, loadDemandes, executeAction, isLoading, error, users } = useStore()
@@ -115,7 +116,9 @@ export default function PreparationLogistiqueList() {
 
   const handleGeneratePDF = async (demande: Demande) => {
     try {
-      await generatePurchaseRequestPDF(demande, users)
+      // Charger la demande enrichie (signatures) au moment du PDF uniquement
+      const full = await fetchDemandeById(demande.id)
+      await generatePurchaseRequestPDF(full ?? demande, users)
     } catch (error) {
       alert('Erreur lors de la génération du PDF. Veuillez réessayer.')
     }

@@ -10,6 +10,7 @@ import type { DemandeStatus } from "@/types"
 
 import { getPreviousStatus, getPreviousValidatorRole, generateRejectionNotificationMessage, hasReachedMaxRejections } from "@/lib/workflow-utils"
 import { enrichDemandeWithSignatures } from "@/lib/enrich-validation-signatures"
+import { mapDemandeValidations } from "@/lib/map-demande-validations"
 
 import crypto from "crypto"
 
@@ -129,7 +130,8 @@ export const GET = withAuth(async (request: NextRequest, currentUser: any, conte
 
         technicien: {
 
-          select: { id: true, nom: true, prenom: true, email: true }
+          // Signature incluse ici (endpoint détail) pour la génération PDF
+          select: { id: true, nom: true, prenom: true, email: true, signature: true }
 
         },
 
@@ -149,7 +151,7 @@ export const GET = withAuth(async (request: NextRequest, currentUser: any, conte
 
             user: {
 
-              select: { id: true, nom: true, prenom: true, role: true }
+              select: { id: true, nom: true, prenom: true, role: true, signature: true }
 
             }
 
@@ -159,13 +161,27 @@ export const GET = withAuth(async (request: NextRequest, currentUser: any, conte
 
         },
 
+        sortieSignature: {
+
+          include: {
+
+            user: {
+
+              select: { id: true, nom: true, prenom: true, email: true, signature: true }
+
+            }
+
+          }
+
+        },
+
         history: {
 
           include: {
 
             user: {
 
-              select: { id: true, nom: true, prenom: true }
+              select: { id: true, nom: true, prenom: true, signature: true }
 
             }
 
@@ -217,11 +233,15 @@ export const GET = withAuth(async (request: NextRequest, currentUser: any, conte
 
 
 
+    // Mapper les validationSignatures vers les champs attendus (validationConducteur, ...)
+    // AVEC les images de signature, pour que la génération PDF dispose de tout.
+    const enrichedDemande = mapDemandeValidations(demande)
+
     return NextResponse.json({
 
       success: true,
 
-      data: demande,
+      data: enrichedDemande,
 
     })
 

@@ -8,6 +8,7 @@ import { Download, Loader2, CheckCircle } from "lucide-react"
 import type { Demande } from "@/types"
 import { useStore } from "@/stores/useStore"
 import { generatePurchaseRequestPDF, generateBonLivraisonPDF, generateBonSortiePDF } from "@/lib/pdf-generator"
+import { fetchDemandeById } from "@/lib/fetch-demande"
 import { PDFTypeSelector, type PDFType } from "@/components/demandes/pdf-type-selector"
 
 interface DemandeDetailModalProps {
@@ -47,15 +48,17 @@ export default function DemandeDetailModal({
     if (!demande) return
     setIsGeneratingPDF(true)
     try {
+      // Charger la demande enrichie (signatures) au moment du PDF uniquement
+      const full = (await fetchDemandeById(demande.id)) ?? demande
       switch (type) {
         case 'demande':
-          await generatePurchaseRequestPDF(demande, users)
+          await generatePurchaseRequestPDF(full, users)
           break
         case 'bon_livraison':
-          await generateBonLivraisonPDF(demande)
+          await generateBonLivraisonPDF(full)
           break
         case 'bon_sortie':
-          await generateBonSortiePDF(demande)
+          await generateBonSortiePDF(full)
           break
       }
     } catch (error) {
