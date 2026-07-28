@@ -5,7 +5,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
-import { Eye, Edit, Trash2, CheckCircle } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Eye, Edit, Trash2, CheckCircle, Search, X } from "lucide-react"
 import { useStore } from "@/stores/useStore"
 import DemandeDetailModal from "@/components/demandes/demande-detail-modal"
 import CreateDemandeModal from "@/components/demandes/create-demande-modal"
@@ -57,6 +59,11 @@ export default function UserDetailsModal({ isOpen, onClose, title, data, type }:
   const [demandeDetailsOpen, setDemandeDetailsOpen] = useState(false)
   const [editDemandeOpen, setEditDemandeOpen] = useState(false)
   const [demandeToEdit, setDemandeToEdit] = useState<any>(null)
+
+  // Filtres locaux
+  const [searchTerm, setSearchTerm] = useState("")
+  const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [typeFilter, setTypeFilter] = useState<string>("all")
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -120,9 +127,32 @@ export default function UserDetailsModal({ isOpen, onClose, title, data, type }:
     }
   }
 
-  // CORRECTION: Faire confiance aux données déjà filtrées par le dashboard
-  // Le re-filtrage causait des problèmes car chaque dashboard a sa propre logique
-  const filteredData = data
+  // Les données arrivent déjà filtrées par le dashboard selon la rubrique.
+  // On applique ici uniquement les filtres locaux (recherche, statut, type).
+  const availableStatuses = Array.from(new Set((data || []).map((d: any) => d.status).filter(Boolean)))
+  const hasActiveFilters = searchTerm.trim() !== "" || statusFilter !== "all" || typeFilter !== "all"
+
+  const filteredData = (data || []).filter((item: any) => {
+    const matchesSearch = (() => {
+      const q = searchTerm.trim().toLowerCase()
+      if (q === "") return true
+      return (
+        item.numero?.toLowerCase().includes(q) ||
+        getProjetNom(item).toLowerCase().includes(q) ||
+        getDemandeurNom(item).toLowerCase().includes(q) ||
+        item.commentaires?.toLowerCase().includes(q)
+      )
+    })()
+    const matchesStatus = statusFilter === "all" || item.status === statusFilter
+    const matchesType = typeFilter === "all" || item.type === typeFilter
+    return matchesSearch && matchesStatus && matchesType
+  })
+
+  const resetFilters = () => {
+    setSearchTerm("")
+    setStatusFilter("all")
+    setTypeFilter("all")
+  }
 
   const handleCloture = async (demandeId: string) => {
     setClotureLoading(demandeId)
@@ -205,13 +235,54 @@ export default function UserDetailsModal({ isOpen, onClose, title, data, type }:
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle className="text-base sm:text-lg">{title} ({filteredData.length})</DialogTitle>
+          <DialogTitle className="text-base sm:text-lg">
+            {title} ({filteredData.length}{hasActiveFilters ? ` / ${data.length}` : ''})
+          </DialogTitle>
         </DialogHeader>
-        
-        <div className="space-y-5 overflow-y-auto" style={{maxHeight: 'calc(85vh - 120px)'}}>
+
+        {/* Barre de filtres */}
+        <div className="flex flex-col sm:flex-row gap-2 sm:items-center border-b pb-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Rechercher (numéro, projet, demandeur...)"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-8 h-9"
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full sm:w-56 h-9">
+              <SelectValue placeholder="Statut" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les statuts</SelectItem>
+              {availableStatuses.map((s) => (
+                <SelectItem key={s} value={s}>{getStatusLabel(s)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="w-full sm:w-40 h-9">
+              <SelectValue placeholder="Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les types</SelectItem>
+              <SelectItem value="materiel">Matériel</SelectItem>
+              <SelectItem value="outillage">Outillage</SelectItem>
+            </SelectContent>
+          </Select>
+          {hasActiveFilters && (
+            <Button variant="ghost" size="sm" onClick={resetFilters} className="h-9 whitespace-nowrap">
+              <X className="h-4 w-4 mr-1" /> Réinitialiser
+            </Button>
+          )}
+        </div>
+
+        <div className="space-y-5 overflow-y-auto" style={{maxHeight: 'calc(85vh - 190px)'}}>
           {filteredData.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              <p>Aucun élément trouvé</p>
+              <p>{hasActiveFilters ? "Aucun résultat pour ces filtres" : "Aucun élément trouvé"}</p>
             </div>
           ) : (
             filteredData.map((item) => (
