@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Eye, Edit, Trash2, CheckCircle, Search, X } from "lucide-react"
+import { Eye, Edit, Trash2, CheckCircle, Search, X, Filter, ArrowUpDown } from "lucide-react"
 import { useStore } from "@/stores/useStore"
 import DemandeDetailModal from "@/components/demandes/demande-detail-modal"
 import CreateDemandeModal from "@/components/demandes/create-demande-modal"
@@ -64,6 +64,11 @@ export default function UserDetailsModal({ isOpen, onClose, title, data, type }:
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [typeFilter, setTypeFilter] = useState<string>("all")
+  const [filterMonth, setFilterMonth] = useState<string>("")
+  const [filterUser, setFilterUser] = useState<string>("")
+  const [filterProjet, setFilterProjet] = useState<string>("")
+  const [sortBy, setSortBy] = useState<"date" | "numero" | "statut" | "type">("date")
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -128,30 +133,97 @@ export default function UserDetailsModal({ isOpen, onClose, title, data, type }:
   }
 
   // Les données arrivent déjà filtrées par le dashboard selon la rubrique.
-  // On applique ici uniquement les filtres locaux (recherche, statut, type).
+  // On applique ici uniquement les filtres locaux (recherche, statut, type, mois, demandeur, projet + tri).
   const availableStatuses = Array.from(new Set((data || []).map((d: any) => d.status).filter(Boolean)))
-  const hasActiveFilters = searchTerm.trim() !== "" || statusFilter !== "all" || typeFilter !== "all"
 
-  const filteredData = (data || []).filter((item: any) => {
-    const matchesSearch = (() => {
-      const q = searchTerm.trim().toLowerCase()
-      if (q === "") return true
-      return (
-        item.numero?.toLowerCase().includes(q) ||
-        getProjetNom(item).toLowerCase().includes(q) ||
-        getDemandeurNom(item).toLowerCase().includes(q) ||
-        item.commentaires?.toLowerCase().includes(q)
-      )
-    })()
-    const matchesStatus = statusFilter === "all" || item.status === statusFilter
-    const matchesType = typeFilter === "all" || item.type === typeFilter
-    return matchesSearch && matchesStatus && matchesType
-  })
+  // Listes uniques pour les selects (demandeurs et projets présents dans les données)
+  const demandeursDisponibles = Array.from(
+    new Map(
+      (data || [])
+        .filter((d: any) => d.technicienId)
+        .map((d: any) => [d.technicienId, { id: d.technicienId, nom: getDemandeurNom(d) }])
+    ).values()
+  ).sort((a, b) => a.nom.localeCompare(b.nom))
+
+  const projetsDisponibles = Array.from(
+    new Map(
+      (data || [])
+        .filter((d: any) => d.projetId)
+        .map((d: any) => [d.projetId, { id: d.projetId, nom: getProjetNom(d) }])
+    ).values()
+  ).sort((a, b) => a.nom.localeCompare(b.nom))
+
+  const hasActiveFilters =
+    searchTerm.trim() !== "" ||
+    statusFilter !== "all" ||
+    typeFilter !== "all" ||
+    filterMonth !== "" ||
+    filterUser !== "" ||
+    filterProjet !== ""
+
+  const filteredData = (data || [])
+    .filter((item: any) => {
+      const matchesSearch = (() => {
+        const q = searchTerm.trim().toLowerCase()
+        if (q === "") return true
+        return (
+          item.numero?.toLowerCase().includes(q) ||
+          getProjetNom(item).toLowerCase().includes(q) ||
+          getDemandeurNom(item).toLowerCase().includes(q) ||
+          item.commentaires?.toLowerCase().includes(q)
+        )
+      })()
+      const matchesStatus = statusFilter === "all" || item.status === statusFilter
+      const matchesType = typeFilter === "all" || item.type === typeFilter
+      const matchesMonth = (() => {
+        if (!filterMonth) return true
+        if (!item.dateCreation) return false
+        const demandeDate = new Date(item.dateCreation)
+        const [year, month] = filterMonth.split("-")
+        return (
+          demandeDate.getFullYear() === parseInt(year) &&
+          demandeDate.getMonth() === parseInt(month) - 1
+        )
+      })()
+      const matchesUser = filterUser === "" || item.technicienId === filterUser
+      const matchesProjet = filterProjet === "" || item.projetId === filterProjet
+      return matchesSearch && matchesStatus && matchesType && matchesMonth && matchesUser && matchesProjet
+    })
+    .sort((a: any, b: any) => {
+      let comparison = 0
+      switch (sortBy) {
+        case "date":
+          comparison = new Date(a.dateCreation).getTime() - new Date(b.dateCreation).getTime()
+          break
+        case "numero":
+          comparison = (a.numero || "").localeCompare(b.numero || "")
+          break
+        case "statut":
+          comparison = getStatusLabel(a.status).localeCompare(getStatusLabel(b.status))
+          break
+        case "type":
+          comparison = (a.type || "").localeCompare(b.type || "")
+          break
+      }
+      return sortOrder === "asc" ? comparison : -comparison
+    })
+
+  const handleSort = (newSortBy: typeof sortBy) => {
+    if (sortBy === newSortBy) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+    } else {
+      setSortBy(newSortBy)
+      setSortOrder("desc")
+    }
+  }
 
   const resetFilters = () => {
     setSearchTerm("")
     setStatusFilter("all")
     setTypeFilter("all")
+    setFilterMonth("")
+    setFilterUser("")
+    setFilterProjet("")
   }
 
   const handleCloture = async (demandeId: string) => {
@@ -279,7 +351,98 @@ export default function UserDetailsModal({ isOpen, onClose, title, data, type }:
           )}
         </div>
 
-        <div className="space-y-5 overflow-y-auto" style={{maxHeight: 'calc(85vh - 190px)'}}>
+        {/* Filtres avancés : mois, demandeur, projet */}
+        <div className="flex flex-wrap gap-3 border-b pb-3">
+          <div className="flex-1 min-w-[180px]">
+            <label className="text-xs font-medium text-gray-700 mb-1 block">
+              <Filter className="h-3 w-3 inline mr-1" />
+              Mois
+            </label>
+            <div className="flex gap-2">
+              <Input
+                type="month"
+                value={filterMonth}
+                onChange={(e) => setFilterMonth(e.target.value)}
+                className="bg-white text-sm h-9"
+              />
+              {filterMonth && (
+                <Button variant="ghost" size="sm" onClick={() => setFilterMonth("")} className="px-2 h-9" title="Effacer">
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div className="flex-1 min-w-[180px]">
+            <label className="text-xs font-medium text-gray-700 mb-1 block">
+              <Filter className="h-3 w-3 inline mr-1" />
+              Demandeur
+            </label>
+            <div className="flex gap-2">
+              <select
+                value={filterUser}
+                onChange={(e) => setFilterUser(e.target.value)}
+                className="flex h-9 w-full rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              >
+                <option value="">Tous les demandeurs</option>
+                {demandeursDisponibles.map((u) => (
+                  <option key={u.id} value={u.id}>{u.nom}</option>
+                ))}
+              </select>
+              {filterUser && (
+                <Button variant="ghost" size="sm" onClick={() => setFilterUser("")} className="px-2 h-9" title="Effacer">
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div className="flex-1 min-w-[180px]">
+            <label className="text-xs font-medium text-gray-700 mb-1 block">
+              <Filter className="h-3 w-3 inline mr-1" />
+              Projet
+            </label>
+            <div className="flex gap-2">
+              <select
+                value={filterProjet}
+                onChange={(e) => setFilterProjet(e.target.value)}
+                className="flex h-9 w-full rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              >
+                <option value="">Tous les projets</option>
+                {projetsDisponibles.map((p) => (
+                  <option key={p.id} value={p.id}>{p.nom}</option>
+                ))}
+              </select>
+              {filterProjet && (
+                <Button variant="ghost" size="sm" onClick={() => setFilterProjet("")} className="px-2 h-9" title="Effacer">
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Boutons de tri */}
+        <div className="flex flex-wrap gap-2 border-b pb-3">
+          <Button variant={sortBy === "date" ? "default" : "outline"} size="sm" onClick={() => handleSort("date")} className="text-xs">
+            <ArrowUpDown className="h-3 w-3 mr-1" />
+            Date {sortBy === "date" && (sortOrder === "asc" ? "↑" : "↓")}
+          </Button>
+          <Button variant={sortBy === "numero" ? "default" : "outline"} size="sm" onClick={() => handleSort("numero")} className="text-xs">
+            <ArrowUpDown className="h-3 w-3 mr-1" />
+            Numéro {sortBy === "numero" && (sortOrder === "asc" ? "↑" : "↓")}
+          </Button>
+          <Button variant={sortBy === "statut" ? "default" : "outline"} size="sm" onClick={() => handleSort("statut")} className="text-xs">
+            <ArrowUpDown className="h-3 w-3 mr-1" />
+            Statut {sortBy === "statut" && (sortOrder === "asc" ? "↑" : "↓")}
+          </Button>
+          <Button variant={sortBy === "type" ? "default" : "outline"} size="sm" onClick={() => handleSort("type")} className="text-xs">
+            <ArrowUpDown className="h-3 w-3 mr-1" />
+            Type {sortBy === "type" && (sortOrder === "asc" ? "↑" : "↓")}
+          </Button>
+        </div>
+
+        <div className="space-y-5 overflow-y-auto" style={{maxHeight: 'calc(85vh - 330px)'}}>
           {filteredData.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <p>{hasActiveFilters ? "Aucun résultat pour ces filtres" : "Aucun élément trouvé"}</p>

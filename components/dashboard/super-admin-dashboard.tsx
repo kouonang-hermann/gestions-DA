@@ -124,6 +124,9 @@ export default function SuperAdminDashboard() {
   // Modale pour demandes en cours
   const [enCoursModalOpen, setEnCoursModalOpen] = useState(false)
   const [enCoursModalTitle, setEnCoursModalTitle] = useState("Mes demandes en cours")
+
+  // Modale pour les demandes rejetées
+  const [rejeteesModalOpen, setRejeteesModalOpen] = useState(false)
   
   // Modale tableau de bord financier
   const [financialModalOpen, setFinancialModalOpen] = useState(false)
@@ -356,6 +359,9 @@ export default function SuperAdminDashboard() {
     )
   }
 
+  // Toutes les demandes rejetées (vue globale super admin)
+  const getDemandesRejetees = () => demandes.filter((demande) => demande.status === "rejetee")
+
   const handleRemoveUserFromProject = () => {
     // TO DO: Implementer la logique pour supprimer un utilisateur d'un projet
   }
@@ -480,6 +486,14 @@ export default function SuperAdminDashboard() {
                 <TrendingUp className="mobile-action-icon" />
                 Analyse
               </Button>
+
+              <Button 
+                className="mobile-action-button"
+                onClick={() => setRejeteesModalOpen(true)}
+              >
+                <XCircle className="mobile-action-icon" />
+                Rejetées
+              </Button>
             </div>
           </div>
         </div>
@@ -532,6 +546,14 @@ export default function SuperAdminDashboard() {
         <AnalyticsModal
           isOpen={analyticsModalOpen}
           onClose={() => setAnalyticsModalOpen(false)}
+        />
+        <DemandesCategoryModal
+          isOpen={rejeteesModalOpen}
+          onClose={() => setRejeteesModalOpen(false)}
+          categoryType="rejetees"
+          title="Toutes les demandes rejetées"
+          demandes={getDemandesRejetees()}
+          currentUser={currentUser}
         />
         </div>
       </>
@@ -637,6 +659,25 @@ export default function SuperAdminDashboard() {
 
               {/* Carte Livraisons - Affichée uniquement si l'utilisateur est assigné comme livreur */}
               <LivraisonsCard />
+
+              {/* Carte Rejetées - Toutes les DA rejetées */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Card className="border-l-4 cursor-pointer hover:shadow-md transition-shadow" style={{ borderLeftColor: '#dc2626' }} onClick={() => setRejeteesModalOpen(true)}>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">Rejetées</CardTitle>
+                      <XCircle className="h-4 w-4" style={{ color: '#dc2626' }} />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold" style={{ color: '#dc2626' }}>{getDemandesRejetees().length}</div>
+                      <p className="text-xs text-muted-foreground">Toutes les DA rejetées</p>
+                    </CardContent>
+                  </Card>
+                </TooltipTrigger>
+                <TooltipContent side="top" sideOffset={8}>
+                  Voir toutes les demandes rejetées
+                </TooltipContent>
+              </Tooltip>
             </div>
 
             {/* Section des livraisons assignées */}
@@ -1028,6 +1069,16 @@ export default function SuperAdminDashboard() {
             categoryType="enCours"
             title={enCoursModalTitle}
             demandes={getMesDemandesEnCours()}
+            currentUser={currentUser}
+          />
+
+          {/* Modale pour toutes les demandes rejetées */}
+          <DemandesCategoryModal
+            isOpen={rejeteesModalOpen}
+            onClose={() => setRejeteesModalOpen(false)}
+            categoryType="rejetees"
+            title="Toutes les demandes rejetées"
+            demandes={getDemandesRejetees()}
             currentUser={currentUser}
           />
 
